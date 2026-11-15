@@ -1,3 +1,4 @@
+import { parseLine } from '#basics';
 import { loadedSkillDirs } from '#plugin-copy';
 
 const ACTIONS = new Set(['Edit', 'Write']);
@@ -22,11 +23,8 @@ function parseEvents(rawStdout) {
   const events = [];
   for (const line of rawStdout.split('\n')) {
     if (line.trim() === '') continue;
-    try {
-      events.push(JSON.parse(line));
-    } catch {
-      continue;
-    }
+    const event = parseLine(line);
+    if (event !== null) events.push(event);
   }
   return events;
 }
@@ -48,7 +46,7 @@ function recordResult(event, seen) {
   seen.tokens = event.modelUsage && typeof event.modelUsage === 'object' ? modelUsageTokens(event.modelUsage) : undefined;
 }
 
-export function parseStream(rawStdout) {
+export function readPressureStream(rawStdout) {
   const seen = { finalText: undefined, firstAction: null, skills: [], skillDirs: [], reads: [], cost: undefined, tokens: undefined, outputStyle: undefined };
   for (const event of parseEvents(rawStdout)) {
     if (event.type === 'assistant') recordToolUses(event, seen);

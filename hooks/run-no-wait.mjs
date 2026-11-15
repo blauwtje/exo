@@ -4,13 +4,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { readJsonOrNull } from '#basics';
-import { inSidecall, readHookText } from '#hook-input';
-import { denyReason } from '../lib/guard-rules.mjs';
+import { escapeRegExp, readJsonOrNull } from '#basics';
+import { inSidecall } from '#hook-input';
+import { denyReasonLines } from '../lib/guard-rules.mjs';
 import { inRun } from '../lib/run-decision.mjs';
 import { roundCap } from '../lib/loop-budget.mjs';
 import { isMain } from '../lib/script-flags.mjs';
-import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
+import { rememberRefusal, runHook } from '../lib/hook-refusal.mjs';
 
 const RECORD = fileURLToPath(new URL('../lib/run-decision.mjs', import.meta.url));
 const OPTION = /^(?:[-*+]\s+)?[*_`]*(?:Option\s+(?:[A-Za-z]|\d{1,2})\b|(?:[A-Za-z]|\d{1,2})(?:\s*\([^)]*\))?[*_`]*\s*[):.])/;
@@ -26,8 +26,8 @@ function entryText(line) {
   return typeof text === 'string' && text.trim() ? text : undefined;
 }
 
-function lastEntryText(lines) {
-  for (const line of lines.reverse()) {
+function lastEntryText(entries) {
+  for (const line of entries.toReversed()) {
     const text = entryText(line);
     if (text) return text;
   }
@@ -54,7 +54,7 @@ function openQuestion(text) {
 }
 
 function missingStatus(line, task, text) {
-  return task ? !new RegExp(`^Task ${task.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: (GREEN|LANDED|BLOCKED|PLAN DRIFT|FAIL)\\b`).test(line) : openQuestion(text);
+  return task ? !new RegExp(`^Task ${escapeRegExp(task)}: (GREEN|LANDED|BLOCKED|PLAN DRIFT|FAIL)\\b`).test(line) : openQuestion(text);
 }
 
 function noteBlock(dir, session, blockedNote) {
@@ -70,7 +70,9 @@ function noteBlock(dir, session, blockedNote) {
   return count;
 }
 
-export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, task = env.EXO_RUN_REPAIR ? null : env.EXO_RUN_TASK?.split('/').pop() } = {}) {
+export function runNoWait(input, { env = process.env } = {}) {
+  const dir = env.EXO_RUN_DIR;
+  const task = env.EXO_RUN_REPAIR ? null : env.EXO_RUN_TASK?.split('/').pop();
   if (!inRun(env) || !dir || !input) return null;
   const asking = input.tool_name === 'AskUserQuestion' && input.hook_event_name !== 'Stop';
   const text = asking ? input.tool_input?.questions?.[0]?.question ?? input.tool_input?.question : endText(input);
@@ -79,16 +81,9 @@ export function runNoWait(input, { env = process.env, dir = env.EXO_RUN_DIR, tas
   const count = noteBlock(dir, String(input.session_id ?? ''), `Task ${task ?? ''}: BLOCKED ${line}\n`);
   const atLimit = count >= blockLimit();
   const record = `record the choice with \`node "${RECORD}" <source> <choice> <reason>\`, which appends to ${path.join(dir, 'decisions.md')}`;
-  const why = denyReason(count + 1 >= blockLimit() ? 'run-no-wait-final' : 'run-no-wait', record).replace('. Do instead: ', '.\nDo instead: ');
+  const why = denyReasonLines(count + 1 >= blockLimit() ? 'run-no-wait-final' : 'run-no-wait', record);
   if (asking) return rememberRefusal(input, { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: why } }, { guard: 'run-no-wait' });
   return atLimit ? null : rememberRefusal(input, { decision: 'block', reason: why }, { guard: 'run-no-wait' });
 }
 
-if (isMain(import.meta.url) && !inSidecall()) {
-  try {
-    const input = JSON.parse(await readHookText());
-    writeHookOutput(input, runNoWait(input), 'run-no-wait');
-  } catch {
-    process.exitCode = 0;
-  }
-}
+if (isMain(import.meta.url) && !inSidecall()) await runHook('run-no-wait', runNoWait);

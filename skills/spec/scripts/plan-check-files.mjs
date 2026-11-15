@@ -6,7 +6,7 @@ import { dataLiterals, literalFinder, literalFragments } from '#data-literals';
 import { realPath } from './plan-check-loop.mjs';
 
 export function checkFilesExist(task, root, byNumber) {
-  if (root === undefined || root === null) return [];
+  if (root === undefined) return [];
   const createdEarlier = new Set(
     [...dependencyChainOf(byNumber, task.number)]
       .flatMap((number) => byNumber.get(number).files)
@@ -30,7 +30,7 @@ function isOnPath(command) {
 }
 
 export function checkProofOnPath(task, root) {
-  if (task.proof === null || root === undefined || root === null) return [];
+  if (task.proof === null || root === undefined) return [];
   const command = task.proof.trim().replace(/^`+/, '').split(/\s+/)[0];
   if (!/^[A-Za-z][\w.-]*$/.test(command) || SHELL_WORDS.has(command) || isOnPath(command)) return [];
   return [`Task ${task.number}: Proof starts with \`${command}\`, which is not on this host's PATH`];

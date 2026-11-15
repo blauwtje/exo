@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn as spawnProcess } from 'node:child_process';
 import { environmentMs } from '../../../../lib/script-flags.mjs';
+import { orWhenAbsent } from '#absent-path';
 import { BlockedRoute } from './http.mjs';
 
 const HOME_URL = 'https://www.reddit.com/';
@@ -26,23 +27,20 @@ const defaults = () => ({
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 });
 
-export function profileDirectory(env = process.env) {
+function profileDirectory(env) {
   const cache = env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
   return path.join(cache, 'exo', 'reddit-browser');
 }
 
-export function findBrowser({ platform, exists }) {
+function findBrowser({ platform, exists }) {
   const found = (BROWSERS[platform] ?? []).find((candidate) => exists(candidate));
   if (!found) throw new BlockedRoute('reddit blocked: no Brave or Google Chrome found; install one, then run search.mjs --source reddit --login');
   return found;
 }
 
 function readPort({ env, readFile }) {
-  try {
-    return Number(readFile(path.join(profileDirectory(env), 'DevToolsActivePort')).split('\n')[0]);
-  } catch {
-    return 0;
-  }
+  const text = orWhenAbsent(() => readFile(path.join(profileDirectory(env), 'DevToolsActivePort')), '0');
+  return Number(text.split('\n')[0]);
 }
 
 async function answers(port, { fetchImpl }) {
@@ -50,8 +48,9 @@ async function answers(port, { fetchImpl }) {
   try {
     const response = await fetchImpl(`http://127.0.0.1:${port}/json/version`);
     return response.ok;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof TypeError || error.name === 'AbortError') return false;
+    throw error;
   }
 }
 
@@ -101,17 +100,17 @@ function evaluate(socket, expression) {
   });
 }
 
-async function openBrowser(overrides = {}, url = HOME_URL) {
-  const context = { ...defaults(), ...overrides };
-  if (!(await answers(readPort(context), context))) startBrowser(url, context);
+async function openBrowser() {
+  const context = defaults();
+  if (!(await answers(readPort(context), context))) startBrowser(HOME_URL, context);
   const port = await waitForPort(context);
-  const target = await pageTarget(port, url, context);
+  const target = await pageTarget(port, HOME_URL, context);
   const socket = await connect(target.webSocketDebuggerUrl, context.WebSocketImpl);
   return { evaluate: (expression) => evaluate(socket, expression), close: () => socket.close() };
 }
 
-export async function pageFetch(url, overrides = {}) {
-  const browser = await openBrowser(overrides);
+export async function pageFetch(url) {
+  const browser = await openBrowser();
   const expression = `fetch(${JSON.stringify(url)}, { credentials: 'include' }).then(async (response) => ({ status: response.status, text: await response.text() }))`;
   try {
     const { status, text } = await browser.evaluate(expression);
@@ -122,8 +121,8 @@ export async function pageFetch(url, overrides = {}) {
   }
 }
 
-export async function loginBrowser(overrides = {}) {
-  const context = { ...defaults(), ...overrides };
+export async function loginBrowser() {
+  const context = defaults();
   if (await answers(readPort(context), context)) {
     const target = await pageTarget(readPort(context), LOGIN_URL, context);
     await context.fetchImpl(`http://127.0.0.1:${readPort(context)}/json/activate/${target.id}`);

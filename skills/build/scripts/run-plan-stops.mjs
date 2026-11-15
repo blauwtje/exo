@@ -22,7 +22,7 @@ export function takeParked(name) {
   return line.replace(/^Task \S+: PARKED\s*/, '');
 }
 
-export const CEILING_EXIT = 4;
+const CEILING_EXIT = 4;
 
 const STOP_KINDS = {
   done: { resumable: false },
@@ -38,7 +38,7 @@ const STOP_KINDS = {
   signal: { resumable: true }
 };
 
-export function stopOf(kind, fields) {
+function stopOf(kind, fields) {
   return { kind, ...fields };
 }
 
@@ -50,7 +50,7 @@ export function recordRunStop(ctx, stop, exitCode) {
   ctx.say(exitCode === 0 ? 'run done' : `run stopped: ${stop?.why ?? 'final check failed'}`);
 }
 
-export function stopRun(ctx, stop, planned = 1) {
+export function stopRun(ctx, stop, planned) {
   const exitCode = STOP_KINDS[stop?.kind]?.exit ?? planned;
   recordRunStop(ctx, stop, exitCode);
   return exitCode;

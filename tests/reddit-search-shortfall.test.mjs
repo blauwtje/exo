@@ -27,6 +27,6 @@ test('search and thread reads keep separate host-state keys and a 5xx run opens 
   const state = createHostState({ dir, now: () => 0 });
   assert.equal(state.isOpen('reddit.com/thread'), true);
   assert.equal(state.isOpen('reddit.com/search'), false);
-  await assert.rejects(clientFor(dir).get(THREAD), /breaker/);
+  await assert.rejects(clientFor(dir).get(THREAD), /breaker is open for reddit\.com\/thread/);
   assert.equal(await clientFor(dir).get(SEARCH), 'ok');
 });

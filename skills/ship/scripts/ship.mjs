@@ -6,20 +6,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { UsageError, parseFlags, isMain } from '#script-flags';
+import { UsageError, USAGE_EXIT, parseFlags, isMain } from '#script-flags';
 import { settingValue } from '#settings-store';
 import { inRun, recordDecision } from '#run-decision';
-import { StepError, createPullRequest, existingPullRequest, firstLine, refuseBadText, runGh, runGit } from './pull-request.mjs';
+import { StepError, createPullRequest, existingPullRequest, refuseBadText, runCli } from './pull-request.mjs';
+import { PR_NUMBER, firstLine } from './gh-run.mjs';
 import { restackChildren } from './stack.mjs';
 import { returnToDefault } from './return-to-default.mjs';
 
-export const USAGE_EXIT = 2;
 const DIRTY_EXIT = 4;
 const USAGE = 'usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>] | --merge <n...> | --routes | --verdict-current <patch-id>';
 const ROUTES = new Set(['push', 'open-pr', 'pr-merge']);
 const METHODS = new Set(['squash', 'merge', 'rebase']);
 const MAX_BEHIND_UPDATES = 2;
-const PR_NUMBER = /^[1-9][0-9]*$/;
 const WAIT_CHECKS = fileURLToPath(new URL('./wait-checks.mjs', import.meta.url));
 const SHIP_GATE = fileURLToPath(new URL('./ship-gate.mjs', import.meta.url));
 
@@ -35,7 +34,7 @@ function readFlags(argv) {
   const verdictAt = argv.indexOf('--verdict-current');
   if (verdictAt !== -1) {
     const patchId = argv[verdictAt + 1];
-    if (argv.length !== 2 || !patchId) throw new UsageError('--verdict-current needs one patch-id');
+    if (argv.length !== 2 || !patchId) throw new UsageError(`--verdict-current needs one patch-id (got: ${argv.join(' ')})`);
     return { verdictCurrent: patchId };
   }
   const mergeAt = argv.indexOf('--merge');
@@ -53,7 +52,7 @@ function readFlags(argv) {
     throw new UsageError(`route '${flags.route}' needs --title and --body`);
   }
   if (flags.issue !== undefined && !flags.body) throw new UsageError('--issue needs --body');
-  if (flags.issue !== undefined && !/^\d+$/.test(flags.issue)) throw new UsageError('--issue needs a number');
+  if (flags.issue !== undefined && !/^\d+$/.test(flags.issue)) throw new UsageError(`--issue needs a number, got '${flags.issue}'`);
   if (flags.method !== undefined && !METHODS.has(flags.method)) throw new UsageError(`unknown method '${flags.method}'`);
   return flags;
 }
@@ -63,18 +62,18 @@ function currentBranch() {
 }
 
 function hasOrigin() {
-  return runGit(['remote', 'get-url', 'origin']).ok;
+  return runCli('git', ['remote', 'get-url', 'origin']).ok;
 }
 
 function inWorktree() {
-  const gitDir = runGit(['rev-parse', '--git-dir']);
-  const commonDir = runGit(['rev-parse', '--git-common-dir']);
+  const gitDir = runCli('git', ['rev-parse', '--git-dir']);
+  const commonDir = runCli('git', ['rev-parse', '--git-common-dir']);
   if (!gitDir.ok || !commonDir.ok) return false;
   return path.resolve(gitDir.stdout.trim()) !== path.resolve(commonDir.stdout.trim());
 }
 
 function ghAuthOk() {
-  return runGh(['auth', 'status']).ok;
+  return runCli('gh', ['auth', 'status']).ok;
 }
 
 const CONTEXT = 'Your new commits are only on this computer.';
@@ -171,7 +170,7 @@ function closesIssue(body, issue) {
 }
 
 function pullRequestView(number) {
-  const result = runGh(['pr', 'view', String(number), '--json', 'number,url,state,headRefName']);
+  const result = runCli('gh', ['pr', 'view', String(number), '--json', 'number,url,state,headRefName']);
   if (!result.ok) throw new StepError('gate', `gh=${result.error}`);
   return JSON.parse(result.stdout);
 }
@@ -197,7 +196,7 @@ function runGate(number, url) {
   let verdict = gateOnce(number);
   let updates = 0;
   while (verdict === 'BEHIND' && updates < MAX_BEHIND_UPDATES) {
-    const update = runGh(['pr', 'update-branch', String(number)]);
+    const update = runCli('gh', ['pr', 'update-branch', String(number)]);
     if (!update.ok) throw new StepError('gate', `gh=${update.error}`, { subject: url });
     updates += 1;
     waitForChecks(number, url);
@@ -212,13 +211,13 @@ function runGate(number, url) {
 
 function mergePullRequest(number, method, url) {
   announce('merge', number);
-  const result = runGh(['pr', 'merge', String(number), `--${method}`]);
+  const result = runCli('gh', ['pr', 'merge', String(number), `--${method}`]);
   if (!result.ok) throw new StepError('merge', result.error, { subject: url });
 }
 
 function confirmMerge(number, url) {
   announce('confirm', number);
-  const result = runGh(['pr', 'view', String(number), '--json', 'state,mergedAt,url']);
+  const result = runCli('gh', ['pr', 'view', String(number), '--json', 'state,mergedAt,url']);
   if (!result.ok) throw new StepError('confirm', `gh=${result.error}`, { subject: url });
   const data = JSON.parse(result.stdout);
   if (data.state !== 'MERGED') throw new StepError('confirm', `state=${data.state}`, { subject: url });
@@ -272,7 +271,7 @@ function run(flags, branch, base) {
 
   announce('push');
   if (base === null && flags.route !== 'push') throw new StepError('push', 'default-branch=unknown');
-  const push = runGit(branch === base ? ['push', '--follow-tags'] : ['push', '-u', 'origin', branch]);
+  const push = runCli('git', branch === base ? ['push', '--follow-tags'] : ['push', '-u', 'origin', branch]);
   if (!push.ok) throw new StepError('push', push.error);
   if (flags.route === 'push') return `${branch} pushed`;
 

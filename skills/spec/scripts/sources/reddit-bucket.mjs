@@ -12,7 +12,7 @@ function searchLimitMs() {
   return lifetimeMs('spec-search', SPEC_SEARCH_LIFETIME_MS);
 }
 
-export function createBucket({ capacity, refillMs, now, sleep, hostState, host, maxWaitMs = Infinity }) {
+function createBucket({ capacity, refillMs, now, sleep, hostState, host, maxWaitMs }) {
   const state = { tokens: capacity, checkedAt: now() };
 
   function refill() {
@@ -76,7 +76,7 @@ function createLimits(context, settings) {
 
 async function request({ limits, read }, url, { wait } = {}) {
   const endpoint = endpointOf(url);
-  if (limits.hostState?.isOpen(endpoint)) throw new BlockedRoute('host breaker is open after repeated 429 or 5xx');
+  if (limits.hostState?.isOpen(endpoint)) throw new BlockedRoute(`host breaker is open for ${endpoint} after repeated 429 or 5xx`);
   await limits.bucketFor(endpoint).take(wait?.pause);
   const { status, text } = await read(url);
   limits.hostState?.recordStatus(endpoint, status);

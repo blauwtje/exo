@@ -5,8 +5,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { UsageError, parseFlags, isMain } from '#script-flags';
-import { readJsonOrNull } from '#basics';
+import { USAGE_EXIT, UsageError, parseFlags, isMain } from '#script-flags';
+import { isCommandFailure, isPositiveInteger, readJsonOrNull } from '#basics';
 
 const USAGE = [
   'usage: pr-body.mjs --sections <file> [--branch <name>] [--plan <file>] [--issue <n>] [--gate <file>] [--verdicts <file>] > <body file>',
@@ -29,12 +29,12 @@ const CLOSES = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s+#(\d+)\b/i;
 const CHECKLIST_ITEM = /^\s*[-*+]\s+\[[ xX]\]\s+(.+?)\s*$/;
 const FENCE = /^\s*(```|~~~)/;
 
-export function bodyBytes(home = os.homedir()) {
-  const value = readJsonOrNull(path.join(home, '.config', 'exo', 'run.json'))?.defaults?.prBodyBytes;
-  return Number.isInteger(value) && value > 0 ? value : DEFAULT_BODY_BYTES;
+function bodyBytes() {
+  const value = readJsonOrNull(path.join(os.homedir(), '.config', 'exo', 'run.json'))?.defaults?.prBodyBytes;
+  return isPositiveInteger(value) ? value : DEFAULT_BODY_BYTES;
 }
 
-export function parseSections(text) {
+function parseSections(text) {
   const sections = new Map();
   let current = null;
   for (const line of text.split('\n')) {
@@ -88,7 +88,7 @@ function verdictFor(verdicts, item, index) {
     ?? verdicts.find((verdict) => String(verdict.item ?? '').trim().toLowerCase() === wanted);
 }
 
-function acceptanceRows(items, verdicts = []) {
+function acceptanceRows(items, verdicts) {
   return items.map((item, index) => {
     const verdict = verdictFor(verdicts, item, index);
     const evidence = String(verdict?.evidence ?? '').trim();
@@ -106,7 +106,7 @@ function acceptanceTable(rows) {
   return ['| Criterion | Status | Evidence |', '| --- | --- | --- |', ...lines].join('\n');
 }
 
-export function proofLines(gateText) {
+function proofLines(gateText) {
   return String(gateText ?? '').split('\n').filter((line) => GATE_LINE.test(line)).map((line) => line.trimEnd());
 }
 
@@ -131,12 +131,13 @@ function composeBody({ authored, acceptance, proof, issue, limit }) {
   return { body: render(names), cut, bytes: size(names), over: size(names) > limit };
 }
 
-function readIssueBody(issue, run = execFileSync) {
+function readIssueBody(issue) {
   try {
-    const out = run('gh', ['issue', 'view', String(issue), '--json', 'body'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    const out = execFileSync('gh', ['issue', 'view', String(issue), '--json', 'body'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     return JSON.parse(out).body ?? '';
-  } catch {
-    return null;
+  } catch (error) {
+    if (isCommandFailure(error)) return null;
+    throw error;
   }
 }
 
@@ -150,7 +151,7 @@ function readVerdicts(file) {
 
 function resolveIssue(flags, sectionsText) {
   if (flags.issue !== undefined) {
-    if (!/^\d+$/.test(flags.issue)) throw new UsageError('--issue needs a number');
+    if (!/^\d+$/.test(flags.issue)) throw new UsageError(`--issue needs a number, got '${flags.issue}'`);
     return Number(flags.issue);
   }
   return issueFromCloses(sectionsText) ?? issueFromPlan(readText(flags.plan)) ?? issueFromBranch(flags.branch);
@@ -188,7 +189,7 @@ function main() {
 function fail(error) {
   if (!(error instanceof UsageError) && error.code !== 'ENOENT') throw error;
   process.stderr.write(`${error.message}\n${USAGE}\n`);
-  process.exitCode = 2;
+  process.exitCode = USAGE_EXIT;
 }
 
 if (isMain(import.meta.url)) {

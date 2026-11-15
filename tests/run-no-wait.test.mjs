@@ -6,8 +6,8 @@ import { roundCap } from '../lib/loop-budget.mjs';
 import { runNoWait } from '../hooks/run-no-wait.mjs';
 import { tempDir } from './harness.mjs';
 
-function stopInput(session = 's1') {
-  return { hook_event_name: 'Stop', session_id: session, last_assistant_message: 'Which one do you want?' };
+function stopInput() {
+  return { hook_event_name: 'Stop', session_id: 's1', last_assistant_message: 'Which one do you want?' };
 }
 
 test('a stop without a status line is blocked until the limit, then the blocked file is written', () => {

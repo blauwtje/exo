@@ -3,13 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
-import { decodeEntities, parseTimedText, parseVtt } from '../skills/watch/scripts/cues.mjs';
-import { formatDuration, formatStamp, renderTranscript, countWords } from '../skills/watch/scripts/format.mjs';
+import { parseTimedText, parseVtt } from '../skills/watch/scripts/cues.mjs';
+import { formatDuration, linkedStamp, renderTranscript, countWords } from '../skills/watch/scripts/format.mjs';
 import { planChunks } from '../skills/watch/scripts/chunks.mjs';
-import { videoIdOf } from '../skills/watch/scripts/video-url.mjs';
+import { sourceOf } from '../skills/watch/scripts/video-url.mjs';
 import { tracksOf, pickTrack, languagesOf } from '../skills/watch/scripts/youtube.mjs';
 import { chaptersFromHtml } from '../skills/watch/scripts/youtube-chapters.mjs';
-import { watchGuarded, watchOne } from '../skills/watch/scripts/watch.mjs';
+import { watchGuarded } from '../skills/watch/scripts/watch.mjs';
 import './watch-gate-env.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -100,29 +100,31 @@ test('parseVtt keeps real repeats in manual captions and skips ids, NOTE, STYLE 
 });
 
 test('renderTranscript stamps a paragraph about every stamp window', () => {
-  const text = renderTranscript(parseVtt(AUTO_VTT, { auto: true }), { stampSeconds: 45 });
+  const text = renderTranscript(parseVtt(AUTO_VTT, { auto: true }), { chapters: [], stampSeconds: 45, withHours: false, link: null });
   assert.equal(text, '[00:00] Hello and welcome to the show Tom & Jerry <3 it\n\n[01:30] A new thought\n');
 });
 
 test('renderTranscript uses h:mm:ss stamps and chapter headings', () => {
   const cues = [{ start: 3700, text: 'late' }, { start: 3800, text: 'later' }];
-  const text = renderTranscript(cues, { chapters: [{ start: 3600, title: 'Part two' }], stampSeconds: 60, withHours: true });
+  const text = renderTranscript(cues, { chapters: [{ start: 3600, title: 'Part two' }], stampSeconds: 60, withHours: true, link: null });
   assert.equal(text, '## Part two\n\n[1:01:40] late\n\n[1:03:20] later\n');
 });
 
+const decoded = (text) => parseVtt(`00:00:00.000 --> 00:00:01.000\n${text}`)[0].text;
+
 test('stamps, durations, entities and word counts', () => {
-  assert.equal(formatStamp(65, false), '[01:05]');
-  assert.equal(formatStamp(3700, false), '[61:40]');
-  assert.equal(formatStamp(3725, true), '[1:02:05]');
+  assert.equal(linkedStamp(65, false, null), '[01:05]');
+  assert.equal(linkedStamp(3700, false, null), '[61:40]');
+  assert.equal(linkedStamp(3725, true, null), '[1:02:05]');
   assert.equal(formatDuration(3725), '1:02:05');
-  assert.equal(decodeEntities('a &#39;b&#39; &#x41; &AMP;'), "a 'b' A &AMP;");
+  assert.equal(decoded('a &#39;b&#39; &#x41; &AMP;'), "a 'b' A &AMP;");
   assert.equal(countWords([{ start: 0, text: 'one two' }, { start: 1, text: 'three' }]), 3);
 });
 
 test('decodeEntities decodes once and leaves an impossible code point alone', () => {
-  assert.equal(decodeEntities('&amp;#39;'), '&#39;');
-  assert.equal(decodeEntities('x &#99999999; &#0; y'), 'x &#99999999; &#0; y');
-  assert.equal(decodeEntities('&#x1F600;'), String.fromCodePoint(0x1f600));
+  assert.equal(decoded('&amp;#39;'), '&#39;');
+  assert.equal(decoded('x &#99999999; &#0; y'), 'x &#99999999; &#0; y');
+  assert.equal(decoded('&#x1F600;'), String.fromCodePoint(0x1f600));
 });
 
 const spans = (chunks) => chunks.map((chunk) => [chunk.start, chunk.end, chunk.title]);
@@ -185,11 +187,11 @@ function track(code, kind, extra = '') {
   return { baseUrl: `${TRACK_HOST}${query}`, languageCode: code, ...(kind ? { kind } : {}) };
 }
 
-function playerOf({ tracks = [], title = 'A  talk', length = '120', status = 'OK', reason, audio } = {}) {
+function playerOf({ tracks = [], length = '120', status = 'OK', reason, audio } = {}) {
   const renderer = tracks.length > 0 ? { captionTracks: tracks, ...(audio ? { audioTracks: [{ audioTrackId: audio }], defaultAudioTrackIndex: 0 } : {}) } : null;
   return {
     playabilityStatus: { status, ...(reason ? { reason } : {}) },
-    videoDetails: { videoId: ID, title, lengthSeconds: length },
+    videoDetails: { videoId: ID, title: 'A  talk', lengthSeconds: length },
     ...(renderer ? { captions: { playerCaptionsTracklistRenderer: renderer } } : {}),
   };
 }
@@ -229,20 +231,21 @@ const XML_TEXT = "[00:00] Hello there yeah yeah Tom & Jerry's\n\n[01:30] A new t
 const TIME_LINK = /\(https:\/\/(?:www\.youtube\.com|vimeo\.com)[^)]*\)/g;
 const readText = (file) => fs.readFileSync(file, 'utf8').replace(TIME_LINK, '');
 
-test('videoIdOf reads an id, watch, short, embed and youtu.be links and refuses the rest', () => {
-  assert.equal(videoIdOf(ID), ID);
-  assert.equal(videoIdOf(`https://www.youtube.com/watch?v=${ID}&t=5`), ID);
-  assert.equal(videoIdOf(`youtube.com/watch?v=${ID}`), ID);
-  assert.equal(videoIdOf(`https://youtu.be/${ID}?si=x`), ID);
-  assert.equal(videoIdOf(`https://m.youtube.com/shorts/${ID}`), ID);
-  assert.equal(videoIdOf(`https://www.youtube.com/embed/${ID}`), ID);
-  assert.equal(videoIdOf(`https://example.com/watch?v=${ID}`), null);
-  assert.equal(videoIdOf('short'), null);
-  assert.equal(videoIdOf(`${ID}";touch pwned;"`), null);
+test('sourceOf reads an id, watch, short, embed and youtu.be links and refuses the rest', () => {
+  const idOf = (input) => sourceOf(input)?.id ?? null;
+  assert.equal(idOf(ID), ID);
+  assert.equal(idOf(`https://www.youtube.com/watch?v=${ID}&t=5`), ID);
+  assert.equal(idOf(`youtube.com/watch?v=${ID}`), ID);
+  assert.equal(idOf(`https://youtu.be/${ID}?si=x`), ID);
+  assert.equal(idOf(`https://m.youtube.com/shorts/${ID}`), ID);
+  assert.equal(idOf(`https://www.youtube.com/embed/${ID}`), ID);
+  assert.equal(idOf(`https://example.com/watch?v=${ID}`), null);
+  assert.equal(idOf('short'), null);
+  assert.equal(idOf(`${ID}";touch pwned;"`), null);
 });
 
 test('parseTimedText reads paragraphs, strips tags, decodes entities and drops empty ones', () => {
-  const cues = parseTimedText(MANUAL_XML);
+  const cues = parseTimedText(MANUAL_XML, { auto: false });
   assert.deepEqual(cues.map((cue) => cue.text), ['Hello there', 'yeah', 'yeah', "Tom & Jerry's", 'A new thought']);
   assert.deepEqual(cues.map((cue) => cue.start), [0, 2, 2, 4, 90]);
 });
@@ -254,7 +257,7 @@ const CLASSIC_XML = `<?xml version="1.0" encoding="utf-8" ?><transcript>
 </transcript>`;
 
 test('a classic format-1 caption body parses into the same cues and reaches the transcript', async () => {
-  assert.deepEqual(parseTimedText(CLASSIC_XML), [
+  assert.deepEqual(parseTimedText(CLASSIC_XML, { auto: false }), [
     { start: 0, text: 'Hello there' },
     { start: 2.5, text: "Tom & Jerry's" },
     { start: 90.25, text: 'A new thought' },
@@ -262,7 +265,7 @@ test('a classic format-1 caption body parses into the same cues and reaches the 
   const { options } = scratch();
   const manual = track('en');
   const { fn } = fakeFetch({ player: playerOf({ tracks: [manual] }), files: { [manual.baseUrl]: CLASSIC_XML } });
-  const result = await watchOne(ID, options, fn);
+  const result = await watchGuarded(ID, options, fn);
   assert.equal(result.failure, undefined);
   assert.equal(readText(path.join(options.out, ID, 'transcript.txt')), "[00:00] Hello there Tom & Jerry's\n\n[01:30] A new thought\n");
 });
@@ -270,7 +273,7 @@ test('a classic format-1 caption body parses into the same cues and reaches the 
 test('parseTimedText joins word segments, skips the newline paragraphs and drops rolling repeats for automatic captions', () => {
   const cues = parseTimedText(ASR_XML, { auto: true });
   assert.deepEqual(cues, [{ start: 0.199, text: 'hi everyone so' }, { start: 5, text: 'heard of' }]);
-  assert.equal(parseTimedText(ASR_XML).length, 3);
+  assert.equal(parseTimedText(ASR_XML, { auto: false }).length, 3);
 });
 
 test('tracksOf keeps only tracks on a youtube.com host and marks the automatic ones', () => {
@@ -291,9 +294,9 @@ test('pickTrack prefers manual over automatic, then the default audio language, 
 
 test('pickTrack with a named language takes an exact or same-language track and returns null otherwise', () => {
   const tracks = tracksOf(playerOf({ tracks: [track('en-GB'), track('fr', 'asr')] }));
-  assert.equal(pickTrack(tracks, 'en').code, 'en-GB');
-  assert.equal(pickTrack(tracks, 'fr-FR').code, 'fr');
-  assert.equal(pickTrack(tracks, 'de'), null);
+  assert.equal(pickTrack(tracks, 'en', null).code, 'en-GB');
+  assert.equal(pickTrack(tracks, 'fr-FR', null).code, 'fr');
+  assert.equal(pickTrack(tracks, 'de', null), null);
 });
 
 test('chaptersFromHtml reads each chapter once, in order, each ending where the next starts', () => {
@@ -319,7 +322,7 @@ test('manual captions win over automatic ones and the files land on disk', async
   const { options } = scratch();
   const manual = track('en');
   const { fn, calls } = fakeFetch({ player: playerOf({ tracks: [track('en', 'asr'), manual] }), files: { [manual.baseUrl]: MANUAL_XML } });
-  const result = await watchOne(ID, options, fn);
+  const result = await watchGuarded(ID, options, fn);
   assert.equal(result.failure, undefined);
   assert.match(result.line, new RegExp(`^id=${ID} title="A talk" duration=0:02:00 captions=manual:en words=10 tokens=13 transcript=`));
   assert.doesNotMatch(result.line, /Hello/);
@@ -333,7 +336,7 @@ test('the player request is an ANDROID client post with the video id', async () 
   const { options } = scratch();
   const manual = track('en');
   const { fn, calls } = fakeFetch({ player: playerOf({ tracks: [manual] }), files: { [manual.baseUrl]: MANUAL_XML } });
-  await watchOne(`https://youtu.be/${ID}`, options, fn);
+  await watchGuarded(`https://youtu.be/${ID}`, options, fn);
   const post = calls.find((call) => call.url.includes('/youtubei/v1/player'));
   assert.equal(post.init.method, 'POST');
   assert.deepEqual(JSON.parse(post.init.body), { context: { client: { clientName: 'ANDROID', clientVersion: '20.10.38' } }, videoId: ID });
@@ -345,7 +348,7 @@ test('automatic captions are used when no manual track exists and the default au
   const english = track('en', 'asr');
   const dutch = track('nl', 'asr');
   const { fn } = fakeFetch({ player: playerOf({ tracks: [english, dutch], audio: 'nl.10' }), files: { [dutch.baseUrl]: ASR_XML, [english.baseUrl]: MANUAL_XML } });
-  const result = await watchOne(ID, options, fn);
+  const result = await watchGuarded(ID, options, fn);
   assert.match(result.line, /captions=auto:nl /);
   assert.equal(readText(path.join(options.out, ID, 'transcript.txt')), '[00:00] hi everyone so heard of\n');
 });
@@ -355,7 +358,7 @@ test('without an audio track id the automatic track names the spoken language, s
   const english = track('en');
   const dutch = track('nl');
   const { fn } = fakeFetch({ player: playerOf({ tracks: [track('nl', 'asr'), english, dutch] }), files: { [dutch.baseUrl]: CLASSIC_XML, [english.baseUrl]: MANUAL_XML } });
-  const result = await watchOne(ID, options, fn);
+  const result = await watchGuarded(ID, options, fn);
   assert.match(result.line, /captions=manual:nl /);
 });
 
@@ -366,7 +369,7 @@ test('a long video with chapters gets chapter-cut chunk files and headings', asy
   const xml = `<timedtext format="3"><body>${cues.map(([second, text]) => `<p t="${second * 1000}" d="2000">${text}</p>`).join('')}</body></timedtext>`;
   const page = pageOf([marker('Intro', 0), marker('Middle', 700), marker('End', 1400)]);
   const { fn } = fakeFetch({ player: playerOf({ tracks: [manual], length: '2400' }), page, files: { [manual.baseUrl]: xml } });
-  const result = await watchOne(ID, { ...options, chunkMinutes: 10 }, fn);
+  const result = await watchGuarded(ID, { ...options, chunkMinutes: 10 }, fn);
   assert.match(result.line, /chunks=.*chunks \(4 files\)/);
   const chunk = (number) => readText(path.join(options.out, ID, 'chunks', `${number}.txt`));
   assert.match(chunk('01'), /^# Intro \[00:00\]-\[11:40\]\n\n## Intro\n\n\[00:00\] alpha\n\n\[01:40\] bravo\n$/);
@@ -380,7 +383,7 @@ test('a video over an hour carries hours in its stamps', async () => {
   const manual = track('en');
   const xml = '<timedtext format="3"><body><p t="10000" d="1000">start</p><p t="3700000" d="1000">late</p></body></timedtext>';
   const { fn } = fakeFetch({ player: playerOf({ tracks: [manual], length: '4000' }), files: { [manual.baseUrl]: xml } });
-  const result = await watchOne(ID, options, fn);
+  const result = await watchGuarded(ID, options, fn);
   assert.match(result.line, /duration=1:06:40 /);
   assert.match(readText(path.join(options.out, ID, 'transcript.txt')), /\[1:01:40\] late/);
 });
@@ -389,7 +392,7 @@ test('a missing length falls back to the last cue', async () => {
   const { options } = scratch();
   const manual = track('en');
   const { fn } = fakeFetch({ player: playerOf({ tracks: [manual], length: '' }), files: { [manual.baseUrl]: MANUAL_XML } });
-  assert.match((await watchOne(ID, options, fn)).line, /duration=0:01:30 /);
+  assert.match((await watchGuarded(ID, options, fn)).line, /duration=0:01:30 /);
 });
 
 const NO_TRANSCRIPT = new RegExp(`^${ID}: no transcript: `);
@@ -413,7 +416,7 @@ async function withoutYtDlp(work) {
 
 test('a video with no caption tracks and no tools reports a missing tool', async () => {
   await withoutYtDlp(async ({ options }) => {
-    const result = await watchOne(ID, options, fakeFetch({ player: playerOf() }).fn);
+    const result = await watchGuarded(ID, options, fakeFetch({ player: playerOf() }).fn);
     assert.match(result.failure, MISSING_TOOL);
     assert.match(result.failure, /no captions, and transcribing its audio needs yt-dlp on PATH/);
     assert.equal(result.line, undefined);
@@ -424,12 +427,12 @@ test('a video with no caption tracks and no tools reports a missing tool', async
 test('LOGIN_REQUIRED, an unavailable video, a 429 and an unreachable network report no transcript', async () => {
   await withoutYtDlp(async ({ options }) => {
     const bot = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
-    assert.match((await watchOne(ID, options, fakeFetch({ player: bot }).fn)).failure, /^abc12345678: no transcript: YouTube asks this network to sign in/);
+    assert.match((await watchGuarded(ID, options, fakeFetch({ player: bot }).fn)).failure, /^abc12345678: no transcript: YouTube asks this network to sign in/);
     const gone = playerOf({ status: 'ERROR', reason: 'This video is unavailable' });
-    assert.match((await watchOne(ID, options, fakeFetch({ player: gone }).fn)).failure, /no transcript: the video cannot be played \(ERROR: This video is unavailable\)/);
-    assert.match((await watchOne(ID, options, fakeFetch({ playerStatus: 429 }).fn)).failure, /no transcript: YouTube answered 429/);
+    assert.match((await watchGuarded(ID, options, fakeFetch({ player: gone }).fn)).failure, /no transcript: the video cannot be played \(ERROR: This video is unavailable\)/);
+    assert.match((await watchGuarded(ID, options, fakeFetch({ playerStatus: 429 }).fn)).failure, /no transcript: YouTube answered 429/);
     const down = async () => { throw new Error('getaddrinfo ENOTFOUND'); };
-    assert.match((await watchOne(ID, options, down)).failure, /no transcript: .* did not answer: getaddrinfo ENOTFOUND/);
+    assert.match((await watchGuarded(ID, options, down)).failure, /no transcript: .* did not answer: getaddrinfo ENOTFOUND/);
   });
 });
 
@@ -445,7 +448,7 @@ test('a body that stalls past the wait reports no transcript instead of an abort
       const body = new ReadableStream({ start(controller) { init.signal.addEventListener('abort', () => controller.error(init.signal.reason)); } });
       return new Response(body, { status: 200 });
     };
-    const result = await watchOne(ID, { ...options, fetchMs: 100 }, stalling);
+    const result = await watchGuarded(ID, { ...options, fetchMs: 100 }, stalling);
     assert.match(result.failure, NO_TRANSCRIPT);
     assert.match(result.failure, /did not answer/);
   });
@@ -455,13 +458,13 @@ test('an empty caption file, an exp=xpe track and a file with no text report no 
   await withoutYtDlp(async ({ options }) => {
     const plain = track('en');
     const empty = fakeFetch({ player: playerOf({ tracks: [plain] }), files: { [plain.baseUrl]: '' } });
-    assert.match((await watchOne(ID, options, empty.fn)).failure, /no transcript: YouTube sent an empty caption file/);
+    assert.match((await watchGuarded(ID, options, empty.fn)).failure, /no transcript: YouTube sent an empty caption file/);
     const protectedTrack = track('en', undefined, '&exp=xpe');
     const xpe = fakeFetch({ player: playerOf({ tracks: [protectedTrack] }), files: { [protectedTrack.baseUrl]: MANUAL_XML } });
-    assert.match((await watchOne(ID, options, xpe.fn)).failure, /no transcript: YouTube wants a proof-of-origin token/);
+    assert.match((await watchGuarded(ID, options, xpe.fn)).failure, /no transcript: YouTube wants a proof-of-origin token/);
     assert.ok(!xpe.calls.some((call) => call.url.includes('exp=xpe')));
     const blank = fakeFetch({ player: playerOf({ tracks: [plain] }), files: { [plain.baseUrl]: '<timedtext format="3"><body></body></timedtext>' } });
-    assert.match((await watchOne(ID, options, blank.fn)).failure, /no transcript: YouTube sent a caption file with no text/);
+    assert.match((await watchGuarded(ID, options, blank.fn)).failure, /no transcript: YouTube sent a caption file with no text/);
   });
 });
 
@@ -471,7 +474,7 @@ test('a fetch that never answers is cut off after the wait and reports no transc
       holdLoopUntilAbort(init.signal);
       init.signal.addEventListener('abort', () => reject(init.signal.reason));
     });
-    const result = await watchOne(ID, { ...options, fetchMs: 50 }, waiting);
+    const result = await watchGuarded(ID, { ...options, fetchMs: 50 }, waiting);
     assert.match(result.failure, NO_TRANSCRIPT);
     assert.match(result.failure, /youtubei\/v1\/player did not answer: .*timeout/);
   });
@@ -485,7 +488,7 @@ test('a chunk holding several chapters names each of them', async () => {
   const page = pageOf([marker('One', 0), marker('Two', 300), marker('Three', 700)]);
   const xml = timedTextOf([[10, 'one'], [400, 'two'], [900, 'three']]);
   const { fn } = fakeFetch({ player: playerOf({ tracks: [manual], length: '2400' }), page, files: { [manual.baseUrl]: xml } });
-  await watchOne('multi123456', { ...options, chunkMinutes: 10 }, fn);
+  await watchGuarded('multi123456', { ...options, chunkMinutes: 10 }, fn);
   const first = readText(path.join(options.out, 'multi123456', 'chunks', '01.txt'));
   assert.match(first, /^# One to Two /);
   assert.match(first, /## One\n\n\[00:10\] one\n\n## Two\n\n\[06:40\] two\n$/);
@@ -496,7 +499,7 @@ test('a first chapter after zero does not drop the cues before it', async () => 
   const manual = track('en');
   const xml = timedTextOf([[5, 'early'], [800, 'later']]);
   const { fn } = fakeFetch({ player: playerOf({ tracks: [manual], length: '1500' }), page: pageOf([marker('Late', 15)]), files: { [manual.baseUrl]: xml } });
-  await watchOne('late1234567', { ...options, chunkMinutes: 10 }, fn);
+  await watchGuarded('late1234567', { ...options, chunkMinutes: 10 }, fn);
   const folder = path.join(options.out, 'late1234567', 'chunks');
   const all = fs.readdirSync(folder).map((name) => readText(path.join(folder, name))).join('');
   assert.match(all, /early/);
@@ -506,7 +509,7 @@ test('without a length the stamps carry hours past one hour', async () => {
   const { options } = scratch();
   const manual = track('en');
   const { fn } = fakeFetch({ player: playerOf({ tracks: [manual], length: '' }), files: { [manual.baseUrl]: timedTextOf([[10, 'start'], [3700, 'late']]) } });
-  const result = await watchOne('nodur123456', options, fn);
+  const result = await watchGuarded('nodur123456', options, fn);
   assert.match(result.line, /duration=1:01:40 /);
   assert.match(readText(path.join(options.out, 'nodur123456', 'transcript.txt')), /\[1:01:40\] late/);
 });
@@ -524,7 +527,7 @@ test('a video that throws fails alone and does not hide the others', async () =>
 test('a language with no track lists the languages that exist', async () => {
   const { options } = scratch();
   const { fn } = fakeFetch({ player: playerOf({ tracks: [track('en'), track('fr', 'asr')] }) });
-  const result = await watchOne(ID, { ...options, lang: 'de' }, fn);
+  const result = await watchGuarded(ID, { ...options, lang: 'de' }, fn);
   assert.match(result.failure, /no captions in language 'de'; available: en, fr\. Rerun with --lang/);
 });
 
@@ -533,7 +536,7 @@ test('a chapterless page or a failing watch page still gives the transcript', as
   const manual = track('en');
   const base = fakeFetch({ player: playerOf({ tracks: [manual] }), files: { [manual.baseUrl]: MANUAL_XML } });
   const failing = async (url, init) => (String(url).includes('/watch?v=') ? new Response('', { status: 500 }) : base.fn(url, init));
-  const result = await watchOne(ID, options, failing);
+  const result = await watchGuarded(ID, options, failing);
   assert.equal(result.failure, undefined);
   assert.equal(readText(path.join(options.out, ID, 'transcript.txt')), XML_TEXT);
 });
@@ -572,7 +575,7 @@ const YT_INFO = { id: OTHER_ID, title: 'Via yt-dlp', duration: 120, language: 'e
 test('yt-dlp reads the captions when the fetch is refused and yt-dlp is on PATH', async () => {
   await withFakeYtDlp(YT_INFO, async ({ dir, options }) => {
     const bot = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
-    const result = await watchOne(OTHER_ID, options, fakeFetch({ player: bot }).fn);
+    const result = await watchGuarded(OTHER_ID, options, fakeFetch({ player: bot }).fn);
     assert.equal(result.failure, undefined);
     assert.match(result.line, new RegExp(`^id=${OTHER_ID} title="Via yt-dlp" duration=0:02:00 captions=manual:en words=12`));
     assert.equal(readText(path.join(options.out, OTHER_ID, 'transcript.txt')), MANUAL_TEXT);
@@ -586,7 +589,7 @@ test('yt-dlp reads the captions when the fetch is refused and yt-dlp is on PATH'
 test('an older yt-dlp that does not know --js-runtimes is retried once without it', async () => {
   await withFakeYtDlp({ ...YT_INFO, old: true }, async ({ dir, options }) => {
     const bot = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
-    const result = await watchOne(OTHER_ID, options, fakeFetch({ player: bot }).fn);
+    const result = await watchGuarded(OTHER_ID, options, fakeFetch({ player: bot }).fn);
     assert.equal(result.failure, undefined);
     assert.match(result.line, /captions=manual:en /);
     const calls = callLog(dir).filter((args) => !args.includes('--version') && !args.includes('bv*/b'));
@@ -597,7 +600,7 @@ test('an older yt-dlp that does not know --js-runtimes is retried once without i
 test('the yt-dlp metadata call asks for subtitle tracks, because TikTok lists none without a subtitle flag', async () => {
   await withFakeYtDlp(YT_INFO, async ({ dir, options }) => {
     const unplayable = playerOf({ status: 'UNPLAYABLE', reason: 'This video is not available on this client' });
-    await watchOne(OTHER_ID, options, fakeFetch({ player: unplayable }).fn);
+    await watchGuarded(OTHER_ID, options, fakeFetch({ player: unplayable }).fn);
     const metadata = callLog(dir).find((args) => args.includes('-J'));
     assert.ok(metadata.includes('--write-subs'));
     assert.ok(metadata.includes('--write-auto-subs'));
@@ -607,13 +610,13 @@ test('the yt-dlp metadata call asks for subtitle tracks, because TikTok lists no
 test('an UNPLAYABLE answer to the ANDROID client falls back to yt-dlp, and without yt-dlp reports no transcript', async () => {
   const unplayable = playerOf({ status: 'UNPLAYABLE', reason: 'This video is not available on this client' });
   await withFakeYtDlp(YT_INFO, async ({ dir, options }) => {
-    const result = await watchOne(OTHER_ID, options, fakeFetch({ player: unplayable }).fn);
+    const result = await watchGuarded(OTHER_ID, options, fakeFetch({ player: unplayable }).fn);
     assert.equal(result.failure, undefined);
     assert.match(result.line, /captions=manual:en /);
     assert.ok(callLog(dir).some((args) => args.includes('-J')));
   });
   await withoutYtDlp(async ({ options }) => {
-    const result = await watchOne(ID, options, fakeFetch({ player: unplayable }).fn);
+    const result = await watchGuarded(ID, options, fakeFetch({ player: unplayable }).fn);
     assert.match(result.failure, /^abc12345678: no transcript: the video cannot be played \(UNPLAYABLE: /);
   });
 });
@@ -622,10 +625,10 @@ test('yt-dlp is called only for the audio when the video has no captions', async
   await withFakeYtDlp(YT_INFO, async ({ dir, options }) => {
     const manual = track('en');
     const worked = fakeFetch({ player: playerOf({ tracks: [manual] }), files: { [manual.baseUrl]: MANUAL_XML } });
-    assert.equal((await watchOne(ID, options, worked.fn)).failure, undefined);
-    assert.match((await watchOne(ID, { ...options, runTool: NO_NPM, toWav: KEEP }, fakeFetch({ player: playerOf() }).fn)).failure, NO_ENGINE);
+    assert.equal((await watchGuarded(ID, options, worked.fn)).failure, undefined);
+    assert.match((await watchGuarded(ID, { ...options, runTool: NO_NPM, toWav: KEEP }, fakeFetch({ player: playerOf() }).fn)).failure, NO_ENGINE);
     const gone = playerOf({ status: 'ERROR', reason: 'This video is unavailable' });
-    assert.match((await watchOne(ID, options, fakeFetch({ player: gone }).fn)).failure, NO_TRANSCRIPT);
+    assert.match((await watchGuarded(ID, options, fakeFetch({ player: gone }).fn)).failure, NO_TRANSCRIPT);
     const calls = callLog(dir).filter((args) => !args.includes('bv*/b'));
     assert.equal(calls.length, 1);
     assert.ok(calls[0].includes('-f'));
@@ -635,7 +638,7 @@ test('yt-dlp is called only for the audio when the video has no captions', async
 test('a refused fetch with no yt-dlp on PATH reports no transcript and installs nothing', async () => {
   await withoutYtDlp(async ({ options }) => {
     const bot = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
-    const result = await watchOne(ID, options, fakeFetch({ player: bot }).fn);
+    const result = await watchGuarded(ID, options, fakeFetch({ player: bot }).fn);
     assert.match(result.failure, NO_TRANSCRIPT);
     assert.doesNotMatch(result.failure, /install|brew|pip/i);
   });
@@ -644,7 +647,7 @@ test('a refused fetch with no yt-dlp on PATH reports no transcript and installs 
 test('yt-dlp failing too reports both reasons', async () => {
   await withFakeYtDlp({ ...YT_INFO, subtitles: {}, automatic_captions: {} }, async ({ options }) => {
     const bot = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
-    const result = await watchOne(OTHER_ID, { ...options, runTool: NO_NPM, toWav: KEEP }, fakeFetch({ player: bot }).fn);
+    const result = await watchGuarded(OTHER_ID, { ...options, runTool: NO_NPM, toWav: KEEP }, fakeFetch({ player: bot }).fn);
     assert.match(result.failure, /^xyz98765432: no transcript: YouTube asks this network to sign in.*; the video has no captions, and installing whisper\.node failed: /s);
   });
 });
@@ -652,7 +655,7 @@ test('yt-dlp failing too reports both reasons', async () => {
 test('a yt-dlp that outlasts its wait is stopped and reported as no transcript', async () => {
   await withFakeYtDlp({ ...YT_INFO, hang: true }, async ({ options }) => {
     const bot = playerOf({ status: 'LOGIN_REQUIRED', reason: 'Sign in to confirm you’re not a bot' });
-    const result = await watchOne(OTHER_ID, { ...options, ytDlpMs: 300 }, fakeFetch({ player: bot }).fn);
+    const result = await watchGuarded(OTHER_ID, { ...options, ytDlpMs: 300 }, fakeFetch({ player: bot }).fn);
     assert.match(result.failure, /^xyz98765432: no transcript: YouTube asks this network to sign in.*; yt-dlp failed too: did not finish within 0\.3 s$/s);
   });
 });
@@ -681,7 +684,7 @@ test('usage errors exit 2 and --help exits 0 without naming an install line', ()
 test('a non-YouTube url goes to yt-dlp and lands in an extractor-id folder', async () => {
   const info = { ...YT_INFO, id: 'a.b', extractor_key: 'TikTok' };
   await withFakeYtDlp(info, async ({ options }) => {
-    const result = await watchOne('https://clips.example.com/v/1', options, async () => { throw new Error('network'); });
+    const result = await watchGuarded('https://clips.example.com/v/1', options, async () => { throw new Error('network'); });
     assert.equal(result.failure, undefined);
     assert.match(result.line, /^id=tiktok-a-b /);
     assert.equal(readText(path.join(options.out, 'tiktok-a-b', 'transcript.txt')), MANUAL_TEXT);
@@ -691,9 +694,9 @@ test('a non-YouTube url goes to yt-dlp and lands in an extractor-id folder', asy
 test('ids that differ only in case land in separate folders on disk', async () => {
   await withFakeYtDlp({ ...YT_INFO, id: 'AbC', extractor_key: 'Instagram' }, async ({ dir, options }) => {
     const url = 'https://www.instagram.com/reel/AbC/';
-    await watchOne(url, options, async () => { throw new Error('network'); });
+    await watchGuarded(url, options, async () => { throw new Error('network'); });
     fs.writeFileSync(path.join(dir, 'info.json'), JSON.stringify({ ...YT_INFO, id: 'abc', extractor_key: 'Instagram' }));
-    await watchOne(url, options, async () => { throw new Error('network'); });
+    await watchGuarded(url, options, async () => { throw new Error('network'); });
     const folders = fs.readdirSync(options.out);
     assert.equal(folders.length, 2);
     assert.ok(folders.includes('instagram-abc'));
@@ -704,7 +707,7 @@ test('a non-YouTube url without yt-dlp on PATH names the install line', async ()
   const { options } = scratch();
   const saved = process.env.PATH;
   process.env.PATH = '';
-  const result = await watchOne('https://clips.example.com/v/1', options).finally(() => { process.env.PATH = saved; });
+  const result = await watchGuarded('https://clips.example.com/v/1', options, globalThis.fetch).finally(() => { process.env.PATH = saved; });
   assert.match(result.failure, /: missing tool: reading clips\.example\.com videos needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun$/);
 });
 
@@ -727,7 +730,7 @@ test('a bot check or a 429 is retried once with a second client identity and the
     await withoutYtDlp(async ({ options }) => {
       const manual = track('en');
       const { fn, clients } = sequencedFetch([first, { player: playerOf({ tracks: [manual] }) }], { [manual.baseUrl]: MANUAL_XML });
-      assert.equal((await watchOne(ID, options, fn)).failure, undefined);
+      assert.equal((await watchGuarded(ID, options, fn)).failure, undefined);
       assert.equal(clients.length, 2);
       assert.notEqual(clients[0], clients[1]);
     });
@@ -737,7 +740,7 @@ test('a bot check or a 429 is retried once with a second client identity and the
 test('a block that survives the retry records a gap after exactly two requests', async () => {
   await withoutYtDlp(async ({ options }) => {
     const { fn, clients } = sequencedFetch([{ player: BOT }]);
-    const result = await watchOne(ID, options, fn);
+    const result = await watchGuarded(ID, options, fn);
     assert.match(result.failure, /^abc12345678: no transcript: YouTube asks this network to sign in/);
     assert.equal(clients.length, 2);
   });
@@ -746,7 +749,7 @@ test('a block that survives the retry records a gap after exactly two requests',
 test('an unavailable video is not retried', async () => {
   await withoutYtDlp(async ({ options }) => {
     const { fn, clients } = sequencedFetch([{ player: playerOf({ status: 'ERROR', reason: 'This video is unavailable' }) }]);
-    await watchOne(ID, options, fn);
+    await watchGuarded(ID, options, fn);
     assert.equal(clients.length, 1);
   });
 });

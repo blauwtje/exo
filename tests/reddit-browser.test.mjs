@@ -1,101 +1,71 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { findBrowser, loginBrowser, pageFetch, profileDirectory } from '../skills/spec/scripts/sources/reddit-browser.mjs';
-import { BlockedRoute } from '../skills/spec/scripts/sources/http.mjs';
+import { fixturePath, runSearch } from './fixtures/search-cli.mjs';
+import { tempDir } from './harness.mjs';
 
-const ENV = { XDG_CACHE_HOME: '/tmp/cache-placeholder' };
+const BRAVE = '/Applications/Brave Browser.app';
+const CHROME = '/Applications/Google Chrome.app';
+const PAGES = [
+  { match: 'morechildren', status: 404 },
+  { match: '/_/', status: 404 },
+  { match: '/svc/shreddit/', file: fixturePath('reddit-search.html') },
+  { match: '/comments/', file: fixturePath('reddit-thread.json') },
+];
 
-function fakeSocketClass(reply, sent) {
-  return class {
-    constructor(url) {
-      this.url = url;
-      this.listeners = {};
-      sent.push(url);
-      queueMicrotask(() => this.listeners.open?.({}));
-    }
-    addEventListener(name, handler) {
-      this.listeners[name] = handler;
-    }
-    send(message) {
-      sent.push(JSON.parse(message));
-      queueMicrotask(() => this.listeners.message({ data: JSON.stringify({ id: 1, result: { result: { value: reply } } }) }));
-    }
-    close() {
-      sent.push('closed');
-    }
-  };
+function login(world) {
+  return runSearch(['--source', 'reddit', '--login'], { platform: 'darwin', ...world });
 }
 
-function fakes({ reply, running = true, spawned = [], sent = [], exists = () => true }) {
-  let portReady = running;
-  const fetchImpl = async (url, options) => {
-    if (!portReady) throw new Error('refused');
-    const json = url.endsWith('/json/list') ? [{ type: 'page', url: 'https://www.reddit.com/', webSocketDebuggerUrl: 'ws://tab' }] : {};
-    return { ok: true, json: async () => json, options };
-  };
-  return {
-    env: ENV,
-    platform: 'darwin',
-    exists,
-    fetchImpl,
-    readFile: () => {
-      if (!portReady) throw new Error('none');
-      return '9222\n/devtools/browser/x';
-    },
-    spawn: (command, args) => {
-      spawned.push({ command, args });
-      portReady = true;
-      return { unref() {} };
-    },
-    sleep: async () => {},
-    WebSocketImpl: fakeSocketClass(reply, sent),
-  };
+function searchReddit(world, env) {
+  return runSearch(['--source', 'reddit', '--query', 'caching', '--limit', '1', '--run', tempDir('reddit-browser-')], { platform: 'darwin', pages: PAGES, ...world }, env);
 }
 
 test('profile directory sits under the cache home', () => {
-  assert.equal(profileDirectory(ENV), '/tmp/cache-placeholder/exo/reddit-browser');
+  const run = login({ installed: [BRAVE] });
+  const flag = run.events.find((event) => event.kind === 'spawn').args.find((arg) => arg.startsWith('--user-data-dir='));
+  assert.equal(flag, `--user-data-dir=${run.home}/exo/reddit-browser`);
 });
 
 test('browser lookup prefers Brave and names the fix when none is installed', () => {
-  assert.match(findBrowser({ platform: 'darwin', exists: () => true }), /Brave/);
-  assert.match(findBrowser({ platform: 'darwin', exists: (file) => file.includes('Chrome') }), /Chrome/);
-  assert.throws(() => findBrowser({ platform: 'darwin', exists: () => false }), BlockedRoute);
+  assert.match(login({ installed: [BRAVE, CHROME] }).events[0].args.join(' '), /Brave/);
+  assert.match(login({ installed: [CHROME] }).events[0].args.join(' '), /Chrome/);
+  const none = login({ installed: [] });
+  assert.equal(none.status, 1);
+  assert.match(none.stdout, /^status: blocked reddit .*no Brave or Google Chrome found/);
 });
 
-test('a running browser is reused and the fetch runs in the page with credentials', async () => {
-  const spawned = [];
-  const sent = [];
-  const reply = { status: 200, text: '{"ok":true}' };
-  const result = await pageFetch('https://www.reddit.com/comments/abc.json', fakes({ reply, spawned, sent }));
-  assert.deepEqual(result, reply);
-  assert.equal(spawned.length, 0);
-  const call = sent.find((item) => item.method === 'Runtime.evaluate');
-  assert.match(call.params.expression, /credentials: 'include'/);
-  assert.equal(call.params.awaitPromise, true);
-  assert.ok(sent.includes('closed'));
+test('a running browser is reused and the fetch runs in the page with credentials', () => {
+  const run = searchReddit({ installed: [BRAVE], running: true });
+  assert.equal(run.status, 0);
+  assert.equal(run.events.some((event) => event.kind === 'spawn'), false);
+  const call = run.events.find((event) => event.kind === 'evaluate');
+  assert.match(call.expression, /credentials: 'include'/);
+  assert.equal(call.awaitPromise, true);
+  assert.ok(run.events.some((event) => event.kind === 'closed'));
+  assert.match(JSON.parse(run.lines[0]).url, /abc123/);
 });
 
-test('a missing browser is started with open on macOS', async () => {
-  const spawned = [];
-  await pageFetch('https://www.reddit.com/x', fakes({ reply: { status: 200, text: '' }, running: false, spawned }));
-  assert.equal(spawned[0].command, 'open');
-  assert.deepEqual(spawned[0].args.slice(0, 4), ['-g', '-j', '-na', '/Applications/Brave Browser.app']);
-  assert.ok(spawned[0].args.some((arg) => arg.startsWith('--user-data-dir=/tmp/cache-placeholder/exo/reddit-browser')));
+test('a missing browser is started with open on macOS', () => {
+  const run = searchReddit({ installed: [BRAVE], running: false });
+  const spawned = run.events.find((event) => event.kind === 'spawn');
+  assert.equal(spawned.command, 'open');
+  assert.deepEqual(spawned.args.slice(0, 4), ['-g', '-j', '-na', BRAVE]);
+  assert.ok(spawned.args.some((arg) => arg.startsWith(`--user-data-dir=${run.home}/exo/reddit-browser`)));
 });
 
-test('a 403 inside the session is blocked with the login fix', async () => {
-  await assert.rejects(() => pageFetch('https://www.reddit.com/x', fakes({ reply: { status: 403, text: '' } })), /--login/);
+test('a 403 inside the session is blocked with the login fix', () => {
+  const run = searchReddit({ installed: [BRAVE], running: true, pages: [{ match: 'reddit.com', status: 403 }] });
+  assert.equal(run.status, 1);
+  assert.match(run.stdout, /^status: blocked reddit .*--login/);
 });
 
-test('login starts the browser on the login page', async () => {
-  const spawned = [];
-  await loginBrowser(fakes({ reply: {}, running: false, spawned }));
-  assert.ok(spawned[0].args.includes('https://www.reddit.com/login/'));
+test('login starts the browser on the login page', () => {
+  const run = login({ installed: [BRAVE], running: false });
+  assert.ok(run.events.find((event) => event.kind === 'spawn').args.includes('https://www.reddit.com/login/'));
 });
 
-test('start wait gives up per EXO_REDDIT_BROWSER_MS', async () => {
-  const context = fakes({ reply: {}, running: false });
-  context.spawn = () => ({ unref() {} });
-  context.env = { ...ENV, EXO_REDDIT_BROWSER_MS: '5' };
-  await assert.rejects(() => pageFetch('https://www.reddit.com/x', context), /did not start/);
+test('start wait gives up per EXO_REDDIT_BROWSER_MS', () => {
+  const run = searchReddit({ installed: [BRAVE], running: false, starts: false }, { EXO_REDDIT_BROWSER_MS: '5' });
+  assert.equal(run.status, 1);
+  assert.match(run.stdout, /did not start/);
 });

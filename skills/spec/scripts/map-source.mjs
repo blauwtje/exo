@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
 import { git } from '#git';
+import { parseLine } from '#basics';
+import { orWhenAbsent } from '#absent-path';
 
 const MANIFEST_NAME = 'package.json';
 const MANIFEST_FIELDS = ['scripts', 'bin', 'main', 'exports'];
@@ -23,7 +25,7 @@ function listedNames(list) {
     .filter((exportedAs) => IDENTIFIER.test(exportedAs));
 }
 
-export function exportedNames(source) {
+function exportedNames(source) {
   const names = new Set();
   for (const match of source.matchAll(DECLARED_NAME)) names.add(match[1]);
   for (const match of source.matchAll(NAMESPACE_NAME)) names.add(match[1]);
@@ -36,12 +38,7 @@ export function exportedNames(source) {
 }
 
 function manifestEntries(source) {
-  let manifest;
-  try {
-    manifest = JSON.parse(source);
-  } catch {
-    return [];
-  }
+  const manifest = parseLine(source);
   if (manifest === null || typeof manifest !== 'object') return [];
   const entries = [];
   for (const field of MANIFEST_FIELDS) {
@@ -52,18 +49,18 @@ function manifestEntries(source) {
   return entries.length === 0 ? [] : [entries.join('; ')];
 }
 
+function readScannable(file) {
+  const stats = fs.lstatSync(file);
+  if (!stats.isFile() || stats.size > MAX_SCANNED_BYTES) return null;
+  return fs.readFileSync(file, 'utf8');
+}
+
 function declaredNames(top, trackedPath) {
   const isManifest = path.basename(trackedPath) === MANIFEST_NAME;
   if (!isManifest && !SCRIPT_EXTENSIONS.has(path.extname(trackedPath))) return [];
   const file = path.join(top, trackedPath);
-  let source;
-  try {
-    const stats = fs.lstatSync(file);
-    if (!stats.isFile() || stats.size > MAX_SCANNED_BYTES) return [];
-    source = fs.readFileSync(file, 'utf8');
-  } catch {
-    return [];
-  }
+  const source = orWhenAbsent(() => readScannable(file), null);
+  if (source === null) return [];
   return isManifest ? manifestEntries(source) : exportedNames(source);
 }
 

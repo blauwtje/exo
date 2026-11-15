@@ -2,18 +2,18 @@
 import path from 'node:path';
 import { EXPECTED_SKILLS, EXPECTED_SKILL_PATHS } from '../budgets.mjs';
 import { readFrontmatter } from '../frontmatter.mjs';
+import { SHIPPED_ROOTS } from '../repository.mjs';
 
 const SKILL_NAME_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const RESERVED_NAME = /anthropic|claude/;
 const COMPATIBILITY_LIMIT = 500;
-const MODEL_FACING_ROOTS = ['skills/', 'agents/', 'hooks/', 'lib/'];
 
 function userOnlyReferences(repository, userOnlySkills) {
   if (userOnlySkills.length === 0) return [];
   const barePattern = new RegExp(`(?<![/\\w-])exo:(${userOnlySkills.join('|')})(?![\\w-])`, 'g');
   const references = [];
   const files = repository.trackedFiles()
-    .filter((file) => MODEL_FACING_ROOTS.some((root) => repository.relative(file).startsWith(root)));
+    .filter((file) => SHIPPED_ROOTS.some((root) => repository.relative(file).startsWith(`${root}/`)));
   for (const file of files) {
     repository.lines(file).forEach((line, index) => {
       for (const match of line.matchAll(barePattern)) {

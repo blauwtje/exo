@@ -25,7 +25,6 @@ Goal: ship only as the user says.
    - A set `route: ` skips asking; explain an unapplied `ship=`.
    - `--land` → take the menu's (A) with no question.
 4. **PR body** for `open-pr`/`pr-merge` with `Closes #<n>`.
-   - No issue: `node "${CLAUDE_PLUGIN_ROOT}/skills/ship/scripts/repo-fields.mjs"` and its `--size` form.
 5. **Verify**, for `pr-merge`: hand diff to `gate`; `FAIL` pushes nothing.
    - Record or reuse verdict: `references/pr-merge.md`.
 6. **Route.** `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` under `run_in_background`.

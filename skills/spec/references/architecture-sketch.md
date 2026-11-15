@@ -1,6 +1,6 @@
 # Architecture sketch
 
-This page gives the user options to pick from before any work starts. Read it when asked for options or when two or more structurally different shapes compete: a module boundary, a data model, an integration point. The enemy is one context drafting every option near the first, and the overcorrection is building each in full before choosing.
+This page gives the user options to pick from before any work starts. The enemy is one context drafting every option near the first, and the overcorrection is building each in full before choosing.
 
 ## Draw the pairs
 

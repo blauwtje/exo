@@ -9,7 +9,7 @@ import { parseFlags } from '../lib/script-flags.mjs';
 import { SPEC, USAGE, optionsFrom } from '../skills/edit-skills/scripts/pressure-options.mjs';
 import { dryRunReport, recordRun, recordedRuns } from '../skills/edit-skills/scripts/pressure-records.mjs';
 import { regradeFolder } from '../skills/edit-skills/scripts/pressure-regrade.mjs';
-import { writeGrades } from '../skills/edit-skills/scripts/pressure-report.mjs';
+import { gradeReport } from '../skills/edit-skills/scripts/pressure-report.mjs';
 import { makeRunFolder } from '../skills/edit-skills/scripts/pressure-run-folder.mjs';
 import { restoreEnv, tempDir } from './harness.mjs';
 
@@ -50,7 +50,7 @@ test('the scratch folder is a git repository where a worktree commit works under
   let folder;
   try {
     process.env.HOME = emptyHome;
-    mirror = makeDefaultOptionsHome();
+    mirror = makeDefaultOptionsHome({});
     folder = makeRunFolder('with', undefined);
     const worktree = path.join(folder.tmp, 'agent-worktree');
     git(folder.scratch, mirror, ['worktree', 'add', worktree]);
@@ -69,7 +69,7 @@ test('a graded run records its duration and cost, and the grades file keeps both
   const recorded = recordRun(grade, { cost: 0.25, durationMs: 1200 });
   assert.deepEqual(recorded, { ...grade, durationMs: 1200, cost_usd: 0.25 });
   const outDir = tempDir('pressure-grades-');
-  writeGrades(outDir, { 'sonnet:low': [recorded] });
+  gradeReport(outDir, { 'sonnet:low': [recorded] }, DEFAULTS);
   const written = JSON.parse(fs.readFileSync(path.join(outDir, 'grades.json'), 'utf8'));
   assert.equal(written['sonnet:low'].runs[0].durationMs, 1200);
   assert.equal(written['sonnet:low'].runs[0].cost_usd, 0.25);
@@ -100,7 +100,7 @@ test('regrade grades the saved answers of a run folder, keeps their cost and sta
   fs.writeFileSync(path.join(dir, 'claude-sonnet-4-low-with-1.md'), 'hi there');
   fs.writeFileSync(path.join(dir, 'claude-sonnet-4-low-without-1.md'), 'go away');
   fs.writeFileSync(path.join(dir, 'notes.txt'), 'not an answer');
-  writeGrades(dir, { 'claude-sonnet-4:low': [recordRun({ case: 'a.md', arm: 'with', run: 1, lines: [] }, { cost: 0.5, durationMs: 90 })] });
+  gradeReport(dir, { 'claude-sonnet-4:low': [recordRun({ case: 'a.md', arm: 'with', run: 1, lines: [] }, { cost: 0.5, durationMs: 90 })] }, DEFAULTS);
   const gradesByCell = regradeFolder(dir, { promptFile: 'a.md', grade: { criteriaFile, votes: 1 }, judge: () => 'PASS\nkind' });
   const runs = gradesByCell['claude-sonnet-4:low'];
   assert.deepEqual(runs.map((graded) => [graded.arm, graded.run, graded.lines.map((line) => line.pass)]), [['with', 1, [true, true]], ['without', 1, [false, false]]]);
@@ -112,7 +112,7 @@ test('regrade keeps the cost and the cell key of a model id that a file name cha
   const criteriaFile = path.join(dir, 'criteria.md');
   fs.writeFileSync(criteriaFile, '- Says hi. `grade: answer =~ /hi/`\n');
   fs.writeFileSync(path.join(dir, 'opus_1m_-low-with-1.md'), 'hi');
-  writeGrades(dir, { 'opus[1m]:low': [recordRun({ case: 'a.md', arm: 'with', run: 1, lines: [] }, { cost: 0.5, durationMs: 9 })] });
+  gradeReport(dir, { 'opus[1m]:low': [recordRun({ case: 'a.md', arm: 'with', run: 1, lines: [] }, { cost: 0.5, durationMs: 9 })] }, DEFAULTS);
   const gradesByCell = regradeFolder(dir, { promptFile: 'a.md', grade: { criteriaFile, votes: 1 }, judge: () => 'PASS' });
   assert.deepEqual(Object.keys(gradesByCell), ['opus[1m]:low']);
   assert.equal(gradesByCell['opus[1m]:low'][0].cost_usd, 0.5);
@@ -134,10 +134,12 @@ test('an explicit --runs or --judge-votes overrides the tier and the mode stays 
   assert.deepEqual([flags.mode, flags.runs, flags.grade.votes], ['quick', 5, 2]);
 });
 
+const DEFAULTS = { threshold: 1, margins: new Map() };
+
 test('grades.json records the mode of the run', () => {
   const outDir = tempDir('pressure-mode-');
   for (const mode of ['quick', 'full']) {
-    writeGrades(outDir, { 'sonnet:low': [] }, { mode });
+    gradeReport(outDir, { 'sonnet:low': [] }, { ...DEFAULTS, mode });
     assert.equal(JSON.parse(fs.readFileSync(path.join(outDir, 'grades.json'), 'utf8'))['sonnet:low'].mode, mode);
   }
 });

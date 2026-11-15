@@ -27,9 +27,10 @@ export function fallbackModel(model, env = process.env) {
 
 export const hasPin = (pin) => pin.model !== undefined || pin.effort !== undefined;
 
-export function budgetPin(name, flags, { kind = 'build-task', retry = false, budget = settingOrDefault('budget').value } = {}) {
+function budgetPin(name, flags, { kind = 'build-task', retry = false } = {}) {
   if (flags.model !== undefined || flags.effort !== undefined) return {};
   if (!listedProvider(name)) return {};
+  const budget = settingOrDefault('budget').value;
   if (budget === 'off') return { model: null, effort: null };
   const { model, effort } = readKindTable(undefined, { provider: name, budget, retry }).kinds[kind];
   if (name !== 'claude') return { effort };

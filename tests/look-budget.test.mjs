@@ -7,10 +7,12 @@ import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { kindWallMs, loadKinds } from '../lib/loop-budget.mjs';
+import { kindWallMs } from '../lib/loop-budget.mjs';
+
+const kinds = JSON.parse(fs.readFileSync(new URL('../lib/loop-kinds.json', import.meta.url), 'utf8'));
 
 test('look wall timeout comes from the kinds table', () => {
-  assert.equal(kindWallMs('look', {}), loadKinds().look.wallMs);
+  assert.equal(kindWallMs('look', {}), kinds.look.wallMs);
 });
 
 test('environment overrides the look wall timeout', () => {

@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseFlags, UsageError, isMain } from '#script-flags';
+import { parseFlags, UsageError, isMain, USAGE_EXIT } from '#script-flags';
+import { bestEffort } from '#best-effort';
 import { forCaller, keepLines } from '#script-output';
 import { resolvePlanPath } from '#checkout';
 import { unfinishedMergeNote } from '#merge-state';
-import { proofsReport, proofLines } from '#proofs-report';
+import { proofLines } from '#proofs-report';
 import { readBuildProgress, refreshBuildProgress, removeBuildProgress } from '#build-progress';
 import { landedTasks, planIdOf } from '#plan-landed';
 import { frameOf } from '#plan-frame';
@@ -12,7 +13,6 @@ import { nextBlock, planRoute, routeLine, waveLine } from '#plan-waves';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { parsePin } from './land-pin.mjs';
 import { RefusedError } from './land-errors.mjs';
-import { frameOnlyReport } from './next-task-brief.mjs';
 import { nextTaskReport, parseTasks } from './next-task-report.mjs';
 
 const KNOWN_TO_RUNNER = /^(?:Plan|Repository|Branch|Base|Baseline|Proof|Run): |^Drift: none$/;
@@ -51,20 +51,18 @@ export function blockReport({ planPath, planText, root }) {
 export function refreshProgress({ planPath, planText, root }) {
   const sessionId = process.env.CLAUDE_CODE_SESSION_ID;
   if (!sessionId || process.env.EXO_RUN_TASK) return;
-  try {
+  bestEffort(() => {
     const record = readBuildProgress(sessionId);
     if (record === null || record.plan !== path.resolve(planPath)) return;
     const { tasks } = parsePlan(planText);
     const landed = landedTasks(tasks, record.checkout ?? root, planIdOf(planPath)).length;
     refreshBuildProgress({ sessionId, plan: record.plan, landed, total: tasks.length });
     if (landed >= tasks.length) removeBuildProgress(sessionId);
-  } catch {
-    return;
-  }
+  });
 }
 
 const USAGE = [
-  'usage: next-task.mjs --plan <file> [--root <checkout>] [--frame | --block | --proofs]',
+  'usage: next-task.mjs --plan <file> [--root <checkout>] [--block]',
   '  [--open-slots] [--in-flight <n,n,...>] [--only <n,n,...>]',
   'Prints the next unlanded task of the plan, or the report the chosen flag names; exit 0 ok, 2 bad argument.',
   '--only limits waves and Start: refills to the named task numbers, the Block: line of the lead.',
@@ -73,8 +71,13 @@ const USAGE = [
 export function taskNumbers(text, flag) {
   if (text === undefined) return null;
   const numbers = text.split(',').filter(Boolean).map(Number);
-  if (numbers.some((number) => !Number.isInteger(number))) throw new UsageError(`flag '--${flag}' names task numbers, comma separated`);
+  if (numbers.some((number) => !Number.isInteger(number))) throw new UsageError(`flag '--${flag}' names task numbers, comma separated, got '${text}'`);
   return numbers;
+}
+
+export function taskNumberFlag(flags) {
+  if (!/^\d+$/.test(flags.task ?? '')) throw new UsageError("flag '--task' needs a task number");
+  return Number(flags.task);
 }
 
 function pinnedLine() {
@@ -88,18 +91,13 @@ function pinnedLine() {
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', root: 'value', frame: 'boolean', block: 'boolean', proofs: 'boolean', 'open-slots': 'boolean', 'in-flight': 'value', only: 'value' }, { usage: USAGE });
+  const flags = parseFlags(argv, { plan: 'value', root: 'value', block: 'boolean', 'open-slots': 'boolean', 'in-flight': 'value', only: 'value' }, { usage: USAGE });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   const plan = resolvePlanPath({ plan: flags.plan, root: flags.root });
   if (!fs.existsSync(plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(plan, 'utf8');
-  if (flags.frame) {
-    process.stdout.write(frameOnlyReport(planText));
-    return;
-  }
   let report = nextTaskReport;
   if (flags.block) report = blockReport;
-  if (flags.proofs) report = proofsReport;
   const root = flags.root ?? process.cwd();
   const unfinished = report === nextTaskReport ? unfinishedMergeNote(root) : null;
   if (unfinished !== null) {
@@ -117,7 +115,7 @@ function main(argv) {
 function reportFailure(error) {
   if (error instanceof UsageError) {
     process.stderr.write(`next-task: ${error.message}\n`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   if (error instanceof PlanError) {

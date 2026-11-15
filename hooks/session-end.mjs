@@ -85,7 +85,6 @@ async function handleSessionEnd() {
     writeHandoffStub(input);
   } catch (error) {
     console.error(`exo: handoff stub not written, ${error.message}`);
-    return;
   }
 }
 

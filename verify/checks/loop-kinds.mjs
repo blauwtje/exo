@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { SHIPPED_ROOTS } from '../repository.mjs';
 
-const SCRIPT_ROOTS = ['skills', 'lib', 'hooks', 'agents'];
 const COUNTED = '(?:retr(?:y|ies)|rounds?|attempts?|reruns?|repair)';
 const BOUND = '(?:max|cap|limit|bound)';
 const CAP_NAME = `\\w*(?:${COUNTED}\\w*${BOUND}|${BOUND}\\w*${COUNTED}|retries|reruns?)\\w*`;
@@ -38,7 +38,7 @@ function scriptFindings(repository) {
   const findings = [];
   const scripts = repository.trackedFiles().filter((file) => {
     const relative = repository.relative(file);
-    return file.endsWith('.mjs') && SCRIPT_ROOTS.some((root) => relative.startsWith(`${root}/`));
+    return file.endsWith('.mjs') && SHIPPED_ROOTS.some((root) => relative.startsWith(`${root}/`));
   });
   for (const file of scripts) {
     const relative = repository.relative(file);
@@ -53,8 +53,7 @@ function scriptFindings(repository) {
 function proseFindings(repository, names) {
   const skipped = (file) => repository.relative(file).startsWith('skills/write-docs/');
   const findings = [];
-  const files = new Set([...repository.processFiles(), ...repository.promptFiles(), ...repository.agentFiles(), ...repository.everySkillFile()]);
-  for (const file of files) {
+  for (const file of repository.shippedTextFiles()) {
     if (skipped(file)) continue;
     const lines = repository.text(file).split('\n');
     lines.forEach((line, index) => {

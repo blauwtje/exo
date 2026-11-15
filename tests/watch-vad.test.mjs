@@ -48,7 +48,7 @@ function installFake(args, config) {
   fs.writeFileSync(path.join(folder, 'index.js'), fakePackage(config));
 }
 
-function site({ spans = [], vadThrows = false, vadStatus = 200 } = {}) {
+function site({ spans = [], vadThrows = false, vadStatus = 200 }) {
   const dir = fs.realpathSync(tempDir('vad-'));
   const bin = path.join(dir, 'bin');
   fs.mkdirSync(bin);

@@ -7,7 +7,7 @@ import { UsageError, isMain, parseFlags } from '../../../lib/script-flags.mjs';
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, 'utf8'));
 
-export const ROOT = path.join(import.meta.dirname, '..', '..', '..');
+const ROOT = path.join(import.meta.dirname, '..', '..', '..');
 const LABELS_DIR = path.join(ROOT, '.exo', 'judge-labels');
 const VERDICTS_DIR = path.join(ROOT, '.exo', 'judge-verdicts');
 const REGISTRY = [
@@ -25,7 +25,7 @@ CALIBRATED needs ${CALIBRATION_MIN_LABELS} paired human labels and a kappa lower
 --collect reads a scorer's stored output into verdicts; --export writes a labelling sheet (both need --judge).
 Exit codes: 0 ok, 1 a judge has enough human labels and misses the threshold, 2 usage error.`;
 
-export function readRegistry() {
+function readRegistry() {
   return REGISTRY;
 }
 
@@ -33,16 +33,16 @@ function readRows(file) {
   return fs.existsSync(file) ? parseJsonl(fs.readFileSync(file, 'utf8')) : [];
 }
 
-export function calibrationFor(judge, { labelsDir = LABELS_DIR, verdictsDir = VERDICTS_DIR } = {}) {
+function calibrationFor(judge, { labelsDir = LABELS_DIR, verdictsDir = VERDICTS_DIR } = {}) {
   const labels = readRows(path.join(labelsDir, `${judge.name}.jsonl`));
   const verdicts = readRows(path.join(verdictsDir, `${judge.name}.jsonl`));
   const result = calibrationStatus({ labels, verdicts, dimension: judge.dimension });
   return { result, line: statusLine({ judge: judge.name, dimension: judge.dimension, result }) };
 }
 
-export function calibrationLines(names, options = {}) {
+export function calibrationLines(names) {
   const graders = readRegistry().filter((judge) => names.includes(judge.name));
-  return graders.map((judge) => calibrationFor(judge, options).line);
+  return graders.map((judge) => calibrationFor(judge).line);
 }
 
 const binary = (pass) => (pass ? 'PASS' : 'FAIL');
@@ -87,7 +87,7 @@ const COLLECTORS = { 'replay-rubric': collectReplay, 'pressure-line': collectPre
 
 const jsonl = (rows) => `${rows.map((row) => JSON.stringify(row)).join('\n')}\n`;
 
-export function collectVerdicts(judge, source, verdictsDir = VERDICTS_DIR) {
+function collectVerdicts(judge, source, verdictsDir) {
   const collector = COLLECTORS[judge.name];
   if (collector === undefined) throw new UsageError(`${judge.name} has no stored-output reader; known: ${Object.keys(COLLECTORS).join(', ')}`);
   const rows = collector(path.resolve(source), judge);
@@ -98,7 +98,7 @@ export function collectVerdicts(judge, source, verdictsDir = VERDICTS_DIR) {
   return { file, rows: rows.length };
 }
 
-export function exportSheet(judge, file, verdictsDir = VERDICTS_DIR) {
+function exportSheet(judge, file, verdictsDir) {
   const verdicts = readRows(path.join(verdictsDir, `${judge.name}.jsonl`));
   if (verdicts.length === 0) throw new UsageError(`no recorded verdicts for ${judge.name}; run --collect first`);
   const rows = verdicts.map((row) => ({ id: row.id, dimension: row.dimension, item: row.item, label: null, labeler: null }));
@@ -118,7 +118,7 @@ function singleJudge(flags, judges) {
   return judges[0];
 }
 
-export async function main(argv) {
+async function main(argv) {
   const flags = parseFlags(argv, { judge: 'value', labels: 'value', verdicts: 'value', collect: 'value', export: 'value', }, { usage: USAGE });
   const labelsDir = path.resolve(flags.labels ?? LABELS_DIR);
   const verdictsDir = path.resolve(flags.verdicts ?? VERDICTS_DIR);

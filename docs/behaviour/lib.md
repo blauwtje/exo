@@ -18,7 +18,6 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Task 4: an Agent brief that names paths but lacks `Reads:` gets those paths as its `Reads:` line; a brief naming none is still refused.
 
 ## fast-task-gate
-- `killTree` with `platform: 'win32'` calls its `run` stub with `taskkill` and `['/pid', '<pid>', '/T', '/F']`; on POSIX a detached shell's grandchild is gone after `killTree`; a timed-out verify Proof and gate still fail with `timed out after <n>s` (Task 2; seam: `tests/process-tree.test.mjs`, `tests/verify-gate.test.mjs`).
 - `runTreeSync` past its deadline returns `timedOut: true` and a grandchild that would write a marker file after the deadline writes none; a passing command returns status 0 with stdout and stderr merged (Task 3; seam: `tests/process-tree.test.mjs`).
 - `next-task.mjs --in-flight 2` prints `Start:` with only tasks disjoint from Task 2, within `WAVE_LIMIT`, and `Start: none` when the window is full (Task 6; seam: `tests/next-task.test.mjs`, `tests/plan-tasks.test.mjs`).
 

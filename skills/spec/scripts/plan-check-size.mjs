@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { orWhenAbsent } from '#absent-path';
 import { environmentMs } from '#script-flags';
 import { defaultBase } from '#plan-landed';
 import { BYTES_PER_TOKEN, capHeadroomTokens, TASK_SPLIT_TOKENS } from '#context-limits';
@@ -14,12 +15,8 @@ const TINY_TASK_TOKENS = 2000;
 const TINY_TASK_BYTES = TINY_TASK_TOKENS * BYTES_PER_TOKEN;
 
 function bytesUnder(target) {
-  let stat;
-  try {
-    stat = fs.lstatSync(target);
-  } catch {
-    return 0;
-  }
+  const stat = orWhenAbsent(() => fs.lstatSync(target), null);
+  if (!stat) return 0;
   if (!stat.isDirectory()) return stat.size;
   return fs.readdirSync(target).reduce((total, name) => total + bytesUnder(path.join(target, name)), 0);
 }
@@ -99,7 +96,7 @@ function taskBytes(task, root, forkPoint) {
 }
 
 export function warnTinyTasks(tasks, { root, forkPoint, landed }) {
-  if (root === undefined || root === null) return [];
+  if (root === undefined) return [];
   const byNumber = new Map(tasks.map((task) => [task.number, task]));
   const tiny = (task) => !landed.includes(task.number) && taskBytes(task, root, forkPoint) < TINY_TASK_BYTES;
   const warnings = [];
@@ -124,7 +121,7 @@ function rootBodySizes(root) {
 const dirOf = (file) => path.posix.dirname(file);
 
 export function warnNearCap(tasks, root, landed) {
-  if (root === undefined || root === null || !fs.existsSync(path.join(root, 'verify/budgets.mjs'))) return [];
+  if (root === undefined || !fs.existsSync(path.join(root, 'verify/budgets.mjs'))) return [];
   const sized = rootBodySizes(root);
   if (sized.reason !== undefined) return [`headroom check skipped, the root's verify/body-size.mjs failed: ${sized.reason}`];
   const limit = capHeadroomTokens();
@@ -140,7 +137,7 @@ export function warnNearCap(tasks, root, landed) {
 }
 
 export function checkContextSize(task, root, forkPoint) {
-  if (root === undefined || root === null) return [];
+  if (root === undefined) return [];
   const bytes = taskBytes(task, root, forkPoint);
   const tokens = Math.ceil(bytes / BYTES_PER_TOKEN);
   if (tokens <= TASK_SPLIT_TOKENS) return [];
@@ -148,6 +145,6 @@ export function checkContextSize(task, root, forkPoint) {
 }
 
 export function sizeLines(tasks, root, forkPoint) {
-  if (root === undefined || root === null) return [];
+  if (root === undefined) return [];
   return tasks.map((task) => `Task ${task.number}: about ${Math.ceil(taskBytes(task, root, forkPoint) / BYTES_PER_TOKEN)} tokens of task text and Files:`);
 }

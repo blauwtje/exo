@@ -6,11 +6,11 @@ import { writeOutputs, headOf } from './outputs.mjs';
 import { isRateLimited } from './request-gate.mjs';
 import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable, ytDlpNeed } from './ytdlp.mjs';
 import { pickCaptions, availableLanguages, chaptersOf, folderOf } from './ytdlp-info.mjs';
-import { sourceOf } from './video-url.mjs';
+import { WATCH_URL, sourceOf } from './video-url.mjs';
 import { withKeyframes } from './keyframes.mjs';
 import { readTikTok, isTikTokUrl, tiktokIdOf } from './tiktok.mjs';
 import { chaptersFromHtml } from './youtube-chapters.mjs';
-import { Unreadable, WATCH_URL, fetchPlayable, fetchWatchPage, tracksOf, defaultLanguage, pickTrack, languagesOf, readCaptions } from './youtube.mjs';
+import { Unreadable, fetchPlayable, fetchWatchPage, tracksOf, defaultLanguage, pickTrack, languagesOf, readCaptions } from './youtube.mjs';
 
 function languageFailure(id, lang, available) {
   return { failure: `${id}: no captions in language '${lang}'; available: ${available.join(', ')}. Rerun with --lang <code> set to one of them.` };
@@ -126,7 +126,7 @@ async function watchSource(source, options, fetchFn) {
   }
 }
 
-export async function watchOne(input, options, fetchFn = globalThis.fetch) {
+async function watchOne(input, options, fetchFn) {
   const source = sourceOf(input);
   if (!source) return { failure: `${input}: not a video url or an 11-character YouTube id` };
   const readStart = Date.now();
@@ -137,6 +137,6 @@ export async function watchOne(input, options, fetchFn = globalThis.fetch) {
   return { ...framed, timings: { read: keyframesStart - readStart, keyframes: Date.now() - keyframesStart } };
 }
 
-export function watchGuarded(input, options, fetchFn = globalThis.fetch) {
+export function watchGuarded(input, options, fetchFn) {
   return Promise.resolve().then(() => watchOne(input, options, fetchFn)).catch((error) => ({ failure: `${input}: ${error.message}` }));
 }

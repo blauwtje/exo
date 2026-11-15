@@ -14,8 +14,7 @@ function patternErrors(label, text) {
 }
 
 export function checkShippedTextScan(report, repository) {
-  const files = new Set([...repository.processFiles(), ...repository.promptFiles(), ...repository.agentFiles(), ...repository.everySkillFile()]);
-  const errors = [...files].flatMap((file) => patternErrors(repository.relative(file), repository.text(file)));
+  const errors = repository.shippedTextFiles().flatMap((file) => patternErrors(repository.relative(file), repository.text(file)));
   report.assert(
     errors.length === 0,
     'shipped text scan',

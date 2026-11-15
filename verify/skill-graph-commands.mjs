@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { BYTES_PER_TOKEN } from './budgets.mjs';
-import { markdownBody } from './markdown.mjs';
+import { stripFrontmatter } from './markdown.mjs';
 import { ROOT, readDescription, normalizeHeading } from './skill-graph-files.mjs';
 
 function skillFilePath(skillOrPath) {
@@ -25,7 +25,7 @@ export function cmdSize(graph, skillName) {
     return;
   }
   const text = fs.readFileSync(path.join(ROOT, file), 'utf8');
-  const body = markdownBody(path.basename(file), text);
+  const body = stripFrontmatter(text);
   const bodyBytes = Buffer.byteLength(body, 'utf8');
   const bodyTokens = Math.ceil(bodyBytes / BYTES_PER_TOKEN);
   const description = readDescription(text);
@@ -65,7 +65,7 @@ function edgeReachesTarget(edge, wanted, targetSection) {
   if (edge.kind === 'pointer' || edge.kind === 'link') {
     return Boolean(edge.toAnchor) && normalizeHeading(edge.toAnchor) === wanted;
   }
-  if (edge.kind !== 'pin' || !targetSection) return false;
+  if (!targetSection) return false;
   return edge.toLine >= targetSection.startLine && edge.toLine <= targetSection.endLine;
 }
 
@@ -163,10 +163,10 @@ export function cmdOverlap(graph, jsonFile) {
   const raw = fs.readFileSync(path.resolve(jsonFile), 'utf8');
   const tasks = JSON.parse(raw);
   const byPath = new Map();
-  tasks.forEach((task, taskIndex) => {
+  tasks.forEach((task) => {
     for (const fileEntry of task.files || []) {
       const bucket = byPath.get(fileEntry.path) || [];
-      bucket.push({ taskIndex, task: task.task, anchor: fileEntry.anchor || null });
+      bucket.push({ task: task.task, anchor: fileEntry.anchor || null });
       byPath.set(fileEntry.path, bucket);
     }
   });

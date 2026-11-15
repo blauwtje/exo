@@ -4,14 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { existsSync } from 'node:fs';
-import { addWorktree, commonDir, createWorktree, isWorktreePath, mainCheckout, relativeFor, seedCaches, worktreePath } from '../lib/checkout.mjs';
+import { addWorktree, commonDir, createWorktree, isWorktreePath, mainCheckout, relativeFor, worktreePath } from '../lib/checkout.mjs';
 import { withLandLock } from '../lib/land-lock.mjs';
-import { applyPick } from '../lib/workspace.mjs';
 import { removeWorktree, RemoveWorktreeError } from '../skills/build/scripts/remove-worktree.mjs';
 import { openSlots } from '../skills/build/scripts/open-slots.mjs';
 import { parsePlan } from '#plan-tasks';
 import { planPrompt, taskPrompt } from '../skills/build/scripts/run-prompts.mjs';
-import { git, gitRepository, tempDir } from './harness.mjs';
+import { git, gitRepository, run, tempDir } from './harness.mjs';
 
 const SEED = { '.gitignore': '.env*\n', 'README.md': 'seed\n' };
 
@@ -83,7 +82,7 @@ test('createWorktree with env false copies no .env', async () => {
 
 test('openSlots leaves .env out of a slot ', async () => {
   const { root } = await envRepository();
-  const opened = openSlots({ root, numbers: [1], setup: 'none', fresh: true });
+  const opened = openSlots({ root, numbers: [1], setup: 'none', inputs: [], fresh: true });
   assert.equal(opened.reason, undefined);
   await assert.rejects(fs.access(path.join(`${root}-task-1`, '.env')));
 });
@@ -95,9 +94,11 @@ test('the land lock taken from a linked worktree lives under the common dir', as
   assert.equal(held, true);
 });
 
-test('applyPick worktree copies .env ', async () => {
+test('workspace --pick worktree copies .env ', async () => {
   const { root } = await envRepository();
-  const target = applyPick('worktree', { dir: root, name: 'topic' });
+  const picked = await run('lib/workspace.mjs', ['--pick', 'worktree', '--name', 'topic', '--repository', root]);
+  assert.equal(picked.code, 0);
+  const target = picked.stdout.trim().replace('added worktree at ', '');
   assert.equal(await fs.readFile(path.join(target, '.env'), 'utf8'), 'TOKEN=1\n');
 });
 
@@ -160,13 +161,12 @@ test('remove-worktree refuses an untracked file outside .exo and docs/specs and 
   assert.equal(existsSync(path.join(worktree, 'notes.txt')), true);
 });
 
-async function lockedRepository(worktreeLock) {
+async function lockedRepository() {
   const root = await gitRepository({ '.gitignore': 'node_modules/\n', 'package-lock.json': '{"a":1}\n' });
   await fs.mkdir(path.join(root, 'node_modules', 'dep'), { recursive: true });
   await fs.writeFile(path.join(root, 'node_modules', 'dep', 'index.js'), 'x\n');
   const where = path.join(root, '.worktrees', 'topic');
   git(root, 'worktree', 'add', '-q', '-b', 'topic', where);
-  if (worktreeLock) await fs.writeFile(path.join(where, 'package-lock.json'), worktreeLock);
   return { root, where };
 }
 
@@ -180,8 +180,11 @@ test('createWorktree clones node_modules when the lockfile hash matches', async 
 });
 
 test('createWorktree seeds nothing when the lockfile hash differs', async () => {
-  const { root, where } = await lockedRepository('{"a":2}\n');
-  assert.deepEqual(seedCaches(root, where), []);
+  const { root, where } = await lockedRepository();
+  await fs.rm(where, { recursive: true, force: true });
+  git(root, 'worktree', 'prune');
+  await fs.writeFile(path.join(root, 'package-lock.json'), '{"a":2}\n');
+  assert.equal(createWorktree(root, where, ['-q', '-b', 'again', where]).ok, true);
   assert.equal(existsSync(path.join(where, 'node_modules')), false);
 });
 

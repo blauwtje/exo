@@ -1,7 +1,6 @@
 import { parseTimedText } from './cues.mjs';
-import { urlOf, YOUTUBE_HOST } from './video-url.mjs';
+import { WATCH_URL, urlOf, YOUTUBE_HOST } from './video-url.mjs';
 
-export const WATCH_URL = 'https://www.youtube.com/watch?v=';
 const PLAYER_URL = 'https://www.youtube.com/youtubei/v1/player?prettyPrint=false';
 const IDENTITIES = [
   { client: { clientName: 'ANDROID', clientVersion: '20.10.38' }, agent: 'com.google.android.youtube/20.10.38 (Linux; U; Android 14)' },
@@ -37,7 +36,7 @@ async function fetchPlayer(id, network, identity) {
   try {
     return JSON.parse(text);
   } catch {
-    throw new Unreadable('YouTube sent no player data', { retryable: true });
+    throw new Unreadable(`YouTube sent no player data for video ${id}`, { retryable: true });
   }
 }
 
@@ -56,8 +55,13 @@ export async function fetchPlayable(id, fetchFn, options) {
   }
 }
 
+function emptyWhenUnreadable(error) {
+  if (!(error instanceof Unreadable)) throw error;
+  return '';
+}
+
 export async function fetchWatchPage(id, fetchFn, options) {
-  return request({ fetchFn, options }, `${WATCH_URL}${id}`, { headers: { 'accept-language': 'en-US,en;q=0.9' } }).catch(() => '');
+  return request({ fetchFn, options }, `${WATCH_URL}${id}`, { headers: { 'accept-language': 'en-US,en;q=0.9' } }).catch(emptyWhenUnreadable);
 }
 
 function checkPlayable(player) {
@@ -94,7 +98,7 @@ function bestOf(tracks, wanted) {
   return (wanted && closest(tracks, wanted)) || tracks.find((track) => track.code.startsWith('en')) || tracks[0] || null;
 }
 
-export function pickTrack(tracks, lang, defaultCode = null) {
+export function pickTrack(tracks, lang, defaultCode) {
   const manual = tracks.filter((track) => !track.auto);
   const auto = tracks.filter((track) => track.auto);
   if (lang) return closest(manual, lang) ?? closest(auto, lang);

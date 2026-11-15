@@ -3,7 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, git, gitRepository, run } from './harness.mjs';
+import { tempDir, git, gitRepository, run } from './harness.mjs';
+import { runPlanText } from './setup-fixture.mjs';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import { approveGates, createRun, readGates, runDir } from '../skills/build/scripts/run-state.mjs';
 
@@ -17,18 +18,14 @@ fs.appendFileSync(process.env.FAKE_CALLS, 'session\\n');
 console.log(JSON.stringify({ type: 'result', subtype: 'success', num_turns: 1, total_cost_usd: 0, result: 'done' }));
 `;
 
-const planText = (root, autonomy, pause) => [
-  '# Plan: autonomy fixture', '', '## Goal', 'One file.', '',
-  '## Plan basis', `Repository: ${root}`, 'Branch: feat/fixture', 'Land: local', 'Commit: feat(fixture): add the fixture', 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', ...(autonomy === null ? [] : [`Autonomy: ${autonomy}`]), '',
-  '## Success criterion', '`node --version`', '',
-  '## Checkpoint', '- Blocks first: Task 1.', '- Parallel: none.', '- Shared state: none.', '- Smallest safe split: one file per task.', '',
-  '## Manual checks', '- Open the file.', '',
-  '## Tasks', '### Task 1: feat(a): add a',
-  `Depends on: none | Files: \`src/app.js\` | Data: a line${pause ? ' | Pause: yes' : ''} | Proof: node --version`, ''
-].join('\n');
+const planText = (root, autonomy, pause) => runPlanText(root, {
+  title: 'autonomy fixture',
+  basis: autonomy === null ? [] : [`Autonomy: ${autonomy}`],
+  tasks: ['### Task 1: feat(a): add a', `Depends on: none | Files: \`src/app.js\` | Data: a line${pause ? ' | Pause: yes' : ''} | Proof: node --version`, '']
+});
 
 async function setup(autonomy, pause) {
-  const tools = await fixture();
+  const tools = tempDir('ui-design-test-');
   const root = await gitRepository({ 'src/app.js': 'export const a = 1;\n' });
   git(root, 'checkout', '-q', '-b', 'feat/fixture');
   await fs.mkdir(path.join(root, 'docs', 'plans'), { recursive: true });
@@ -39,7 +36,7 @@ async function setup(autonomy, pause) {
   const claude = path.join(tools, 'claude.mjs');
   await fs.writeFile(claude, FAKE_CLAUDE);
   const calls = path.join(tools, 'calls.txt');
-  const home = await fixture();
+  const home = tempDir('ui-design-test-');
   const id = '20260101T000000-aaaa';
   createRun(root, { id, plan: planPath });
   const dir = runDir(root, id);
@@ -96,11 +93,11 @@ for (const [autonomy, pause] of [[null, true], ['auto', true], ['pause-flagged',
 test('plan-check accepts the Autonomy values and Pause: yes and rejects others', () => {
   const root = '/tmp/exo-autonomy-check';
   for (const autonomy of ['auto', 'pause-flagged', 'approve-each']) {
-    const report = planCheckReport(planText(root, autonomy, true), { root });
+    const report = planCheckReport(planText(root, autonomy, true), { root, loop: false, run: false });
     assert.doesNotMatch(report.lines.join('\n'), /Autonomy|Pause/);
   }
-  const badMode = planCheckReport(planText(root, 'sometimes', false), { root });
+  const badMode = planCheckReport(planText(root, 'sometimes', false), { root, loop: false, run: false });
   assert.match(badMode.lines.join('\n'), /'Autonomy: sometimes' is not one of auto, pause-flagged, approve-each/);
-  const badPause = planCheckReport(planText(root, 'auto', true).replace('Pause: yes', 'Pause: maybe'), { root });
+  const badPause = planCheckReport(planText(root, 'auto', true).replace('Pause: yes', 'Pause: maybe'), { root, loop: false, run: false });
   assert.match(badPause.lines.join('\n'), /'Pause: maybe' is not 'Pause: yes'/);
 });

@@ -1,10 +1,10 @@
 import { mcpToolCall } from '#mcp-tool-call';
 import { LandingError, ReportMissingError } from './land-errors.mjs';
-import { escapeRegExp } from './land-commit-block.mjs';
+import { escapeRegExp } from '#basics';
 
 const ANY_OUTCOME_LINE = /^\s*(?:[-*]\s+)?(?:`([^`]+)`|(.+)):\s*(.*?)\s*$/;
 const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved']);
-export const CHECKPOINT_SCRIPT = '${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/checkpoint.mjs';
+const CHECKPOINT_SCRIPT = '${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/checkpoint.mjs';
 export const PROOF_TIMEOUT_MS = 540_000;
 export const PROOF_TAIL_LINES = 20;
 const RED_FIELD_LINE = /^\s*(?:[-*]\s+)?(?:Test first|Red):/;

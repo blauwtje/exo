@@ -3,13 +3,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, run } from './harness.mjs';
+import { tempDir, run } from './harness.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
 const SECRET = 'sk-secret-value-123';
 
 async function keySet(provider, input, files = {}) {
-  const home = await fixture();
+  const home = await tempDir('ui-design-test-');
   const directory = path.join(home, '.config', 'exo');
   await fs.mkdir(directory, { recursive: true });
   for (const [name, text] of Object.entries(files)) await fs.writeFile(path.join(directory, name), text);
@@ -69,7 +69,7 @@ test('an empty value, a value with whitespace and a value with a newline are ref
 });
 
 test('key without set and a missing provider print usage', async () => {
-  const home = await fixture();
+  const home = await tempDir('ui-design-test-');
   for (const args of [['key'], ['key', 'get', 'deepseek'], ['key', 'set'], ['key', 'set', 'a', 'b']]) {
     const result = await run(CLI, args, { env: { HOME: home }, input: '' });
     assert.equal(result.code, 2, args.join(' '));

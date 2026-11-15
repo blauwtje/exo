@@ -5,10 +5,10 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { runInWorktree } from '#red-green';
 import { scratchPath } from '#scratch-path';
-import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
+import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 import { runGuarded, stallSeconds, STALL_EXIT } from '#stall-guard';
 import { shellQuote } from '#basics';
-import { gitText } from '#git';
+import { gitLine, gitText, shortSha } from '#git';
 
 const SCRIPT = fileURLToPath(import.meta.url);
 const PROBE_DEFAULT_MS = 600_000;
@@ -17,41 +17,19 @@ const SKIP_EXIT = 125;
 const PROOF_SEPARATOR = /^`?(?: → | -> |: pass)/;
 const FIRST_BAD = /^([0-9a-f]{40}) is the first '?bad'? commit/m;
 
-const USAGE = `Usage: node bisect.mjs --repro <command> [--good <ref>]
+const USAGE = `Usage: node bisect.mjs --repro <command>
 Runs <command> in a temporary worktree at HEAD, picks the newest good commit that command passes at, and bisects history to the commit that first breaks it.
-Good ref: --good; else the newest ancestor whose body holds a Proof: line naming <command>; else the merge-base with origin/HEAD; else HEAD~1, ~2, ~4, ~8, ... doubling back to the root commit, the first where the command passes twice.
+Good ref: the newest ancestor whose body holds a Proof: line naming <command>; else the merge-base with origin/HEAD; else HEAD~1, ~2, ~4, ~8, ... doubling back to the root commit, the first where the command passes twice.
 Prints First bad, Good, Diff, Log and the changed files, up to 30 lines; the full diff and every run's output land in .exo/debug/.
 A repro that passes at HEAD, alternates, or cannot be bisected prints one Bisect: line and exits 1; a usage error exits 2.
 `;
 
 function commitSha(root, ref) {
-  try {
-    return gitText(root, ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`]).trim();
-  } catch {
-    return null;
-  }
-}
-
-function isAncestorOfHead(root, sha) {
-  try {
-    gitText(root, ['merge-base', '--is-ancestor', sha, 'HEAD']);
-    return true;
-  } catch (error) {
-    if (error.status === 1) return false;
-    throw error;
-  }
+  return gitLine(root, ['rev-parse', '--verify', '--end-of-options', `${ref}^{commit}`]);
 }
 
 function checkoutRoot() {
   return gitText(process.cwd(), ['rev-parse', '--show-toplevel']).trim();
-}
-
-function checkedGood(root, flag) {
-  if (flag.startsWith('-')) throw new UsageError(`--good must not start with '-': ${flag}`);
-  const sha = commitSha(root, flag);
-  if (sha === null) throw new UsageError(`--good does not name a commit: ${flag}`);
-  if (!isAncestorOfHead(root, sha)) throw new UsageError(`--good is not an ancestor of HEAD: ${flag}`);
-  return sha;
 }
 
 function namesCommand(body, command) {
@@ -64,30 +42,22 @@ function namesCommand(body, command) {
 }
 
 function proofCommits(root, command) {
-  try {
-    const listed = gitText(root, ['log', '-F', `--grep=${command}`, '--format=%H', 'HEAD~1']);
-    return listed.split('\n').filter(Boolean).filter((sha) => namesCommand(gitText(root, ['log', '-1', '--format=%B', sha]), command));
-  } catch {
-    return [];
-  }
+  const listed = gitLine(root, ['log', '-F', `--grep=${command}`, '--format=%H', 'HEAD~1']);
+  if (listed === null) return [];
+  return listed.split('\n').filter(Boolean).filter((sha) => namesCommand(gitText(root, ['log', '-1', '--format=%B', sha]), command));
 }
 
 function remoteBase(root, headSha) {
-  try {
-    const sha = gitText(root, ['merge-base', 'HEAD', 'refs/remotes/origin/HEAD']).trim();
-    return sha === headSha ? null : sha;
-  } catch {
-    return null;
-  }
+  const sha = gitLine(root, ['merge-base', 'HEAD', 'refs/remotes/origin/HEAD']);
+  return sha === headSha ? null : sha;
 }
 
-function candidates(root, { flagSha, command, headSha }) {
+function candidates(root, { command, headSha }) {
   const found = [];
   const add = (sha, reason) => {
     if (sha === null || sha === headSha || found.some((candidate) => candidate.sha === sha)) return;
     found.push({ sha, reason });
   };
-  if (flagSha !== null) add(flagSha, 'flag');
   for (const sha of proofCommits(root, command)) add(sha, 'proof trailer');
   add(remoteBase(root, headSha), 'merge-base');
   for (const { sha, reason } of ancestorCandidates(root)) add(sha, reason);
@@ -160,7 +130,7 @@ function confirmFirstBad(probe, firstBad) {
 }
 
 function writeOutputs(probe, sha) {
-  const name = `bisect-${sha.slice(0, 7)}`;
+  const name = `bisect-${shortSha(sha)}`;
   const diff = scratchPath(probe.root, `debug/${name}.diff`);
   const trace = scratchPath(probe.root, `debug/${name}.log`);
   fs.writeFileSync(diff, gitText(probe.root, ['show', sha], { trim: false }));
@@ -194,7 +164,7 @@ function successLines(probe, { firstBad, good, paths, headOutput }) {
   ].slice(0, MAX_LINES);
 }
 
-function bisect({ repro, good }) {
+function bisect({ repro }) {
   const root = checkoutRoot();
   const probe = {
     root,
@@ -203,12 +173,11 @@ function bisect({ repro, good }) {
     log: []
   };
   const headSha = commitSha(root, 'HEAD');
-  const flagSha = good === undefined ? null : checkedGood(root, good);
 
   const head = headOutcome(probe);
   if (head.reason !== undefined) return fallback(probe, head.reason);
 
-  const list = candidates(root, { flagSha, command: repro, headSha });
+  const list = candidates(root, { command: repro, headSha });
   const chosen = goodCandidate(probe, list);
   if (chosen.reason !== undefined) return fallback(probe, chosen.reason);
 
@@ -235,7 +204,7 @@ function probeExit(code) {
 }
 
 async function main(argv) {
-  const values = parseFlags(argv, { repro: 'string', good: 'string', probe: 'string' }, { usage: USAGE });
+  const values = parseFlags(argv, { repro: 'string', probe: 'string' }, { usage: USAGE });
   if (values.probe !== undefined) return probeExit(await runGuarded({ command: values.probe, seconds: stallSeconds() }));
   if (values.repro === undefined) throw new UsageError('--repro is required');
   bisect(values);
@@ -249,7 +218,7 @@ async function entry() {
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     process.stderr.write(`bisect: ${error.message}\n`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
   }
 }
 

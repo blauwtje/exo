@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { UsageError } from '#script-flags';
+import { shortSha } from '#git';
 import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
 import { planIdOf } from '#plan-landed';
@@ -19,7 +20,7 @@ import { runPreCommitGates } from './land-prove.mjs';
 import { dropCandidate, clearStaleCandidate, commitCandidate, gateCandidate, stageOutside } from './land-candidate.mjs';
 import { refreshedBehaviour } from './land-stage.mjs';
 
-export function checkTask({ planText, number, root, reportText = null, reportPath = null, planPath, pin = null }) {
+export function checkTask({ planText, number, root, reportText, reportPath, planPath, pin }) {
   refuseOtherPlan(pin, planPath, number);
   refuseMismatchedToplevel(root);
   return locked(root, () => checkTaskLocked({ planText, number, root, ...reportSourceOf({ root, number, reportText, reportPath }), planPath, pin }));
@@ -47,7 +48,7 @@ function gateCheckedOnCandidate({ plan, task, frame, root, planId }) {
   stageOutside(root, refreshedBehaviour(root));
   const candidate = commitCandidate({ block: commitBlockOf({ plan, number: task.number, planId, signatures: signatureChanges(task, root), root }), root, task, planId });
   const gateLine = gateCandidate({ frame, root, gateEnv: gateEnvOf({ plan, task, root, planId }), candidate });
-  if (!dropCandidate(root, candidate)) throw new LandingError(`HEAD moved off the candidate ${candidate.candidate.slice(0, 7)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
+  if (!dropCandidate(root, candidate)) throw new LandingError(`HEAD moved off the candidate ${shortSha(candidate.candidate)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
   return gateLine;
 }
 
@@ -66,7 +67,7 @@ function writeCheckStamp(root, number, report) {
 }
 
 
-export function checkCodeRules({ planText, number, root, planPath, pin = null }) {
+export function checkCodeRules({ planText, number, root, planPath, pin }) {
   refuseOtherPlan(pin, planPath, number);
   const task = parsePlan(planText).tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);

@@ -4,54 +4,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, run } from './harness.mjs';
-import { GH_ERROR_EXIT, gateVerdict, stackOrder } from '../skills/ship/scripts/ship-gate.mjs';
+import { tempDir, run } from './harness.mjs';
+import { GH_ERROR_EXIT } from '../skills/ship/scripts/gh-run.mjs';
 
 const SHIP_GATE = fileURLToPath(new URL('../skills/ship/scripts/ship-gate.mjs', import.meta.url));
 
 const passed = (name) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion: 'SUCCESS' });
 const concluded = (name, conclusion) => ({ __typename: 'CheckRun', name, status: 'COMPLETED', conclusion });
 const clean = (checks) => ({ number: 12, state: 'OPEN', mergeable: 'MERGEABLE', mergeStateStatus: 'CLEAN', reviewDecision: '', statusCheckRollup: checks });
-
-test('a clean pull request whose checks passed, were skipped or were neutral merges', () => {
-  assert.equal(gateVerdict(clean([passed('test'), concluded('deploy', 'SKIPPED'), concluded('lint', 'NEUTRAL')])), 'MERGE');
-  assert.equal(gateVerdict(clean([{ __typename: 'StatusContext', context: 'ci/legacy', state: 'SUCCESS' }])), 'MERGE');
-  assert.equal(gateVerdict(clean([])), 'MERGE');
-});
-
-test('a cancelled, failed or pending check stops and names the check', () => {
-  assert.equal(gateVerdict(clean([passed('test'), concluded('build', 'CANCELLED')])), 'STOP conclusion=CANCELLED build');
-  assert.equal(gateVerdict(clean([concluded('test', 'FAILURE')])), 'STOP conclusion=FAILURE test');
-  assert.equal(gateVerdict(clean([{ __typename: 'CheckRun', name: 'test', status: 'IN_PROGRESS', conclusion: '' }])), 'STOP status=IN_PROGRESS test');
-  assert.equal(gateVerdict(clean([{ __typename: 'StatusContext', context: 'ci/legacy', state: 'PENDING' }])), 'STOP state=PENDING ci/legacy');
-});
-
-test('BEHIND and DIRTY get their own verdicts; any other state than CLEAN stops', () => {
-  assert.equal(gateVerdict({ ...clean([passed('test')]), mergeStateStatus: 'BEHIND' }), 'BEHIND');
-  assert.equal(gateVerdict({ ...clean([passed('test')]), mergeStateStatus: 'DIRTY', mergeable: 'CONFLICTING' }), 'DIRTY');
-  assert.equal(gateVerdict({ ...clean([passed('test')]), mergeStateStatus: 'BLOCKED' }), 'STOP mergeStateStatus=BLOCKED');
-  assert.equal(gateVerdict({ ...clean([passed('test')]), mergeStateStatus: 'UNKNOWN' }), 'STOP mergeStateStatus=UNKNOWN');
-  assert.equal(gateVerdict({ ...clean([passed('test')]), reviewDecision: 'CHANGES_REQUESTED' }), 'STOP reviewDecision=CHANGES_REQUESTED');
-  assert.equal(gateVerdict({ ...clean([passed('test')]), state: 'MERGED' }), 'STOP state=MERGED');
-});
-
-test('stacked pull requests come out bases first, unrelated ones in the given order', () => {
-  const pullRequests = [
-    { number: 14, baseRefName: 'feat/b', headRefName: 'feat/c' },
-    { number: 20, baseRefName: 'main', headRefName: 'fix/x' },
-    { number: 13, baseRefName: 'feat/a', headRefName: 'feat/b' },
-    { number: 12, baseRefName: 'main', headRefName: 'feat/a' }
-  ];
-  assert.deepEqual(stackOrder(pullRequests), { order: [12, 13, 14, 20] });
-});
-
-test('a loop of base and head branches is a cycle, not an order', () => {
-  const pullRequests = [
-    { number: 12, baseRefName: 'feat/b', headRefName: 'feat/a' },
-    { number: 13, baseRefName: 'feat/a', headRefName: 'feat/b' }
-  ];
-  assert.deepEqual(stackOrder(pullRequests), { cycle: [12, 13] });
-});
 
 const STAND_IN = [
   '#!/usr/bin/env node',
@@ -63,8 +23,27 @@ const STAND_IN = [
   ''
 ].join('\n');
 
+const statusContext = (state) => ({ __typename: 'StatusContext', context: 'ci/legacy', state });
+const withMerge = (fields) => ({ ...clean([passed('test')]), ...fields });
+
+const VERDICTS = [
+  ['checks passed, skipped or neutral', clean([passed('test'), concluded('deploy', 'SKIPPED'), concluded('lint', 'NEUTRAL')]), 'MERGE'],
+  ['a successful status context', clean([statusContext('SUCCESS')]), 'MERGE'],
+  ['no checks', clean([]), 'MERGE'],
+  ['a cancelled check', clean([passed('test'), concluded('build', 'CANCELLED')]), 'STOP conclusion=CANCELLED build'],
+  ['a failed check', clean([concluded('test', 'FAILURE')]), 'STOP conclusion=FAILURE test'],
+  ['a pending check', clean([{ __typename: 'CheckRun', name: 'test', status: 'IN_PROGRESS', conclusion: '' }]), 'STOP status=IN_PROGRESS test'],
+  ['a pending status context', clean([statusContext('PENDING')]), 'STOP state=PENDING ci/legacy'],
+  ['a BEHIND branch', withMerge({ mergeStateStatus: 'BEHIND' }), 'BEHIND'],
+  ['a DIRTY conflicting branch', withMerge({ mergeStateStatus: 'DIRTY', mergeable: 'CONFLICTING' }), 'DIRTY'],
+  ['a BLOCKED branch', withMerge({ mergeStateStatus: 'BLOCKED' }), 'STOP mergeStateStatus=BLOCKED'],
+  ['an UNKNOWN merge state', withMerge({ mergeStateStatus: 'UNKNOWN' }), 'STOP mergeStateStatus=UNKNOWN'],
+  ['requested changes', withMerge({ reviewDecision: 'CHANGES_REQUESTED' }), 'STOP reviewDecision=CHANGES_REQUESTED'],
+  ['a merged pull request', withMerge({ state: 'MERGED' }), 'STOP state=MERGED']
+];
+
 async function shipGate(args, pullRequests, mode = 'ok') {
-  const directory = await fixture();
+  const directory = await tempDir('ui-design-test-');
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
   await fs.writeFile(path.join(bin, 'gh'), STAND_IN, { mode: 0o755 });
@@ -84,29 +63,46 @@ test('--pr reads the named pull request and prints one verdict line', async () =
   assert.deepEqual(outcome.calls, ['pr view 12 --json number,state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup']);
 });
 
+for (const [name, pullRequest, verdict] of VERDICTS) {
+  test(`--pr prints ${verdict} for ${name}`, async () => {
+    const outcome = await shipGate(['--pr', '12'], { 12: pullRequest });
+    assert.equal(outcome.stdout, `${verdict}\n`, outcome.stderr);
+    assert.equal(outcome.code, verdict === 'MERGE' ? 0 : 1, outcome.stderr);
+  });
+}
+
 test('--pr exits 1 on any verdict but MERGE', async () => {
   const outcome = await shipGate(['--pr', '12'], { 12: clean([concluded('build', 'CANCELLED')]) });
   assert.equal(outcome.code, 1, outcome.stderr);
   assert.equal(outcome.stdout, 'STOP conclusion=CANCELLED build\n');
 });
 
-test('--order prints bases first on one line and exits 1 on a cycle', async () => {
-  const stacked = {
+test('--order prints stacked pull requests bases first, unrelated ones in the given order', async () => {
+  const pullRequests = {
+    14: { number: 14, baseRefName: 'feat/b', headRefName: 'feat/c' },
+    20: { number: 20, baseRefName: 'main', headRefName: 'fix/x' },
     13: { number: 13, baseRefName: 'feat/a', headRefName: 'feat/b' },
     12: { number: 12, baseRefName: 'main', headRefName: 'feat/a' }
   };
-  const ordered = await shipGate(['--order', '13', '12'], stacked);
-  assert.equal(ordered.code, 0, ordered.stderr);
-  assert.equal(ordered.stdout, '12 13\n');
-  const looped = await shipGate(['--order', '13', '12'], { ...stacked, 12: { number: 12, baseRefName: 'feat/b', headRefName: 'feat/a' } });
-  assert.equal(looped.code, 1, looped.stderr);
-  assert.equal(looped.stdout, 'CYCLE 13 12\n');
+  const outcome = await shipGate(['--order', '14', '20', '13', '12'], pullRequests);
+  assert.equal(outcome.code, 0, outcome.stderr);
+  assert.equal(outcome.stdout, '12 13 14 20\n');
+});
+
+test('--order prints a loop of base and head branches as a cycle and exits 1', async () => {
+  const pullRequests = {
+    12: { number: 12, baseRefName: 'feat/b', headRefName: 'feat/a' },
+    13: { number: 13, baseRefName: 'feat/a', headRefName: 'feat/b' }
+  };
+  const outcome = await shipGate(['--order', '12', '13'], pullRequests);
+  assert.equal(outcome.code, 1, outcome.stderr);
+  assert.equal(outcome.stdout, 'CYCLE 12 13\n');
 });
 
 test('a gh failure stops with its first error line and exit 3', async () => {
   const outcome = await shipGate(['--pr', '12'], {}, 'auth-error');
   assert.equal(outcome.code, GH_ERROR_EXIT, outcome.stderr);
-  assert.equal(outcome.stdout, 'STOP gh=gh: To use GitHub CLI in a workflow, set the GH_TOKEN environment variable.\n');
+  assert.equal(outcome.stdout, 'STOP gh=gh pr view 12 --json number,state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup: gh: To use GitHub CLI in a workflow, set the GH_TOKEN environment variable.\n');
 });
 
 test('a missing or malformed argument is a usage error that runs no gh', async () => {

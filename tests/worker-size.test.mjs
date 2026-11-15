@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { agentHook } from '../hooks/agent-effort.mjs';
-import { briefReads, normalizedReads, workerSize } from '../lib/worker-size.mjs';
+import { briefReads, locatedReads, workerSize } from '../lib/worker-size.mjs';
 import { tempDir } from './harness.mjs';
 
 function folder() {
@@ -103,12 +103,12 @@ test('Reads paths resolve against the brief Worktree line when it names a folder
   assert.deepEqual(workerSize({ prompt, cwd }).missing, []);
 });
 
-test('normalizedReads rewrites a pure path or none line and leaves prose alone', () => {
+test('locatedReads prompt rewrites a pure path or none line and leaves prose alone', () => {
   const cwd = folder();
-  assert.equal(normalizedReads('Reads: none.\nResult: .exo/r.md', cwd), 'Reads: none\nResult: .exo/r.md');
-  assert.equal(normalizedReads('Reads: `b.txt`, dir/a.txt.', cwd), 'Reads: b.txt, dir/a.txt');
-  assert.equal(normalizedReads('Reads: b.txt and the tests', cwd), 'Reads: b.txt and the tests');
-  assert.equal(normalizedReads('Reads: b.txt, dir', cwd), 'Reads: b.txt, dir');
+  assert.equal(locatedReads('Reads: none.\nResult: .exo/r.md', cwd).prompt, 'Reads: none\nResult: .exo/r.md');
+  assert.equal(locatedReads('Reads: `b.txt`, dir/a.txt.', cwd).prompt, 'Reads: b.txt, dir/a.txt');
+  assert.equal(locatedReads('Reads: b.txt and the tests', cwd).prompt, 'Reads: b.txt and the tests');
+  assert.equal(locatedReads('Reads: b.txt, dir', cwd).prompt, 'Reads: b.txt, dir');
   assert.deepEqual(briefReads('Reads: hooks/*.none, b.txt.', cwd), ['hooks/*.none', 'b.txt']);
 });
 
@@ -120,7 +120,7 @@ test('parenthesized text in a Reads line is prose, but a wrong path outside pare
   assert.deepEqual(size('b.txt (see hooks/agents and lib/x.mjs for context)').unresolved, []);
   assert.deepEqual(size('b.txt, hooks/agents (the folder)').unresolved, ['hooks/agents']);
   assert.deepEqual(briefReads('Reads: b.txt (not hooks/agents), dir', cwd), ['b.txt', 'dir']);
-  assert.equal(normalizedReads('Reads: b.txt (not hooks/agents), dir', cwd), 'Reads: b.txt, dir');
+  assert.equal(locatedReads('Reads: b.txt (not hooks/agents), dir', cwd).prompt, 'Reads: b.txt, dir');
 });
 
 test('a parenthesis inside a path word is kept', () => {

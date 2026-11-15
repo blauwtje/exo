@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { USAGE_EXIT } from '#script-flags';
 import { pagePath, readSources } from './ledger.mjs';
 
 const SOURCE_KINDS = ['web', 'paper', 'code', 'forum', 'social', 'video', 'podcast'];
@@ -40,7 +41,7 @@ function claimProblem(runDir, claim) {
   return null;
 }
 
-export function addClaim(runDir, claim) {
+function addClaim(runDir, claim) {
   const problem = claimProblem(runDir, claim);
   if (problem) throw new Error(problem);
   const row = Object.fromEntries(REQUIRED_FIELDS.map((field) => [field, claim[field].trim()]));
@@ -53,7 +54,7 @@ function main(argv) {
   const [command, runDir, json] = argv;
   if (command !== 'add' || !runDir || !json) {
     process.stderr.write('usage: claims.mjs add <run-dir> <claim-json>\n');
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   try {

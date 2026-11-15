@@ -8,7 +8,7 @@ const BIG_FILE = 'x'.repeat(4_000_000);
 test('oversized task warns', async () => {
   const root = await gitRepository({ 'src/big.mjs': BIG_FILE });
   const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Edit big', files: ['src/big.mjs'] })] });
-  const report = planCheckReport(plan, { root, run: true });
+  const report = planCheckReport(plan, { root, loop: false, run: true });
   assert.equal(report.ok, true);
   assert.ok(report.lines.some((line) => /^\[WARN\] Task 1: split Task 1 \(about \d+ tokens of task text and Files:, over \d+\)$/.test(line)), report.lines.join('\n'));
 });
@@ -16,7 +16,14 @@ test('oversized task warns', async () => {
 test('a Proof command not on PATH still fails', async () => {
   const root = await gitRepository({ 'src/a.mjs': 'a\n' });
   const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Edit a', files: ['src/a.mjs'], proof: 'no-such-binary-xyz --run' })] });
-  const report = planCheckReport(plan, { root, run: true });
+  const report = planCheckReport(plan, { root, loop: false, run: true });
   assert.equal(report.ok, false);
   assert.match(report.lines[0], /not on this host's PATH/);
+});
+
+test('a task whose Files names a directory is still sized', async () => {
+  const root = await gitRepository({ 'lib/references/a.md': 'a\n' });
+  const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Edit refs', files: ['lib/references'] })] });
+  const report = planCheckReport(plan, { root, loop: false, run: true });
+  assert.equal(report.ok, true, report.lines.join('\n'));
 });

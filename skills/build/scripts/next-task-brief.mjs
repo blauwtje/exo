@@ -1,16 +1,15 @@
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
+import { orWhenAbsent } from '#absent-path';
 import { relativeFor } from '#checkout';
 import { SCRATCH_FOLDER, scratchPath } from '#scratch-path';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
 import { coveringTests } from '../../../lib/covering-tests.mjs';
 import { mcpToolCall } from '#mcp-tool-call';
 import { driftOf, INPUT_UNREADABLE, inputPaths, isInputDrift } from '#plan-inputs';
-import { frameOf } from '#plan-frame';
-import { parsePlan } from '#plan-tasks';
 import { regionRange } from '#plan-regions';
-import { SKILL_DIRECTORY } from './next-task-paths.mjs';
+import { SKILL_DIRECTORY } from './run-session-paths.mjs';
 import { handoffNote } from './run-plan-session.mjs';
 
 const SMALL_TASK_FILES = 2;
@@ -82,20 +81,6 @@ function successCriterionLines(frame) {
   return frame.successCriterion === null ? [] : [`Success criterion: ${frame.successCriterion}`];
 }
 
-function frameReport(frame) {
-  return `${[
-    `Goal: ${frame.goal}`,
-    ...successCriterionLines(frame),
-    'Non-goals touching these paths:',
-    ...bulletLines(frame.nonGoals),
-    'Context for these paths and symbols:',
-    ...bulletLines(frame.context),
-    'Decisions for these paths:',
-    ...bulletLines(frame.decisions),
-    ...(frame.visualDirection === null ? ['Visual direction: none'] : ['Visual direction:', frame.visualDirection])
-  ].join('\n')}\n`;
-}
-
 const RETURN_CAP = /\bat most (\d+|[a-z]+) lines\b/i;
 
 function reportCap(promptText) {
@@ -109,7 +94,7 @@ function reportCapLines() {
   return cap === null ? [] : [`Report cap: ${cap} lines`];
 }
 
-export const BOUNDARY_LINES = [
+const BOUNDARY_LINES = [
   'Make the smallest change that fully does what the user asked.',
   'Never cut correctness, security, data safety, accessibility or anything the user named to make a change smaller.',
   'Never delete a file, container, volume, database, branch or credential to get past a blocked state: that state is evidence and the data behind it is often the only copy.'
@@ -141,12 +126,10 @@ function coveringLines(task, root) {
 }
 
 function readable(file) {
-  try {
+  return orWhenAbsent(() => {
     fs.readFileSync(file);
     return true;
-  } catch {
-    return false;
-  }
+  }, false);
 }
 
 function inputLines(task, sections) {
@@ -182,17 +165,13 @@ function briefText({ task, frame, root, relative }) {
   ].join('\n');
 }
 
-export function taskBrief(task, frame, root) {
-  return briefText({ task, frame, root, relative: false });
-}
-
 export function relativeTaskBrief(task, frame, root) {
   return briefText({ task, frame, root, relative: true });
 }
 
 function writeBrief({ task, frame, root, briefDirectory }) {
   const briefPath = path.join(briefDirectory, `task-${task.number}.md`);
-  fs.writeFileSync(briefPath, taskBrief(task, frame, root));
+  fs.writeFileSync(briefPath, briefText({ task, frame, root, relative: false }));
   return briefPath;
 }
 
@@ -225,8 +204,4 @@ export function inlineTaskLines(task, frame, root) {
     ...driftLines(task, drift),
     task.section
   ];
-}
-
-export function frameOnlyReport(planText) {
-  return frameReport(frameOf(parsePlan(planText).frame));
 }

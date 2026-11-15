@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
-import { appendStep, createRun, journalFile, listRuns, opsFile, readJournal, readState, resumePoint, runDir } from '../skills/build/scripts/run-state.mjs';
+import { appendOp, appendStep, createRun, listRuns, readJournal, readState, resumePoint, runDir } from '../skills/build/scripts/run-state.mjs';
 import { noteAttempt, noteSession, replayedSession, restoreResume, takePending } from '../skills/build/scripts/run-plan-resume.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -34,8 +35,12 @@ test('a step lands in the journal and in the status record the board reads', () 
   const [run] = listRuns(root);
   assert.equal(run.step.kind, 'task-start');
   assert.equal(run.step.task, 2);
-  assert.equal(path.join(runDir(root, 'r1'), run.journal), journalFile(root, 'r1'));
-  assert.equal(path.join(runDir(root, 'r1'), readState(root, 'r1').ops), opsFile(root, 'r1'));
+  const journalLines = fs.readFileSync(path.join(runDir(root, 'r1'), run.journal), 'utf8').trim().split('\n');
+  assert.equal(journalLines.length, 1);
+  assert.equal(JSON.parse(journalLines[0]).kind, 'task-start');
+  appendOp(root, 'r1', { kind: 'ref', ref: 'refs/heads/x', before: null, after: 'abc' });
+  const opsLines = fs.readFileSync(path.join(runDir(root, 'r1'), readState(root, 'r1').ops), 'utf8').trim().split('\n');
+  assert.equal(JSON.parse(opsLines[0]).ref, 'refs/heads/x');
 });
 
 test('the journal folds to the one finished session that nothing settled', () => {

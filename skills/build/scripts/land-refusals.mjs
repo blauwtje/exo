@@ -3,10 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { dataLiterals, literalFinder } from '#data-literals';
 import { environmentMs } from '#script-flags';
+import { gitLine, shortSha } from '#git';
 import { defaultBase, landedTasks, taskCommits } from '#plan-landed';
 import { treePassMs } from '#check-cache';
 import { mcpToolCall } from '#mcp-tool-call';
-import { isTestFirst, runOnBase, testPaths } from '#red-green';
+import { isTestFirst, runInWorktree, testPaths } from '#red-green';
 import { AlreadyLandedError, LandingError, UnfinishedMergeError } from './land-errors.mjs';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
 import { leftForSiblingWarning, statedLimitWarning } from './land-paths.mjs';
@@ -60,8 +61,8 @@ export function redGreenLine(task, { proofCommands, root, pending }) {
   const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   let sha = '';
   for (const command of proofCommands) {
-    const base = runOnBase({ root, base: 'HEAD', command, overlay, timeoutMs, headMs: treePassMs(root, command) ?? undefined });
-    sha = base.sha.slice(0, 7);
+    const base = runInWorktree({ root, base: 'HEAD', command, overlay, timeoutMs, headMs: treePassMs(root, command) ?? undefined });
+    sha = shortSha(base.sha);
     if (base.status === 'error') {
       throw new LandingError(`Task ${task.number}: the red-green check of "${command}" on ${sha || 'HEAD'} failed to finish:\n${base.output.trim().split('\n').slice(-PROOF_TAIL_LINES).join('\n')}`);
     }
@@ -71,7 +72,7 @@ export function redGreenLine(task, { proofCommands, root, pending }) {
   return { line: 'Red: skipped: Proof passed without the production change', warning };
 }
 
-export function refuseUntestedTestFirst(task, root) {
+function refuseUntestedTestFirst(task, root) {
   if (isTestFirst(task) && testPaths(taskChangedPaths(root)).length === 0) {
     throw new LandingError(`Task ${task.number} is test-first, but its change adds or changes no test file; add the failing test the task names`);
   }
@@ -80,10 +81,10 @@ export function refuseUntestedTestFirst(task, root) {
 export function refuseAlreadyLanded(plan, task, { root, planId }) {
   if (!landedTasks(plan.tasks, root, planId).includes(task.number)) return;
   const [sha] = taskCommits(task, root, planId);
-  throw new AlreadyLandedError(`Task ${task.number} is already landed as ${sha.slice(0, 7)}; landing it again would add no change`);
+  throw new AlreadyLandedError(`Task ${task.number} is already landed as ${shortSha(sha)}; landing it again would add no change`);
 }
 
-export function refuseMissingLiterals(task, root, planPath = null) {
+function refuseMissingLiterals(task, root, planPath) {
   if (task.literals !== null || !task.data) return;
   const literals = dataLiterals(task.data);
   if (literals.length === 0) return;
@@ -102,11 +103,7 @@ export function refuseUnfinishedMerge(root) {
 const PROSE_FOLDERS = ['skills/', 'agents/', 'rules/', 'hooks/'];
 
 function headText(file, root) {
-  try {
-    return execFileSync('git', ['-C', root, 'show', `HEAD:${file}`], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-  } catch {
-    return null;
-  }
+  return gitLine(root, ['show', `HEAD:${file}`], { trim: false, maxBuffer: 1024 * 1024 });
 }
 
 function droppedWords(file, root, permitted) {
@@ -122,7 +119,7 @@ function isTrackedProse(file, root) {
   return fs.existsSync(path.join(root, file)) && execFileSync('git', ['-C', root, 'ls-files', file], { encoding: 'utf8' }) !== '';
 }
 
-export function droppedBoundaryWarning(task, root) {
+function droppedBoundaryWarning(task, root) {
   const permitted = new Set();
   parseDrops(dropsOf(task) ?? '').forEach((entry) => {
     const [words, file] = entry.split(/ in (\S+)$/);

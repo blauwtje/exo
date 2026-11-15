@@ -3,9 +3,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { tempDir } from './harness.mjs';
-
-const REPO = path.resolve(import.meta.dirname, '..');
+import { REPOSITORY_ROOT as REPO, tempDir } from './harness.mjs';
 
 function pending(changelog) {
   const root = tempDir('release-pending-');

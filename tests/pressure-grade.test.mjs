@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
-import { aggregate, gradeLine, judgeArguments, gradeRun, judgeClauses, lintCriteria, linesForCase, newcombe, parseCriteria, parseMargins, runsNeeded, verdictFor } from '../skills/edit-skills/scripts/pressure-grade.mjs';
+import { JUDGE_VOTES, aggregate, defaultJudge, gradeRun, linesForCase, parseCriteria, parseMargins } from '../skills/edit-skills/scripts/pressure-grade.mjs';
 import { regradeFolder } from '../skills/edit-skills/scripts/pressure-regrade.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -25,6 +25,7 @@ Prose is context.
 `;
 
 const ctxFor = (answer, dir, judge) => ({ answer, dir, judge });
+const gradeOne = (line, ctx) => gradeRun({ case: 'a.txt', arm: 'with', run: 1, lines: [line], votes: JUDGE_VOTES, ...ctx }).lines[0];
 
 test('parseCriteria scopes lines by case heading and keeps nested context', () => {
   const parsed = parseCriteria(CRITERIA);
@@ -46,7 +47,7 @@ test('deterministic graders check answer, files and commands in the case folder'
   fs.mkdirSync(path.join(dir, 'notes'));
   fs.writeFileSync(path.join(dir, 'notes', 'a.md'), 'x');
   const line = (tag) => parseCriteria(`- t \`grade: ${tag}\`\n`)[0].lines[0];
-  const grade = (tag, answer = 'Hello there') => gradeLine(line(tag), ctxFor(answer, dir)).pass;
+  const grade = (tag) => gradeOne(line(tag), ctxFor('Hello there', dir)).pass;
   assert.equal(grade('answer =~ /hello/i'), true);
   assert.equal(grade('answer =~ /hello/'), false);
   assert.equal(grade('answer !~ /bye/'), true);
@@ -61,15 +62,17 @@ test('deterministic graders check answer, files and commands in the case folder'
 test('judge lines read PASS or FAIL from the judge and hide nothing but the arm', () => {
   const line = parseCriteria('- Tone is kind. `grade: judge`\n')[0].lines[0];
   let seen;
-  const pass = gradeLine(line, ctxFor('answer text', '.', (prompt) => { seen = prompt; return 'PASS\nkind enough'; }));
+  const pass = gradeOne(line, ctxFor('answer text', '.', (prompt) => { seen = prompt; return 'PASS\nkind enough'; }));
   assert.deepEqual([pass.pass, pass.reason], [true, 'kind enough']);
   assert.match(seen, /Tone is kind\./);
   assert.match(seen, /answer text/);
-  assert.equal(gradeLine(line, ctxFor('a', '.', () => 'FAIL\nrude')).pass, false);
-  assert.equal(gradeLine(line, ctxFor('a', '.', () => 'maybe')).pass, false);
+  assert.equal(gradeOne(line, ctxFor('a', '.', () => 'FAIL\nrude')).pass, false);
+  assert.equal(gradeOne(line, ctxFor('a', '.', () => 'maybe')).pass, false);
 });
 
 const run = ([caseFile, arm, n, ...passes]) => ({ case: caseFile, arm, run: n, lines: passes.map((pass) => ({ text: 't', pass, reason: '' })) });
+const DEFAULTS = { threshold: 1, margins: new Map() };
+
 const arms = (caseFile, withPasses, otherPasses) => [
   ...withPasses.map((pass, index) => run([caseFile, 'with', index + 1, pass])),
   ...otherPasses.map((pass, index) => run([caseFile, 'without', index + 1, pass]))
@@ -80,7 +83,7 @@ test('aggregate gives PASS, FAIL or INCONCLUSIVE from the interval of the pass-r
     ...arms('win.txt', [true, true, true], [false, false, false]),
     ...arms('loss.txt', [false, false, false], [true, true, true]),
     ...arms('tie.txt', [true, true, true], [true, true, true])
-  ]);
+  ], DEFAULTS);
   assert.deepEqual([win.verdict, win.pass], ['PASS', true]);
   assert.deepEqual([loss.verdict, loss.pass], ['FAIL', false]);
   assert.deepEqual([tie.verdict, tie.pass], ['INCONCLUSIVE', false]);
@@ -92,47 +95,44 @@ test('aggregate gives PASS, FAIL or INCONCLUSIVE from the interval of the pass-r
 });
 
 test('a 3 of 3 against 2 of 3 split is INCONCLUSIVE, not the FAIL a 100 percent bar printed', () => {
-  const [result] = aggregate(arms('a.txt', [true, true, true], [true, true, false]));
+  const [result] = aggregate(arms('a.txt', [true, true, true], [true, true, false]), DEFAULTS);
   assert.equal(result.verdict, 'INCONCLUSIVE');
-  const [bar] = aggregate(arms('a.txt', [true, true, false], [true, true, true]));
+  const [bar] = aggregate(arms('a.txt', [true, true, false], [true, true, true]), DEFAULTS);
   assert.equal(bar.verdict, 'INCONCLUSIVE');
 });
 
 test('the margin decides where PASS and FAIL start, and a case margin beats the default', () => {
-  const ci = newcombe({ passed: 30, runs: 30 }, { passed: 30, runs: 30 });
-  assert.equal(verdictFor(ci, 0.2), 'PASS');
-  assert.equal(verdictFor(ci, 0.05), 'INCONCLUSIVE');
   const grades = arms('a.txt', Array(30).fill(true), Array(30).fill(true));
-  assert.equal(aggregate(grades)[0].verdict, 'PASS');
-  assert.equal(aggregate(grades, { margin: 0.05 })[0].verdict, 'INCONCLUSIVE');
-  assert.equal(aggregate(grades, { margin: 0.05, margins: new Map([['a.txt', 0.2]]) })[0].verdict, 'PASS');
-  assert.equal(runsNeeded(1, 1, 0.2), 16);
+  assert.equal(aggregate(grades, DEFAULTS)[0].verdict, 'PASS');
+  assert.equal(aggregate(grades, { ...DEFAULTS, margin: 0.05 })[0].verdict, 'INCONCLUSIVE');
+  assert.equal(aggregate(grades, { threshold: 1, margin: 0.05, margins: new Map([['a.txt', 0.2]]) })[0].verdict, 'PASS');
+  assert.equal(aggregate(arms('a.txt', [true, true, true], [true, true, true]), DEFAULTS)[0].needed, 16);
 });
 
-test('newcombe interval of equal rates is symmetric about 0 and narrows with n', () => {
-  const [low3, high3] = newcombe({ passed: 3, runs: 3 }, { passed: 3, runs: 3 });
-  const [low30, high30] = newcombe({ passed: 30, runs: 30 }, { passed: 30, runs: 30 });
+test('the interval of equal rates is symmetric about 0 and narrows with n', () => {
+  const [low3, high3] = aggregate(arms('a.txt', Array(3).fill(true), Array(3).fill(true)), DEFAULTS)[0].ci;
+  const [low30, high30] = aggregate(arms('a.txt', Array(30).fill(true), Array(30).fill(true)), DEFAULTS)[0].ci;
   assert.ok(Math.abs(low3 + high3) < 1e-9);
   assert.ok(high30 < high3);
 });
 
 test('a case with one arm keeps the single-arm threshold as its verdict', () => {
   const grades = [run(['a.txt', 'with', 1, true]), run(['a.txt', 'with', 2, true]), run(['a.txt', 'with', 3, false])];
-  assert.equal(aggregate(grades)[0].verdict, 'FAIL');
-  assert.equal(aggregate(grades, { threshold: 0.6 })[0].verdict, 'PASS');
-  assert.equal(aggregate(grades)[0].ci, null);
+  assert.equal(aggregate(grades, DEFAULTS)[0].verdict, 'FAIL');
+  assert.equal(aggregate(grades, { ...DEFAULTS, threshold: 0.6 })[0].verdict, 'PASS');
+  assert.equal(aggregate(grades, DEFAULTS)[0].ci, null);
 });
 
 test('PASS with an interval spanning 0 is flagged no skill effect, and judge instability is counted', () => {
   const same = Array(30).fill(true);
-  const [flat] = aggregate(arms('a.txt', same, same));
+  const [flat] = aggregate(arms('a.txt', same, same), DEFAULTS);
   assert.equal(flat.noSkillEffect, true);
   const unstable = [{ case: 'a.txt', arm: 'with', run: 1, lines: [{ text: 't', pass: true, reason: '', unstable: true }] }];
-  assert.equal(aggregate(unstable)[0].unstable, 1);
+  assert.equal(aggregate(unstable, DEFAULTS)[0].unstable, 1);
 });
 
 test('a contrast arm is compared like the without arm', () => {
-  const [result] = aggregate(arms('a.txt', [true, true, true], [false, false, false]).map((entry) => (entry.arm === 'without' ? { ...entry, arm: 'contrast' } : entry)));
+  const [result] = aggregate(arms('a.txt', [true, true, true], [false, false, false]).map((entry) => (entry.arm === 'without' ? { ...entry, arm: 'contrast' } : entry)), DEFAULTS);
   assert.equal(result.comparison, 'contrast');
   assert.equal(result.verdict, 'PASS');
 });
@@ -148,13 +148,13 @@ test('parseMargins reads a global and a case margin and parseCriteria keeps them
 test('a judge line is graded by the majority of three votes and an uneven vote is flagged unstable', () => {
   const line = parseCriteria('- Kind. `grade: judge`\n')[0].lines[0];
   const replies = (...list) => { const queue = [...list]; return () => queue.shift(); };
-  const split = gradeLine(line, ctxFor('a', '.', replies('PASS\nyes', 'FAIL\nno', 'PASS\nyes again')));
+  const split = gradeOne(line, ctxFor('a', '.', replies('PASS\nyes', 'FAIL\nno', 'PASS\nyes again')));
   assert.deepEqual([split.pass, split.votes, split.unstable], [true, [true, false, true], true]);
   assert.ok(Math.abs(split.agreement - 2 / 3) < 1e-9);
-  const lost = gradeLine(line, ctxFor('a', '.', replies('FAIL\nbad', 'PASS\nok', 'FAIL\nbad too')));
+  const lost = gradeOne(line, ctxFor('a', '.', replies('FAIL\nbad', 'PASS\nok', 'FAIL\nbad too')));
   assert.deepEqual([lost.pass, lost.reason], [false, 'bad']);
   const calls = [];
-  const sure = gradeLine(line, ctxFor('a', '.', (prompt) => { calls.push(prompt); return 'PASS\nok'; }));
+  const sure = gradeOne(line, ctxFor('a', '.', (prompt) => { calls.push(prompt); return 'PASS\nok'; }));
   assert.deepEqual([calls.length, sure.agreement, sure.unstable], [3, 1, false]);
 });
 
@@ -162,31 +162,31 @@ test('judge lines are not called when a deterministic line of the run failed', (
   const lines = parseCriteria('- Hi. `grade: answer =~ /hi/`\n- Kind. `grade: judge`\n')[0].lines;
   let calls = 0;
   const judge = () => { calls += 1; return 'PASS\nok'; };
-  const blocked = gradeRun({ case: 'a.txt', arm: 'with', run: 1, lines, answer: 'no', dir: os.tmpdir(), judge });
+  const blocked = gradeRun({ case: 'a.txt', arm: 'with', run: 1, lines, answer: 'no', dir: os.tmpdir(), judge, votes: JUDGE_VOTES });
   assert.deepEqual([calls, blocked.lines.map((line) => line.pass), blocked.lines[1].skipped], [0, [false, false], true]);
-  const open = gradeRun({ case: 'a.txt', arm: 'with', run: 1, lines, answer: 'hi', dir: os.tmpdir(), judge });
+  const open = gradeRun({ case: 'a.txt', arm: 'with', run: 1, lines, answer: 'hi', dir: os.tmpdir(), judge, votes: JUDGE_VOTES });
   assert.deepEqual([calls, open.lines.map((line) => line.pass)], [3, [true, true]]);
-});
-
-test('lint flags a judge line with three clauses and passes one claim', () => {
-  assert.equal(judgeClauses('The answer names `toCents` as the cause.'), 1);
-  assert.equal(judgeClauses('Names the cause after the float product comes out low (for example 28.999), and names no other cause.'), 3);
-  const md = '- One claim only. `grade: judge`\n- Names the cause after the product is low, and names no other cause. `grade: judge`\n- Cause and mechanism and exclusion. `grade: answer =~ /x/`\n';
-  assert.deepEqual(lintCriteria(md), [{ line: 2, clauses: 3 }]);
 });
 
 test('--check prints a LINT line for a three-clause judge line and still exits 0', () => {
   const dir = tempDir('pressure-lint-');
   const file = path.join(dir, 'c.md');
-  fs.writeFileSync(file, '- Cause, and mechanism, and exclusion. `grade: judge`\n');
+  fs.writeFileSync(file, [
+    '- The answer names `toCents` as the cause. `grade: judge`',
+    '- Names the cause after the float product comes out low (for example 28.999), and names no other cause. `grade: judge`',
+    '- Cause and mechanism and exclusion. `grade: answer =~ /x/`',
+    ''
+  ].join('\n'));
   const out = spawnSync('node', [path.resolve('skills/edit-skills/scripts/pressure-grade.mjs'), '--check', file], { encoding: 'utf8' });
   assert.equal(out.status, 0);
-  assert.match(out.stdout, /LINT .*c\.md:1: judge line has 3 clauses/);
+  const lint = out.stdout.split('\n').filter((line) => line.startsWith('LINT'));
+  assert.equal(lint.length, 1);
+  assert.match(lint[0], /LINT .*c\.md:2: judge line has 3 clauses/);
 });
 
 test('gradeRun labels the lines with case, arm and run', () => {
   const { lines } = parseCriteria('- t `grade: answer =~ /x/`\n')[0];
-  const grade = gradeRun({ case: 'a.txt', arm: 'with', run: 2, lines, answer: 'x', dir: '.' });
+  const grade = gradeRun({ case: 'a.txt', arm: 'with', run: 2, lines, answer: 'x', dir: '.', votes: JUDGE_VOTES });
   assert.deepEqual([grade.case, grade.arm, grade.run, grade.lines[0].pass], ['a.txt', 'with', 2, true]);
 });
 
@@ -220,6 +220,17 @@ test('--check takes several criteria files, names each and exits 1 if any fails'
   assert.equal(both.status, 0);
 });
 
+test('--check reports a missing file and a folder as a failed file, not a crash', () => {
+  const dir = tempDir('pressure-check-');
+  const script = path.resolve('skills/edit-skills/scripts/pressure-grade.mjs');
+  const missing = spawnSync('node', [script, '--check', path.join(dir, 'none.md')], { encoding: 'utf8' });
+  assert.equal(missing.status, 1);
+  assert.match(missing.stderr, /none\.md: ENOENT/);
+  const folder = spawnSync('node', [script, '--check', dir], { encoding: 'utf8' });
+  assert.equal(folder.status, 1);
+  assert.match(folder.stderr, /EISDIR/);
+});
+
 test('parseCriteria treats a star or numbered top-level bullet like a dash bullet', () => {
   assert.throws(() => parseCriteria('* plain\n'), /line 1.*no `grade/);
   assert.throws(() => parseCriteria('1. plain\n'), /line 1.*no `grade/);
@@ -246,7 +257,7 @@ test('a parsed regex tag keeps its source and flags and no compiled copy', () =>
 test('gradeRun fails a judge line whose judge call throws instead of rejecting the run', () => {
   const lines = parseCriteria('- Kind. `grade: judge`\n- Hi. `grade: answer =~ /hi/`\n')[0].lines;
   const judge = () => { throw new Error('judge call failed: boom'); };
-  const graded = gradeRun({ case: 'a.txt', arm: 'with', run: 1, lines, answer: 'hi', dir: os.tmpdir(), judge });
+  const graded = gradeRun({ case: 'a.txt', arm: 'with', run: 1, lines, answer: 'hi', dir: os.tmpdir(), judge, votes: JUDGE_VOTES });
   assert.deepEqual(graded.lines.map((line) => line.pass), [false, true]);
   assert.match(graded.lines[0].reason, /boom/);
 });
@@ -271,7 +282,18 @@ test('self-test: regrading a good and a bad reference answer passes every line o
 });
 
 test('the judge call reads project and local settings only, so no installed plugin loads', () => {
-  const args = judgeArguments('sonnet:low', 'PROMPT');
+  const dir = tempDir('pressure-judge-');
+  const argsFile = path.join(dir, 'args.txt');
+  const fake = path.join(dir, 'claude');
+  fs.writeFileSync(fake, `#!/bin/sh\nprintf '%s\\n' "$@" > '${argsFile}'\necho PASS\n`, { mode: 0o755 });
+  const saved = process.env.PATH;
+  process.env.PATH = `${dir}${path.delimiter}${saved}`;
+  try {
+    assert.equal(defaultJudge('sonnet:low')('PROMPT').trim(), 'PASS');
+  } finally {
+    process.env.PATH = saved;
+  }
+  const args = fs.readFileSync(argsFile, 'utf8').trim().split('\n');
   assert.deepEqual(args.slice(args.indexOf('--setting-sources'), args.indexOf('--setting-sources') + 2), ['--setting-sources', 'project,local']);
   assert.deepEqual(args.slice(0, 2), ['-p', 'PROMPT']);
 });

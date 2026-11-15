@@ -5,10 +5,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { hookEntries, tempDir } from './harness.mjs';
+import { REPOSITORY_ROOT, hookEntries, tempDir } from './harness.mjs';
 
-const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
 const BASH = ['/bin/bash', '/usr/bin/bash'].find((candidate) => fs.existsSync(candidate));
 const PRE_TOOL_USE_CALLS = 10;
 
@@ -17,12 +15,8 @@ function runHook(hook, input, pathValue) {
     input: JSON.stringify(input),
     encoding: 'utf8',
     timeout: 20000,
-    env: { PATH: pathValue, CLAUDE_PLUGIN_ROOT: REPOSITORY, HOME: os.tmpdir() }
+    env: { PATH: pathValue, CLAUDE_PLUGIN_ROOT: REPOSITORY_ROOT, HOME: os.tmpdir() }
   });
-}
-
-function emptyPath() {
-  return tempDir('exo-no-node-');
 }
 
 const SESSION_INPUT = { hook_event_name: 'SessionStart', source: 'startup', cwd: os.tmpdir(), session_id: 'node-guard' };
@@ -42,7 +36,7 @@ test('every hook command tests for node first, runs under bash and stays shell f
 test('without node, SessionStart prints one systemMessage and exits 0', () => {
   const sessionStart = hookEntries().filter((entry) => entry.event === 'SessionStart');
   assert.equal(sessionStart.length, 1);
-  const run = runHook(sessionStart[0].hook, SESSION_INPUT, emptyPath());
+  const run = runHook(sessionStart[0].hook, SESSION_INPUT, tempDir('exo-no-node-'));
   assert.equal(run.status, 0, run.stderr);
   assert.equal(run.stderr, '');
   const output = JSON.parse(run.stdout);
@@ -55,7 +49,7 @@ test('without node, SessionStart prints one systemMessage and exits 0', () => {
 test('without node, each PreToolUse and Stop hook exits 0 with no output over ten calls', () => {
   const silent = hookEntries().filter((entry) => entry.event !== 'SessionStart');
   assert.ok(silent.length >= 6, `${silent.length} silent hooks`);
-  const bin = emptyPath();
+  const bin = tempDir('exo-no-node-');
   for (const { event, matcher, hook } of silent) {
     for (let call = 0; call < PRE_TOOL_USE_CALLS; call += 1) {
       const run = runHook(hook, BASH_INPUT, bin);

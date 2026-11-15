@@ -2,12 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { scanForegroundDispatches } from '../verify/checks/foreground-dispatch.mjs';
+import { checkForegroundDispatch } from '../verify/checks/foreground-dispatch.mjs';
 import { createRepository } from '../verify/repository.mjs';
 import { tempDir } from './harness.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 function scan(files) {
   const root = tempDir('foreground-dispatch-');
@@ -15,7 +13,15 @@ function scan(files) {
     fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
     fs.writeFileSync(path.join(root, name), text);
   }
-  return scanForegroundDispatches(createRepository(root));
+  let flagged = [];
+  const report = {
+    assert(condition, name, details) {
+      if (condition) return;
+      flagged = details.fail.split(' tell an Agent call')[0].split(', ');
+    }
+  };
+  checkForegroundDispatch(report, createRepository(root));
+  return { flagged };
 }
 
 test('a skill line that sends agents in the foreground is flagged with its line', () => {

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { isUnreachableInput } from '#plan-inputs';
-import { parsePlan } from '#plan-tasks';
+import { PlanError, parsePlan } from '#plan-tasks';
 import { clip } from './run-report.mjs';
 import { PLUGIN_ROOT, SCRIPT } from './run-session-paths.mjs';
 import { breachOf, worktreeTree } from './run-worktree.mjs';
@@ -35,8 +35,9 @@ function adoptRepair(ctx, text, n) {
     const fresh = parsePlan(text).tasks.find((entry) => entry.number === n);
     Object.assign(ctx.plan.tasks.find((entry) => entry.number === n), fresh);
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof PlanError) return false;
+    throw error;
   }
 }
 

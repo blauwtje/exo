@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import test from 'node:test';
-import { coversCompanion, isCovered } from '../lib/plan-landed.mjs';
+import { isCovered } from '../lib/plan-landed.mjs';
 import { driftOf, INPUT_UNREADABLE, isUnreachableInput, inputPaths, relativeInputPaths } from '../lib/plan-inputs.mjs';
 import { frameOf } from '../lib/plan-frame.mjs';
 import { parsePlan } from '../lib/plan-tasks.mjs';
@@ -33,29 +33,6 @@ const INPUT_FORMS = [
 for (const [name, text, expected] of INPUT_FORMS) {
   test(`inputPaths reads ${name}`, () => {
     assert.deepEqual(inputPaths(`- assume: ${text}`), expected);
-  });
-}
-
-const COMPANION_FORMS = [
-  ['a module stylesheet of a component', ['src/Button.tsx'], 'src/Button.module.css', true],
-  ['a test file of a source file', ['lib/a.mjs'], 'lib/a.test.mjs', true],
-  ['a sibling of a listed multi-dot file', ['src/Button.module.css'], 'src/Button.tsx', true],
-  ['the listed file itself', ['src/Button.tsx'], 'src/Button.tsx', false],
-  ['a file whose stem only starts with the listed stem', ['src/Button.tsx'], 'src/ButtonGroup.tsx', false],
-  ['a same-named file in another folder', ['src/Button.tsx'], 'other/Button.module.css', false],
-  ['a same-named file in a nested folder', ['src/Button.tsx'], 'src/deep/Button.module.css', false],
-  ['a file named like a dotfile companion', ['.env.example'], '.env.local', false],
-  ['a dotfile stem with a dot suffix', ['.env'], '.env.local', false],
-  ['a bare stem with no rest', ['src/Button.tsx'], 'src/Button.', false],
-  ['a file without an extension', ['Makefile'], 'Makefile.bak', false],
-  ['a folder entry', ['src/'], 'src/Button.module.css', false],
-  ['a parent path escape', ['src/Button.tsx'], 'src/../Button.module.css', false],
-  ['no listed files', [], 'src/Button.module.css', false],
-];
-
-for (const [name, entries, file, expected] of COMPANION_FORMS) {
-  test(`coversCompanion reads ${name}`, () => {
-    assert.equal(coversCompanion(entries, file), expected);
   });
 }
 

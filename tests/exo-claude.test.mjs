@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, run } from './harness.mjs';
+import { tempDir, run } from './harness.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
 const SECRET = 'sk-secret-value-123';
@@ -16,8 +16,8 @@ process.exit(Number(process.env.STUB_EXIT ?? 0));
 `;
 
 async function launch(args, { keys = `DEEPSEEK_API_KEY=${SECRET}\n`, extra = {}, withClaude = true } = {}) {
-  const home = await fixture();
-  const tools = await fixture();
+  const home = await tempDir('ui-design-test-');
+  const tools = await tempDir('ui-design-test-');
   const directory = path.join(home, '.config', 'exo');
   await fs.mkdir(directory, { recursive: true });
   if (keys !== null) await fs.writeFile(path.join(directory, 'keys.env'), keys);
@@ -107,8 +107,8 @@ const ALWAYS_PEAK = { deepseekPeak: { days: [0, 1, 2, 3, 4, 5, 6], hoursUtc: [[0
 const NEVER_PEAK = { deepseekPeak: { days: [], hoursUtc: [] } };
 
 async function launchWithPeak(args, peak) {
-  const home = await fixture();
-  const tools = await fixture();
+  const home = await tempDir('ui-design-test-');
+  const tools = await tempDir('ui-design-test-');
   const directory = path.join(home, '.config', 'exo');
   await fs.mkdir(directory, { recursive: true });
   await fs.writeFile(path.join(directory, 'keys.env'), `DEEPSEEK_API_KEY=${SECRET}\n`);

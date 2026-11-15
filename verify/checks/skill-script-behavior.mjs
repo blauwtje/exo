@@ -6,16 +6,15 @@ import { spawn } from 'node:child_process';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-const TALLY_KEYS = ['tests', 'pass', 'fail', 'skipped'];
+const TALLY_LINE = /^#\s+(tests|pass|fail|skipped)\s+(\d+)\s*$/;
 
-function tallyFrom(lines, key) {
-  const pattern = new RegExp(`^#\\s+${key}\\s+(\\d+)\\s*$`);
-  let value = -1;
+function tallyFrom(lines) {
+  const tally = { tests: -1, pass: -1, fail: -1, skipped: -1 };
   for (const line of lines) {
-    const match = pattern.exec(line);
-    if (match) value = Number(match[1]);
+    const match = TALLY_LINE.exec(line);
+    if (match) tally[match[1]] = Number(match[2]);
   }
-  return value;
+  return tally;
 }
 
 function runNode(args, env) {
@@ -34,7 +33,7 @@ const NAME = 'skill script behavior';
 
 function outcomeOf(run) {
   const lines = run.output.split('\n');
-  const tally = Object.fromEntries(TALLY_KEYS.map((key) => [key, tallyFrom(lines, key)]));
+  const tally = tallyFrom(lines);
   const summary = `${tally.pass} passed, ${tally.fail} failed, ${tally.skipped} skipped of ${tally.tests} behavioral tests`;
 
   if (run.status !== 0) {
@@ -51,14 +50,13 @@ export function startSkillScriptBehavior(repository) {
   }
   const testFiles = fs.readdirSync(testsRoot).sort()
     .filter((name) => name.endsWith('.test.mjs'))
-    .map((name) => path.join(testsRoot, name))
-    .filter((file) => fs.statSync(file).isFile());
+    .map((name) => path.join(testsRoot, name));
   if (testFiles.length === 0) {
     return Promise.resolve({ status: 'UNRUN', name: NAME, detail: 'tests/ holds no *.test.mjs file' });
   }
 
   const stripFile = repository.join('tests', 'clean-run-env.mjs');
-  const strip = fs.existsSync(stripFile) ? ['--import', pathToFileURL(stripFile).href] : [];
+  const strip = ['--import', pathToFileURL(stripFile).href];
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-behavior-'));
   const cleanup = () => fs.rmSync(scratch, { recursive: true, force: true });
   return runNode([...strip, '--test', '--test-reporter=tap', ...testFiles], { ...process.env, TMPDIR: scratch })

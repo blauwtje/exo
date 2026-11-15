@@ -2,13 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
 import { RUN_OUTCOMES } from '../lib/run-outcomes.mjs';
-import { REFUSAL_HANDLERS, isRetryable, refusalHandler } from '../lib/refusal-handlers.mjs';
+import { refusalHandler, refusalTail } from '../lib/refusal-handlers.mjs';
 
 const KINDS = ['plan drift', 'input unreachable', 'report missing', 'proof failed', 'env', 'start stop', 'refused', 'landed', 'pin', 'lock', 'unfinished merge'];
 
 test('every refusal kind maps to one single-line Then: handler', () => {
-  assert.deepEqual(Object.keys(REFUSAL_HANDLERS).sort(), [...KINDS].sort());
-  assert.ok(Object.keys(REFUSAL_HANDLERS).every((kind) => RUN_OUTCOMES[kind] !== undefined));
+  assert.ok(KINDS.every((kind) => RUN_OUTCOMES[kind] !== undefined));
   for (const kind of KINDS) {
     const line = refusalHandler(kind);
     assert.match(line, /^Then: \S/, kind);
@@ -27,8 +26,8 @@ test('the input unreachable handler stops the run BLOCKED and parks no task for 
 });
 
 test('a stop kind is not retryable', () => {
-  for (const kind of ['refused', 'landed', 'pin', 'lock', 'unfinished merge', 'env', 'input unreachable']) assert.equal(isRetryable(kind), false, kind);
-  for (const kind of ['proof failed', 'report missing', 'plan drift']) assert.equal(isRetryable(kind), true, kind);
+  for (const kind of ['refused', 'landed', 'pin', 'lock', 'unfinished merge', 'env', 'input unreachable']) assert.doesNotMatch(refusalTail(kind), /exo-retry/, kind);
+  for (const kind of ['proof failed', 'report missing', 'plan drift']) assert.match(refusalTail(kind), /exo-retry/, kind);
 });
 
 test('repair handoffs name build-repair and not hardest', () => {

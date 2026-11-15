@@ -1,7 +1,7 @@
 import { pooledSd } from '../../../lib/eval-stats.mjs';
 import { planHoldout } from '../../../lib/holdout.mjs';
 import { runCheck } from '../../../lib/run-check.mjs';
-import { addRun, emptySamples, improveDefaults, readItems, readRun, readScore, scoreEnv } from './round.mjs';
+import { addRun, emptySamples, improveDefaults, readItems, readRun, readScore, round4, scoreEnv } from './round.mjs';
 
 const BASELINE_TIMEOUT_MS = 3_600_000;
 
@@ -27,8 +27,6 @@ export function baselineSamples(cwd, cfg) {
   }
   return { samples, holdout, seconds: Math.max(...runs.map((run) => run.seconds)) };
 }
-
-const round4 = (value) => (value === null ? null : Number(value.toFixed(4)));
 
 export function baselineNoise(samples, defaults = improveDefaults()) {
   const sd = pooledSd([samples.runs]);

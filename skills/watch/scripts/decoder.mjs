@@ -1,10 +1,12 @@
-import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { orWhenAbsent } from '#absent-path';
+import { parseLine } from '#basics';
 import { environmentMs } from '#script-flags';
 import { DEFAULTS } from './defaults.mjs';
+import { runTool, ToolFailure } from './run-tool.mjs';
 import { cacheRoot, isExecutable } from './ytdlp-binary.mjs';
 
 const SCOPE = '@ffmpeg-installer';
@@ -18,14 +20,6 @@ const PACKAGES = {
   'win32-x64': { version: '4.1.0', integrity: 'sha512-Drt5u2vzDnIONf4ZEkKtFlbvwj6rI3kxw1Ck9fpudmtgaZIHD4ucsWB2lCZBXRxJgXR+2IMSti+4rtM4C4rXgg==' },
 };
 const provisioning = new Map();
-
-function execute(command, args, timeout) {
-  return new Promise((resolve) => {
-    execFile(command, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, timeout, shell: command.endsWith('.cmd') }, (error, stdout, stderr) => {
-      resolve({ error, stdout, stderr });
-    });
-  });
-}
 
 function reasonOf(run, timeout) {
   if (run.error?.killed) return `did not finish within ${timeout / 1000} s`;
@@ -41,7 +35,7 @@ function onPath(env) {
 function packageFor(platform, arch) {
   const key = `${platform}-${platform === 'win32' ? 'x64' : arch}`;
   const pinned = PACKAGES[key];
-  if (!pinned) throw new Error(`no ffmpeg decoder is published for ${platform}-${arch}`);
+  if (!pinned) throw new ToolFailure(`no ffmpeg decoder is published for ${platform}-${arch}`);
   return { key, name: `${SCOPE}/${key}`, mapped: key !== `${platform}-${arch}`, ...pinned };
 }
 
@@ -50,14 +44,11 @@ function installedBinary(prefix, pkg, platform) {
 }
 
 function recordedIntegrity(prefix, pkg) {
-  try {
-    const lock = JSON.parse(fs.readFileSync(path.join(prefix, 'package-lock.json'), 'utf8'));
-    const suffix = `node_modules/${pkg.name}`;
-    const key = Object.keys(lock.packages ?? {}).find((entry) => entry.endsWith(suffix));
-    return key ? lock.packages[key].integrity ?? null : null;
-  } catch {
-    return null;
-  }
+  const text = orWhenAbsent(() => fs.readFileSync(path.join(prefix, 'package-lock.json'), 'utf8'), null);
+  const packages = parseLine(text)?.packages ?? {};
+  const suffix = `node_modules/${pkg.name}`;
+  const key = Object.keys(packages).find((entry) => entry.endsWith(suffix));
+  return key ? packages[key]?.integrity ?? null : null;
 }
 
 function installArguments(prefix, pkg) {
@@ -68,19 +59,19 @@ function installArguments(prefix, pkg) {
 async function provision(prefix, pkg, { platform, run, timeout }) {
   const npm = platform === 'win32' ? 'npm.cmd' : 'npm';
   const ran = await run(npm, installArguments(prefix, pkg), timeout);
-  if (ran.error) throw new Error(`installing ${pkg.name} failed: ${reasonOf(ran, timeout)}`);
+  if (ran.error) throw new ToolFailure(`installing ${pkg.name} failed: ${reasonOf(ran, timeout)}`);
   if (recordedIntegrity(prefix, pkg) !== pkg.integrity) {
     fs.rmSync(path.join(prefix, 'node_modules', SCOPE), { recursive: true, force: true });
-    throw new Error(`${pkg.name}@${pkg.version} does not match its pinned integrity`);
+    throw new ToolFailure(`${pkg.name}@${pkg.version} does not match its pinned integrity`);
   }
   const binary = installedBinary(prefix, pkg, platform);
-  if (!fs.existsSync(binary)) throw new Error(`${pkg.name} holds no ffmpeg binary`);
+  if (!fs.existsSync(binary)) throw new ToolFailure(`${pkg.name} holds no ffmpeg binary`);
   fs.chmodSync(binary, 0o755);
   return binary;
 }
 
-export async function decoderPath(options = {}) {
-  const { env = process.env, platform = process.platform, arch = process.arch, home = os.homedir(), run = execute } = options;
+async function decoderPath(options) {
+  const { env = process.env, platform = process.platform, arch = process.arch, home = os.homedir(), run = runTool } = options;
   if (onPath(env)) return 'ffmpeg';
   const pkg = packageFor(platform, arch);
   const prefix = path.join(cacheRoot(env, home), 'npm', 'ffmpeg');
@@ -95,11 +86,11 @@ export async function decoderPath(options = {}) {
 }
 
 async function runDecoder(args, options) {
-  const { run = execute } = options;
+  const { run = runTool } = options;
   const timeout = options.transcribeMs ?? DEFAULTS.transcribeMs;
   const command = await decoderPath(options);
   const ran = await run(command, args, timeout);
-  if (ran.error) throw new Error(`ffmpeg failed: ${reasonOf(ran, timeout)}`);
+  if (ran.error) throw new ToolFailure(`ffmpeg failed: ${reasonOf(ran, timeout)}`);
 }
 
 function wavPathOf(inputPath) {
@@ -108,7 +99,7 @@ function wavPathOf(inputPath) {
   return wav === inputPath ? path.join(parsed.dir, `${parsed.name}.16k.wav`) : wav;
 }
 
-export async function toWav(inputPath, options = {}) {
+export async function toWav(inputPath, options) {
   const wav = wavPathOf(inputPath);
   await runDecoder(['-nostdin', '-y', '-i', inputPath, '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le', wav], options);
   return wav;
@@ -132,7 +123,7 @@ export async function extractFrames(videoPath, dir, ...[duration, options = {}])
   const missing = fs.readdirSync(folder).length !== FRAME_COUNT;
   if (failed || missing) {
     fs.rmSync(folder, { recursive: true, force: true });
-    throw failed ? failed.reason : new Error('ffmpeg wrote fewer frames than asked');
+    throw failed ? failed.reason : new ToolFailure('ffmpeg wrote fewer frames than asked');
   }
   return folder;
 }

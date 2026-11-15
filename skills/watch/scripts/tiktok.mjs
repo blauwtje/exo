@@ -1,4 +1,6 @@
+import { parseLine } from '#basics';
 import { parseVtt } from './cues.mjs';
+import { isFetchFailure } from './run-tool.mjs';
 
 const TIKTOK_HOST = /(^|\.)tiktok\.com$/;
 const REHYDRATION = /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/;
@@ -6,37 +8,31 @@ const OEMBED_URL = 'https://www.tiktok.com/oembed?url=';
 const AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
 
 export function isTikTokUrl(text) {
-  try {
-    return TIKTOK_HOST.test(new URL(text).hostname);
-  } catch {
-    return false;
-  }
+  if (!URL.canParse(text)) return false;
+  return TIKTOK_HOST.test(new URL(text).hostname);
+}
+
+function nullWhenUnanswered(error) {
+  if (!isFetchFailure(error)) throw error;
+  return null;
 }
 
 async function getText(fetchFn, url, options) {
   const init = { headers: { 'user-agent': AGENT, 'accept-language': 'en-US,en;q=0.9' }, signal: AbortSignal.timeout(options.fetchMs) };
-  const response = await fetchFn(url, init).catch(() => null);
+  const response = await fetchFn(url, init).catch(nullWhenUnanswered);
   if (!response?.ok) return null;
-  return response.text().catch(() => null);
+  return response.text().catch(nullWhenUnanswered);
 }
 
 function itemOf(page) {
   const embedded = REHYDRATION.exec(page ?? '')?.[1];
   if (!embedded) return null;
-  try {
-    return JSON.parse(embedded).__DEFAULT_SCOPE__?.['webapp.video-detail']?.itemInfo?.itemStruct ?? null;
-  } catch {
-    return null;
-  }
+  return parseLine(embedded)?.__DEFAULT_SCOPE__?.['webapp.video-detail']?.itemInfo?.itemStruct ?? null;
 }
 
 async function oembedOf(fetchFn, url, options) {
   const text = await getText(fetchFn, `${OEMBED_URL}${encodeURIComponent(url)}`, options);
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
+  return parseLine(text);
 }
 
 function subtitleOf(item) {
@@ -72,7 +68,7 @@ async function readPage(url, options, fetchFn) {
   return { ...base, cues, captions: captionsLabelOf(subtitle) };
 }
 
-export function prefetchTikTok(urls, { parallel, signal, ...options }, fetchFn = globalThis.fetch) {
+export function prefetchTikTok(urls, { parallel, signal, ...options }, fetchFn) {
   const reads = new Map();
   const waiting = new Set();
   const lanes = Array.from({ length: parallel }, () => Promise.resolve());
@@ -91,7 +87,7 @@ export function prefetchTikTok(urls, { parallel, signal, ...options }, fetchFn =
   return reads;
 }
 
-export function readTikTok(url, options, fetchFn = globalThis.fetch) {
+export function readTikTok(url, options, fetchFn) {
   const prefetched = options.pageReads?.get(url);
   if (!prefetched) return readPage(url, options, fetchFn);
   options.pageReads.delete(url);

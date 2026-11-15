@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { extractFrames } from './decoder.mjs';
+import { ToolFailure } from './run-tool.mjs';
 import { runYtDlpWithRuntime, ytDlpReason } from './ytdlp.mjs';
 
 const FEW_WORDS = 15;
@@ -14,7 +15,7 @@ async function downloadVideo(url, folder, options) {
   const run = await runYtDlp(args, options.ytDlpMs);
   const name = fs.readdirSync(folder).find((file) => file.startsWith('video.'));
   if (name && !run.error) return path.join(folder, name);
-  throw new Error(`video download failed: ${ytDlpReason(run, options)}`);
+  throw new ToolFailure(`video download failed: ${ytDlpReason(run, options)}`);
 }
 
 async function grabFrames({ url, dir, duration }, options) {
@@ -39,7 +40,8 @@ export async function withKeyframes(result, url, options) {
   try {
     const frames = await grabFrames({ url, dir: result.dir, duration: result.duration }, options);
     return { ...result, line: `${result.line} frames=${frames} (${fs.readdirSync(frames).length} files)` };
-  } catch {
-    return result;
+  } catch (error) {
+    if (error instanceof ToolFailure) return result;
+    throw error;
   }
 }

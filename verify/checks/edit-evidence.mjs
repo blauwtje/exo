@@ -1,7 +1,7 @@
 import { badTrailer, WORDING_PATH } from '../../lib/evidence-rules.mjs';
 import { git } from '#git';
+import { BASE_REF } from './plugin-version.mjs';
 
-const BASE_REF = 'origin/main';
 const NAME = 'edit evidence';
 
 function lines(run) {

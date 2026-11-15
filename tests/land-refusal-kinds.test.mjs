@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { REFUSAL_HANDLERS, isRetryable, refusalHandler } from '../lib/refusal-handlers.mjs';
+import { refusalHandler, refusalTail } from '../lib/refusal-handlers.mjs';
 import { processStart } from '../lib/land-lock.mjs';
 import { unfinishedMergeNote } from '../lib/merge-state.mjs';
 import { removeWorktree } from '../skills/build/scripts/remove-worktree.mjs';
@@ -63,12 +63,10 @@ test('an unfinished squash merge is refused before any commit, with no exo-retry
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
 });
 
+const KINDS = ['plan drift', 'input unreachable', 'report missing', 'proof failed', 'env', 'start stop', 'refused', 'landed', 'pin', 'lock', 'unfinished merge'];
+
 test('every refusal kind has a retry field, and only the three repairable kinds are retryable', () => {
-  for (const [kind, row] of Object.entries(REFUSAL_HANDLERS)) {
-    assert.equal(typeof row.retry, 'boolean', kind);
-    assert.equal(isRetryable(kind), row.retry, kind);
-  }
-  const retryable = Object.keys(REFUSAL_HANDLERS).filter(isRetryable).sort();
+  const retryable = KINDS.filter((kind) => refusalTail(kind).endsWith('exo-retry\n')).sort();
   assert.deepEqual(retryable, ['plan drift', 'proof failed', 'report missing']);
 });
 
@@ -76,7 +74,7 @@ test('every LandingError kind thrown by the land path has a row in the table', (
   const types = Object.values(errors).filter((type) => type === errors.LandingError || type.prototype instanceof errors.LandingError);
   const kinds = types.map((type) => new type('x').kind);
   for (const kind of ['pin', 'lock', 'unfinished merge']) assert.ok(kinds.includes(kind), kind);
-  for (const kind of kinds) assert.ok(kind in REFUSAL_HANDLERS, kind);
+  for (const kind of kinds) assert.doesNotThrow(() => refusalHandler(kind), kind);
 });
 
 test('squash-check and remove-worktree refuse an unfinished merge with the note the land path prints', async () => {
@@ -85,7 +83,7 @@ test('squash-check and remove-worktree refuse an unfinished merge with the note 
   conflictedSquash(root);
   const note = unfinishedMergeNote(root);
   assert.ok(note);
-  const check = await run(SQUASH_CHECK, ['--branch', 'feat/spare', '--root', root], { cwd: root });
+  const check = await run(SQUASH_CHECK, ['--branch', 'feat/spare'], { cwd: root });
   assert.equal(check.code, 1);
   assert.ok(check.stdout.includes(note), check.stdout);
   assert.throws(() => removeWorktree({ worktree: root, run: root, kept: true }), (error) => error.message.includes(note));

@@ -5,7 +5,7 @@ import { decisionsPathOf, planTaskTrailer } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { LandingError } from './land-errors.mjs';
 import { headMessage, headSha, moveHead } from './land-git.mjs';
-import { gitText } from '#git';
+import { gitText, shortSha } from '#git';
 import { createWorktree, worktreePath } from '#checkout';
 import { candidateTrailer } from './land-commit-block.mjs';
 import { isProtectedPath, nestedWorktrees } from './land-paths.mjs';
@@ -47,7 +47,7 @@ export function commitCandidate({ block, root, task, planId, reportText = null }
   carryRaises(root, reportText);
   const candidate = headSha(root);
   if (!headMessage(root).split('\n').includes(trailer)) throw new LandingError(`the Commit: block of Task ${task.number} left no commit carrying "${trailer}"`);
-  if (gitText(root, ['rev-parse', `${candidate}~1`]) !== base) throw new LandingError(`the Commit: block of Task ${task.number} did not make exactly one commit on ${base.slice(0, 7)}`);
+  if (gitText(root, ['rev-parse', `${candidate}~1`]) !== base) throw new LandingError(`the Commit: block of Task ${task.number} did not make exactly one commit on ${shortSha(base)}`);
   return { base, candidate };
 }
 
@@ -67,7 +67,7 @@ export function promoteCandidate({ root, task, planId, candidate: { base, candid
   const signing = signsCommits(root) ? ['-S'] : [];
   const promoted = execFileSync('git', ['-C', root, 'commit-tree', `${candidate}^{tree}`, '-p', base, ...signing, '-F', '-'], { encoding: 'utf8', input: message, env: authorEnvOf(root, candidate) }).trim();
   if (!moveHead(root, 'land-task: promote candidate', { target: promoted, expected: candidate })) {
-    throw new LandingError(`HEAD moved off the candidate ${candidate.slice(0, 7)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
+    throw new LandingError(`HEAD moved off the candidate ${shortSha(candidate)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
   }
 }
 
@@ -132,7 +132,7 @@ export function committedSha(task, { root, planId, planPath, base }) {
   if (!body.includes(trailer)) throw new LandingError(`HEAD ${sha} carries no "${trailer}" trailer`);
   const expectedSubject = task.commitSubject ?? task.title;
   if (subject !== expectedSubject) throw new LandingError(`HEAD ${sha} carries "${trailer}", yet its subject reads "${subject}" and the plan gives "${expectedSubject}"`);
-  if (gitText(root, ['rev-parse', 'HEAD~1']) !== base) throw new LandingError(`HEAD ${sha} does not sit directly on ${base.slice(0, 7)}, the commit Task ${task.number} started from`);
+  if (gitText(root, ['rev-parse', 'HEAD~1']) !== base) throw new LandingError(`HEAD ${sha} does not sit directly on ${shortSha(base)}, the commit Task ${task.number} started from`);
   warnProtectedPaths(task, { root, planPath, base });
   return sha;
 }

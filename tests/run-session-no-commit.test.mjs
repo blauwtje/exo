@@ -6,7 +6,7 @@ import test from 'node:test';
 import { shellQuote } from '#basics';
 import { parsePlan } from '#plan-tasks';
 import { planPrompt } from '../skills/build/scripts/run-prompts.mjs';
-import { SHARED_STATE_GIT } from '../lib/git-deny.mjs';
+import { sharedStateDenyRules, sharedStateReason } from '../lib/git-deny.mjs';
 import { childEnv } from '../skills/build/scripts/run-session-env.mjs';
 import { DENY_RULES } from '../skills/build/scripts/run-session-rules.mjs';
 import { PLUGIN_ROOT } from '../skills/build/scripts/run-session-paths.mjs';
@@ -37,7 +37,7 @@ test('a build session cannot commit on the run tree, bare or wrapped by the stal
   for (const command of sessionCommits) {
     for (const wrapped of [command, `node "${GUARD}" -- ${shellQuote(command)}`]) {
       const { root, head } = seedRepo();
-      const env = childEnv('plan/1', PROVIDER, { refuseCommits: root });
+      const env = childEnv('plan/1', PROVIDER, { handoff: null, ecosystemEnv: {}, repair: false, refuseCommits: root });
       const before = head();
       const run = spawnSync('bash', ['-c', wrapped], { cwd: root, env, encoding: 'utf8' });
       assert.notEqual(run.status, 0, wrapped);
@@ -51,7 +51,7 @@ test('a build session still commits in a repo other than the run root', () => {
   const run = seedRepo();
   const fixture = seedRepo();
   const before = fixture.head();
-  const env = childEnv('plan/1', PROVIDER, { refuseCommits: run.root });
+  const env = childEnv('plan/1', PROVIDER, { handoff: null, ecosystemEnv: {}, repair: false, refuseCommits: run.root });
   const result = spawnSync('git', ['commit', '-q', '-m', 'fixture'], { cwd: fixture.root, env, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   assert.notEqual(fixture.head(), before);
@@ -59,7 +59,7 @@ test('a build session still commits in a repo other than the run root', () => {
 
 test('this repo\'s fixture-repo tests pass unchanged under a session env rooted at this repo', () => {
   const root = spawnSync('git', ['-C', PLUGIN_ROOT, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).stdout.trim();
-  const env = childEnv('plan/1', PROVIDER, { refuseCommits: root });
+  const env = childEnv('plan/1', PROVIDER, { handoff: null, ecosystemEnv: {}, repair: false, refuseCommits: root });
   delete env.NODE_TEST_CONTEXT;
   const run = spawnSync(process.execPath, ['--test', 'tests/pressure-run-folder.test.mjs'], { cwd: root, env, encoding: 'utf8' });
   assert.equal(run.status, 0, run.stdout.split('\n').filter((line) => /not ok|✖|Error/.test(line)).join('\n'));
@@ -68,7 +68,7 @@ test('this repo\'s fixture-repo tests pass unchanged under a session env rooted 
 test('the script still commits outside the session env', () => {
   const { root, head } = seedRepo();
   const before = head();
-  const run = spawnSync('git', ['-C', root, 'commit', '-q', '-m', 'feat(text): add b'], { env: childEnv('plan/1', PROVIDER), encoding: 'utf8' });
+  const run = spawnSync('git', ['-C', root, 'commit', '-q', '-m', 'feat(text): add b'], { env: childEnv('plan/1', PROVIDER, { handoff: null, ecosystemEnv: {}, repair: false, refuseCommits: null }), encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr);
   assert.notEqual(head(), before);
 });
@@ -116,7 +116,11 @@ test('a plan session brief keeps the task but not its Commit: block', () => {
 });
 
 test('a headless session denies each shared-state git command', () => {
-  for (const pattern of SHARED_STATE_GIT) assert.ok(DENY_RULES.includes(`Bash(git ${pattern})`), pattern);
+  for (const rule of sharedStateDenyRules()) {
+    assert.ok(DENY_RULES.includes(rule), rule);
+    const command = rule.slice('Bash('.length, -1).replace(' *', ' x').replace('*', '');
+    assert.notEqual(sharedStateReason(command), null, command);
+  }
   assert.ok(DENY_RULES.includes('Bash(git stash *)'));
   assert.ok(DENY_RULES.includes('Bash(git branch -D *)'));
 });

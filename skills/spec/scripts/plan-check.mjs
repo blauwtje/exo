@@ -19,7 +19,6 @@ const HARD_LOOP = /^loop: (?!.*(?:redirects output|timed out|skips the full chec
 
 const compactOnly = (check) => (context) => (context.compactPlan ? check(context) : []);
 const classicOnly = (check) => (context) => (context.compactPlan ? [] : check(context));
-const eachTask = (tasks, check) => tasks.flatMap(check);
 
 const PLAN_CHECKS = [
   { check: compactOnly(({ plan }) => checkFrame(plan.frame)), warn: true, hardWhen: SUCCESS_CRITERION },
@@ -30,11 +29,11 @@ const PLAN_CHECKS = [
   { check: compactOnly(({ plan, landed }) => checkRedGreen(plan, landed)), warn: true },
   { check: compactOnly(({ plan }) => checkAcceptanceCitations(plan.frame)), warn: true },
   { check: compactOnly(({ plan }) => checkEvidence(plan)), warn: true },
-  { check: compactOnly(({ plan }) => eachTask(plan.tasks, checkCompactFields)), warn: true, hardWhen: FIELD_LINE },
-  { check: classicOnly(({ plan }) => eachTask(plan.tasks, (task) => [...checkCommit(task), ...checkGitAdd(task), ...checkSteps(task), ...checkPlaceholders(task), ...checkSize(task)])), warn: true },
-  { check: classicOnly(({ plan, root, byNumber }) => eachTask(plan.tasks, (task) => checkFilesExist(task, root, byNumber))), warn: true },
-  { check: ({ unlanded, root, forkPoint }) => eachTask(unlanded, (task) => checkContextSize(task, root, forkPoint)), warn: true },
-  { check: ({ unlanded, root }) => eachTask(unlanded, (task) => checkProofOnPath(task, root)), warn: true, hardWhen: PROOF_NOT_ON_PATH },
+  { check: compactOnly(({ plan }) => plan.tasks.flatMap(checkCompactFields)), warn: true, hardWhen: FIELD_LINE },
+  { check: classicOnly(({ plan }) => plan.tasks.flatMap((task) => [...checkCommit(task), ...checkGitAdd(task), ...checkSteps(task), ...checkPlaceholders(task), ...checkSize(task)])), warn: true },
+  { check: classicOnly(({ plan, root, byNumber }) => plan.tasks.flatMap((task) => checkFilesExist(task, root, byNumber))), warn: true },
+  { check: ({ unlanded, root, forkPoint }) => unlanded.flatMap((task) => checkContextSize(task, root, forkPoint)), warn: true },
+  { check: ({ unlanded, root }) => unlanded.flatMap((task) => checkProofOnPath(task, root)), warn: true, hardWhen: PROOF_NOT_ON_PATH },
   { check: dataLiteralsCheck, warn: true },
   { check: ({ planText, root }) => checkDerivedNames(planText, root), warn: true },
   { check: ({ plan }) => checkSharedFiles(plan.tasks), warn: true },
@@ -58,24 +57,23 @@ function runChecks(context) {
   };
 }
 
-export function planCheckReport(planText, { root, loop = false, planPath, run = false } = {}) {
+export function planCheckReport(planText, { root, loop, planPath, run }) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
   const compactPlan = plan.tasks.every((task) => task.compact);
-  const resolvedRoot = root ?? frameOf(plan.frame).repository ?? undefined;
   const byNumber = new Map(plan.tasks.map((task) => [task.number, task]));
-  const landed = run && resolvedRoot !== undefined && resolvedRoot !== null && planPath !== undefined ? landedTasks(plan.tasks, resolvedRoot, planIdOf(planPath)) : [];
-  const forkPoint = run && resolvedRoot !== undefined && resolvedRoot !== null ? forkPointOf(resolvedRoot) : null;
+  const hasRoot = root !== undefined;
+  const landed = run && hasRoot && planPath !== undefined ? landedTasks(plan.tasks, root, planIdOf(planPath)) : [];
+  const forkPoint = run && hasRoot ? forkPointOf(root) : null;
   const unlanded = plan.tasks.filter((task) => !landed.includes(task.number));
-  const hasRoot = resolvedRoot !== undefined && resolvedRoot !== null;
-  const context = { plan, planText, compactPlan, root: resolvedRoot, hasRoot, run, loop, planPath, byNumber, landed, unlanded, forkPoint };
+  const context = { plan, planText, compactPlan, root, hasRoot, run, loop, planPath, byNumber, landed, unlanded, forkPoint };
   const { problems, warnings } = runChecks(context);
   if (problems.length > 0) return { ok: false, lines: [...problems, ...warnings] };
   const largest = plan.tasks.reduce((best, task) => {
     const size = taskSize(task);
     return size.lines > best.lines ? { number: task.number, lines: size.lines } : best;
   }, { number: plan.tasks[0].number, lines: taskSize(plan.tasks[0]).lines });
-  return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks, largest Task ${largest.number} (${largest.lines} lines)`, ...sizeLines(plan.tasks.filter((task) => !landed.includes(task.number)), resolvedRoot, forkPoint), ...warnings] };
+  return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks, largest Task ${largest.number} (${largest.lines} lines)`, ...sizeLines(plan.tasks.filter((task) => !landed.includes(task.number)), root, forkPoint), ...warnings] };
 }
 
 const USAGE = [
@@ -84,7 +82,7 @@ const USAGE = [
   '--loop adds the checks a headless run needs; --run lets a plan leave out the Land: line.'
 ].join('\n');
 
-export function main(argv) {
+function main(argv) {
   const flags = parseFlags(argv, { plan: 'value', root: 'value', loop: 'boolean', run: 'boolean' }, { usage: USAGE });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
   const plan = resolvePlanPath({ plan: flags.plan, root: flags.root });
@@ -96,7 +94,7 @@ export function main(argv) {
     process.exitCode = 1;
     return;
   }
-  const report = planCheckReport(planText, { root: flags.root, loop: flags.loop === true, planPath: plan, run: flags.run === true });
+  const report = planCheckReport(planText, { root, loop: flags.loop === true, planPath: plan, run: flags.run === true });
   process.stdout.write(`${report.lines.join('\n')}\n`);
   if (!report.ok) process.exitCode = 1;
 }

@@ -7,12 +7,12 @@ const TARGET_PATTERNS = [
   /^\[[^\]]+\]:\s*(?<target>\S+\.md(?:#\S+)?)\s*$/gm
 ];
 
-const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
-const HARNESS_ROOT_FILES = ['AGENTS.md', 'CLAUDE.md'];
+export const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
+export const HARNESS_ROOT_FILES = ['AGENTS.md', 'CLAUDE.md'];
+export const FRONTMATTER = /^---\r?\n([\s\S]*?)\r?\n---\r?\n/;
 
-export function markdownBody(fileName, text) {
-  if (fileName !== 'SKILL.md') return text;
-  return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
+export function stripFrontmatter(text) {
+  return text.replace(FRONTMATTER, '');
 }
 
 export function markdownTargets(text) {

@@ -1,9 +1,18 @@
 import { execFile } from 'node:child_process';
+import { MAX_BUFFER } from '#git';
+
+export class ToolFailure extends Error {}
+
+const FETCH_FAILURE_NAMES = new Set(['TypeError', 'AbortError', 'TimeoutError']);
+
+export function isFetchFailure(error) {
+  return FETCH_FAILURE_NAMES.has(error.name);
+}
 
 export function runTool(command, args, timeout) {
   const shell = command.endsWith('.cmd');
   return new Promise((resolve) => {
-    execFile(command, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024, timeout, shell }, (error, stdout, stderr) => {
+    execFile(command, args, { encoding: 'utf8', maxBuffer: MAX_BUFFER, timeout, shell }, (error, stdout, stderr) => {
       resolve({ error, stdout, stderr });
     });
   });

@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
-import { compactPlanFixture, compactTask, fixture, gitRepository } from './harness.mjs';
+import { compactPlanFixture, compactTask, tempDir, gitRepository } from './harness.mjs';
 
 const PLAN_CHECK = path.resolve('skills/spec/scripts/plan-check.mjs');
 const FLAG = 'a path the land check cannot search';
@@ -11,10 +11,10 @@ const FLAG = 'a path the land check cannot search';
 async function planCheck(data, flag = FLAG) {
   const root = await gitRepository({ '.gitignore': '*.secret\n', 'src/run.mjs': 'export {};\n' });
   await fs.writeFile(path.join(root, 'notes.secret'), 'x\n');
-  const outside = path.join(await fs.realpath(await fixture()), 'outside.txt');
+  const outside = path.join(await fs.realpath(await tempDir('ui-design-test-')), 'outside.txt');
   await fs.writeFile(outside, 'x\n');
   const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Change the runner', files: ['src/run.mjs'], data: data(outside) })] });
-  const planPath = path.join(await fixture(), 'plan.md');
+  const planPath = path.join(await tempDir('ui-design-test-'), 'plan.md');
   await fs.writeFile(planPath, plan);
   const result = spawnSync('node', [PLAN_CHECK, '--plan', planPath, '--root', root], { encoding: 'utf8' });
   return { outside, status: result.status, lines: result.stdout.split('\n').filter((line) => line.includes(flag)) };

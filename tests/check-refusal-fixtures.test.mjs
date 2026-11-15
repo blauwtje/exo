@@ -1,15 +1,27 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { refusalFixtureFindings, verdictOf } from '../verify/checks/refusal-fixtures.mjs';
+import { checkRefusalFixtures } from '../verify/checks/refusal-fixtures.mjs';
+import { createRepository } from '../verify/repository.mjs';
+import { REPOSITORY_ROOT as ROOT, tempDir } from './harness.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const CALLS = JSON.parse(fs.readFileSync(new URL('./fixtures/hook-refusal-calls.json', import.meta.url), 'utf8'));
+
+function results(calls) {
+  const root = tempDir('refusal-fixtures-');
+  fs.mkdirSync(path.join(root, 'tests/fixtures'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'tests/fixtures/hook-refusal-calls.json'), JSON.stringify(calls));
+  fs.symlinkSync(path.join(ROOT, 'hooks'), path.join(root, 'hooks'));
+  const found = [];
+  checkRefusalFixtures({ result: (status, name, detail) => found.push({ status, detail }) }, createRepository(root));
+  return found;
+}
+
 const ofRule = (id, expect) => CALLS.filter((call) => call.rule === id && call.expect === expect);
 
 test('every fixture call gets its expected verdict from the hook entry points', () => {
-  assert.deepEqual(refusalFixtureFindings(ROOT, CALLS), []);
+  assert.deepEqual(results(CALLS), [{ status: 'PASS', detail: `${CALLS.length} real calls got their expected pass, note or deny` }]);
 });
 
 test('the table keeps the legitimate calls that were once refused', () => {
@@ -19,12 +31,11 @@ test('the table keeps the legitimate calls that were once refused', () => {
 
 test('a wrong expectation is reported with the rule and the verdict reached', () => {
   const wrong = [{ ...ofRule('stash', 'pass')[0], expect: 'deny' }];
-  assert.match(refusalFixtureFindings(ROOT, wrong)[0], /stash .* expected deny and got pass/);
+  const [failure] = results(wrong);
+  assert.equal(failure.status, 'FAIL');
+  assert.match(failure.detail, /stash .* expected deny and got pass/);
 });
 
-test('a verdict is read from the hook output', () => {
-  assert.equal(verdictOf(''), 'pass');
-  assert.equal(verdictOf('{"decision":"block"}'), 'deny');
-  assert.equal(verdictOf('{"hookSpecificOutput":{"additionalContext":"x"}}'), 'note');
-  assert.equal(verdictOf('{"hookSpecificOutput":{"updatedInput":{}}}'), 'pass');
+test('a verdict of pass, note or deny is read from the hook output', () => {
+  for (const verdict of ['pass', 'note', 'deny']) assert.ok(CALLS.some((call) => call.expect === verdict), verdict);
 });

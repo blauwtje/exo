@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
 import { relativeFor } from '#checkout';
 import { COMMIT_BLOCK } from '#plan-tasks';
 import { driftOf } from '#plan-inputs';
@@ -10,16 +9,15 @@ import { INLINE_TASK_LIMIT } from '#plan-waves';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { stallSeconds } from '#stall-guard';
 import { relativeTaskBrief } from './next-task-brief.mjs';
-import { SCRIPT } from './run-session-paths.mjs';
+import { PLUGIN_ROOT, SCRIPT, SKILL_DIRECTORY } from './run-session-paths.mjs';
 
-const SKILL_DIR = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const RUN_CHECK = path.join(SKILL_DIR, '..', '..', 'lib', 'run-check.mjs');
+const RUN_CHECK = path.join(PLUGIN_ROOT, 'lib', 'run-check.mjs');
 const readText = (...parts) => fs.readFileSync(path.join(...parts), 'utf8');
 
-function sectionOf(text, heading) {
-  const lines = text.split('\n');
+function sectionOf(file, heading) {
+  const lines = readText(SKILL_DIRECTORY, file).split('\n');
   const start = lines.indexOf(`## ${heading}`);
-  if (start === -1) throw new Error(`no '## ${heading}' section`);
+  if (start === -1) throw new Error(`${file}: no '## ${heading}' section`);
   const length = lines.slice(start + 1).findIndex((line) => line.startsWith('## '));
   return lines.slice(start, length === -1 ? undefined : start + 1 + length).join('\n').trimEnd();
 }
@@ -39,7 +37,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
   const task = plan.tasks.find((entry) => entry.number === number);
   const extra = [
     `- Read ${shown(root, learnings)} first, and before ending append one line on anything the next task should know.`,
-    ...(task.design ? [`- Design task: build by steps 1-3 of ${path.join(SKILL_DIR, 'references', 'design-tasks.md')} \`## The delegate\`, with the plan's Contract or Visual direction as the direction.`] : []),
+    ...(task.design ? [`- Design task: build by steps 1-3 of ${path.join(SKILL_DIRECTORY, 'references', 'design-tasks.md')} \`## The delegate\`, with the plan's Contract or Visual direction as the direction.`] : []),
     ...(runDir
       ? [`- Never ask the user: decide from the spec and exo settings, then record each choice with \`node ${SCRIPT.runDecision} <source> <choice> <reason>\` (it appends to ${shown(root, path.join(runDir, 'decisions.md'))}) and go on.`]
       : []),
@@ -59,7 +57,7 @@ export function taskPrompt({ plan, planPath, number, root, learnings, sandbox, r
     extra,
     retry: retryNote
   };
-  return sectionOf(readText(SKILL_DIR, 'run-task-prompt.md'), 'Build session').split('\n').slice(1).join('\n').trim()
+  return sectionOf('run-task-prompt.md', 'Build session').split('\n').slice(1).join('\n').trim()
     .replace(/\[\[(\w+)\]\]/g, (_, name) => fields[name])
     .replace(/\n\n\n+/g, '\n\n');
 }
@@ -79,7 +77,7 @@ export function planPrompt({ plan, planPath, numbers, root, sandbox }) {
     checks: numbers.map((number) => `- Task ${number}: \`${checkCommand(planPath, number, root)}\``).join('\n'),
     stall: stallRules(sandbox).join('\n')
   };
-  return sectionOf(readText(SKILL_DIR, 'run-task-prompt.md'), 'Plan session').split('\n').slice(1).join('\n').trim()
+  return sectionOf('run-task-prompt.md', 'Plan session').split('\n').slice(1).join('\n').trim()
     .replace(/\[\[(\w+)\]\]/g, (_, name) => fields[name])
     .replace(/\n\n\n+/g, '\n\n');
 }

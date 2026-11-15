@@ -13,8 +13,6 @@ const BIG_COMMAND = 'x'.repeat(20000);
 
 const rowsOf = (file) => JSON.parse(fs.readFileSync(path.join(FIXTURES, file), 'utf8'));
 
-const inputOf = (row) => JSON.parse(JSON.stringify(row.input).replace('__BIG__', BIG_COMMAND));
-
 function shellTranscript(row, cwd) {
   const entries = [
     { type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'Bash', input: { command: 'npm test', run_in_background: true } }] } },
@@ -31,7 +29,7 @@ function payloadOf(row, cwd) {
   return {
     hook_event_name: 'PreToolUse',
     tool_name: row.tool ?? 'Bash',
-    tool_input: inputOf(row),
+    tool_input: JSON.parse(JSON.stringify(row.input).replace('__BIG__', BIG_COMMAND)),
     cwd,
     session_id: `replay-${row.rule}-${process.pid}-${Date.now()}`,
     permission_mode: 'bypassPermissions',
@@ -49,8 +47,6 @@ function decisionOf(run) {
   return { kind: 'allow', text: fields.additionalContext ?? '' };
 }
 
-const cleanEnv = () => Object.fromEntries(Object.entries(process.env).filter(([name]) => !INHERITED.includes(name)));
-
 function replay(row) {
   const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'refusal-replay-'));
   spawnSync('git', ['init', '-q'], { cwd });
@@ -58,7 +54,7 @@ function replay(row) {
     input: JSON.stringify(payloadOf(row, cwd)),
     encoding: 'utf8',
     cwd,
-    env: { ...cleanEnv(), CLAUDE_PROJECT_DIR: cwd, CLAUDE_PLUGIN_ROOT: ROOT },
+    env: { ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !INHERITED.includes(name))), CLAUDE_PROJECT_DIR: cwd, CLAUDE_PLUGIN_ROOT: ROOT },
     timeout: 15000
   });
   return decisionOf(run);

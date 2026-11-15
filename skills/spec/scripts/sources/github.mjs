@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { isCommandFailure } from '#basics';
 import { BlockedRoute, getJson } from './http.mjs';
 
 const run = promisify(execFile);
@@ -8,8 +9,9 @@ async function ghIsLoggedIn(exec) {
   try {
     await exec('gh', ['auth', 'status']);
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (isCommandFailure(error)) return false;
+    throw error;
   }
 }
 
@@ -32,7 +34,7 @@ async function viaCli({ query, limit }, exec) {
 async function viaRest({ query, limit }, context) {
   const url = `https://api.github.com/search/repositories?per_page=${limit}&q=${encodeURIComponent(query)}`;
   const body = await getJson(url, context);
-  if (!Array.isArray(body.items)) throw new BlockedRoute('GitHub rate limit');
+  if (!Array.isArray(body.items)) throw new BlockedRoute(`GitHub rate limit on search "${query}": retry later or run gh auth login`);
   return body.items.map(fromRepo);
 }
 

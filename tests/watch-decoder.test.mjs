@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { decoderPath, toWav, extractFrames } from '../skills/watch/scripts/decoder.mjs';
+import { toWav, extractFrames } from '../skills/watch/scripts/decoder.mjs';
 import { tempDir } from './harness.mjs';
 
 const PINNED = {
@@ -53,10 +53,24 @@ function recorder({ fail = false } = {}) {
   return { run, calls };
 }
 
+async function decoderUsed(site, installer, options) {
+  const input = path.join(site.dir, 'in.m4a');
+  fs.writeFileSync(input, 'in');
+  const decoders = [];
+  const run = async (command, args) => {
+    if (/^npm(\.cmd)?$/.test(command)) return installer.run(command, args);
+    decoders.push(command);
+    fs.writeFileSync(args.at(-1), 'out');
+    return { error: null, stdout: '', stderr: '' };
+  };
+  await toWav(input, { ...options, run });
+  return decoders.at(-1);
+}
+
 test('ffmpeg on PATH wins and nothing is installed', async () => {
   const site = sandbox();
   const installer = fakeInstaller();
-  const found = await decoderPath({ env: envWithFfmpeg(site), platform: 'darwin', arch: 'arm64', home: site.home, run: installer.run });
+  const found = await decoderUsed(site, installer, { env: envWithFfmpeg(site), platform: 'darwin', arch: 'arm64', home: site.home });
   assert.equal(found, 'ffmpeg');
   assert.equal(installer.calls.length, 0);
 });
@@ -64,8 +78,8 @@ test('ffmpeg on PATH wins and nothing is installed', async () => {
 test('without ffmpeg the pinned package installs once into the plugin cache', async () => {
   const site = sandbox();
   const installer = fakeInstaller();
-  const options = { env: site.env, platform: 'darwin', arch: 'arm64', home: site.home, run: installer.run };
-  const first = await decoderPath(options);
+  const options = { env: site.env, platform: 'darwin', arch: 'arm64', home: site.home };
+  const first = await decoderUsed(site, installer, options);
   const prefix = path.join(site.data, 'npm', 'ffmpeg');
   assert.equal(first, path.join(prefix, 'node_modules', '@ffmpeg-installer', 'darwin-arm64', 'ffmpeg'));
   const [command, ...args] = installer.calls[0];
@@ -73,28 +87,28 @@ test('without ffmpeg the pinned package installs once into the plugin cache', as
   assert.equal(args[0], 'install');
   assert.equal(args[args.indexOf('--prefix') + 1], prefix);
   assert.ok(args.includes('@ffmpeg-installer/darwin-arm64@4.1.5'));
-  assert.equal(await decoderPath(options), first);
+  assert.equal(await decoderUsed(site, installer, options), first);
   assert.equal(installer.calls.length, 1);
 });
 
 test('a lock entry npm keyed by a relative path through a symlinked prefix still proves the pin', async () => {
   const site = sandbox();
   const installer = fakeInstaller({ lockKey: (name) => `../../../../private/tmp/data/npm/ffmpeg/node_modules/${name}` });
-  const binary = await decoderPath({ env: site.env, platform: 'darwin', arch: 'arm64', home: site.home, run: installer.run });
+  const binary = await decoderUsed(site, installer, { env: site.env, platform: 'darwin', arch: 'arm64', home: site.home });
   assert.ok(fs.existsSync(binary));
 });
 
 test('the cache falls back to ~/.cache/exo without CLAUDE_PLUGIN_DATA', async () => {
   const site = sandbox();
   const installer = fakeInstaller();
-  const found = await decoderPath({ env: { PATH: site.empty }, platform: 'darwin', arch: 'arm64', home: site.home, run: installer.run });
+  const found = await decoderUsed(site, installer, { env: { PATH: site.empty }, platform: 'darwin', arch: 'arm64', home: site.home });
   assert.ok(found.startsWith(path.join(site.home, '.cache', 'exo', 'npm', 'ffmpeg')));
 });
 
 test('windows on arm installs the x64 package', async () => {
   const site = sandbox();
   const installer = fakeInstaller();
-  const found = await decoderPath({ env: site.env, platform: 'win32', arch: 'arm64', home: site.home, run: installer.run });
+  const found = await decoderUsed(site, installer, { env: site.env, platform: 'win32', arch: 'arm64', home: site.home });
   assert.ok(installer.calls[0].includes('@ffmpeg-installer/win32-x64@4.1.0'));
   assert.ok(found.endsWith(path.join('win32-x64', 'ffmpeg.exe')));
 });
@@ -102,15 +116,15 @@ test('windows on arm installs the x64 package', async () => {
 test('an integrity that differs from the pin removes the package and rejects', async () => {
   const site = sandbox();
   const installer = fakeInstaller({ integrity: 'sha512-other' });
-  await assert.rejects(decoderPath({ env: site.env, platform: 'darwin', arch: 'arm64', home: site.home, run: installer.run }), /integrity/);
+  await assert.rejects(decoderUsed(site, installer, { env: site.env, platform: 'darwin', arch: 'arm64', home: site.home }), /integrity/);
   assert.ok(!fs.existsSync(path.join(site.data, 'npm', 'ffmpeg', 'node_modules', '@ffmpeg-installer')));
 });
 
 test('a failed install and an unsupported platform reject with the reason', async () => {
   const site = sandbox();
   const run = async () => ({ error: new Error('x'), stdout: '', stderr: 'npm ERR! network\n' });
-  await assert.rejects(decoderPath({ env: site.env, platform: 'darwin', arch: 'arm64', home: site.home, run }), /network/);
-  await assert.rejects(decoderPath({ env: site.env, platform: 'freebsd', arch: 'x64', home: site.home, run }), /freebsd-x64/);
+  await assert.rejects(decoderUsed(site, { run }, { env: site.env, platform: 'darwin', arch: 'arm64', home: site.home }), /network/);
+  await assert.rejects(decoderUsed(site, { run }, { env: site.env, platform: 'freebsd', arch: 'x64', home: site.home }), /freebsd-x64/);
 });
 
 test('toWav converts to a 16 kHz mono wav beside the input', async () => {

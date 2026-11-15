@@ -1,20 +1,19 @@
 #!/usr/bin/env node
 
-import process from 'node:process';
-import { inSidecall, readHookText } from '#hook-input';
+import { inSidecall } from '#hook-input';
 import { contextDecision, contextFields, readCapDecision, searchCapDecision } from '../lib/context-decisions.mjs';
 import { redditRouteDecision } from '../lib/reddit-route.mjs';
 import { isMain } from '../lib/script-flags.mjs';
-import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
+import { rememberRefusal, runHook } from '../lib/hook-refusal.mjs';
 import { predispatchDecision, recordPredispatchRead } from '../lib/slice-state.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 
 const REASON_MAX = 140;
 
-export function receiptsOn(read = () => settingOrDefault('receipts').value) {
+function receiptsOn() {
   try {
-    const value = read();
-    return value !== 'off' && value !== false;
+    const value = settingOrDefault('receipts').value;
+    return value !== 'off';
   } catch {
     return true;
   }
@@ -25,7 +24,7 @@ function shortReason(reason) {
   return text.length > REASON_MAX ? `${text.slice(0, REASON_MAX - 1)}…` : text;
 }
 
-function receiptLine({ tool_name: tool, tool_input: input } = {}, fields) {
+function receiptLine({ tool_name: tool, tool_input: input }, fields) {
   if (fields?.permissionDecision === 'deny') return `exo blocked: ${shortReason(fields.permissionDecisionReason)}`;
   if (tool === 'Skill') {
     const name = /^exo:(.+)$/.exec(input?.skill ?? '')?.[1];
@@ -54,11 +53,4 @@ export function contextHook(input, enabled) {
   return rememberRefusal(input, withReceipt(output, { hookInput: input, fields, enabled }), { guard: 'context-limit' });
 }
 
-if (isMain(import.meta.url) && !inSidecall()) {
-  try {
-    const input = JSON.parse(await readHookText());
-    writeHookOutput(input, contextHook(input), 'context-limit');
-  } catch {
-    process.exitCode = 0;
-  }
-}
+if (isMain(import.meta.url) && !inSidecall()) await runHook('context-limit', contextHook);

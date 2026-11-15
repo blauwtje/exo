@@ -72,7 +72,7 @@ Depends on: 6 | Files: `benchmarks/routing.mjs`, `benchmarks/routing/prompts.jso
 ### Task 8: feat(benchmarks): ablate one hook, rule or reference per improve round
 Depends on: 7 | Files: `benchmarks/ablate.mjs`, `benchmarks/variants.mjs`, `tests/benchmark-ablate.test.mjs` | Data: one variant per plugin part with the lines it removes | Proof: node --test tests/benchmark-ablate.test.mjs
 ### Task 9: feat(draw): print a changed-file tree for a large branch
-Depends on: 8 | Files: `lib/draw.mjs`, `skills/gate/SKILL.md`, `tests/draw-tree.test.mjs` | Data: an indented tree string built from a list of changed paths | Evidence: none (the wording only names the tree; the tree has its own test) | Proof: node --test tests/draw-tree.test.mjs
+Depends on: 8 | Files: `lib/draw.mjs`, `skills/gate/SKILL.md` | Data: an indented tree string built from a list of changed paths | Evidence: none (the wording only names the tree)
 ### Task 10: feat(map): fan a bulk item list out to a cheap model with a cost cap
 Depends on: 9 | Files: `lib/map.mjs`, `agents/orchestrator.md`, `skills/watch/SKILL.md`, `tests/map.test.mjs`, `lib/model-kinds.json`, `CONTRIBUTING.md`, `tests/agent-effort.test.mjs`, `tests/model-kinds.test.mjs`, `verify/model-kinds.mjs`, `CONTRIBUTING.md` | Data: a list of items mapped to results with a spend cap that stops the fan-out | Evidence: none (the wording points to the module; the module has its own test) | Proof: node --test tests/map.test.mjs
 ### Task 11: feat(benchmarks): add a long-horizon flow-large cell

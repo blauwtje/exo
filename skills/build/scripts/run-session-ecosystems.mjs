@@ -43,7 +43,7 @@ function configuredRegistries(root, entries) {
   });
 }
 
-export function projectEcosystems({ root, planFiles = [] }) {
+export function projectEcosystems({ root, planFiles }) {
   const entries = fs.readdirSync(root);
   const names = [...entries, ...planFiles.map((file) => path.basename(file))];
   const applied = ECOSYSTEMS.filter((ecosystem) => ecosystem.manifests.some((pattern) => names.some((name) => matchesManifest(pattern, name))));

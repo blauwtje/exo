@@ -19,7 +19,7 @@ async function openTwo(env = {}) {
   const previous = process.env.EXO_SLOT_PORT_START;
   if (env.EXO_SLOT_PORT_START) process.env.EXO_SLOT_PORT_START = env.EXO_SLOT_PORT_START;
   try {
-    const opened = openSlots({ root, numbers: [1, 2], setup: SETUP, fresh: true, since: 0 });
+    const opened = openSlots({ root, numbers: [1, 2], setup: SETUP, inputs: [], fresh: true, since: 0 });
     assert.equal(opened.reason, undefined);
     return opened;
   } finally {
@@ -51,7 +51,7 @@ test('a slot writes its variables to .exo/slot.env for the proof commands', asyn
 test('a slot gets the main checkout .env and leaves it ignored', async () => {
   const root = await gitRepository({ 'a.txt': 'a\n', '.gitignore': '.env\n' });
   await fs.writeFile(path.join(root, '.env'), 'MADE_UP=value\n');
-  const opened = openSlots({ root, numbers: [1], setup: 'true', fresh: true, since: 0 });
+  const opened = openSlots({ root, numbers: [1], setup: 'true', inputs: [], fresh: true, since: 0 });
   assert.equal(opened.reason, undefined);
   const copied = await fs.readFile(path.join(opened.records[1].slot, '.env'), 'utf8');
   assert.equal(copied, 'MADE_UP=value\n');

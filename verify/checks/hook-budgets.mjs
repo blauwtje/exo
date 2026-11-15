@@ -8,7 +8,7 @@ import {
   INJECTED_CONTEXT_LOCK
 } from '../budgets.mjs';
 import { checkSessionLoad } from './session-load.mjs';
-import { checkHookMatchers } from './hook-matchers.mjs';
+import { checkHookMatchers, hooksConfig } from './hook-matchers.mjs';
 import { countHookWork } from '../hook-work.mjs';
 
 function lineCount(file) {
@@ -30,16 +30,10 @@ function checkHookSize(report, repository) {
 
 const NAME = 'hook cost';
 const COST_FILES = ['hooks/session-routing.md', 'hooks/session-rules.md', 'hooks/dispatch-rules.md'];
-const REASON_SOURCE = 'hooks/dispatch-bash.mjs';
-const REASON = /permissionDecisionReason: (['`])((?:(?!\1).)*)\1/g;
 
-export function hookEntryCount(hooksText) {
-  const { hooks = {} } = JSON.parse(hooksText);
+function hookEntryCount(config) {
+  const { hooks = {} } = config;
   return Object.values(hooks).flat().reduce((total, group) => total + (group.hooks?.length ?? 0), 0);
-}
-
-export function reasonBytes(sourceText) {
-  return [...sourceText.matchAll(REASON)].reduce((total, match) => total + Buffer.byteLength(match[2]), 0);
 }
 
 function readOrEmpty(file) {
@@ -47,12 +41,11 @@ function readOrEmpty(file) {
 }
 
 function hookTextBytes(repository) {
-  const authored = COST_FILES.reduce((total, name) => total + Buffer.byteLength(readOrEmpty(repository.join(name)).trimEnd()), 0);
-  return authored + reasonBytes(readOrEmpty(repository.join(REASON_SOURCE)));
+  return COST_FILES.reduce((total, name) => total + Buffer.byteLength(readOrEmpty(repository.join(name)).trimEnd()), 0);
 }
 
 export function checkHookCost(report, repository, locks = { entries: HOOK_ENTRIES_LOCK, bytes: HOOK_TEXT_BYTES_LOCK }) {
-  const entries = hookEntryCount(fs.readFileSync(repository.join('hooks/hooks.json'), 'utf8'));
+  const entries = hookEntryCount(hooksConfig(repository));
   const bytes = hookTextBytes(repository);
   const detail = `${entries} hook entries against ${locks.entries.entries} and ${bytes} bytes of hook text against ${locks.bytes.bytes}, locked on ${locks.entries.measured}`;
   if (entries <= locks.entries.entries && bytes <= locks.bytes.bytes) {
@@ -65,7 +58,7 @@ export function checkHookCost(report, repository, locks = { entries: HOOK_ENTRIE
 const HOOK_SCRIPT = /hooks\/([\w-]+\.mjs)/;
 
 function registeredScripts(repository) {
-  const config = JSON.parse(fs.readFileSync(repository.join('hooks/hooks.json'), 'utf8'));
+  const config = hooksConfig(repository);
   const commands = Object.values(config.hooks).flatMap((groups) => groups.flatMap((group) => group.hooks.map((hook) => hook.command)));
   return [...new Set(commands.map((command) => HOOK_SCRIPT.exec(command)?.[1]).filter(Boolean))];
 }
@@ -97,7 +90,7 @@ export function checkHookWork(report, repository, count = countHookWork) {
   report.result('PASS', 'hook work', `${scripts.length} hook scripts within their module and file-read locks of ${HOOK_WORK_LOCK.measured}`);
 }
 
-const CONTEXT_FILES = ['hooks/session-routing.md', 'hooks/session-rules.md'];
+export const CONTEXT_FILES = ['hooks/session-routing.md', 'hooks/session-rules.md'];
 const NAMES = CONTEXT_FILES.join(' and ');
 
 function checkInjectedContext(report, repository) {

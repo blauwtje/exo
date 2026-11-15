@@ -2,24 +2,25 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseFlags, UsageError, isMain } from '#script-flags';
+import { parseFlags, UsageError, isMain, USAGE_EXIT } from '#script-flags';
 import { planIdOf } from '#plan-landed';
 import { createWorktree, resolvePlanPath } from '#checkout';
 import { parsePlan } from '#plan-tasks';
 import { frameOf } from '#plan-frame';
 import { conflictMarkers, squashBlock, unmergedPaths } from '#merge-state';
 import { loadRunConfig } from './run-config.mjs';
+import { taskNumberFlag } from './next-task.mjs';
 import { runLandGate } from './land-gate.mjs';
 import { LandingError } from './land-errors.mjs';
-import { scriptPath } from './next-task-paths.mjs';
+import { scriptPath } from './run-session-paths.mjs';
 import { gitText } from '#git';
 
-export const branchOf = (number) => `exo-conflict-${number}`;
+const branchOf = (number) => `exo-conflict-${number}`;
 
-export const folderOf = (root, number) => path.join(root, '.exo', `conflict-${number}`);
+const folderOf = (root, number) => path.join(root, '.exo', `conflict-${number}`);
 
-export function resolverOn(env = process.env) {
-  if (env.EXO_WAVE_RESOLVER !== undefined) return env.EXO_WAVE_RESOLVER === '1';
+export function resolverOn() {
+  if (process.env.EXO_WAVE_RESOLVER !== undefined) return process.env.EXO_WAVE_RESOLVER === '1';
   return loadRunConfig({ home: os.homedir() }).defaults.waveResolver === true;
 }
 
@@ -83,7 +84,7 @@ function squashLanded({ root, tree, branch, sha, number }) {
   return `LANDED ${number} ${gitText(root, ['rev-parse', 'HEAD'])}\nResolved branch ${branch} landed and removed; the slot folder of task ${number} is still kept.\n`;
 }
 
-export function landResolved({ planPath, root, number }) {
+function landResolved({ planPath, root, number }) {
   const folder = folderOf(root, number);
   const tree = path.join(folder, 'tree');
   const branch = branchOf(number);
@@ -114,9 +115,9 @@ function main(argv) {
   for (const name of ['plan', 'root']) {
     if (flags[name] === undefined) throw new UsageError(`flag '--${name}' is required`);
   }
-  if (!/^\d+$/.test(flags.task ?? '')) throw new UsageError("flag '--task' needs a task number");
+  const number = taskNumberFlag(flags);
   const planPath = resolvePlanPath({ plan: flags.plan, root: flags.root });
-  process.stdout.write(landResolved({ planPath, root: flags.root, number: Number(flags.task) }));
+  process.stdout.write(landResolved({ planPath, root: flags.root, number }));
 }
 
 function guarded(argv) {
@@ -125,7 +126,7 @@ function guarded(argv) {
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     process.stderr.write(`conflict-wave: ${error.message}\n`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
   }
 }
 

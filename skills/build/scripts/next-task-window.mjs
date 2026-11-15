@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { baselineFile, openSlots, slotEnvLine, slotOf } from './open-slots.mjs';
 import { driftOf, relativeInputPaths } from '#plan-inputs';
-import { scriptPath } from './next-task-paths.mjs';
+import { scriptPath } from './run-session-paths.mjs';
 import { taskLines } from './next-task-brief.mjs';
 import { appendTimeline } from '../../../lib/timeline.mjs';
 
@@ -26,10 +26,10 @@ export function dispatchBlock({ task, frame, planPath, checkout, briefPath, sinc
   return [`Dispatch: exo:build-task`, `Since: ${since}`, ...promptLines({ task, frame, planPath, checkout, briefPath })];
 }
 
-export function windowLines({ planPath, root, records, running, unlanded = null, only = null }) {
+export function windowLines({ planPath, root, records, running, unlanded, only }) {
   const open = running.filter((number) => records[number] !== undefined);
   if (open.length === 0) return [];
-  const waitAll = open.length > 1 && unlanded !== null && unlanded.every((number) => open.includes(number));
+  const waitAll = open.length > 1 && unlanded.every((number) => open.includes(number));
   const onlyFlag = only === null ? '' : ` --only ${only.join(',')}`;
   const land = (number) => `node "${scriptPath('land-slot.mjs')}" --plan "${planPath}" --task ${number} --root "${root}" --slot "${records[number].slot}" --base ${records[number].base} --baseline "${baselineFile(root)}"${open.length > 1 ? ` --in-flight ${open.filter((other) => other !== number).join(',')}` : ''}${onlyFlag}`;
   const order = [...open].sort((left, right) => left - right);

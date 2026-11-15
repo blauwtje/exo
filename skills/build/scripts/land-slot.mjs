@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseFlags, UsageError, isMain } from '#script-flags';
+import { parseFlags, UsageError, isMain, USAGE_EXIT } from '#script-flags';
 import { landedTasks, planIdOf } from '#plan-landed';
 import { resolvePlanPath } from '#checkout';
 import { parsePlan, PlanError } from '#plan-tasks';
@@ -10,7 +10,7 @@ import { landTask, landingForCaller } from './land-task.mjs';
 import { reportFlagOf } from './land-stopped.mjs';
 import { LandingError } from './land-errors.mjs';
 import { nextTaskReport } from './next-task-report.mjs';
-import { chainedForCaller, refreshProgress, taskNumbers } from './next-task.mjs';
+import { chainedForCaller, refreshProgress, taskNumberFlag, taskNumbers } from './next-task.mjs';
 import { windowLines } from './next-task-window.mjs';
 import { restartRecord } from './open-slots.mjs';
 import { keepConflict, resolverOn } from './conflict-wave.mjs';
@@ -56,7 +56,7 @@ function rebuildLines({ planPath, number, root, slot, base, inFlight, unlanded, 
   return `${windowLines({ planPath, root, records, running: [number, ...inFlight.filter((other) => other !== number)], unlanded, only }).join('\n')}\n`;
 }
 
-export function landSlot({ planPath, number, root, slot, base, baseline, inFlight: named = [], chained = false, only = null, report = {} }) {
+function landSlot({ planPath, number, root, slot, base, baseline, inFlight: named, chained, only, report }) {
   const known = fs.readFileSync(baseline, 'utf8').split('\n');
   const fresh = statusOf(root).filter((line) => !known.includes(line));
   if (fresh.length > 0) return whole(refusal('NEWPATH', number, `the run's checkout gained ${fresh.map((line) => line.slice(3)).join(', ')}; slot ${slot} kept, nothing landed`));
@@ -95,12 +95,12 @@ function main(argv) {
   for (const name of ['plan', 'root', 'slot', 'base', 'baseline']) {
     if (flags[name] === undefined) throw new UsageError(`flag '--${name}' is required`);
   }
-  if (!/^\d+$/.test(flags.task ?? '')) throw new UsageError("flag '--task' needs a task number");
+  const number = taskNumberFlag(flags);
   const plan = resolvePlanPath({ plan: flags.plan, root: flags.root });
   if (!fs.existsSync(plan)) throw new UsageError(`no file at '${flags.plan}'`);
   if (!fs.existsSync(flags.baseline)) throw new UsageError(`no file at '${flags.baseline}'`);
   const inFlight = taskNumbers(flags['in-flight'], 'in-flight') ?? [];
-  const { full, shown } = landSlot({ planPath: plan, number: Number(flags.task), root: flags.root, slot: flags.slot, base: flags.base, baseline: flags.baseline, inFlight, only: taskNumbers(flags.only, 'only'), chained: flags.chained === true, report: reportFlagOf(flags.report) });
+  const { full, shown } = landSlot({ planPath: plan, number, root: flags.root, slot: flags.slot, base: flags.base, baseline: flags.baseline, inFlight, only: taskNumbers(flags.only, 'only'), chained: flags.chained === true, report: reportFlagOf(flags.report) });
   process.stdout.write(forCaller({ root: flags.root, name: `land-slot-${flags.task}`, full, shown }));
   refreshProgress({ planPath: plan, planText: fs.readFileSync(plan, 'utf8'), root: flags.root });
 }
@@ -108,7 +108,7 @@ function main(argv) {
 function refuseUsage(error) {
   if (!(error instanceof UsageError)) throw error;
   process.stderr.write(`land-slot: ${error.message}\n`);
-  process.exitCode = 2;
+  process.exitCode = USAGE_EXIT;
 }
 
 if (isMain(import.meta.url)) {

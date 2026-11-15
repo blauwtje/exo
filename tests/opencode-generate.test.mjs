@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { generateOpenCodeTree } from '../harnesses/opencode/generate.mjs';
+import { REPOSITORY_ROOT as ROOT } from './harness.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const EXO_ROOT = '/opt/exo';
 
 const agentFiles = fs.readdirSync(`${ROOT}agents`).filter((name) => name.endsWith('.md'));

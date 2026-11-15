@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { runSetupCommands } from '../skills/build/scripts/setup-commands.mjs';
-import { git, tempDir } from './harness.mjs';
+import { tempDir } from './harness.mjs';
+import { startRunWithNpx } from './setup-fixture.mjs';
 
 const alive = (pid) => {
   try {
@@ -15,15 +15,10 @@ const alive = (pid) => {
 };
 
 test('a setup timeout also ends the grandchild a stalled command spawned', async () => {
-  const checkout = fs.realpathSync(tempDir('setup-grandchild-'));
-  git(checkout, 'init', '-q');
-  const pidFile = path.join(checkout, 'grandchild.pid');
-  process.env.EXO_SETUP_TIMEOUT_MS = '500';
-  try {
-    await runSetupCommands([`sleep 30 & echo $! > ${pidFile}; wait`], checkout);
-  } finally {
-    delete process.env.EXO_SETUP_TIMEOUT_MS;
-  }
+  const pidFile = path.join(tempDir('setup-grandchild-'), 'grandchild.pid');
+  const npxBody = `sleep 30 & echo $! > '${pidFile}'; wait`;
+  const { result } = startRunWithNpx({ proofs: ['npx playwright test a'], npxBody, env: { EXO_SETUP_TIMEOUT_MS: '500' } });
+  assert.equal(result.status, 1);
   const pid = Number(fs.readFileSync(pidFile, 'utf8'));
   await new Promise((resolve) => setTimeout(resolve, 300));
   assert.equal(alive(pid), false);

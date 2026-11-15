@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { defaultBranch, gitLine } from '#git';
+import { defaultBranch, gitLine, shortSha } from '#git';
 import { readDecisions } from '#run-decision';
 import { Refusal } from './cli-refusal.mjs';
 import { planFrame } from './plan-file.mjs';
@@ -12,7 +12,7 @@ function branchRange(root, state) {
   const head = gitLine(state.runRoot ?? root, ['rev-parse', '-q', '--verify', `refs/heads/${state.branch}`]);
   const fork = head === null ? null : gitLine(state.runRoot ?? root, ['merge-base', base, head]);
   if (fork === null || fork === head) return null;
-  return `${fork.slice(0, 7)}..${head.slice(0, 7)}`;
+  return `${shortSha(fork)}..${shortSha(head)}`;
 }
 
 export function writeReport(root, id, { phase, result, reason }) {

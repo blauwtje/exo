@@ -4,7 +4,7 @@ import path from 'node:path';
 const NAME = 'skill lint';
 const EMPHASIS = /\b(?:IMPORTANT|CRITICAL|MUST|NEVER|ALWAYS)\b/;
 const EMPHASIS_LIMIT = 2;
-const PROMPT_FOLDERS = ['agents', 'hooks', 'lib/references', 'lib/agent-modes'];
+const PROMPT_FOLDERS = ['hooks', 'lib/references', 'lib/agent-modes'];
 const SCRIPT_COMMAND = /`[^`]*?([\w-]+\.mjs)([^`]*)`/g;
 const FLAG = /(?<![\w-])--[a-z][a-z0-9-]*/g;
 const UNSAFE = [
@@ -22,14 +22,19 @@ function skillMarkdown(repository) {
 }
 
 function promptMarkdown(repository) {
-  return PROMPT_FOLDERS
+  const otherFolders = PROMPT_FOLDERS
     .map((folder) => repository.join(folder))
     .filter((folder) => fs.existsSync(folder))
     .flatMap((folder) => repository.walk(folder, (file) => file.endsWith('.md')));
+  return [...repository.agentFiles(), ...otherFolders];
+}
+
+function owningSkill(repository, file) {
+  return path.relative(repository.skillsRoot, file).split(path.sep)[0];
 }
 
 function scriptSource(repository, markdownFile, scriptName) {
-  const skillFolder = path.relative(repository.skillsRoot, markdownFile).split(path.sep)[0];
+  const skillFolder = owningSkill(repository, markdownFile);
   const folder = path.join(repository.skillsRoot, skillFolder, 'scripts');
   if (!fs.existsSync(path.join(folder, scriptName))) return null;
   return fs.readdirSync(folder)
@@ -86,7 +91,7 @@ function conflictingCounts(repository, files) {
   const rows = [];
   const seen = new Map();
   for (const file of files) {
-    const skillFolder = path.relative(repository.skillsRoot, file).split(path.sep)[0];
+    const skillFolder = owningSkill(repository, file);
     let heading = '';
     repository.text(file).split('\n').forEach((line, index) => {
       if (line.startsWith('#')) heading = line;
@@ -101,7 +106,7 @@ function conflictingCounts(repository, files) {
   return rows;
 }
 
-export function skillLintFindings(repository) {
+function skillLintFindings(repository) {
   const files = skillMarkdown(repository);
   const rows = files.flatMap((file) => {
     const lines = repository.text(file).split('\n');

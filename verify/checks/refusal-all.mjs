@@ -1,20 +1,18 @@
-import fs from 'node:fs';
+import { HOOK } from './hook-refusals.mjs';
+import { matchingLines } from '../repository.mjs';
 
-const HOOK = /^hooks\/[^/]+\.mjs$/;
 const DENIAL_CHAIN = /\b\w+(?:Fields|Denial)\([^()]*(?:\([^()]*\)[^()]*)*\)\s*\?\?\s*\w+(?:Fields|Denial)\(/;
 
 function chainFindings(relativePath, text) {
-  return text.split('\n')
-    .map((line, index) => ({ line, number: index + 1 }))
-    .filter(({ line }) => DENIAL_CHAIN.test(line))
-    .map(({ number }) => `${relativePath}:${number} chains denial rules with ??, so only the first violation is reported`);
+  return matchingLines(text, DENIAL_CHAIN)
+    .map((number) => `${relativePath}:${number} chains denial rules with ??, so only the first violation is reported`);
 }
 
-export function firstViolationOnly(repository) {
+function firstViolationOnly(repository) {
   return repository.trackedFiles()
     .map((file) => ({ file, relativePath: repository.relative(file) }))
     .filter(({ relativePath }) => HOOK.test(relativePath))
-    .flatMap(({ file, relativePath }) => chainFindings(relativePath, fs.readFileSync(file, 'utf8')));
+    .flatMap(({ file, relativePath }) => chainFindings(relativePath, repository.text(file)));
 }
 
 export function checkRefusalAll(report, repository) {

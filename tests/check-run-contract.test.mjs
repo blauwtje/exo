@@ -2,12 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 import { checkRunContract } from '../verify/checks/run-contract.mjs';
 import { createRepository } from '../verify/repository.mjs';
 import { tempDir } from './harness.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 function runOn(repository) {
   const results = [];

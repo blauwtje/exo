@@ -1,25 +1,25 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { checkHookCost, hookEntryCount, reasonBytes } from '../verify/checks/hook-budgets.mjs';
+import { checkHookCost } from '../verify/checks/hook-budgets.mjs';
+import { createRepository } from '../verify/repository.mjs';
+import { REPOSITORY_ROOT as REPOSITORY, tempDir } from './harness.mjs';
 
-const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
-const repository = { join: (...parts) => path.join(REPOSITORY, ...parts) };
+const repository = createRepository(REPOSITORY);
 
-function verdict(locks) {
+function verdict(locks, target = repository) {
   const results = [];
-  checkHookCost({ result: (status, name, detail) => results.push({ status, name, detail }) }, repository, locks);
+  checkHookCost({ result: (status, name, detail) => results.push({ status, name, detail }) }, target, locks);
   return results[0];
 }
 
-test('hookEntryCount counts every command across events and groups', () => {
+test('the hook cost check counts every command across events and groups', () => {
+  const root = tempDir('hook-cost-');
+  fs.mkdirSync(path.join(root, 'hooks'));
   const hooks = { hooks: { Stop: [{ hooks: [{}, {}] }], PreToolUse: [{ matcher: 'Bash', hooks: [{}] }] } };
-  assert.equal(hookEntryCount(JSON.stringify(hooks)), 3);
-});
-
-test('reasonBytes sums the deny reason literals', () => {
-  assert.equal(reasonBytes("permissionDecisionReason: 'abc' x permissionDecisionReason: `de`"), 5);
+  fs.writeFileSync(path.join(root, 'hooks', 'hooks.json'), JSON.stringify(hooks));
+  assert.match(verdict(undefined, createRepository(root)).detail, /^3 hook entries/);
 });
 
 test('the hook cost check passes at the locks and fails one entry or one byte under them', () => {

@@ -14,8 +14,9 @@ export function isExecutable(file) {
   try {
     fs.accessSync(file, fs.constants.X_OK);
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (['ENOENT', 'ENOTDIR', 'EACCES'].includes(error.code)) return false;
+    throw error;
   }
 }
 

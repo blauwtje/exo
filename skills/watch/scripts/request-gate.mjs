@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { orWhenAbsent } from '#absent-path';
 import { sleep } from '#basics';
 import { environmentDelayMs } from '#script-flags';
 import { pollUntil } from '../../../lib/loop-budget.mjs';
@@ -13,6 +14,7 @@ const RATE_LIMITED = /HTTP Error (?:403|429|5\d\d)|Too Many Requests/i;
 const GONE = /private video|this video is private|has been removed|removed by|no longer available|video (?:is )?(?:unavailable|not available)|does not exist|HTTP Error (?:404|410)|account (?:has been |is )?(?:terminated|suspended)/i;
 const CONTENDED = new Set(['EEXIST', 'EPERM', 'EACCES', 'EBUSY']);
 const MAX_REASON = 160;
+export const RATE_LIMITED_EXIT = 75;
 
 function settingsOf(options) {
   const env = options.env ?? process.env;
@@ -31,11 +33,8 @@ function settingsOf(options) {
 }
 
 function hostOf(url) {
-  try {
-    return new URL(url).hostname.toLowerCase().replace(/^(?:www|m)\./, '') || null;
-  } catch {
-    return null;
-  }
+  if (!URL.canParse(url)) return null;
+  return new URL(url).hostname.toLowerCase().replace(/^(?:www|m)\./, '') || null;
 }
 
 function tryCreate(lock) {
@@ -49,11 +48,11 @@ function tryCreate(lock) {
 }
 
 function removeIfStale(lock, settings) {
-  try {
-    if (settings.now() - fs.statSync(lock).mtimeMs > settings.staleMs + settings.spacingMs + settings.jitterMs) fs.rmSync(lock, { force: true });
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-  }
+  const staleAfterMs = settings.staleMs + settings.spacingMs + settings.jitterMs;
+  const removeLock = () => {
+    if (settings.now() - fs.statSync(lock).mtimeMs > staleAfterMs) fs.rmSync(lock, { force: true });
+  };
+  orWhenAbsent(removeLock, undefined);
 }
 
 function tryTake(lock, settings) {
@@ -69,12 +68,8 @@ async function acquire(lock, settings) {
 }
 
 function lastRequest(file) {
-  try {
-    const stamp = Number(fs.readFileSync(file, 'utf8'));
-    return Number.isFinite(stamp) ? stamp : 0;
-  } catch {
-    return 0;
-  }
+  const stamp = orWhenAbsent(() => Number(fs.readFileSync(file, 'utf8')), 0);
+  return Number.isFinite(stamp) ? stamp : 0;
 }
 
 function waitFor(last, settings) {

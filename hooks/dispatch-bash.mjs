@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { inSidecall, readHookText } from '#hook-input';
+import { inSidecall } from '#hook-input';
 import { scriptBytes } from '../lib/context-limits.mjs';
 import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { savedOutputDirectory, savedOutputPrefix } from '../lib/saved-outputs.mjs';
@@ -15,7 +15,7 @@ import { redditBashDecision } from '../lib/reddit-route.mjs';
 import { fixShellFor, pollsUnbounded } from '../lib/shell-fixes.mjs';
 import { predispatchBashDecision } from '../lib/slice-state.mjs';
 import { isMain } from '../lib/script-flags.mjs';
-import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
+import { rememberRefusal, runHook } from '../lib/hook-refusal.mjs';
 import { withReceipt } from './context-limit.mjs';
 import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, refuse } from '../lib/lazy-steps.mjs';
 
@@ -39,7 +39,7 @@ const REDDIT_STEP = {
 
 export const SCRIPT_SIZE_STEP = {
   name: 'script-size',
-  run(hookInput, earlier = []) {
+  run(hookInput, earlier) {
     const command = hookInput.tool_input?.command;
     if (!hookInput.agent_id || typeof command !== 'string') return null;
     const limit = scriptBytes();
@@ -70,6 +70,8 @@ export const SLEEP_STEP = {
   }
 };
 
+const shellFixed = (hookInput) => (process.env.EXO_RUN_SESSION === '1' ? null : fixShellFor(hookInput, hookAgentType));
+
 const RESULT_CAP_STEP = {
   name: 'result-cap',
   run(hookInput) {
@@ -78,7 +80,7 @@ const RESULT_CAP_STEP = {
     if (toolInput.run_in_background || toolInput.command.endsWith('\\')) return null;
     const bound = bashIntakeBound(hookInput);
     if (!bound) return null;
-    const fixed = process.env.EXO_RUN_SESSION === '1' ? null : fixShellFor(hookInput, hookAgentType);
+    const fixed = shellFixed(hookInput);
     fs.mkdirSync(savedOutputDirectory(), { recursive: true });
     const log = path.join(savedOutputDirectory(), `${savedOutputPrefix(hookInput.agent_id)}${hookInput.tool_use_id ?? process.pid}.log`);
     const inner = (fixed ?? toolInput).command;
@@ -90,15 +92,14 @@ const RESULT_CAP_STEP = {
 const SHELL_STEP = {
   name: 'shell-fix',
   run(hookInput) {
-    if (process.env.EXO_RUN_SESSION === '1') return null;
-    const updatedInput = fixShellFor(hookInput, hookAgentType);
+    const updatedInput = shellFixed(hookInput);
     return updatedInput && { hookSpecificOutput: { updatedInput } };
   }
 };
 
 const BASH_CAP_STEP = {
   name: 'bash-cap',
-  run(hookInput, earlier = []) {
+  run(hookInput, earlier) {
     if (earlier.some((output) => output.permissionDecision === 'deny')) return null;
     if (earlier.some((output) => output.timed)) return null;
     const updatedInput = cappedInput(hookInput, firstRewrite(earlier));
@@ -144,10 +145,4 @@ function mergeOutputs(outputs) {
   return { verdict, output: Object.keys(merged).length === 1 ? null : { hookSpecificOutput: merged } };
 }
 
-if (isMain(import.meta.url) && !inSidecall()) {
-  try {
-    const text = await readHookText();
-    const input = text.trim() === '' ? null : JSON.parse(text);
-    writeHookOutput(input, input && await dispatchBash(input), 'dispatch-bash');
-  } catch { process.exitCode = 0; }
-}
+if (isMain(import.meta.url) && !inSidecall()) await runHook('dispatch-bash', dispatchBash);

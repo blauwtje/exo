@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
 import { DEFAULT_CAP, renderMap } from '../skills/spec/scripts/map-render.mjs';
 
@@ -29,4 +33,23 @@ test('an explicit cap still bounds the map and collapses folders', () => {
   assert.ok(Buffer.byteLength(map.text) <= 12000);
   assert.match(map.text, /behind collapsed lines$/m);
   assert.doesNotMatch(map.text, / 0 behind collapsed lines/);
+});
+
+test('the script lists manifest fields, skips an unparsable manifest and names exports', () => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'repo-map-'));
+  const run = (command, args) => execFileSync(command, args, { cwd: repo, encoding: 'utf8' });
+  fs.mkdirSync(path.join(repo, 'broken'));
+  fs.writeFileSync(path.join(repo, 'package.json'), JSON.stringify({ scripts: { build: 'x', test: 'y' }, main: 'index.mjs' }));
+  fs.writeFileSync(path.join(repo, 'broken', 'package.json'), '{not json');
+  fs.writeFileSync(path.join(repo, 'tool.mjs'), 'export const alpha = 1;\nexport function beta() {}\n');
+  run('git', ['init', '-q']);
+  run('git', ['add', '.']);
+  run('git', ['-c', 'user.name=T', '-c', 'user.email=t@example.com', 'commit', '-q', '-m', 'init']);
+  const script = path.join(import.meta.dirname, '..', 'skills', 'spec', 'scripts', 'repo-map.mjs');
+  const [mapFile] = run('node', [script]).split('\n');
+  const text = fs.readFileSync(mapFile, 'utf8');
+  assert.match(text, /package\.json: scripts build test; main index\.mjs$/m);
+  assert.match(text, /^ {2}package\.json$/m);
+  assert.match(text, /tool\.mjs: alpha, beta$/m);
+  fs.rmSync(repo, { recursive: true, force: true });
 });

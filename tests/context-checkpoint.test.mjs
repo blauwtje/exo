@@ -30,7 +30,7 @@ async function transcriptAt(tokens) {
   return file;
 }
 
-async function workerDecision(tokens, tool = 'Read', command = undefined) {
+async function workerDecision(tokens, tool = 'Read', command) {
   const transcript_path = await transcriptAt(tokens);
   return contextDecision({ session_id: `s-${tokens}-${tool}`, agent_id: `a-${tokens}-${tool}-${Math.random()}`, agent_transcript_path: transcript_path, tool_name: tool, tool_input: { command } });
 }
@@ -78,7 +78,7 @@ test('the hard limit allows the checkpoint command and still denies other Bash',
 test('checkpoint.mjs commits the worktree changes with a Plan-checkpoint trailer', async () => {
   const { tree } = await linkedWorktree();
   await fs.writeFile(path.join(tree, 'a.txt'), 'two\n');
-  const done = await run(CHECKPOINT, ['--plan', 'demo', '--task', '3'], { cwd: tree });
+  const done = await run(CHECKPOINT, [], { cwd: tree, env: { EXO_RUN_TASK: 'demo/3' } });
   assert.equal(done.code, 0, done.stderr);
   assert.match(git(tree, 'log', '-1', '--format=%B'), /^Plan-checkpoint: demo\/3$/m);
   assert.equal(git(tree, 'status', '--porcelain'), '');

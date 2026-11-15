@@ -14,7 +14,7 @@ export function excludeScratchIfGit(cwd) {
 const TRACKING_PARAM = /^(?:utm_|fbclid$|gclid$|ref$)/i;
 const REF_LENGTH = 6;
 
-export function canonicalUrl(raw) {
+function canonicalUrl(raw) {
   const url = new URL(raw);
   url.hash = '';
   url.hostname = url.hostname.toLowerCase().replace(/^www\./, '');

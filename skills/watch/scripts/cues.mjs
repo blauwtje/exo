@@ -15,7 +15,7 @@ function decodeEntity(match, ...[name, decimal, hex]) {
   return code > 0 && code <= LAST_CODE_POINT ? String.fromCodePoint(code) : match;
 }
 
-export function decodeEntities(text) {
+function decodeEntities(text) {
   return text.replace(ENTITY, decodeEntity);
 }
 
@@ -82,7 +82,7 @@ function cuesOf(xml, { pattern, start, perSecond }, auto) {
   return cues;
 }
 
-export function parseTimedText(xml, { auto = false } = {}) {
+export function parseTimedText(xml, { auto }) {
   for (const format of TIMED_TEXT_FORMATS) {
     const cues = cuesOf(xml, format, auto);
     if (cues.length > 0) return cues;

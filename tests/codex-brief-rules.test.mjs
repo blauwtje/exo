@@ -4,8 +4,7 @@ import { test } from 'node:test';
 import { generateTree } from '../harnesses/codex/generate.mjs';
 import { splitFrontmatter } from '../harnesses/codex/rules.mjs';
 import { briefLines } from '../lib/guard-rules.mjs';
-
-const ROOT = new URL('../', import.meta.url).pathname;
+import { REPOSITORY_ROOT as ROOT } from './harness.mjs';
 
 function toolsOf(name) {
   const { fields } = splitFrontmatter(fs.readFileSync(`${ROOT}agents/${name}.md`, 'utf8'));

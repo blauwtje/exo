@@ -1,10 +1,6 @@
 
-import fs from 'node:fs';
 import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';
-
-function isFile(path) {
-  return fs.existsSync(path) && fs.statSync(path).isFile();
-}
+import { isFile } from '../repository.mjs';
 
 function unresolvedTargets(file, repository) {
   return markdownTargets(repository.text(file))

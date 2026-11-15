@@ -8,7 +8,7 @@ function boundaryLines(extraFields) {
     '### Task 1: feat(sandbox): confine the path',
     `Depends on: none | Files: \`lib/a.mjs\`, \`tests/a.test.mjs\` | Data: a path | Risk: security boundary${extraFields} | Proof: node --test tests/a.test.mjs`
   ].join('\n');
-  return planCheckReport(compactPlanFixture({ tasks: [task] })).lines.filter((line) => line.includes('Boundary'));
+  return planCheckReport(compactPlanFixture({ tasks: [task] }), { loop: false, run: false }).lines.filter((line) => line.includes('Boundary'));
 }
 
 test('a security-boundary task with no Boundary field is flagged with the field format', () => {
@@ -24,6 +24,6 @@ test('a security-boundary task whose Boundary test file is in Files passes', () 
 
 test('a task without Risk: security boundary needs no Boundary field', () => {
   const task = '### Task 1: feat(a): change\nDepends on: none | Files: `lib/a.mjs` | Data: a path | Risk: dependency | Proof: node --test';
-  const lines = planCheckReport(compactPlanFixture({ tasks: [task] })).lines.filter((line) => line.includes('Boundary'));
+  const lines = planCheckReport(compactPlanFixture({ tasks: [task] }), { loop: false, run: false }).lines.filter((line) => line.includes('Boundary'));
   assert.deepEqual(lines, []);
 });

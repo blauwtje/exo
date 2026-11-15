@@ -42,6 +42,8 @@ export function withLint(command) {
   return PLAN.replace('Branch: feat/fixture', `Branch: feat/fixture\nLint: ${command}`);
 }
 
+export const withGate = (plan, command) => plan.replace('Branch: feat/fixture', `Branch: feat/fixture\nLand gate: ${command}`);
+
 export const COMPACT_PLAN = compactPlanFixture({ tasks: [
   compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'node tests/app.test.mjs' })
 ] });
@@ -56,7 +58,7 @@ export const PASS_REPORT = [
   ''
 ].join('\n');
 
-export const APP_PROOF = [
+const APP_PROOF = [
   "import { greet } from '../src/app.js';",
   "if (greet() !== 'hello') {",
   "  console.log('# pass 2');",
@@ -98,11 +100,3 @@ export async function assertRefused(root, planPath, stderrPattern) {
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
   assert.match(git(root, 'status', '--porcelain'), /src\/app\.js/);
 }
-
-export const OLDER_PLAN = compactPlanFixture({ tasks: [
-  compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: null })
-] });
-
-export const MCP_PLAN = compactPlanFixture({ tasks: [
-  compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], proof: 'mcp:run_playtest mode=play' })
-] });

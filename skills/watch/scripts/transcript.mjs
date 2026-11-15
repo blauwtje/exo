@@ -6,6 +6,7 @@ import { UsageError, parseFlags, isMain } from '#script-flags';
 import { SPEC, USAGE, readOptions } from './options.mjs';
 import { readListed } from './url-list.mjs';
 import { watchBatch, summaryLine, exitCodeOf } from './batch.mjs';
+import { RATE_LIMITED_EXIT } from './request-gate.mjs';
 
 function report(outcome) {
   if (outcome.line) console.log(outcome.line);
@@ -34,7 +35,7 @@ async function main(argv) {
   const restart = restartFor(process.argv.slice(1), (flags.from ?? []).includes('-'));
   const outcomes = await watchBatch({ ...options, restart }, report);
   const exitCode = exitCodeOf(outcomes);
-  if (outcomes.length > 1 || exitCode === 75) console.log(summaryLine(outcomes));
+  if (outcomes.length > 1 || exitCode === RATE_LIMITED_EXIT) console.log(summaryLine(outcomes));
   return exitCode;
 }
 

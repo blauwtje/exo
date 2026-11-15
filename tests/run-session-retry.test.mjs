@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { isTransientProviderError, spawnClaude } from '../skills/build/scripts/run-session.mjs';
+import { spawnClaude } from '../skills/build/scripts/run-session.mjs';
 import { tempDir } from './harness.mjs';
 
 const RETRY_MS = 100;
@@ -31,15 +31,26 @@ function run(session, extra = {}) {
   return spawnClaude(session.claude, [], { cwd: process.cwd(), env: process.env, prompt: '', log: session.log, timeoutMs: 30000, ...extra });
 }
 
-test('isTransientProviderError matches provider error shapes only', () => {
-  assert.equal(isTransientProviderError(TRANSIENT_TEXT), true);
-  assert.equal(isTransientProviderError('{"type":"error","error":{"type":"overloaded_error"}}'), true);
-  assert.equal(isTransientProviderError(FAILURES['error result event']), true);
-  assert.equal(isTransientProviderError(SUCCESS), false);
-  assert.equal(isTransientProviderError(JSON.stringify({ type: 'result', is_error: true, result: 'API Error: 400 invalid request' })), false);
-  assert.equal(isTransientProviderError(`${TRANSIENT_TEXT}\n${SUCCESS}`), false);
-  assert.equal(isTransientProviderError(JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'see run-session.mjs:429' }] } })), false);
-});
+const NON_TRANSIENT_REQUEST = JSON.stringify({ type: 'result', is_error: true, result: 'API Error: 400 invalid request' });
+const QUOTED_LINE_NUMBER = JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'see run-session.mjs:429' }] } });
+const OUTPUT_SHAPES = [
+  ['a bare provider error line', TRANSIENT_TEXT, true],
+  ['an overloaded error event', '{"type":"error","error":{"type":"overloaded_error"}}', true],
+  ['an error result event', FAILURES['error result event'], true],
+  ['a success result', SUCCESS, false],
+  ['a non-transient error result', NON_TRANSIENT_REQUEST, false],
+  ['an error line followed by a success result', `${TRANSIENT_TEXT}\n${SUCCESS}`, false],
+  ['model text that quotes a number', QUOTED_LINE_NUMBER, false]
+];
+
+for (const [shape, output, transient] of OUTPUT_SHAPES) {
+  test(`spawnClaude ${transient ? 'retries' : 'does not retry'} ${shape}`, { timeout: 30000 }, async () => {
+    process.env.EXO_PROVIDER_RETRY_MS = '10';
+    const session = stub(output, 99);
+    await run(session);
+    assert.equal(session.attempts(), transient ? 4 : 1);
+  });
+}
 
 for (const [shape, failure] of Object.entries(FAILURES)) {
   test(`spawnClaude retries a transient error (${shape}) and returns the later success`, { timeout: 30000 }, async () => {

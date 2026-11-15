@@ -1,5 +1,6 @@
 const VIDEO_ID = /^[\w-]{11}$/;
 export const YOUTUBE_HOST = /(^|\.)(youtube\.com|youtube-nocookie\.com)$/;
+export const WATCH_URL = 'https://www.youtube.com/watch?v=';
 const ID_FOLDERS = new Set(['shorts', 'embed', 'live', 'v']);
 const SCHEME = /^[a-z][a-z\d+.-]*:/i;
 
@@ -8,11 +9,9 @@ function hasScheme(text) {
 }
 
 export function urlOf(text) {
-  try {
-    return new URL(hasScheme(text) ? text : `https://${text}`);
-  } catch {
-    return null;
-  }
+  const candidate = hasScheme(text) ? text : `https://${text}`;
+  if (!URL.canParse(candidate)) return null;
+  return new URL(candidate);
 }
 
 function idFromUrl(url) {
@@ -22,7 +21,7 @@ function idFromUrl(url) {
   return ID_FOLDERS.has(folder) ? id : url.searchParams.get('v') ?? '';
 }
 
-export function videoIdOf(input) {
+function videoIdOf(input) {
   const text = String(input).trim();
   if (VIDEO_ID.test(text)) return text;
   const url = urlOf(text);

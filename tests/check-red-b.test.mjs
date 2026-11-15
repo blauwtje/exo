@@ -1,40 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { createRepository } from '../verify/repository.mjs';
 import { checkMarkdownReferences } from '../verify/checks/markdown-references.mjs';
 import { checkNameClash } from '../verify/checks/name-clash.mjs';
 import { checkPluginVersion } from '../verify/checks/plugin-version.mjs';
 import { checkProcessLifetime } from '../verify/checks/process-lifetime.mjs';
-
-function recorder() {
-  const results = [];
-  const result = (...entry) => results.push({ status: entry[0], name: entry[1], detail: entry[2] });
-  return {
-    results,
-    result,
-    note: () => {},
-    assert: (ok, name, details) => result(ok ? 'PASS' : 'FAIL', name, ok ? details.pass : details.fail)
-  };
-}
-
-function tree(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-check-red-'));
-  for (const [relativePath, text] of Object.entries(files)) {
-    fs.mkdirSync(path.dirname(path.join(root, relativePath)), { recursive: true });
-    fs.writeFileSync(path.join(root, relativePath), text);
-  }
-  return root;
-}
-
-function failures(check, root, options) {
-  const report = recorder();
-  check(report, createRepository(root), options);
-  return report.results.filter((entry) => entry.status === 'FAIL');
-}
+import { failures, tree } from './check-outcome.mjs';
 
 function git(root, ...args) {
   const run = spawnSync('git', ['-C', root, '-c', 'user.name=T', '-c', 'user.email=t@example.com', ...args], { encoding: 'utf8' });

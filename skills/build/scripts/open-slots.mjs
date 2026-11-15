@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { readJsonOrNull } from '#basics';
+import { isPositiveInteger, readJsonOrNull } from '#basics';
 import { createWorktree, worktreePath } from '#checkout';
 import { SCRATCH_FOLDER, scratchPath } from '#scratch-path';
 import { git } from '#git';
@@ -17,9 +17,9 @@ const PORT_STRIDE = 10;
 
 const DEFAULT_PORT_START = 42000;
 
-export function slotEnv(toplevel, index, env = process.env) {
-  const start = Number.parseInt(env.EXO_SLOT_PORT_START ?? '', 10);
-  const portBase = (Number.isInteger(start) && start > 0 ? start : DEFAULT_PORT_START) + index * PORT_STRIDE;
+function slotEnv(toplevel, index) {
+  const start = Number.parseInt(process.env.EXO_SLOT_PORT_START ?? '', 10);
+  const portBase = (isPositiveInteger(start) ? start : DEFAULT_PORT_START) + index * PORT_STRIDE;
   return { EXO_SLOT: String(index), EXO_PORT_BASE: String(portBase), EXO_STATE_DIR: path.join(toplevel, '.exo', 'slot-state', String(index)) };
 }
 
@@ -101,7 +101,7 @@ function prepareSlot(toplevel, slot, { setup, inputs, variables }) {
   return runSetup(slot, setup, variables);
 }
 
-export function openSlots({ root, numbers, setup, inputs = [], fresh, since }) {
+export function openSlots({ root, numbers, setup, inputs, fresh, since }) {
   const top = git(root, ['rev-parse', '--show-toplevel']);
   if (top.status !== 0) return { reason: `${root} is no git checkout` };
   const toplevel = top.stdout.trim();

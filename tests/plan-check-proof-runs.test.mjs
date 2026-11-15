@@ -3,14 +3,14 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
-import { compactPlanFixture, compactTask, fixture, gitRepository } from './harness.mjs';
+import { compactPlanFixture, compactTask, tempDir, gitRepository } from './harness.mjs';
 
 const PLAN_CHECK = path.resolve('skills/spec/scripts/plan-check.mjs');
 
 async function planCheck({ proof, data = 'a plain object' }) {
   const root = await gitRepository({ 'src/run.mjs': 'export {};\n' });
   const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Change the runner', files: ['src/run.mjs'], proof, data })] });
-  const planPath = path.join(await fixture(), 'plan.md');
+  const planPath = path.join(await tempDir('ui-design-test-'), 'plan.md');
   await fs.writeFile(planPath, plan);
   return spawnSync('node', [PLAN_CHECK, '--plan', planPath, '--root', root], { encoding: 'utf8' }).stdout;
 }

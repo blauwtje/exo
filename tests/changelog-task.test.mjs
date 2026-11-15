@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { changelogLine, landChangelogTask } from '../skills/build/scripts/changelog-task.mjs';
+import { landChangelogTask } from '../skills/build/scripts/changelog-task.mjs';
 import { tempDir } from './harness.mjs';
 
 const CHANGELOG = [
@@ -23,27 +23,48 @@ function checkout(text = CHANGELOG) {
   return root;
 }
 
+function attempt(overrides, text = CHANGELOG) {
+  const root = checkout(text);
+  let called = false;
+  const landed = landChangelogTask({ root, task: task(overrides), land: () => { called = true; return true; } });
+  return { landed, called, after: fs.readFileSync(path.join(root, 'CHANGELOG.md'), 'utf8') };
+}
+
 test('the line is the Proof text when Data names no literal that holds it', () => {
-  assert.deepEqual(changelogLine(task(), CHANGELOG), { heading: '### Changed', line: 'A run lands it.' });
+  const { landed, after } = attempt();
+  assert.equal(landed, true);
+  assert.match(after, /### Changed\n- old\n- A run lands it\.\n/);
 });
 
 test('the line is the longest Data literal that extends the Proof text', () => {
   const data = 'the `### Added` line `A run lands it.` and `A run lands it. More words.`';
-  assert.deepEqual(changelogLine(task({ data }), CHANGELOG), { heading: '### Added', line: 'A run lands it. More words.' });
+  const { landed, after } = attempt({ data });
+  assert.equal(landed, true);
+  assert.match(after, /### Added\n- first\n- A run lands it\. More words\.\n/);
 });
 
 test('a Proof wrapped in backticks parses', () => {
   const proof = "`grep -qF 'A run lands it.' CHANGELOG.md`";
-  assert.equal(changelogLine(task({ proof }), CHANGELOG).line, 'A run lands it.');
+  const { landed, after } = attempt({ proof });
+  assert.equal(landed, true);
+  assert.match(after, /- A run lands it\.\n/);
 });
 
-test('another file, a compound Proof, a missing subheading or present text give null', () => {
-  assert.equal(changelogLine(task({ files: [{ path: 'README.md' }] }), CHANGELOG), null);
-  assert.equal(changelogLine(task({ files: [{ path: 'CHANGELOG.md' }, { path: 'a.md' }] }), CHANGELOG), null);
-  assert.equal(changelogLine(task({ proof: "grep -qF 'A run lands it.' CHANGELOG.md && true" }), CHANGELOG), null);
-  assert.equal(changelogLine(task({ data: 'a line under `### Fixed`' }), CHANGELOG), null);
-  assert.equal(changelogLine(task({ data: 'a line under `### Added` or `### Changed`' }), CHANGELOG), null);
-  assert.equal(changelogLine(task(), `${CHANGELOG}\nA run lands it.\n`), null);
+test('another file, a compound Proof, a missing subheading or present text land nothing', () => {
+  const cases = [
+    [{ files: [{ path: 'README.md' }] }, CHANGELOG],
+    [{ files: [{ path: 'CHANGELOG.md' }, { path: 'a.md' }] }, CHANGELOG],
+    [{ proof: "grep -qF 'A run lands it.' CHANGELOG.md && true" }, CHANGELOG],
+    [{ data: 'a line under `### Fixed`' }, CHANGELOG],
+    [{ data: 'a line under `### Added` or `### Changed`' }, CHANGELOG],
+    [{}, `${CHANGELOG}\nA run lands it.\n`]
+  ];
+  for (const [overrides, text] of cases) {
+    const { landed, called, after } = attempt(overrides, text);
+    assert.equal(landed, false, JSON.stringify(overrides));
+    assert.equal(called, false, JSON.stringify(overrides));
+    assert.equal(after, text, JSON.stringify(overrides));
+  }
 });
 
 test('the line lands as the last bullet of its subheading and the report holds the pass line', () => {

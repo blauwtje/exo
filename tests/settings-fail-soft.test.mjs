@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { receiptsOn } from '../hooks/context-limit.mjs';
+import { withReceipt } from '../hooks/context-limit.mjs';
 import { SCHEMA, settingOrDefault } from '../lib/settings-store.mjs';
 import { restoreEnv, tempDir } from './harness.mjs';
 
@@ -33,6 +33,8 @@ function inProject(directory, work) {
 }
 
 const childEnv = (directory) => ({ ...process.env, CLAUDE_PROJECT_DIR: directory, CLAUDE_CONFIG_DIR: tempDir('exo-config-') });
+const RECEIPT_CALL = { hookInput: { tool_name: 'Skill', tool_input: { skill: 'exo:spec' } }, fields: null };
+const receiptsShown = () => Boolean(withReceipt(null, RECEIPT_CALL)?.systemMessage);
 const malformed = () => project('{"budget": ');
 const bogus = (key) => project(JSON.stringify({ [key]: 'bogus' }));
 
@@ -58,9 +60,10 @@ test('the resolver has no note for a valid value and still refuses an unknown ke
 });
 
 test('receipts take the default for a bogus value or a malformed file and stay off for off', () => {
-  assert.equal(inProject(bogus('receipts'), () => receiptsOn()), true);
-  assert.equal(inProject(malformed(), () => receiptsOn()), true);
-  assert.equal(inProject(project('{"receipts":"off"}'), () => receiptsOn()), false);
+  assert.equal(inProject(bogus('receipts'), receiptsShown), true);
+  assert.equal(inProject(malformed(), receiptsShown), true);
+  assert.equal(inProject(project('{"receipts":"off"}'), receiptsShown), false);
+  assert.equal(inProject(project('{"receipts":"on"}'), receiptsShown), true);
 });
 
 test('the agent hook applies the default budget for a bogus value or a malformed file', () => {
@@ -79,4 +82,10 @@ test('settings get prints the default on stdout and the note on stderr with exit
     assert.equal(result.stdout.trim(), SCHEMA.budget.default);
     assert.match(result.stderr, pattern);
   }
+});
+
+test('settings set refuses the global scope off codex and names the key', () => {
+  const result = spawnSync(process.execPath, [SETTINGS, 'set', 'budget', 'low', '--scope', 'global'], { env: childEnv(malformed()), encoding: 'utf8' });
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /budget is global: set it in \/config/);
 });

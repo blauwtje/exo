@@ -3,6 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
+import { CHILD_OUTPUT_LIMIT } from '#process-tree';
 import { parsePlan } from '../../../lib/plan-tasks.mjs';
 import { criterionCommand } from '../../../lib/plan-frame.mjs';
 
@@ -10,7 +11,7 @@ const COMMAND_TIMEOUT_MS = 600000;
 const LOG_PATH = path.join('.exo', 'logs', 'gate-verify.log');
 
 function runCommand(command, root) {
-  const run = spawnSync('sh', ['-c', command], { cwd: root, encoding: 'utf8', timeout: COMMAND_TIMEOUT_MS, maxBuffer: 64 * 1024 * 1024 });
+  const run = spawnSync('sh', ['-c', command], { cwd: root, encoding: 'utf8', timeout: COMMAND_TIMEOUT_MS, maxBuffer: CHILD_OUTPUT_LIMIT });
   return { ok: run.status === 0, output: `${run.stdout ?? ''}${run.stderr ?? ''}`.trimEnd() };
 }
 

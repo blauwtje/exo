@@ -22,16 +22,12 @@ function setGateEnv(values) {
   };
 }
 
-function unlandedEvidenceOf({ plan, root, planId, skip = null }) {
+export function unlandedEvidenceOf({ plan, root, planId, skip = null }) {
   const landed = landedTasks(plan.tasks, root, planId);
   const values = plan.tasks
     .filter((other) => other.number !== skip?.number && !landed.includes(other.number) && other.evidence !== null)
     .map((other) => other.evidence);
   return values.length === 0 ? undefined : values.join('\n');
-}
-
-export function proofEvidenceOf(plan, root, planId) {
-  return unlandedEvidenceOf({ plan, root, planId });
 }
 
 export function gateEnvOf({ plan, task, root, planId }) {

@@ -9,6 +9,7 @@ import { prefetchTikTok } from './tiktok.mjs';
 import { watchGuarded } from './watch.mjs';
 import { findDone, markDone } from './done-ledger.mjs';
 import { writeMerged } from './outputs.mjs';
+import { RATE_LIMITED_EXIT } from './request-gate.mjs';
 
 function keyOf(input) {
   const source = sourceOf(input);
@@ -127,6 +128,6 @@ export function summaryLine(outcomes) {
 }
 
 export function exitCodeOf(outcomes) {
-  if (outcomes.some((outcome) => outcome.status === 'open')) return 75;
+  if (outcomes.some((outcome) => outcome.status === 'open')) return RATE_LIMITED_EXIT;
   return outcomes.every((outcome) => outcome.status === 'failed') ? 1 : 0;
 }

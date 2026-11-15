@@ -8,7 +8,7 @@ import { contextHook } from '../hooks/context-limit.mjs';
 import { AGENT_HARD_RATIO, agentContextTarget, contextLimit, softLimit } from '../lib/context-limits.mjs';
 import { contextDecision, readCapDecision } from '../lib/context-decisions.mjs';
 import { guardKind } from '../lib/guard-rules.mjs';
-import { tempDir } from './harness.mjs';
+import { readHooks, tempDir } from './harness.mjs';
 
 const testHome = tempDir('exo-limit-home-');
 process.env.HOME = testHome;
@@ -215,7 +215,7 @@ test('hookAgentType reads agent_type first, else the meta file beside the subage
 });
 
 test('the SubagentStart hook, its file and subagentStartNote are gone', async () => {
-  const hooks = JSON.parse(fs.readFileSync(new URL('../hooks/hooks.json', import.meta.url), 'utf8')).hooks;
+  const hooks = readHooks();
   assert.equal('SubagentStart' in hooks, false);
   assert.equal(fs.existsSync(new URL('../hooks/subagent-start.mjs', import.meta.url)), false);
   const limits = await import('../lib/context-limits.mjs');
@@ -239,12 +239,17 @@ test('the slice, result cap and script size defaults read the catalog and honor 
   const limits = await import('../lib/context-limits.mjs');
   const home = tempDir('exo-sizes-');
   assert.equal(limits.orchestratorWorkers(home), 4);
-  assert.equal(limits.capMargin(home), 0.1);
-  assert.equal(limits.scriptBytes(home), 4096);
-  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
-  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { orchestratorWorkers: 3, scriptBytes: 5 } }));
-  assert.equal(limits.orchestratorWorkers(home), 3);
-  assert.equal(limits.scriptBytes(home), 5);
+  const saved = process.env.HOME;
+  process.env.HOME = home;
+  try {
+    assert.equal(limits.scriptBytes(), 4096);
+    fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { orchestratorWorkers: 3, scriptBytes: 5 } }));
+    assert.equal(limits.orchestratorWorkers(home), 3);
+    assert.equal(limits.scriptBytes(), 5);
+  } finally {
+    process.env.HOME = saved;
+  }
 });
 
 test('the shared reader accepts a fractional bytesPerToken and rejects zero, negative and non-numeric values', async () => {

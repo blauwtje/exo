@@ -33,9 +33,9 @@ function templateFile(root, name) {
   return path.join(root, TEMPLATE_DIRECTORY, `${name}.md`);
 }
 
-function parseTemplate(text) {
+function parseTemplate(text, file) {
   const match = text.match(/^---\n([\s\S]*?)\n---\n/);
-  if (match === null) throw new UsageError('the template has no front matter between two --- lines');
+  if (match === null) throw new UsageError(`the template ${file} has no front matter between two --- lines`);
   const fields = Object.fromEntries(match[1].split('\n').map((line) => [line.slice(0, line.indexOf(':')).trim(), line.slice(line.indexOf(':') + 1).trim()]));
   const params = (fields.params ?? '').split(',').map((param) => param.trim()).filter(Boolean);
   return { name: fields.name ?? '', summary: fields.summary ?? '', params, body: text.slice(match[0].length) };
@@ -99,11 +99,12 @@ function parsePairs(pairs = []) {
 function listTemplates(root) {
   const directory = path.join(root, TEMPLATE_DIRECTORY);
   if (!fs.existsSync(directory)) return [];
-  return fs.readdirSync(directory).filter((file) => file.endsWith('.md')).sort().map((file) => parseTemplate(fs.readFileSync(path.join(directory, file), 'utf8')));
+  return fs.readdirSync(directory).filter((file) => file.endsWith('.md')).sort().map((file) => parseTemplate(fs.readFileSync(path.join(directory, file), 'utf8'), path.join(directory, file)));
 }
 
 function renderPlan(root, name, values) {
-  const template = parseTemplate(readFile(templateFile(root, name), 'template'));
+  const file = templateFile(root, name);
+  const template = parseTemplate(readFile(file, 'template'), file);
   return applyDone(fillTemplate(template, { ...values, root }), doneListOf(root));
 }
 
@@ -160,7 +161,7 @@ function renderTemplate(root, flags) {
 
 const COMMANDS = { list: (root) => listing(root), save: saveTemplate, done: appendDone, render: renderTemplate };
 
-export function run(argv) {
+function run(argv) {
   const [command, ...rest] = argv;
   const handler = COMMANDS[command];
   if (handler === undefined) throw new UsageError(`unknown command '${command ?? ''}'`);

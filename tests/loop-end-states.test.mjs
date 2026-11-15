@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { END_STATES, decide, recordRound } from '../lib/loop-budget.mjs';
-import { outcome } from '../lib/run-outcomes.mjs';
+import { RUN_OUTCOMES } from '../lib/run-outcomes.mjs';
 import { tempDir } from './harness.mjs';
 
 test('the two end states each have a run outcome', () => {
   assert.deepEqual([...END_STATES], ['rounds-spent', 'no-progress']);
-  for (const state of END_STATES) assert.equal(outcome(state).kind, state);
+  for (const state of END_STATES) assert.equal(RUN_OUTCOMES[state].kind, state);
 });
 
 test('a spent cap ends as rounds-spent', () => {

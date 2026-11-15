@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { spawn } from 'node:child_process';
-import { CLI, watchCommand } from './cli-paths.mjs';
-import { FINAL_PHASES, acquireLock, approveGates, createRun, isAlive, keepRun, liveLogFile, newRunId, pauseCleared, phaseForExit, readState, releaseLock, removeRun, runDir, unfinishedRun, updateRun } from './run-state.mjs';
+import { isAlive } from '#land-lock';
+import { CLI, watchCommand } from './run-session-paths.mjs';
+import { FINAL_PHASES, acquireLock, approveGates, createRun, keepRun, liveLogFile, newRunId, pauseCleared, phaseForExit, readState, releaseLock, removeRun, runDir, unfinishedRun, updateRun } from './run-state.mjs';
 import { Refusal, checkoutRoot } from './cli-refusal.mjs';
 import { newestPlan } from './plan-file.mjs';
 import { refuseDirty } from './run-checkout.mjs';
@@ -160,7 +161,7 @@ async function finishRun({ root, run, child }) {
 }
 
 export async function runCommand(argv, { approving = false } = {}) {
-  const root = checkoutRoot();
+  const root = checkoutRoot(process.cwd());
   const options = runOptions(argv);
   const run = options.resume !== null ? resumedRun(root, options.runId ?? options.resume, approving) : freshRun(root, options, approving);
   const { id, plan, detach } = run;
@@ -184,9 +185,9 @@ export async function runCommand(argv, { approving = false } = {}) {
 }
 
 export async function approveCommand(args) {
-  const root = checkoutRoot();
+  const root = checkoutRoot(process.cwd());
   const id = args[0];
-  if (id === undefined || args.length !== 1) throw new Refusal('usage: exo approve <id>');
+  if (id === undefined || args.length !== 1) throw new Refusal(`usage: exo approve <id> (got: ${args.join(' ') || 'no arguments'})`);
   const state = readState(root, id);
   if (state === null) throw new Refusal(`refused: no run ${id} in ${root}; exo status lists the runs`);
   if (state.phase !== 'parked') throw new Refusal(`refused: run ${id} is ${state.phase}, not parked`);

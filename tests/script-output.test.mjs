@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { detailLogPath, forCaller, keepLines } from '#script-output';
+import { forCaller, keepLines } from '#script-output';
 import { tempDir } from './harness.mjs';
 
 function tempRoot() {
@@ -28,7 +28,10 @@ test('forCaller returns the full text when nothing was cut', () => {
 test('forCaller writes the full text to a log and names it in one Detail line', () => {
   const root = tempRoot();
   const output = forCaller({ root, name: 'cut', full: 'a\nb\n', shown: 'a\n' });
-  const file = detailLogPath(root, 'cut');
+  const [shown, detail] = output.split('Detail: ');
+  const file = detail.trim();
+  assert.equal(shown, 'a\n');
   assert.equal(output, `a\nDetail: ${file}\n`);
+  assert.ok(file.endsWith(path.join('logs', 'cut.log')));
   assert.equal(fs.readFileSync(file, 'utf8'), 'a\nb\n');
 });

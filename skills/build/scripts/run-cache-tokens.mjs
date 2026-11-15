@@ -1,4 +1,4 @@
-const thousands = (tokens) => Math.round(tokens / 1000);
+export const thousands = (tokens) => Math.round(tokens / 1000);
 
 export function cacheLines({ cacheRead, cacheWrite, firstCacheWrite }, bar) {
   const lines = [];

@@ -19,8 +19,8 @@ Ruled out: <ruled-out.mjs show output, or none>
 
 No production edit. Before stopping, revert every instrumentation edit, whether the loop ends proven, unproven or with no reproduction.
 
-Handoff file: `<scratch>/<slug>.md`, `<scratch>` = the absolute `.exo/debug` directory of <root>.
-Write it with the Write tool: only the investigate part, at most 25 lines, in the fields and order of the `exo:find-cause` skill's `references/handoff.md`.
+Handoff file: `<debug-dir>/<slug>.md`, `<debug-dir>` = the absolute `.exo/debug` directory of <root>.
+Write it with the Write tool: only the investigate part, in the fields and order of the `exo:find-cause` skill's `references/handoff.md`.
 
 Ask the user nothing; record what is missing as `none`.
 

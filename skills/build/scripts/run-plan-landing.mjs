@@ -12,7 +12,9 @@ import { landChangelogTask } from './changelog-task.mjs';
 import { clip, idleLine, landedLine, planLandedLine, planSessionLine, scriptLandedLine, taskSubject } from './run-report.mjs';
 import { appendLog } from './run-session.mjs';
 import { SCRIPT } from './run-session-paths.mjs';
-import { gitOut } from './run-worktree.mjs';
+import { gitLine } from '#git';
+import { CHILD_OUTPUT_LIMIT } from '#process-tree';
+import { GIT_LIMIT } from './run-worktree.mjs';
 import { isDocTask } from './run-plan-provider.mjs';
 import { noteStep, noteTask } from './run-plan-notes.mjs';
 import { handoffFile } from './run-plan-session.mjs';
@@ -31,7 +33,7 @@ export function markLanded({ ctx, n, record, startedTask }) {
   ctx.lastLandOutput = '';
   ctx.fingerprints.delete(n);
   ctx.retryNote = '';
-  run.landings.set(n, { sha: gitOut(root, ['rev-parse', '--short=12', 'HEAD']), record });
+  run.landings.set(n, { sha: gitLine(root, ['rev-parse', '--short=12', 'HEAD'], GIT_LIMIT), record });
   passes.add(n);
   noteStep({ kind: 'commit', task: n, sha: run.landings.get(n).sha });
   fs.rmSync(handoffFile(ctx, n), { force: true });
@@ -48,7 +50,7 @@ export function markLanded({ ctx, n, record, startedTask }) {
     say(landedLine({ number: n, sha, ms, turns: record.turns, weightedTokens: record.weightedTokens, cost: record.cost }));
   }
   noteTask({ n, subject: taskSubject(plan.tasks.find((entry) => entry.number === n).title), landed: passes.size, total: plan.tasks.length });
-  for (const line of (gitOut(root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean)) {
+  for (const line of (gitLine(root, ['status', '--porcelain'], { ...GIT_LIMIT, trim: false }) ?? '').split('\n').filter(Boolean)) {
     const file = line.slice(3);
     if (!file.startsWith(`${SCRATCH_FOLDER}/`)) run.uncommitted.add(file);
   }
@@ -58,7 +60,7 @@ export function landByScript(ctx, n) {
   const { root, planPath, planId, plan } = ctx;
   const log = path.join(ctx.logDir, `land-task-${n}.log`);
   const answer = spawnSync(process.execPath, [SCRIPT.landTask, '--plan', planPath, '--task', String(n), '--root', root], {
-    cwd: root, env: { ...process.env, EXO_RUN_TASK: `${planId}/${n}` }, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, timeout: ctx.timeoutMs
+    cwd: root, env: { ...process.env, EXO_RUN_TASK: `${planId}/${n}` }, encoding: 'utf8', maxBuffer: CHILD_OUTPUT_LIMIT, timeout: ctx.timeoutMs
   });
   const output = `${answer.stdout ?? ''}${answer.stderr ?? ''}`;
   appendLog(log, output);

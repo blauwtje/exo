@@ -3,33 +3,24 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, git, gitRepository, run } from './harness.mjs';
+import { tempDir, git, gitRepository, run } from './harness.mjs';
+import { runPlanText } from './setup-fixture.mjs';
 
 const RUN_PLAN = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
-
-const planText = (root) => [
-  '# Plan: services fixture', '', '## Goal', 'One file.', '',
-  '## Plan basis', `Repository: ${root}`, 'Branch: feat/fixture', 'Land: local', 'Commit: feat(fixture): add the fixture', 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', '',
-  '## Success criterion', '`node --version`', '',
-  '## Checkpoint', '- Blocks first: Task 1.', '- Parallel: none.', '- Shared state: none.', '- Smallest safe split: one file per task.', '',
-  '## Manual checks', '- Open the file.', '',
-  '## Tasks', '### Task 1: feat(a): add a',
-  'Depends on: none | Files: `src/app.js` | Data: a line | Proof: node --version', ''
-].join('\n');
 
 async function setup(files) {
   const root = await gitRepository({ 'src/app.js': 'export const a = 1;\n', ...files });
   git(root, 'checkout', '-q', '-b', 'feat/fixture');
   await fs.mkdir(path.join(root, 'docs', 'plans'), { recursive: true });
   const planPath = path.join(root, 'docs', 'plans', 'fixture.md');
-  await fs.writeFile(planPath, planText(root));
+  await fs.writeFile(planPath, runPlanText(root, { title: 'services fixture' }));
   git(root, 'add', '-A');
   git(root, 'commit', '-q', '-m', 'docs: add the plan');
-  const tools = await fixture();
+  const tools = tempDir('ui-design-test-');
   const claude = path.join(tools, 'claude.mjs');
   await fs.writeFile(claude, '');
   for (const name of ['docker', 'open']) await fs.writeFile(path.join(tools, name), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
-  return { root, planPath, claude, tools, home: await fixture() };
+  return { root, planPath, claude, tools, home: tempDir('ui-design-test-') };
 }
 
 const runPlan = (context) => run(RUN_PLAN, [context.planPath, '--root', context.root, '--claude', context.claude, '--dry-run'], {

@@ -2,17 +2,18 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { fileURLToPath } from 'node:url';
+import { isCommandFailure } from '#basics';
 import { cachedPass } from '#check-cache';
 import { subjectProblem } from '#commit-text';
-import { defaultBranch, gitText } from '#git';
+import { defaultBranch, gitLine, shortSha } from '#git';
 import { isCovered, isPlanDoc } from '#plan-landed';
-import { parsePlan } from '#plan-tasks';
-import { parseFlags, UsageError, isMain } from '#script-flags';
+import { parsePlan, PlanError } from '#plan-tasks';
+import { parseFlags, UsageError, isMain, USAGE_EXIT } from '#script-flags';
 import { recordPush, recordRefDiff, snapshotRefs } from './run-ops.mjs';
 import { openGate, readGates, takeApproved } from './run-state.mjs';
+import { scriptPath } from './run-session-paths.mjs';
 
-const REMOVE_WORKTREE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'remove-worktree.mjs');
+const REMOVE_WORKTREE = scriptPath('remove-worktree.mjs');
 const NO_OVERRIDE = { reason: null, ignored: false };
 const LAND_ANYWAY = 'land anyway';
 const USAGE = [
@@ -31,7 +32,8 @@ const git = (cwd, ...args) => run(cwd, 'git', args);
 function passedOnTree(runRoot, check) {
   try {
     return cachedPass(runRoot, check) !== null;
-  } catch {
+  } catch (error) {
+    if (!isCommandFailure(error)) throw error;
     return false;
   }
 }
@@ -42,6 +44,10 @@ function plannedPaths(root, runDir) {
   return tasks.flatMap((task) => task.files.map((file) => file.path));
 }
 
+function isPlanReadFailure(error) {
+  return error.code === 'ENOENT' || error instanceof SyntaxError || error instanceof PlanError;
+}
+
 function commitPlanDocs(root, runRoot, runDir) {
   const status = git(runRoot, 'status', '--porcelain', '-z', '--untracked-files=all').out;
   const candidates = status.split('\0').filter(Boolean).map((entry) => entry.slice(3)).filter(isPlanDoc);
@@ -50,6 +56,7 @@ function commitPlanDocs(root, runRoot, runDir) {
   try {
     planned = plannedPaths(root, runDir);
   } catch (error) {
+    if (!isPlanReadFailure(error)) throw error;
     return `cannot read plan for plan docs: ${error.message}`;
   }
   const docs = candidates.filter((file) => !isCovered(planned, file));
@@ -60,18 +67,14 @@ function commitPlanDocs(root, runRoot, runDir) {
 
 function specCommitPlan(planPath, root) {
   const relative = path.relative(root, path.resolve(root, planPath));
-  const added = gitText(root, ['log', '--diff-filter=A', '--format=%H', '--', relative]).split('\n').at(-1);
+  const added = gitLine(root, ['log', '--diff-filter=A', '--format=%H', '--', relative])?.split('\n').at(-1);
   if (!added) return null;
-  return gitText(root, ['show', `${added}:${relative}`], { trim: false });
+  return gitLine(root, ['show', `${added}:${relative}`], { trim: false });
 }
 
 function committedPlan(planPath, root) {
   if (planPath === undefined) return null;
-  try {
-    return specCommitPlan(planPath, root);
-  } catch {
-    return null;
-  }
+  return specCommitPlan(planPath, root);
 }
 
 function benchmarkOverride(plan, { root, planPath }) {
@@ -117,7 +120,6 @@ export function landRun(args) {
 }
 
 const problem = (action, reason) => ({ action, reason });
-const shortSha = (sha) => sha.slice(0, 7);
 const landedResult = (extra) => ({ phase: 'landed', gate: null, range: null, pushed: null, prUrl: null, cleanup: null, ...extra });
 
 function parkedResult(runDir, { action, reason }) {
@@ -279,7 +281,7 @@ function runMain(argv) {
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     process.stderr.write(`${error.message}\n`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
   }
 }
 

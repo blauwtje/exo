@@ -1,13 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { readJsonOrNull, sleepSync, writeAtomic } from '#basics';
+import { orWhenAbsent } from '#absent-path';
+import { bestEffort } from '#best-effort';
+import { parseLine, readJsonOrNull, sleepSync, writeAtomic } from '#basics';
 import { isAlive } from '#land-lock';
 import { planIdOf } from '#plan-landed';
 
-export { isAlive };
-
-export const PHASES = ['starting', 'build', 'verify', 'landing', 'passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
+const PHASES = ['starting', 'build', 'verify', 'landing', 'passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 export const FINAL_PHASES = ['passed', 'landed', 'parked', 'stopped', 'refused', 'crashed'];
 
 const runsDir = (root) => path.join(root, '.exo', 'run');
@@ -26,8 +26,8 @@ export function runDir(root, id) {
   return path.join(runsDir(root), id);
 }
 
-export function newRunId(now = new Date()) {
-  const stamp = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, '');
+export function newRunId() {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, '');
   return `${stamp}-${crypto.randomBytes(2).toString('hex')}`;
 }
 
@@ -64,8 +64,8 @@ export function ledgerDirOf(root, planPath) {
   return runDir(path.resolve(root), planIdOf(planPath));
 }
 
-export const journalFile = (root, id) => path.join(runDir(root, id), 'journal.jsonl');
-export const opsFile = (root, id) => path.join(runDir(root, id), 'ops.jsonl');
+const journalFile = (root, id) => path.join(runDir(root, id), 'journal.jsonl');
+const opsFile = (root, id) => path.join(runDir(root, id), 'ops.jsonl');
 
 export function appendOp(root, id, op) {
   fs.mkdirSync(runDir(root, id), { recursive: true });
@@ -73,19 +73,9 @@ export function appendOp(root, id, op) {
 }
 
 function readLines(file) {
-  let text;
-  try {
-    text = fs.readFileSync(file, 'utf8');
-  } catch {
-    return null;
-  }
-  return text.split('\n').filter(Boolean).flatMap((line) => {
-    try {
-      return [JSON.parse(line)];
-    } catch {
-      return [];
-    }
-  });
+  const text = orWhenAbsent(() => fs.readFileSync(file, 'utf8'), null);
+  if (text === null) return null;
+  return text.split('\n').filter(Boolean).map(parseLine).filter((entry) => entry !== null);
 }
 
 export function readOps(root, id) {
@@ -126,12 +116,8 @@ const gatesFile = (dir) => path.join(dir, 'gates.md');
 const GATE_LINE = /^- (open|approved|used): ([^:]+): (.*) \(([^()]*)\)$/;
 
 export function readGates(dir) {
-  let text;
-  try {
-    text = fs.readFileSync(gatesFile(dir), 'utf8');
-  } catch {
-    return [];
-  }
+  const text = orWhenAbsent(() => fs.readFileSync(gatesFile(dir), 'utf8'), null);
+  if (text === null) return [];
   return text.split('\n').map((l) => GATE_LINE.exec(l)).filter(Boolean)
     .map((m) => ({ status: m[1], source: m[2], action: m[3], reason: m[4] }));
 }
@@ -169,12 +155,10 @@ export function takeApproved(dir, action) {
 }
 
 export function listRuns(root) {
-  let names;
-  try {
-    names = fs.readdirSync(runsDir(root), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
-  } catch {
-    return [];
-  }
+  const names = orWhenAbsent(
+    () => fs.readdirSync(runsDir(root), { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name),
+    [],
+  );
   return names.map((n) => readState(root, n)).filter(Boolean)
     .sort((a, b) => a.startedAt.localeCompare(b.startedAt) || a.id.localeCompare(b.id));
 }
@@ -223,11 +207,7 @@ function scratch(root, text) {
 }
 
 function drop(file) {
-  try {
-    fs.unlinkSync(file);
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-  }
+  orWhenAbsent(() => fs.unlinkSync(file), undefined);
 }
 
 function settle(fn, attempt = 0) {
@@ -241,13 +221,8 @@ function settle(fn, attempt = 0) {
 }
 
 function readLock(root) {
-  let fd;
-  try {
-    fd = fs.openSync(lockFile(root), 'r');
-  } catch (err) {
-    if (err.code === 'ENOENT') return null;
-    throw err;
-  }
+  const fd = orWhenAbsent(() => fs.openSync(lockFile(root), 'r'), null);
+  if (fd === null) return null;
   try {
     const { ino, mtimeNs } = fs.fstatSync(fd, { bigint: true });
     return { holder: fs.readFileSync(fd, 'utf8').trim(), key: `${ino}-${mtimeNs}` };
@@ -257,11 +232,7 @@ function readLock(root) {
 }
 
 function claimHolderPid(root, key, n) {
-  try {
-    return Number(fs.readFileSync(claimFile(root, key, n), 'utf8'));
-  } catch {
-    return 0;
-  }
+  return orWhenAbsent(() => Number(fs.readFileSync(claimFile(root, key, n), 'utf8')), 0);
 }
 
 function link(from, to) {
@@ -336,15 +307,15 @@ export function acquireLock(root, id) {
 export function releaseLock(root, id) {
   let token = null;
   try {
-    const lock = readLock(root);
-    if (lock === null || lock.holder !== id) return;
-    token = scratch(root, `${process.pid}\n`);
-    const n = claim(root, lock.key, token);
-    if (n < 0) return;
-    if (readLock(root)?.key === lock.key) settle(() => fs.unlinkSync(lockFile(root)));
-    unclaim(root, lock.key, n);
-  } catch {
-    return;
+    bestEffort(() => {
+      const lock = readLock(root);
+      if (lock === null || lock.holder !== id) return;
+      token = scratch(root, `${process.pid}\n`);
+      const n = claim(root, lock.key, token);
+      if (n < 0) return;
+      if (readLock(root)?.key === lock.key) settle(() => fs.unlinkSync(lockFile(root)));
+      unclaim(root, lock.key, n);
+    });
   } finally {
     if (token) drop(token);
   }

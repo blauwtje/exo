@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
-import { watchOne } from '../skills/watch/scripts/watch.mjs';
+import { watchGuarded } from '../skills/watch/scripts/watch.mjs';
 import './watch-gate-env.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -134,7 +134,7 @@ test('a YouTube video with zero caption tracks is transcribed from its audio', a
   const player = { playabilityStatus: { status: 'OK' }, videoDetails: { title: 'Tube', lengthSeconds: '6' }, captions: {} };
   const fetchFn = async (url) => new Response(String(url).includes('/player') ? JSON.stringify(player) : '', { status: 200 });
   const options = { out: site.out, chunkMinutes: 30, stampSeconds: 45, fetchMs: 5000, ytDlpMs: 5000, transcribeMs: 5000 };
-  const result = await watchOne('abc12345678', options, fetchFn).finally(() => { for (const key of ['PATH', 'FAKE_LOG', 'FAKE_INFO', 'FAKE_VTT']) { if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key]; } });
+  const result = await watchGuarded('abc12345678', options, fetchFn).finally(() => { for (const key of ['PATH', 'FAKE_LOG', 'FAKE_INFO', 'FAKE_VTT']) { if (saved[key] === undefined) delete process.env[key]; else process.env[key] = saved[key]; } });
   assert.equal(result.failure, undefined);
   assert.match(result.line, /^id=abc12345678 title="Tube" duration=0:00:06 captions=speech:whisper /);
 });

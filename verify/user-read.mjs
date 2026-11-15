@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { escapeRegExp } from '#basics';
 
 export const REFERENCE_PATH = 'lib/references/user-read-format.md';
 const MAX_JARGON_PER_100_WORDS = 2;
@@ -10,7 +11,6 @@ const MIN_CODE_SHARE = 0.25;
 const NOT_PROSE = /^(?:#|[-*+|>`]|\d+[.)]|<!--|\/\/|import\s|export\s|---)/;
 const LANGUAGE_RULE = /user(?:'|’)s language|language of the user/i;
 const FENCE = /^\s*(?:`{3,}|~{3,})/;
-const WHOLE_FILE = new Set(['', '-']);
 const COMMENT = /<!--[\s\S]*?-->/g;
 const ALL_CAPS = /(?<![A-Za-z0-9_])[A-Z]{3,}(?![A-Za-z0-9_])/g;
 const CODE_SPAN = /`[^`\n]*`/g;
@@ -42,15 +42,7 @@ export function readReference(text) {
     .flatMap((row) => row[0].split(',').map((term) => term.trim().toLowerCase()))
     .filter(Boolean);
   const banned = backticked(section(text, 'Banned phrasing') ?? '').map((phrase) => phrase.toLowerCase());
-  const sources = tableRows(section(text, 'Sources') ?? '')
-    .map(([file, heading]) => ({ file: file.replaceAll('`', ''), heading: (heading ?? '').replaceAll('`', '') }))
-    .filter((source) => source.file !== '');
-  return { jargon, banned, sources };
-}
-
-export function sourceText(text, heading) {
-  if (WHOLE_FILE.has(heading)) return text.replace(/^---\n[\s\S]*?\n---\n/, '');
-  return section(text, heading);
+  return { jargon, banned };
 }
 
 function answerLine(text) {
@@ -58,16 +50,19 @@ function answerLine(text) {
   return first !== undefined && !NOT_PROSE.test(first);
 }
 
-function prose(text) {
+function outsideFences(text) {
   let fenced = false;
-  const kept = text.split('\n').filter((line) => {
+  return text.split('\n').filter((line) => {
     if (FENCE.test(line)) {
       fenced = !fenced;
       return false;
     }
     return !fenced;
-  });
-  return kept.join('\n').replace(/`[^`]*`|<[^>\n]*>|\{\{[^}]*\}\}/g, ' ');
+  }).join('\n');
+}
+
+function prose(text) {
+  return outsideFences(text).replace(/`[^`]*`|<[^>\n]*>|\{\{[^}]*\}\}/g, ' ');
 }
 
 function jargonPer100(text, jargon) {
@@ -75,21 +70,14 @@ function jargonPer100(text, jargon) {
   const plain = prose(text);
   const words = plain.match(/[\p{L}][\p{L}'-]*/gu) ?? [];
   if (words.length === 0) return 0;
-  const escaped = jargon.map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  const escaped = jargon.map(escapeRegExp);
   const pattern = new RegExp(`\\b(?:${escaped.join('|')})(?:s|es|ed)?\\b`, 'gi');
   const hits = (plain.match(pattern) ?? []).length;
   return Math.round((hits / words.length) * 1000) / 10;
 }
 
 function visible(text) {
-  let fenced = false;
-  return text.replace(COMMENT, '').split('\n').filter((line) => {
-    if (FENCE.test(line)) {
-      fenced = !fenced;
-      return false;
-    }
-    return !fenced;
-  }).join('\n');
+  return outsideFences(text.replace(COMMENT, ''));
 }
 
 function capsWords(text) {

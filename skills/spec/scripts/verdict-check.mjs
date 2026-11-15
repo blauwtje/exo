@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { parseFlags, UsageError, isMain } from '#script-flags';
+import { parseFlags, UsageError, isMain, USAGE_EXIT } from '#script-flags';
 
 const USAGE = [
   'usage: verdict-check.mjs --plan <brief>',
@@ -38,7 +38,7 @@ function verdictProblems(text) {
   return [...verdictLineProblems(section), ...objectionLineProblems(section)];
 }
 
-export function main(argv) {
+function main(argv) {
   const flags = parseFlags(argv, { plan: 'value' }, { usage: USAGE });
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the brief file");
   if (!fs.existsSync(flags.plan)) throw new UsageError(`no brief at '${flags.plan}'`);
@@ -53,7 +53,7 @@ function run(argv) {
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     process.stderr.write(`verdict-check: ${error.message}\n`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
   }
 }
 

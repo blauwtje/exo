@@ -16,7 +16,6 @@ Shaping turns a request into a brief that settles what done means, so the build 
    - Open with the verdict. An open decision is one the user would notice that neither request nor code settles.
    - Fast route: under three files with a known proof, skip questions, plan and gate; one worktree worker per build `## No spec`.
    - Read `references/verdict.md` for the no-question case.
-   - Ask only per `../../lib/references/question.md` `## When to ask`.
    - When the user asked for options, follow `references/architecture-sketch.md` and write no file.
 2. **Sort each point.**
    - When running or reading code answers a point, record it; ask nothing.

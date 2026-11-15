@@ -1,23 +1,20 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { attemptFingerprint } from '#attempt-fingerprint';
-import { decide, formatLine, recordRound, roundCap } from '../../../lib/loop-budget.mjs';
+import { decide, formatLine, recordRound } from '../../../lib/loop-budget.mjs';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { isFileOnDisk } from './run-session-claude.mjs';
-import { gitOut } from './run-worktree.mjs';
+import { gitLine } from '#git';
+import { GIT_LIMIT } from './run-worktree.mjs';
 import { ledgerDirOf } from './run-state.mjs';
 
 export function recordAttempt({ ctx, n, check, line }) {
   const seen = ctx.fingerprints.get(n) ?? new Set();
-  const paths = (gitOut(ctx.root, ['status', '--porcelain'], { trim: false }) ?? '').split('\n').filter(Boolean).map((entry) => entry.slice(3)).filter((file) => !file.startsWith(`${SCRATCH_FOLDER}/`));
+  const paths = (gitLine(ctx.root, ['status', '--porcelain'], { ...GIT_LIMIT, trim: false }) ?? '').split('\n').filter(Boolean).map((entry) => entry.slice(3)).filter((file) => !file.startsWith(`${SCRATCH_FOLDER}/`));
   const fingerprint = attemptFingerprint({ check, line, paths });
   if (seen.has(fingerprint)) return true;
   ctx.fingerprints.set(n, seen.add(fingerprint));
   return false;
-}
-
-export function attemptsLeft(ctx) {
-  return Math.max(0, roundCap('attempt') - ctx.failedAttempts);
 }
 
 export function settleAttempt(ctx, { wallMs }) {

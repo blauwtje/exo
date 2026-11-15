@@ -4,10 +4,10 @@ import { releaseHeading, sectionBody, UNRELEASED_HEADING } from '../changelog.mj
 import { git } from '#git';
 
 const PACKAGE_FILE = 'package.json';
-const PLUGIN_FILE = '.claude-plugin/plugin.json';
+export const PLUGIN_FILE = '.claude-plugin/plugin.json';
 const MARKETPLACE_FILE = '.claude-plugin/marketplace.json';
 const CHANGELOG_FILE = 'CHANGELOG.md';
-const BASE_REF = 'origin/main';
+export const BASE_REF = 'origin/main';
 const THREE_FIELDS = /^\d+\.\d+\.\d+$/;
 
 function compareVersions(left, right) {
@@ -84,20 +84,20 @@ function aboveBaseVerdict(changelog, declared, baseVersion) {
   return ['FAIL', `the version rose to ${declared} but ${CHANGELOG_FILE} has no "## ${declared} - <date>" section: raise it with npm run bump`];
 }
 
-function unreleasedVerdict(repository, changelog, { declared, strict }) {
+function unreleasedVerdict(repository, changelog, declared) {
   if (!treeDiffers(repository)) return ['PASS', `every manifest carries ${declared}, matching an unchanged ${BASE_REF}`];
   const unreleased = sectionBody(changelog, UNRELEASED_HEADING);
   if (unreleased !== null && unreleased !== '') {
     return ['PASS', `every manifest carries ${declared}; the changes since ${BASE_REF} wait under ${UNRELEASED_HEADING}`];
   }
   const branch = git(repository.root, ['symbolic-ref', '--short', '-q', 'HEAD']).stdout.trim();
-  if (!strict && branch !== '' && branch !== BASE_REF.replace(/^origin\//, '')) {
+  if (branch !== '' && branch !== BASE_REF.replace(/^origin\//, '')) {
     return ['PASS', `every manifest carries ${declared}; the tree differs from ${BASE_REF} and the lead writes the ${UNRELEASED_HEADING} line at landing`];
   }
   return ['FAIL', `the tree differs from ${BASE_REF} while ${CHANGELOG_FILE} has nothing under ${UNRELEASED_HEADING}: record the change there`];
 }
 
-function baseVerdict(repository, declared, strict) {
+function baseVerdict(repository, declared) {
   const shown = git(repository.root, ['show', `${BASE_REF}:${PLUGIN_FILE}`]);
   if (shown.status !== 0) {
     return ['UNRUN', `every manifest carries ${declared}; ${BASE_REF} is not available to compare against`];
@@ -107,14 +107,14 @@ function baseVerdict(repository, declared, strict) {
   if (order < 0) return belowBaseVerdict(repository, declared, baseVersion);
   const changelog = changelogText(repository);
   if (order > 0) return aboveBaseVerdict(changelog, declared, baseVersion);
-  return unreleasedVerdict(repository, changelog, { declared, strict });
+  return unreleasedVerdict(repository, changelog, declared);
 }
 
-export function checkPluginVersion(report, repository, { strict = false } = {}) {
+export function checkPluginVersion(report, repository) {
   const name = 'plugin version';
   const manifests = readManifests(repository);
   const [status, detail] = manifests.verdict
     ?? disagreementVerdict(manifests)
-    ?? baseVerdict(repository, manifests.plugin.version, strict);
+    ?? baseVerdict(repository, manifests.plugin.version);
   report.result(status, name, detail);
 }

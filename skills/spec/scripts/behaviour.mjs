@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { isMain, parseFlags, UsageError } from '#script-flags';
+import { isMain, parseFlags, USAGE_EXIT, UsageError } from '#script-flags';
 import { shippedBriefs } from '#shipped-briefs';
 
 const USAGE = 'usage: behaviour.mjs [--root <repository>] [--check]\nWrites docs/behaviour/<area>.md from the acceptance lines of the briefs git tracks under docs/specs and docs/plans; --check writes nothing and exits 1 when a file is stale.';
@@ -57,7 +57,7 @@ function reportSkipped(unreadable) {
   for (const { file, reason } of unreadable) process.stderr.write(`behaviour: skipped ${file}: ${reason}\n`);
 }
 
-export function main(argv) {
+function main(argv) {
   const flags = parseFlags(argv, { root: 'value', check: 'boolean' }, { usage: USAGE });
   const root = path.resolve(flags.root ?? process.cwd());
   if (!fs.existsSync(root)) throw new UsageError(`no repository at '${flags.root}'`);
@@ -76,7 +76,7 @@ export function main(argv) {
 function reportUsageError(error) {
   if (!(error instanceof UsageError)) throw error;
   process.stderr.write(`behaviour: ${error.message}\n`);
-  process.exitCode = 2;
+  process.exitCode = USAGE_EXIT;
 }
 
 if (isMain(import.meta.url)) {

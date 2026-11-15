@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { planHoldout } from '../lib/holdout.mjs';
-import { caseMovers, improveDefaults, judgeKeep, scorerHash } from '../skills/build/scripts/round.mjs';
+import { scorerHash } from '../skills/build/scripts/round.mjs';
 import { git, tempDir } from './harness.mjs';
 
 const script = fileURLToPath(new URL('../skills/build/scripts/round.mjs', import.meta.url));
@@ -36,8 +36,8 @@ function commitEdit(root, text, { file = 'src/x.txt', subject = 'idea' } = {}) {
   return git(root, 'rev-parse', '--short', 'HEAD');
 }
 
-function round(root, commit, extra = []) {
-  const run = spawnSync(process.execPath, [script, '--root', root, '--tag', 't', '--commit', commit, ...extra], { encoding: 'utf8' });
+function round(root, commit) {
+  const run = spawnSync(process.execPath, [script, '--root', root, '--tag', 't', '--commit', commit], { encoding: 'utf8' });
   return { out: run.stdout.trim(), status: run.status, err: run.stderr };
 }
 
@@ -275,12 +275,22 @@ test('a run with no score is left out and counted as aborted, the next valid run
 });
 
 test('a noisy tie keeps a shrinking commit only after maxRuns runs with no loss', () => {
-  const cfg = { direction: 'higher' };
-  const best = { runs: [10, 12], items: {} };
-  assert.equal(judgeKeep({ cfg, best, samples: { runs: [11], items: {} }, shrinks: true, maxRuns: 3 }).verdict, 'repeat');
-  assert.equal(judgeKeep({ cfg, best, samples: { runs: [11, 10, 12], items: {} }, shrinks: true, maxRuns: 3 }).verdict, 'keep');
-  assert.equal(judgeKeep({ cfg, best, samples: { runs: [11, 10, 12], items: {} }, shrinks: false, maxRuns: 3 }).verdict, 'discard');
-  assert.equal(judgeKeep({ cfg, best, samples: { runs: [11, 10, 11], items: {} }, shrinks: true, maxRuns: 3 }).verdict, 'discard');
+  const verdict = ({ outputs, text }) => {
+    const root = setup({ direction: 'higher', command: SEQUENCE, baseline: [10, 12], score: 11 });
+    sequence(root, outputs);
+    const commit = commitEdit(root, text);
+    return { row: round(root, commit).out, runs: runCount(root), commit };
+  };
+  const shrinking = 'x\n';
+  const growing = 'x\ny\nz\n';
+  const kept = verdict({ outputs: ['score=11\n', 'score=11\n', 'score=11\n'], text: shrinking });
+  assert.equal(kept.row, `ROW ${kept.commit} 11 keep best=11`);
+  assert.equal(kept.runs, 3);
+  const grown = verdict({ outputs: ['score=11\n', 'score=11\n', 'score=11\n'], text: growing });
+  assert.equal(grown.row, `ROW ${grown.commit} 11 discard best=11`);
+  const lost = verdict({ outputs: ['score=11\n', 'score=11\n', 'score=10\n'], text: shrinking });
+  assert.equal(lost.row, `ROW ${lost.commit} 10.6667 discard best=11`);
+  assert.equal(lost.runs, 3);
 });
 
 test('every round score run gets the stored seed as EXO_SEED', () => {
@@ -308,12 +318,22 @@ test('a candidate that is not exactly one commit on the kept commit is refused u
   assert.equal(git(root, 'rev-parse', '--short', 'HEAD'), base);
 });
 
+function casesLine({ baseline, outputs }) {
+  const root = setup({ direction: 'higher', command: SEQUENCE, baseline: [50, 50], items: baseline, score: 50 });
+  sequence(root, [outputs]);
+  return round(root, commitEdit(root, 'worse\n')).err.split('\n')[0];
+}
+
+const itemLines = (values) => `${Object.entries(values).map(([id, value]) => `ITEM ${id} ${value}`).join('\n')}\nscore=45\n`;
+
 test('CASES lists the largest per-case moves first, capped, and says when none moved', () => {
-  const best = { items: { a: [1], b: [10, 12], c: [5], d: [3] } };
-  assert.equal(caseMovers(best, { items: { a: [2], b: [8], c: [5], d: [9] } }, 2), 'CASES d 3->9, b 11->8');
-  assert.equal(caseMovers(best, { items: { a: [1], c: [5] } }, 2), 'CASES none moved');
-  assert.equal(caseMovers(best, { items: {} }, 2), null);
-  assert.equal(caseMovers(best, undefined, 2), null);
+  const baseline = { a: [1], b: [10, 12], c: [5], d: [3], e: [4], f: [6], g: [7] };
+  assert.equal(
+    casesLine({ baseline, outputs: itemLines({ a: 2, b: 8, c: 5, d: 9, e: 5, f: 1, g: 8 }) }),
+    'CASES d 3->9, f 6->1, b 11->8, a 1->2, e 4->5',
+  );
+  assert.equal(casesLine({ baseline, outputs: itemLines({ a: 1, b: 11, c: 5, d: 3, e: 4, f: 6, g: 7 }) }), 'CASES none moved');
+  assert.equal(casesLine({ baseline, outputs: 'score=45\n' }), 'OUT score=45');
 });
 
 test('a discard prints CASES before the OUT tail and the brief carries both', () => {

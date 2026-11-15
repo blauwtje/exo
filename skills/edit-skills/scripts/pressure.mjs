@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { confineRefusal } from '#confine-claude';
-import { UsageError, isMain, parseFlags } from '#script-flags';
+import { USAGE_EXIT, UsageError, isMain, parseFlags } from '#script-flags';
 import { cellsFor } from './pressure-cells-for.mjs';
 import { runOneCell } from './pressure-cell.mjs';
 import { defaultJudge, linesForCase, parseCriteria, parseMargins } from './pressure-grade.mjs';
@@ -17,7 +17,7 @@ import { gradeReport } from './pressure-report.mjs';
 
 function usageError(message) {
   console.error(message);
-  process.exitCode = 2;
+  process.exitCode = USAGE_EXIT;
 }
 
 function parseOptions() {

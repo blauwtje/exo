@@ -3,22 +3,22 @@ import path from 'node:path';
 import { calibrationLines } from './judge-calibration.mjs';
 import { aggregate } from './pressure-grade.mjs';
 
-export function gradeSummary(gradesByCell, options = {}) {
+function gradeSummary(gradesByCell, options) {
   const { mode, ...aggregateOptions } = options;
   return Object.fromEntries(Object.entries(gradesByCell).map(([cell, runs]) => [cell, { mode, runs, cases: aggregate(runs, aggregateOptions) }]));
 }
 
-export function writeGrades(outDir, gradesByCell, options = {}) {
+function writeGrades(outDir, gradesByCell, options) {
   const summary = gradeSummary(gradesByCell, options);
   fs.writeFileSync(path.join(outDir, 'grades.json'), `${JSON.stringify(summary, null, 2)}\n`);
   return deltaTable(summary);
 }
 
-export function gradeReport(outDir, gradesByCell, options = {}) {
+export function gradeReport(outDir, gradesByCell, options) {
   return [...writeGrades(outDir, gradesByCell, options), ...calibrationLines(['pressure-line'])];
 }
 
-export function deltaTable(summary) {
+function deltaTable(summary) {
   const percent = (rate) => (rate === undefined ? 'n/a' : `${Math.round(rate * 100)}%`);
   const signed = (value) => `${value >= 0 ? '+' : ''}${Math.round(value * 100)}%`;
   const lines = Object.entries(summary).flatMap(([cell, { cases }]) => cases.map((result) => {

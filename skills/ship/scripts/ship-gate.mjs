@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
-import { UsageError, parseFlags, isMain } from '#script-flags';
-import { GhError, ghJson } from './gh-run.mjs';
+import { USAGE_EXIT, UsageError, parseFlags, isMain } from '#script-flags';
+import { GH_ERROR_EXIT, GhError, PR_NUMBER, ghJson } from './gh-run.mjs';
 
-export const GH_ERROR_EXIT = 3;
 const USAGE = 'usage: ship-gate.mjs --pr <number> | --order <number>...';
 const GATE_FIELDS = 'number,state,mergeable,mergeStateStatus,reviewDecision,statusCheckRollup';
 const ORDER_FIELDS = 'number,baseRefName,headRefName';
 const PASSING_CONCLUSIONS = new Set(['SUCCESS', 'SKIPPED', 'NEUTRAL']);
-const PR_NUMBER = /^[1-9][0-9]*$/;
 
 function holdingCheck(check) {
   const name = check.name || check.context || 'unnamed';
@@ -21,7 +19,7 @@ function holdingCheck(check) {
   return PASSING_CONCLUSIONS.has(conclusion) ? null : `conclusion=${conclusion} ${name}`;
 }
 
-export function gateVerdict(pullRequest) {
+function gateVerdict(pullRequest) {
   if (pullRequest.state && pullRequest.state !== 'OPEN') return `STOP state=${pullRequest.state}`;
   if (pullRequest.mergeStateStatus === 'DIRTY' || pullRequest.mergeable === 'CONFLICTING') return 'DIRTY';
   if (pullRequest.mergeStateStatus === 'BEHIND') return 'BEHIND';
@@ -34,28 +32,28 @@ export function gateVerdict(pullRequest) {
   return 'MERGE';
 }
 
-export function stackOrder(pullRequests) {
+function visitStacked(stack, pullRequest) {
+  if (stack.done.has(pullRequest.number)) return null;
+  const at = stack.visiting.indexOf(pullRequest.number);
+  if (at !== -1) return stack.visiting.slice(at);
+  stack.visiting.push(pullRequest.number);
+  const base = stack.byHead.get(pullRequest.baseRefName);
+  const cycle = base ? visitStacked(stack, base) : null;
+  if (cycle) return cycle;
+  stack.visiting.pop();
+  stack.done.add(pullRequest.number);
+  stack.order.push(pullRequest.number);
+  return null;
+}
+
+function stackOrder(pullRequests) {
   const byHead = new Map(pullRequests.map((pullRequest) => [pullRequest.headRefName, pullRequest]));
-  const order = [];
-  const done = new Set();
-  const visiting = [];
-  const visit = (pullRequest) => {
-    if (done.has(pullRequest.number)) return null;
-    if (visiting.includes(pullRequest.number)) return visiting.slice(visiting.indexOf(pullRequest.number));
-    visiting.push(pullRequest.number);
-    const base = byHead.get(pullRequest.baseRefName);
-    const cycle = base ? visit(base) : null;
-    if (cycle) return cycle;
-    visiting.pop();
-    done.add(pullRequest.number);
-    order.push(pullRequest.number);
-    return null;
-  };
+  const stack = { byHead, order: [], done: new Set(), visiting: [] };
   for (const pullRequest of pullRequests) {
-    const cycle = visit(pullRequest);
+    const cycle = visitStacked(stack, pullRequest);
     if (cycle) return { cycle };
   }
-  return { order };
+  return { order: stack.order };
 }
 
 function viewPullRequest(number, fields) {
@@ -73,7 +71,7 @@ function readFlags(argv) {
     }
     return { order: numbers };
   }
-  if (!PR_NUMBER.test(flags.pr ?? '')) throw new UsageError('--pr needs a pull request number');
+  if (!PR_NUMBER.test(flags.pr ?? '')) throw new UsageError(`--pr needs a pull request number, got '${flags.pr ?? ''}'`);
   return { pr: flags.pr };
 }
 
@@ -84,7 +82,7 @@ function main() {
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     console.error(`${USAGE}: ${error.message}`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   try {

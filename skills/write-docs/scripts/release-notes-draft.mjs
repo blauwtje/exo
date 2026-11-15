@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { gitText } from '#git';
+import { isCommandFailure } from '#basics';
+import { gitLine, gitText } from '#git';
 
 const SECTIONS = ['Added', 'Changed', 'Fixed', 'Removed'];
 const SECTION_OF_TYPE = new Map([['feat', 'Added'], ['fix', 'Fixed'], ['perf', 'Changed'], ['revert', 'Removed']]);
@@ -17,11 +18,7 @@ const RECORD = '\x1e';
 const FIELD = '\x1f';
 
 function lastReleaseTag(repo, to) {
-  try {
-    return gitText(repo, ['describe', '--tags', '--abbrev=0', '--match', 'v*', to]);
-  } catch {
-    return null;
-  }
+  return gitLine(repo, ['describe', '--tags', '--abbrev=0', '--match', 'v*', to]);
 }
 
 function resolveRange(repo, { from, to = 'HEAD' }) {
@@ -86,8 +83,9 @@ function loadPulls(repo, file) {
       stdio: ['ignore', 'pipe', 'ignore']
     });
     return JSON.parse(raw);
-  } catch {
-    return [];
+  } catch (error) {
+    if (isCommandFailure(error)) return [];
+    throw error;
   }
 }
 
@@ -124,7 +122,7 @@ function renderNotes(entries) {
   return blocks.map((block) => block.join('\n')).join('\n\n');
 }
 
-function draftNotes(repo, options = {}) {
+function draftNotes(repo, options) {
   const range = resolveRange(repo, options);
   const commits = readCommits(repo, range.spec);
   const picked = options.uncovered ? commits.filter((commit) => !commit.files.includes('CHANGELOG.md')) : commits;

@@ -5,8 +5,7 @@ import { limitLifetime } from '#lifetime';
 import { UsageError, parseFlags, isMain } from '#script-flags';
 import { SPEC, USAGE, readListOptions } from './list-options.mjs';
 import { listProfile } from './listing.mjs';
-
-const RATE_LIMITED_EXIT = 75;
+import { RATE_LIMITED_EXIT } from './request-gate.mjs';
 
 async function main(argv) {
   limitLifetime('watch-list', 1800000);

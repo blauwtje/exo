@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { SCHEMA, invalidReason } from '../lib/settings-store.mjs';
 
 const OLD = ['fast', 'balanced', 'quality', 'low', 'lean', 'medium', 'normal', 'high', 'full'];
@@ -28,21 +26,4 @@ test('the plugin manifest matches the schema', () => {
 test('on and off are valid values', () => {
   assert.equal(invalidReason('budget', 'on'), null);
   assert.equal(invalidReason('budget', 'off'), null);
-});
-
-test('capMargin reads run.json defaults', async () => {
-  const { capMargin } = await import('../lib/context-limits.mjs');
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cap-margin-'));
-  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
-  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { capMargin: 0.2 } }));
-  assert.equal(capMargin(home), 0.2);
-  assert.equal(capMargin(fs.mkdtempSync(path.join(os.tmpdir(), 'cap-margin-'))), 0.1);
-});
-
-test('a zero capMargin in run.json is honoured', async () => {
-  const { capMargin } = await import('../lib/context-limits.mjs');
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'cap-margin-'));
-  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
-  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { capMargin: 0 } }));
-  assert.equal(capMargin(home), 0);
 });

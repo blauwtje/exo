@@ -1,3 +1,4 @@
+import { parseLine } from '#basics';
 import process from 'node:process';
 import { toolReason } from './run-tool.mjs';
 import { ensureFile } from './whisper-model.mjs';
@@ -26,11 +27,7 @@ detect().catch((error) => {
 `;
 
 function lastJson(stdout) {
-  try {
-    return JSON.parse(stdout.trim().split('\n').pop());
-  } catch {
-    return null;
-  }
+  return parseLine(stdout.trim().split('\n').pop());
 }
 
 function isSpan(span) {

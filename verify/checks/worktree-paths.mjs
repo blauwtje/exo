@@ -1,5 +1,7 @@
+import { SHIPPED_ROOTS } from '../repository.mjs';
+
 const OWNER = 'lib/checkout.mjs';
-const SCRIPT_ROOTS = ['skills', 'lib', 'hooks', 'agents', 'harnesses'];
+const SCRIPT_ROOTS = [...SHIPPED_ROOTS, 'harnesses'];
 const WORKTREE_ADD = /git\s+worktree\s+add|\[\s*'worktree'\s*,\s*'add'|"worktree"\s*,\s*"add"/;
 const GUARD_DENY_TEXT = { file: 'lib/guard-rules.mjs', line: /worktree under `\.claude\/worktrees\/<name>`/ };
 const FOLDER_LITERAL = /\.claude[\\/]worktrees|\.worktrees\b|'\.claude'\s*,\s*'worktrees'/;
@@ -30,8 +32,7 @@ function scannedFiles(repository) {
     const relative = repository.relative(file);
     return file.endsWith('.mjs') && SCRIPT_ROOTS.some((root) => relative.startsWith(`${root}/`));
   });
-  const prose = [...repository.processFiles(), ...repository.promptFiles(), ...repository.agentFiles(), ...repository.everySkillFile()];
-  return new Set([...scripts, ...prose]);
+  return new Set([...scripts, ...repository.shippedTextFiles()]);
 }
 
 export function checkWorktreePaths(report, repository) {

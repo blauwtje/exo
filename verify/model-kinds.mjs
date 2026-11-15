@@ -1,10 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { escapeRegExp } from '#basics';
-import { readKindTable } from '../lib/model-kinds.mjs';
+import { FRONTMATTER } from './markdown.mjs';
 
-const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
-const PINNED_FIELDS = ['model', 'effort'];
+const KIND_FOLDERS = ['hooks', 'skills', 'agents'];
+const DISPATCH_WORD = /dispatch|spawn|delegate|subagent/i;
+export const PINNED_FIELDS = ['model', 'effort'];
 
 function readField(text, field) {
   const opening = FRONTMATTER.exec(text);
@@ -28,9 +29,9 @@ function markdownFiles(root, folder) {
 }
 
 function findKindlessDispatches(root) {
-  const files = [...['hooks', 'skills', 'agents'].flatMap((folder) => markdownFiles(root, folder)), '.claude/CLAUDE.md'].filter((file) => fs.existsSync(path.join(root, file)));
+  const files = [...KIND_FOLDERS.flatMap((folder) => markdownFiles(root, folder)), '.claude/CLAUDE.md'].filter((file) => fs.existsSync(path.join(root, file)));
   return files.flatMap((file) => fs.readFileSync(path.join(root, file), 'utf8').split('\n').flatMap((line, index) => {
-    const dispatches = (line.includes('general-purpose') || line.includes('`claude`')) && /dispatch|spawn|delegate|subagent/i.test(line);
+    const dispatches = (line.includes('general-purpose') || line.includes('`claude`')) && DISPATCH_WORD.test(line);
     return dispatches && !line.includes('exo-kind:')
       ? [`${file}:${index + 1}: dispatches general-purpose or claude with no exo-kind:`]
       : [];
@@ -50,15 +51,13 @@ export function findInheritanceGaps(root, table) {
         gaps.push(`${where}: names general-purpose with no dispatches entry in lib/model-kinds.json`);
       }
       if (line.includes("session's model")) gaps.push(`${where}: names "the session's model"; name a kind in the prompt`);
-      if (/\bfork\b/i.test(line) && /dispatch|spawn|delegate|subagent/i.test(line)) {
+      if (/\bfork\b/i.test(line) && DISPATCH_WORD.test(line)) {
         gaps.push(`${where}: dispatches a fork, which takes the session's effort (${INHERITANCE_NOTE})`);
       }
     });
   }
   return [...gaps, ...findKindlessDispatches(root)];
 }
-
-const KIND_USE_FOLDERS = ['agents', 'hooks', 'skills'];
 
 function sourceFiles(root, folder) {
   const base = path.join(root, folder);
@@ -84,7 +83,7 @@ function namesKind(text, kind) {
 
 export function findUnusedKinds(root, table) {
   const used = new Set(tableUses(table));
-  const texts = KIND_USE_FOLDERS.flatMap((folder) => sourceFiles(root, folder)).map((file) => fs.readFileSync(path.join(root, file), 'utf8'));
+  const texts = KIND_FOLDERS.flatMap((folder) => sourceFiles(root, folder)).map((file) => fs.readFileSync(path.join(root, file), 'utf8'));
   return Object.keys(table.kinds)
     .filter((kind) => !used.has(kind) && !texts.some((text) => namesKind(text, kind)))
     .map((kind) => `lib/model-kinds.json: kind ${kind} is named by no agents, dispatches or unnamed entry and by no exo-kind: line or kind lookup in agents, hooks or skills`);
@@ -117,12 +116,11 @@ function findDispatchPins(root, table) {
 }
 
 export function findKindDrift(root, table) {
-  const kinds = table ?? readKindTable(path.join(root, 'lib', 'model-kinds.json'));
-  return [...findFrontmatterPins(root, kinds), ...findDispatchPins(root, kinds)];
+  return [...findFrontmatterPins(root, table), ...findDispatchPins(root, table)];
 }
 
 export function findUnknownKindLabels(root, table) {
-  const files = ['agents', 'hooks', 'skills'].flatMap((folder) => markdownFiles(root, folder));
+  const files = KIND_FOLDERS.flatMap((folder) => markdownFiles(root, folder));
   return files.flatMap((file) => fs.readFileSync(path.join(root, file), 'utf8').split('\n').flatMap((line, index) => {
     const labels = [...line.matchAll(/exo-kind: ([a-z][\w-]*)/g)].map((found) => found[1].replace(/-+$/, ''));
     return labels

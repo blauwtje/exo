@@ -1,3 +1,4 @@
+import { parseLine } from '#basics';
 const INITIAL_DATA = 'var ytInitialData = ';
 
 function titleOf(text) {
@@ -17,11 +18,7 @@ function initialDataOf(html) {
   const from = html.indexOf(INITIAL_DATA);
   if (from < 0) return null;
   const start = from + INITIAL_DATA.length;
-  try {
-    return JSON.parse(html.slice(start, html.indexOf(';</script>', start)));
-  } catch {
-    return null;
-  }
+  return parseLine(html.slice(start, html.indexOf(';</script>', start)));
 }
 
 export function chaptersFromHtml(html, duration) {

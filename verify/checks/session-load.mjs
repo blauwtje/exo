@@ -46,7 +46,7 @@ function skillWords(repository) {
 function agentWords(repository) {
   let total = 0;
   for (const file of repository.agentFiles()) {
-    const { fields } = splitFrontmatter(fs.readFileSync(file, 'utf8'));
+    const { fields } = splitFrontmatter(repository.text(file));
     if (fields === null) return { blocked: blockedMessage(repository, file) };
     total += words(`${fields.name ?? path.basename(file, '.md')} ${fields.description ?? ''}`);
   }

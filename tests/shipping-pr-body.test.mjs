@@ -3,14 +3,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, run } from './harness.mjs';
+import { tempDir, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/ship/scripts/pr-body.mjs', import.meta.url));
 const SECTIONS = '## Why\n\nShip a reviewer-ready body.\n\n## What changed\n\n- skills/ship: new script\n\n## Read order\n\nnone\n\n## Risk areas\n\n\n## Follow-ups\n\n- Stack the pull requests\n';
 const THREE_ITEMS = 'Intro\n\n- [ ] first criterion\n- [x] second criterion\n* [ ] third criterion\n\n```\n- [ ] inside a fence\n```\n';
 
 async function workspace(issueBodies) {
-  const root = await fixture();
+  const root = await tempDir('ui-design-test-');
   const bin = path.join(root, 'bin');
   await fs.mkdir(bin);
   await fs.writeFile(path.join(root, 'issues.json'), JSON.stringify(issueBodies));

@@ -1,8 +1,9 @@
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { exportSignatures } from '#export-signatures';
 import { SCRIPT_EXTENSIONS } from '#script-extensions';
+import { gitLine } from '#git';
+import { CHILD_OUTPUT_LIMIT } from '#process-tree';
 
 const STAGES_ALL = /^(?:\.|\.\/|-A|--all|:\/|.*[*?[].*)$/;
 
@@ -15,17 +16,12 @@ export function addedPathspecs(commitBlock) {
   return specs.flatMap((spec) => [spec, `${spec.replace(/\/$/, '')}/`]);
 }
 
-function sourceAtHead(root, file) {
-  const shown = spawnSync('git', ['-C', root, 'show', `HEAD:${file}`], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-  return shown.status === 0 ? shown.stdout : null;
-}
-
 function breaksCallers(before, after) {
   return after.required > before.required || after.total < before.total || (before.hasRest && !after.hasRest);
 }
 
 function signatureChangesOf(root, file) {
-  const before = sourceAtHead(root, file);
+  const before = gitLine(root, ['show', `HEAD:${file}`], { trim: false, maxBuffer: CHILD_OUTPUT_LIMIT });
   const workingPath = path.join(root, file);
   if (before === null || !fs.existsSync(workingPath)) return [];
   const after = exportSignatures(fs.readFileSync(workingPath, 'utf8'));

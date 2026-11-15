@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { REPOSITORY_ROOT as ROOT } from './harness.mjs';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
 
 test('the remember skill and its memory script are gone', () => {

@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { orWhenAbsent } from '#absent-path';
+import { parseLine } from '#basics';
 import { environmentMs } from '#script-flags';
 import { classifyOutsideFailure } from '../../../../lib/outside-limit.mjs';
 
@@ -25,11 +27,8 @@ function fileStore(dir) {
   const file = path.join(dir, 'host-state.json');
 
   function load() {
-    try {
-      return JSON.parse(fs.readFileSync(file, 'utf8'));
-    } catch {
-      return structuredClone(EMPTY);
-    }
+    const stored = orWhenAbsent(() => parseLine(fs.readFileSync(file, 'utf8')), null);
+    return stored ?? structuredClone(EMPTY);
   }
 
   function save(state) {
@@ -47,11 +46,9 @@ function pause(ms) {
 }
 
 function dropStaleLock(lock) {
-  try {
+  orWhenAbsent(() => {
     if (Date.now() - fs.statSync(lock).mtimeMs > LOCK_STALE_MS) fs.rmSync(lock, { force: true });
-  } catch {
-    return;
-  }
+  }, undefined);
 }
 
 function claimLock(lock) {

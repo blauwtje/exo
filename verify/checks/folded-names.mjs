@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { escapeRegExp } from '#basics';
 import { git } from '#git';
 
 const NAME = 'folded names';
@@ -12,7 +13,6 @@ const EXCLUDED = [
   /^docs\/specs\//,
   /^node_modules\//,
   /^verify\/fold-map\.json$/,
-  /^verify\/fold-skills\.mjs$/,
   /^verify\/checks\/folded-names\.mjs$/,
   /^tests\/folded-names\.test\.mjs$/,
 ];
@@ -21,7 +21,7 @@ function isExcluded(file) {
   return EXCLUDED.some((pattern) => pattern.test(file));
 }
 
-export function loadFoldMap(root) {
+function loadFoldMap(root) {
   return JSON.parse(fs.readFileSync(path.join(root, MAP_FILE), 'utf8'));
 }
 
@@ -30,21 +30,17 @@ function foldedEntries(map) {
   return { skills: named('skills').map(([name]) => name), agents: named('agents').map(([name]) => name) };
 }
 
-export function listFiles(root) {
+function listFiles(root) {
   const run = git(root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']);
   const files = run.stdout.split('\0').filter((file) => file !== '' && !isExcluded(file));
   return files.filter((file) => fs.existsSync(path.join(root, file)));
 }
 
-function escaped(name) {
-  return name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function oldNamePattern({ skills, agents }) {
   const parts = ['MODE\\.md'];
-  for (const name of [...skills, ...agents]) parts.push(`exo:${escaped(name)}(?![\\w-])`);
-  for (const name of skills) parts.push(`skills/${escaped(name)}/`);
-  for (const name of agents) parts.push(`agents/${escaped(name)}\\.md`);
+  for (const name of [...skills, ...agents]) parts.push(`exo:${escapeRegExp(name)}(?![\\w-])`);
+  for (const name of skills) parts.push(`skills/${escapeRegExp(name)}/`);
+  for (const name of agents) parts.push(`agents/${escapeRegExp(name)}\\.md`);
   return new RegExp(parts.join('|'));
 }
 
@@ -53,7 +49,7 @@ function fileHits(root, file, pattern) {
   return lines.flatMap((line, index) => (pattern.test(line) ? [`${file}:${index + 1}: ${line.trim()}`] : []));
 }
 
-export function foldedNameHits(root) {
+function foldedNameHits(root) {
   const pattern = oldNamePattern(foldedEntries(loadFoldMap(root)));
   return listFiles(root).flatMap((file) => fileHits(root, file, pattern));
 }
@@ -67,7 +63,7 @@ export function checkFoldedNames(report, repository) {
   report.assert(
     hits.length === 0,
     NAME,
-    { pass: 'no file names a folded skill or agent, a folded skill path or a MODE.md', fail: `run node verify/fold-skills.mjs --from <name> --into <owner>; found: ${hits.slice(0, 5).join(' | ')}${hits.length > 5 ? ` (+${hits.length - 5} more)` : ''}` }
+    { pass: 'no file names a folded skill or agent, a folded skill path or a MODE.md', fail: `edit the name, or add the fold-map entry in verify/fold-map.json; found: ${hits.slice(0, 5).join(' | ')}${hits.length > 5 ? ` (+${hits.length - 5} more)` : ''}` }
   );
 }
 

@@ -6,8 +6,8 @@ import { findCapabilityProblems, harnessNames, readCapabilities } from '../harne
 import { codexHookEntries } from '../harnesses/codex/hooks.mjs';
 import { currentHost } from '../lib/host.mjs';
 import { readKindTable } from '../lib/model-kinds.mjs';
+import { REPOSITORY_ROOT as ROOT } from './harness.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 function repositoryState() {
   return {

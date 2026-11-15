@@ -42,7 +42,6 @@ function writePointers() {
     if (!onCodex) refreshStatusLauncher(configDirectory);
   } catch (error) {
     console.error(`exo: plugin-root pointer not written, ${error.message}`);
-    return;
   }
 }
 
@@ -52,7 +51,6 @@ function prepareSessionShell() {
     passUnmatchedGlobs(process.env.CLAUDE_ENV_FILE);
   } catch (error) {
     console.error(`exo: saved Bash logs or the session shell setup not written, ${error.message}`);
-    return;
   }
 }
 
@@ -70,9 +68,10 @@ prepareSessionShell();
 
 if (process.env.EXO_RUN_DIR) process.exit(0);
 
-if (typeof input.cwd === 'string' && input.cwd !== '') pruneExo({ cwd: input.cwd });
+const cwd = typeof input.cwd === 'string' && input.cwd !== '' ? input.cwd : undefined;
+if (cwd) pruneExo({ cwd });
 
-const pointers = typeof input.cwd === 'string' && input.cwd !== '' ? pointersFor(configDirectory, input.cwd, input.source) : '';
+const pointers = cwd ? pointersFor(configDirectory, cwd, input.source) : '';
 const sessionDirectory = typeof input.cwd === 'string' && fs.existsSync(input.cwd) && fs.statSync(input.cwd).isDirectory() ? input.cwd : undefined;
 const settingsRun = spawnSync(process.execPath, [path.join(root, 'skills/configure/scripts/settings.mjs'), 'context'], { encoding: 'utf8', cwd: sessionDirectory });
 const settings = settingsRun.status === 0 ? settingsRun.stdout.replace(/\n+$/, '') : 'exo settings: unresolved, defaults apply';

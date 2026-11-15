@@ -11,16 +11,15 @@ import { lastLine } from './run-plan-preflight.mjs';
 import { planBreach, spawnOne } from './run-plan-session.mjs';
 import { budgetStop, parkedStop, takeParked } from './run-plan-stops.mjs';
 
-export async function runTailSession(ctx, { kind, task = null, model: asked = null, prompt }) {
-  const { run, root, branch, provider, tailAllow, tailSettings, timeoutMs, logDir } = ctx;
+export async function runTailSession(ctx, { kind, prompt }) {
+  const { run, root, branch, tailAllow, tailSettings, logDir } = ctx;
   const budget = budgetStop(ctx);
   if (budget !== null) return { stop: { ...budget, gate: 'FAIL' } };
   ctx.tailSessions += 1;
   ctx.iteration += 1;
   const number = ctx.iteration;
   const log = path.join(logDir, `tail-${ctx.tailSessions}-${kind}.log`);
-  const sessionModel = asked !== null && provider.name === 'claude' ? asked : provider.model;
-  const { before, outcome, parsed } = await spawnOne(ctx, { prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind, task, sessionModel, limitMs: timeoutMs });
+  const { before, outcome, parsed } = await spawnOne(ctx, { prompt, allow: tailAllow, settings: tailSettings, pin: null, log, kind });
   const last = outcome.timedOut ? 'timed out' : lastLine(parsed.resultText);
   run.records.push({ iteration: number, task: null, kind, log, turns: parsed.turns, cost: parsed.cost, peakContext: parsed.peakContext, ...cacheFields(parsed), last, denied: [], refused: [] });
   const breach = planBreach(ctx) ?? breachOf(root, before, { tail: true });

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { installedPluginId, resolvePluginDir } from '#plugin-copy';
-import { UsageError } from '#script-flags';
+import { UsageError, POSITIVE_INTEGER } from '#script-flags';
 import { DEFAULT_MARGIN, JUDGE_VOTES } from './pressure-grade.mjs';
 import { parseContrastEnv, parseContrastStyle } from './pressure-contrast.mjs';
 
@@ -11,7 +11,6 @@ const FULL_RUNS = 3;
 const QUICK_VOTES = 1;
 const DEFAULT_JUDGE_CELL = 'sonnet:low';
 const CELL_PATTERN = /^([^:]+):([^:]+)$/;
-const POSITIVE_INTEGER = /^[1-9]\d*$/;
 
 export const USAGE = `usage: pressure.mjs --cells-for <file> | --prompt <file> --cells <model:effort,...> --plugin-dir <clone> [--main-dir <main clone> | --contrast-env NAME=<a>,<b> | --contrast-style <a>,<b>] [--setting-sources <list>] [--output-style <name>] [--setup <script>] [--full] [--runs <n>] [--out <dir>] [--grade [--criteria <file>] [--threshold <0-1>] [--judge-cell <model:effort>] [--judge-votes <n>]] [--dry-run]
        pressure.mjs --regrade <run folder> --prompt <file> [--full] [--criteria <file>] [--threshold <0-1>] [--judge-cell <model:effort>] [--judge-votes <n>]

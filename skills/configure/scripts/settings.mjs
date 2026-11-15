@@ -166,10 +166,10 @@ function gitignoreEntry(root, relative) {
   return `${separator}${relative.split(path.sep).join('/')}\n`;
 }
 
-function checkScope(scope) {
+function checkScope(key, scope) {
   const onCodex = currentHost() === 'codex';
   if (scope === 'global' && !onCodex) {
-    throw new Error('a global value is set in /config under the exo plugin, not by this script');
+    throw new Error(`${key} is global: set it in /config under the exo plugin, not by this script`);
   }
   if (scope !== 'project' && scope !== 'local' && !(scope === 'global' && onCodex)) {
     throw new Error(`--scope must be project, local${onCodex ? ' or global' : ''}`);
@@ -191,7 +191,7 @@ function writeSetting(root, { key, value, scope }) {
 
 function set(root, change) {
   if (!Object.hasOwn(SCHEMA, change.key ?? '')) throw unknownKey(change.key);
-  checkScope(change.scope);
+  checkScope(change.key, change.scope);
   const relative = writeSetting(root, change);
   if (change.scope === 'global') return;
   const ignored = spawnSync('git', ['-C', root, 'check-ignore', '-q', relative]);
@@ -245,7 +245,7 @@ try {
   } else if (command === 'set') {
     set(root, { key: args[0], value: args[1], scope: option(args, '--scope') });
   } else {
-    throw new Error('usage: settings.mjs context | show | menu [<topic> | <key>] | get <key> | set <key> <value> --scope project|local | statusline');
+    throw new Error('usage: settings.mjs context | show | menu [<topic> | <key>] | get <key> | set <key> <value> --scope project|local | statusline' + ` (got: ${[command, ...args].join(' ') || 'no arguments'})`);
   }
 } catch (error) {
   console.error(error.message);

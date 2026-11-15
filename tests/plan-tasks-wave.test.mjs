@@ -20,10 +20,10 @@ function planWith(parallelLine) {
   ].join('\n');
 }
 
-function waveOf(parallelLine, landed, inFlight = []) {
+function waveOf(parallelLine, landed, { inFlight = [], limit } = {}) {
   const plan = parsePlan(planWith(parallelLine));
   const frame = frameOf(plan.frame);
-  return nextWave(plan.tasks, landed, { worktreeSetup: frame.worktreeSetup, parallel: frame.parallel, inFlight }).map((task) => task.number);
+  return nextWave(plan.tasks, landed, { worktreeSetup: frame.worktreeSetup, parallel: frame.parallel, inFlight, limit }).map((task) => task.number);
 }
 
 test('nextWave batches tasks that became independent after the Parallel: line was written', () => {
@@ -31,18 +31,23 @@ test('nextWave batches tasks that became independent after the Parallel: line wa
 });
 
 test('nextWave starts an independent task beside a running one that the Parallel: line left out', () => {
-  assert.deepEqual(waveOf('Tasks 2 and 3.', [1, 2, 3], [4]), [5, 6]);
+  assert.deepEqual(waveOf('Tasks 2 and 3.', [1, 2, 3], { inFlight: [4] }), [5, 6]);
 });
 
 test('nextWave never puts two tasks that share a file in one wave', () => {
   assert.deepEqual(waveOf('Tasks 2 and 3.', [1]), [2, 3]);
   assert.deepEqual(waveOf('every task', [1, 2, 3, 4, 5]), [6]);
-  assert.deepEqual(waveOf('Tasks 2 and 3.', [1], [2]), [3]);
+  assert.deepEqual(waveOf('Tasks 2 and 3.', [1], { inFlight: [2] }), [3]);
+});
+
+test('nextWave caps a wave and the started tasks at the limit option', () => {
+  assert.deepEqual(waveOf('Tasks 2 and 3.', [1, 2, 3], { limit: 2 }), [4, 5]);
+  assert.deepEqual(waveOf('Tasks 2 and 3.', [1, 2, 3], { inFlight: [4], limit: 2 }), [5]);
 });
 
 test('nextWave keeps a plan whose Parallel: line reads none serial', () => {
   assert.deepEqual(waveOf('none.', [1]), [2]);
-  assert.deepEqual(waveOf('none.', [1], [2]), []);
+  assert.deepEqual(waveOf('none.', [1], { inFlight: [2] }), []);
 });
 
 test('a symlinked Repository path to the run checkout is not isolated', () => {

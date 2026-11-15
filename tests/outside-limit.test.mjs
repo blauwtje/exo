@@ -10,5 +10,5 @@ test('classifies status and yt-dlp text apart', () => {
   assert.equal(classifyOutsideFailure({ status: 503 }), 'server');
   assert.equal(classifyOutsideFailure({ text: 'HTTP Error 502' }), 'server');
   assert.equal(classifyOutsideFailure({ text: 'no captions' }), 'other');
-  assert.equal(classifyOutsideFailure(), 'other');
+  assert.equal(classifyOutsideFailure({}), 'other');
 });

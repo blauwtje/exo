@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { CONTEXT_FILES } from './hook-budgets.mjs';
 
-const ROUTING_FILES = ['hooks/session-routing.md', 'hooks/session-rules.md'];
 const BUILD_MODE = /`(?:exo:)?build ([a-z][a-z-]*)`/g;
 const ROUTED = /`(?:exo:)?([a-z][a-z-]*)`|exo:([a-z][a-z-]*)/g;
 
@@ -17,10 +17,10 @@ function documentedModes(root) {
   return [...section.matchAll(/`([a-z][a-z-]*)`/g)].map((match) => match[1]);
 }
 
-export function unroutableTargets(root) {
+function unroutableTargets(root) {
   const known = new Set([...names(root, 'skills', ''), ...names(root, 'agents', /\.md$/)]);
   const modes = new Set(documentedModes(root));
-  const missing = ROUTING_FILES.flatMap((file) => {
+  const missing = CONTEXT_FILES.flatMap((file) => {
     const text = fs.readFileSync(path.join(root, file), 'utf8');
     const badModes = [...text.matchAll(BUILD_MODE)]
       .filter((match) => !modes.has(match[1]))

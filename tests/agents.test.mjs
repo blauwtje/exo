@@ -3,12 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
 import { readKindTable } from '#model-kinds';
+import { readAgents, REPOSITORY_ROOT } from './harness.mjs';
 import { GUARD_RULES, briefedPrompt } from '../lib/guard-rules.mjs';
-
-const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
-const agentsRoot = path.join(repositoryRoot, 'agents');
 
 const SUPPORTED_KEYS = [
   'name', 'description', 'model', 'effort', 'maxTurns', 'tools',
@@ -24,26 +21,9 @@ const KNOWN_TOOLS = [
 ];
 const ORDINAL_TURNS = { tenth: 10, fifteenth: 15, twentieth: 20, thirtieth: 30, fortieth: 40, fiftieth: 50 };
 
-function readAgent(fileName) {
-  const text = fs.readFileSync(path.join(agentsRoot, fileName), 'utf8');
-  const lines = text.split('\n');
-  const closing = lines.indexOf('---', 1);
-  assert.ok(lines[0] === '---' && closing > 0, `${fileName} has no frontmatter block`);
-  const frontmatter = {};
-  for (const line of lines.slice(1, closing)) {
-    const separator = line.indexOf(': ');
-    assert.ok(separator > 0, `${fileName} has an unreadable frontmatter line: ${line}`);
-    frontmatter[line.slice(0, separator)] = line.slice(separator + 2);
-  }
-  const body = lines.slice(closing + 1).join('\n');
-  return { fileName, frontmatter, body };
-}
-
 const kindTable = readKindTable();
 
-const agents = fs.readdirSync(agentsRoot)
-  .filter((fileName) => fileName.endsWith('.md'))
-  .map(readAgent);
+const agents = readAgents();
 
 test('every agent uses only the frontmatter keys a plugin agent supports', () => {
   for (const agent of agents) {
@@ -223,7 +203,7 @@ test('build-task carries the fix-review and hardest modes and review-branch the 
   assert.match(builder.body, /exo-kind: build-repair/);
   assert.match(builder.body, /agent-modes\/task-modes\.md/);
   assert.match(reviewer.body, /exo-kind: judge/);
-  const modes = fs.readFileSync(path.join(repositoryRoot, 'lib/agent-modes/task-modes.md'), 'utf8');
+  const modes = fs.readFileSync(path.join(REPOSITORY_ROOT, 'lib/agent-modes/task-modes.md'), 'utf8');
   assert.match(modes, /reported: already absent/);
   assert.match(modes, /Status: done \| blocked \| unknown/);
   assert.match(modes, /`Side effects`/);

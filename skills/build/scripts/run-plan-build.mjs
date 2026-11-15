@@ -168,7 +168,7 @@ function takeBlockedMarker(pending) {
   return marker;
 }
 
-function landTask(ctx, { n, record, startedTask }) {
+function markSessionLanded(ctx, { n, record, startedTask }) {
   markLanded({ ctx, n, record, startedTask });
   return undefined;
 }
@@ -178,7 +178,7 @@ function settleTask(build, session) {
   const { n, before, outcome, parsed, last, log } = session;
   const unsafe = unsafeStop({ ctx, n, before, trailer: planTaskTrailer(ctx.planId, n), parsed, log }) ?? undefined;
   if (unsafe !== undefined) return unsafe;
-  if (landedTasks(ctx.plan.tasks, ctx.root, ctx.planId).includes(n)) return landTask(ctx, session);
+  if (landedTasks(ctx.plan.tasks, ctx.root, ctx.planId).includes(n)) return markSessionLanded(ctx, session);
   if (!outcome.timedOut && parsed.subtype === 'error_max_turns') {
     shelvePartialWork(ctx, n);
     return blockedStop(ctx, n, `hit --max-turns ${agentMaxTurns('build')}`);
@@ -199,7 +199,7 @@ async function stuckTask(build, session, blocked) {
   const { n, outcome, parsed, last } = session;
   const reason = blocked?.[1] || last;
   const rescue = blocked !== null && !outcome.timedOut && parsed.denials.length > 0 ? landByScript(ctx, n) : null;
-  if (rescue?.landed) return landTask(ctx, session);
+  if (rescue?.landed) return markSessionLanded(ctx, session);
   if (await repairTask(ctx, n, reason)) {
     ctx.retryNote = repairedNote(n, reason);
     return undefined;
@@ -209,7 +209,7 @@ async function stuckTask(build, session, blocked) {
 
 function failedTask(build, session) {
   const attempt = session.outcome.timedOut ? null : landByScript(build.ctx, session.n);
-  if (attempt?.landed) return landTask(build.ctx, session);
+  if (attempt?.landed) return markSessionLanded(build.ctx, session);
   const failure = attempt === null ? session.last : failingLine(attempt.output);
   return retryOrStop(build, { ...session, attempt, failure });
 }

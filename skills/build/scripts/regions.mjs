@@ -3,6 +3,7 @@ import { readdirSync } from 'node:fs';
 import { join, relative, basename, extname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { isWorktreePath } from '#checkout';
+import { USAGE_EXIT } from '#script-flags';
 
 const USAGE = 'usage: node regions.mjs --root <dir> --region "<name>"... (numbered in the order given)';
 const SOURCE = new Set(['.tsx', '.jsx', '.vue', '.svelte', '.astro', '.html', '.js', '.ts', '.css']);
@@ -22,7 +23,7 @@ function sourceFiles(root, base = root) {
   });
 }
 
-export function mapRegions(root, names) {
+function mapRegions(root, names) {
   const files = sourceFiles(root).map((path) => ({ path, key: squash(basename(path, extname(path))) }));
   return names.map((name, index) => {
     const wanted = squash(name);
@@ -31,7 +32,7 @@ export function mapRegions(root, names) {
   });
 }
 
-export function describe(region) {
+function describe(region) {
   const head = `${region.number} ${region.name}`;
   if (region.files.length === 0) return `MISSING ${head}`;
   if (region.files.length > 1) return `AMBIGUOUS ${head} ${region.files.join(' ')}`;
@@ -57,7 +58,7 @@ function main(argv) {
 
 function fail(message) {
   console.error(message);
-  process.exitCode = 2;
+  process.exitCode = USAGE_EXIT;
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) main(process.argv.slice(2));

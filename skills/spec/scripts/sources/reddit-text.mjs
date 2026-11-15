@@ -1,16 +1,18 @@
-const NAMED = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+import { BlockedRoute } from './http.mjs';
+import { ENTITIES } from '../page-text.mjs';
+
 const BLOCK_END = /<(?:br|\/p|\/div|\/li)\s*\/?>/gi;
 
-export function decodeEntities(text) {
+function decodeEntities(text) {
   return text.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, name) => {
-    if (name[0] !== '#') return NAMED[name.toLowerCase()] ?? whole;
+    if (name[0] !== '#') return ENTITIES[name.toLowerCase()] ?? whole;
     const isHex = name[1].toLowerCase() === 'x';
     const code = isHex ? parseInt(name.slice(2), 16) : Number(name.slice(1));
     return String.fromCodePoint(code);
   });
 }
 
-export function htmlToText(html) {
+function htmlToText(html) {
   const stripped = html
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(BLOCK_END, '\n')
@@ -29,7 +31,7 @@ export function commentsAsText(comments) {
 
 const SEARCH_ORIGIN = 'https://www.reddit.com';
 
-export function searchUrl({ query, sort = 'relevance', time = 'all', subreddit = '' }) {
+export function searchUrl({ query, sort, time, subreddit }) {
   const base = subreddit ? `/svc/shreddit/r/${subreddit}/search/` : '/svc/shreddit/search/';
   const params = new URLSearchParams({ q: query, type: 'posts', sort, t: time });
   return `${SEARCH_ORIGIN}${base}?${params}`;
@@ -60,9 +62,9 @@ function stubOf({ children, parent_id: parentId }) {
   return { children, parentId };
 }
 
-export function parseMoreChildren(body) {
+export function parseMoreChildren(body, linkId) {
   const things = body.json?.data?.things;
-  if (!Array.isArray(things)) throw new Error('morechildren answer has no things');
+  if (!Array.isArray(things)) throw new BlockedRoute(`morechildren answer for ${linkId} has no things`);
   const found = { comments: [], more: [] };
   for (const { kind, data: thing } of things) {
     if (kind === 'more') found.more.push(stubOf(thing));

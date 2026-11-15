@@ -31,7 +31,8 @@ function readUserConfig(file) {
 function parseValue(raw) {
   try {
     return JSON.parse(raw);
-  } catch {
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
     return raw;
   }
 }
@@ -61,6 +62,6 @@ export function configCommand(args) {
   const home = os.homedir();
   const file = path.join(configDir(home), 'run.json');
   if (args.length === 0) return printConfig(home, file);
-  if (args.length !== 2) throw new Refusal('usage: exo run config [<key> <value>]');
+  if (args.length !== 2) throw new Refusal(`usage: exo run config [<key> <value>]; got: ${args.join(' ')}`);
   writeConfig(home, file, args);
 }

@@ -73,7 +73,7 @@ export function checkAcceptanceCitations(frame) {
 }
 
 export function checkLandGate(frame, root) {
-  if (root === undefined || root === null) return [];
+  if (root === undefined) return [];
   const packageJsonPath = path.join(root, 'package.json');
   if (!fs.existsSync(packageJsonPath)) return [];
   const basis = frame['Plan basis'] ?? '';
@@ -89,7 +89,7 @@ export function checkLandGate(frame, root) {
 }
 
 export function checkProductRun(frame, root) {
-  if (root === undefined || root === null) return [];
+  if (root === undefined) return [];
   const terms = packageRunTerms(root);
   const criterion = frame['Success criterion'] ?? '';
   if (terms.length === 0 || criterion.trim() === '') return [];

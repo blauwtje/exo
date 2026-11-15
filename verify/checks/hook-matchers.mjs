@@ -1,15 +1,17 @@
-import fs from 'node:fs';
-
 const MATCHED_EVENTS = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest'];
 
-export function unmatchedGroups(hooksConfig) {
-  return Object.entries(hooksConfig.hooks ?? {})
+export function hooksConfig(repository) {
+  return JSON.parse(repository.text(repository.join('hooks', 'hooks.json')));
+}
+
+function unmatchedGroups(config) {
+  return Object.entries(config.hooks ?? {})
     .filter(([event]) => MATCHED_EVENTS.includes(event))
     .flatMap(([event, groups]) => groups.filter((group) => !group.matcher || group.matcher === '*').map(() => event));
 }
 
 export function checkHookMatchers(report, repository) {
-  const unmatched = unmatchedGroups(JSON.parse(fs.readFileSync(repository.join('hooks', 'hooks.json'), 'utf8')));
+  const unmatched = unmatchedGroups(hooksConfig(repository));
   if (unmatched.length > 0) {
     report.result('FAIL', 'hook matchers', `${unmatched.length} hooks.json group(s) on ${[...new Set(unmatched)].join(', ')} have no matcher and would spawn on every tool call; add a matcher naming the tools`);
     return;

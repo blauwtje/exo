@@ -7,9 +7,8 @@ import { PassThrough } from 'node:stream';
 import { afterEach, beforeEach, test } from 'node:test';
 import { run } from '../install.mjs';
 import { adapters } from '../harnesses/registry.mjs';
-import { git, tempDir } from './harness.mjs';
+import { REPOSITORY_ROOT as REPO, git, tempDir } from './harness.mjs';
 
-const REPO = new URL('../', import.meta.url).pathname;
 const base = fs.realpathSync(tempDir('install-test-'));
 
 const calls = [];

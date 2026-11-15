@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { withoutComments } from '../../lib/code-comments.mjs';
 
 const NAME = 'script help';
@@ -13,11 +11,8 @@ const HELP_FLAG = new RegExp([
 const PARSE_FLAGS_USAGE = /parseFlags\([^;]*\{\s*usage\b/;
 
 function entryPoints(repository) {
-  return repository.skillDirectories()
-    .map((skill) => path.join(repository.skillsRoot, skill, 'scripts'))
-    .filter((folder) => fs.existsSync(folder))
-    .flatMap((folder) => fs.readdirSync(folder).sort().map((name) => path.join(folder, name)))
-    .filter((file) => file.endsWith('.mjs') && fs.statSync(file).isFile())
+  return repository.skillScriptFiles()
+    .filter((file) => file.endsWith('.mjs'))
     .filter((file) => ENTRY_POINT.test(repository.text(file)));
 }
 

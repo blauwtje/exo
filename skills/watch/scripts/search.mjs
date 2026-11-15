@@ -1,25 +1,24 @@
 #!/usr/bin/env node
 
 import process from 'node:process';
-import { UsageError, environmentMs, parseFlags, isMain } from '#script-flags';
+import { limitLifetime } from '#lifetime';
+import { UsageError, POSITIVE_INTEGER, environmentMs, parseFlags, isMain } from '#script-flags';
 import { DEFAULTS } from './defaults.mjs';
 import { formatDuration } from './format.mjs';
 import { classifyOutsideFailure } from '../../../lib/outside-limit.mjs';
-import { gateRequest } from './request-gate.mjs';
+import { RATE_LIMITED_EXIT, gateRequest } from './request-gate.mjs';
+import { WATCH_URL } from './video-url.mjs';
+import { isFetchFailure } from './run-tool.mjs';
 
-const POSITIVE_INTEGER = /^[1-9]\d*$/;
 const SEARCH_URL = 'https://www.youtube.com/youtubei/v1/search?prettyPrint=false';
-const WATCH_URL = 'https://www.youtube.com/watch?v=';
 const WEB_CLIENT = { clientName: 'WEB', clientVersion: '2.20250101.00.00', hl: 'en' };
-const UPLOAD_DATE_SORT = 'CAI=';
 const SEARCH_LIMIT = 10;
-const RATE_LIMITED_EXIT = 75;
 
-const SPEC = { query: 'string', limit: 'string', newest: 'boolean', help: 'boolean' };
+const SPEC = { query: 'string', limit: 'string', help: 'boolean' };
 const USAGE = [
-  'usage: node search.mjs --query <text> [--limit <n>] [--newest]',
+  'usage: node search.mjs --query <text> [--limit <n>]',
   'Searches YouTube through its keyless InnerTube search: nothing is downloaded or written to disk.',
-  'Prints one line per video: id, url, title, channel, duration, and views and upload date when YouTube sends them. --newest sorts by upload date instead of relevance.',
+  'Prints one line per video: id, url, title, channel, duration, and views and upload date when YouTube sends them.',
   'Defaults: --limit 10. EXO_WATCH_FETCH_MS sets the wait for the request (default 30000).',
   'Exit codes: 0 listed; 75 YouTube answered 429; 1 YouTube refused, answered badly or found nothing; 2 bad usage.',
 ].join('\n');
@@ -30,15 +29,12 @@ function readOptions(flags) {
   return {
     query: flags.query.trim(),
     limit: flags.limit === undefined ? SEARCH_LIMIT : Number(flags.limit),
-    newest: Boolean(flags.newest),
     fetchMs: environmentMs('EXO_WATCH_FETCH_MS', DEFAULTS.fetchMs),
   };
 }
 
-function requestBody({ query, newest }) {
-  const body = { context: { client: WEB_CLIENT }, query };
-  if (newest) body.params = UPLOAD_DATE_SORT;
-  return JSON.stringify(body);
+function requestBody({ query }) {
+  return JSON.stringify({ context: { client: WEB_CLIENT }, query });
 }
 
 function videosOf(answer) {
@@ -64,7 +60,25 @@ function rowLine(renderer) {
   return fields.filter(Boolean).join(' | ');
 }
 
-export async function searchVideos(options, fetchFn = globalThis.fetch) {
+function fetchFailure(error) {
+  if (!isFetchFailure(error)) throw error;
+  return { failed: error };
+}
+
+async function listVideos(response, options) {
+  let answer;
+  try {
+    answer = await response.json();
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    return { failure: 'search failed: YouTube answered with data that is not JSON' };
+  }
+  const renderers = videosOf(answer).slice(0, options.limit);
+  if (renderers.length === 0) return { failure: `no videos: YouTube found none for '${options.query}'` };
+  return { lines: renderers.map(rowLine) };
+}
+
+async function searchVideos(options) {
   const init = {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -72,18 +86,15 @@ export async function searchVideos(options, fetchFn = globalThis.fetch) {
     signal: AbortSignal.timeout(options.fetchMs),
   };
   await gateRequest(SEARCH_URL);
-  const response = await fetchFn(SEARCH_URL, init).catch((error) => ({ failed: error }));
+  const response = await fetch(SEARCH_URL, init).catch(fetchFailure);
   if (response.failed) return { failure: `search failed: ${response.failed.message}` };
   if (classifyOutsideFailure({ status: response.status }) === 'rate-limited') return { failure: 'search failed: YouTube answered 429, this network is rate limited', rateLimited: true };
   if (!response.ok) return { failure: `search failed: YouTube answered HTTP ${response.status}`, rateLimited: false };
-  const answer = await response.json().catch(() => null);
-  if (!answer) return { failure: 'search failed: YouTube answered with data that is not JSON' };
-  const renderers = videosOf(answer).slice(0, options.limit);
-  if (renderers.length === 0) return { failure: `no videos: YouTube found none for '${options.query}'` };
-  return { lines: renderers.map(rowLine) };
+  return listVideos(response, options);
 }
 
 async function main(argv) {
+  limitLifetime('watch-search', 1800000);
   const options = readOptions(parseFlags(argv, SPEC, { usage: USAGE }));
   const result = await searchVideos(options);
   if (result.failure) {

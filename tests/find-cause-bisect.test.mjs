@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
+import { commitFiles, tempDir, git, gitRepository, run } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/find-cause/scripts/bisect.mjs', import.meta.url));
 const REPRO = 'node check.mjs';
@@ -84,7 +84,7 @@ test('the third of five commits that broke the repro is named', async () => {
   const lines = result.stdout.trimEnd().split('\n');
   assert.ok(lines.length <= 30, `printed ${lines.length} lines`);
   assert.equal(lines[0], `First bad: ${third} feat: third breaks it`);
-  assert.match(lines[1], /^Good: [0-9a-f]{40} \((?:HEAD~\d+|proof trailer|merge-base|flag)\)$/);
+  assert.match(lines[1], /^Good: [0-9a-f]{40} \((?:HEAD~\d+|proof trailer|merge-base)\)$/);
   assert.match(lines[2], /^Diff: /);
   assert.equal(fs.existsSync(lines[2].slice('Diff: '.length)), true);
   assert.deepEqual(snapshot(root), before);
@@ -110,7 +110,7 @@ test('a repro that passes at HEAD reports no failure', async () => {
 });
 
 test('a repro that alternates reports flaky', async () => {
-  const counter = path.join(await fixture(), 'counter.txt');
+  const counter = path.join(await tempDir('ui-design-test-'), 'counter.txt');
   const root = await gitRepository({ '.gitignore': GITIGNORE, 'check.mjs': FLIPPING });
   const before = snapshot(root);
   const result = await run(SCRIPT, ['--repro', REPRO], { cwd: root, env: { FLAKY_COUNTER: counter } });
@@ -128,37 +128,8 @@ test('--help ends the usage line with its period', async () => {
   );
 });
 
-test('a --good value starting with a dash is a usage error', async () => {
-  const root = await gitRepository({ '.gitignore': GITIGNORE, 'check.mjs': PASSING });
-  const before = snapshot(root);
-  const result = await run(SCRIPT, ['--repro', REPRO, '--good', '-x'], { cwd: root });
-  assert.equal(result.code, 2);
-  assert.match(result.stderr, /--good/);
-  assert.deepEqual(snapshot(root), before);
-});
-
-test('a --good ref that names no commit is a usage error', async () => {
-  const root = await gitRepository({ '.gitignore': GITIGNORE, 'check.mjs': PASSING });
-  const result = await run(SCRIPT, ['--repro', REPRO, '--good', 'no-such-ref'], { cwd: root });
-  assert.equal(result.code, 2);
-  assert.match(result.stderr, /--good/);
-});
-
-test('a --good ref that is not an ancestor of HEAD is a usage error', async () => {
-  const root = await gitRepository({ '.gitignore': GITIGNORE, 'check.mjs': PASSING, 'app.txt': 'one\n' });
-  git(root, 'switch', '-q', '-c', 'side');
-  await commitFiles(root, { 'side.txt': 'side\n' }, 'feat: side');
-  git(root, 'switch', '-q', 'main');
-  await commitFiles(root, { 'app.txt': 'two\n' }, 'feat: main');
-  const before = snapshot(root);
-  const result = await run(SCRIPT, ['--repro', REPRO, '--good', 'side'], { cwd: root });
-  assert.equal(result.code, 2);
-  assert.match(result.stderr, /not an ancestor/);
-  assert.deepEqual(snapshot(root), before);
-});
-
 test('a confirmation run that errors names the cause instead of flaky', async () => {
-  const counters = await fixture();
+  const counters = await tempDir('ui-design-test-');
   const root = await countingRepository();
   const third = git(root, 'rev-parse', 'HEAD~2');
   const result = await run(SCRIPT, ['--repro', REPRO], {
@@ -196,7 +167,7 @@ test('a repro that never passed reports no passing commit', async () => {
 });
 
 test('out-of-scope: the repro never runs in the fixture checkout and leaves it untouched', async () => {
-  const log = path.join(await fixture(), 'cwds.txt');
+  const log = path.join(await tempDir('ui-design-test-'), 'cwds.txt');
   const recording = [
     "import fs from 'node:fs';",
     "fs.appendFileSync(process.env.CWD_LOG, fs.realpathSync(process.cwd()) + '\\n');",

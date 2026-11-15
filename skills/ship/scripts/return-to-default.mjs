@@ -3,11 +3,11 @@
 import process from 'node:process';
 import { mainCheckout } from '#checkout';
 import { defaultBranch } from '#git';
-import { UsageError, parseFlags, isMain } from '#script-flags';
+import { UsageError, USAGE_EXIT, parseFlags, isMain } from '#script-flags';
 import { git } from '#git';
+import { firstLine } from './gh-run.mjs';
 
 const USAGE = 'usage: return-to-default.mjs [--merged <branch>]...';
-const USAGE_EXIT = 2;
 
 function gitOutcome(dir, args) {
   const result = git(dir, args);
@@ -15,11 +15,7 @@ function gitOutcome(dir, args) {
   return { ok: result.status === 0, text: (output ?? '').trim() };
 }
 
-function firstLine(text) {
-  return text.split('\n').find((line) => line.trim() !== '')?.trim() ?? 'no output';
-}
-
-export function returnToDefault({ dir = process.cwd(), base = null, merged = [] } = {}) {
+export function returnToDefault({ dir = process.cwd(), base = null, merged = [] }) {
   const root = mainCheckout(dir);
   if (root === null) return { pulled: false, line: `${dir} not moved: no git checkout` };
   const target = base ?? defaultBranch(root);
@@ -53,7 +49,7 @@ function main() {
     process.exitCode = USAGE_EXIT;
     return;
   }
-  const outcome = returnToDefault({ merged: flags.merged ?? [] });
+  const outcome = returnToDefault({ merged: flags.merged });
   console.log(outcome.line);
   process.exitCode = outcome.pulled ? 0 : 1;
 }

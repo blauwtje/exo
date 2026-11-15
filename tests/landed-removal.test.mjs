@@ -5,7 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { removeWorktree, RemoveWorktreeError } from '../skills/build/scripts/remove-worktree.mjs';
-import { commitFiles, git, gitRepository } from './harness.mjs';
+import { commitFiles, git, gitRepository, squashInto } from './harness.mjs';
 
 const SQUASH_CHECK = path.resolve('skills/build/scripts/squash-check.mjs');
 const BASE_LOG = '## Unreleased\n\n### Added\n\n- first\n';
@@ -21,11 +21,6 @@ async function branchFrom(root, name, files) {
   git(root, 'worktree', 'add', '-b', `feat/${name}`, worktree, 'HEAD');
   await commitFiles(worktree, files, `feat: ${name}`);
   return worktree;
-}
-
-function squashInto(root, branch) {
-  git(root, 'merge', '--squash', branch);
-  git(root, 'commit', '-q', '-m', `squash ${branch}`);
 }
 
 async function landedThenTouched() {
@@ -49,7 +44,7 @@ test('remove-worktree removes a worktree whose branch landed by squash though la
 test('squash-check says a landed branch has nothing left to squash', async () => {
   const { root } = await landedThenTouched();
 
-  const result = spawnSync(process.execPath, [SQUASH_CHECK, '--branch', 'feat/landed', '--root', root], { encoding: 'utf8' });
+  const result = spawnSync(process.execPath, [SQUASH_CHECK, '--branch', 'feat/landed'], { cwd: root, encoding: 'utf8' });
 
   assert.equal(result.status, 1);
   assert.match(result.stdout, /feat\/landed already landed on main; the branch is kept; nothing left to squash/);

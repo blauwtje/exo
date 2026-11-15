@@ -8,7 +8,7 @@ import { contrastArms } from './pressure-contrast.mjs';
 import { defaultJudge, gradeRun, linesForCase, parseCriteria } from './pressure-grade.mjs';
 import { withHome } from './pressure-home.mjs';
 import { recordRun } from './pressure-records.mjs';
-import { claudeArguments, runArm, runInSequence, runSetup } from './pressure-run.mjs';
+import { claudeArguments, runArm, runInSequence, runCaseSetup } from './pressure-run.mjs';
 import { makeRunFolder } from './pressure-run-folder.mjs';
 
 function cellArms({ pluginDir, pluginId, mainDir, contrast }) {
@@ -30,7 +30,7 @@ function startRun(job, { arm, runNumber }) {
   const { model, effort, promptText, options, gradeLines, judge } = job;
   const { settingSources, outputStyle, setupScript, home, grade, promptFile } = options;
   if (setupScript !== undefined) {
-    const setup = runSetup(setupScript);
+    const setup = runCaseSetup(setupScript);
     if (setup.exit !== 0) return { setupExit: setup.exit, stderr: setup.stderr };
   }
   const { scratch, tmp, roots } = makeRunFolder(arm.name, setupScript);

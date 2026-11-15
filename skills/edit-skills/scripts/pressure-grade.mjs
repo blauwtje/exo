@@ -22,6 +22,9 @@ const UNSTABLE_BELOW = 0.8;
 const MAX_CLAUSES = 2;
 const Z95 = 1.959964;
 const NEEDED_N_LIMIT = 1000;
+const UNREADABLE_FILE_CODES = new Set(['ENOENT', 'ENOTDIR', 'EISDIR']);
+
+class CriteriaError extends Error {}
 
 function parseTag(body, where) {
   const text = body.trim();
@@ -32,13 +35,13 @@ function parseTag(body, where) {
       new RegExp(regex[2], regex[3]);
       return { kind: regex[1] === '=~' ? 'match' : 'no-match', source: regex[2], flags: regex[3] };
     } catch (error) {
-      throw new Error(`${where}: bad regex: ${error.message}`);
+      throw new CriteriaError(`${where}: bad regex: ${error.message}`);
     }
   }
   for (const [prefix, kind] of Object.entries(OTHER_TAGS)) {
     if (text.startsWith(`${prefix} `)) return { kind, arg: text.slice(prefix.length).trim() };
   }
-  throw new Error(`${where}: unknown grade tag '${text}'`);
+  throw new CriteriaError(`${where}: unknown grade tag '${text}'`);
 }
 
 export function parseCriteria(markdown) {
@@ -65,7 +68,7 @@ export function parseCriteria(markdown) {
     }
     const where = `line ${index + 1}`;
     const tag = TAG.exec(raw);
-    if (!tag) throw new Error(`${where}: top-level bullet has no \`grade: ...\` tag`);
+    if (!tag) throw new CriteriaError(`${where}: top-level bullet has no \`grade: ...\` tag`);
     if (!groups.has(scope)) groups.set(scope, []);
     last = { text: raw.slice(bullet[0].length, tag.index).trim(), tag: parseTag(tag[1], where), context: [] };
     groups.get(scope).push(last);
@@ -87,18 +90,18 @@ export function parseMargins(markdown) {
     const value = MARGIN.exec(raw.trim())?.[1];
     if (value === undefined) return;
     const margin = Number(value);
-    if (!(margin > 0 && margin <= 1)) throw new Error(`line ${index + 1}: margin needs a number above 0 and at most 1, got '${value}'`);
+    if (!(margin > 0 && margin <= 1)) throw new CriteriaError(`line ${index + 1}: margin needs a number above 0 and at most 1, got '${value}'`);
     margins.set(scope, margin);
   });
   return margins;
 }
 
-export function judgeClauses(text) {
+function judgeClauses(text) {
   const bare = text.replace(/`[^`]*`/g, ' ').replace(/\([^)]*\)/g, ' ');
   return 1 + (bare.match(CLAUSE_MARK) ?? []).length;
 }
 
-export function lintCriteria(markdown) {
+function lintCriteria(markdown) {
   const found = [];
   markdown.split('\n').forEach((raw, index) => {
     const tag = TAG.exec(raw);
@@ -136,7 +139,7 @@ function judgeLine(line, { answer, judge, votes }) {
   return { pass, reason, votes: cast.map((vote) => vote.pass), agreement, unstable: agreement < UNSTABLE_BELOW };
 }
 
-export function judgeArguments(judgeCell, prompt) {
+function judgeArguments(judgeCell, prompt) {
   const [model, effort] = judgeCell.split(':');
   return ['-p', prompt, '--model', model, '--effort', effort, '--setting-sources', 'project,local', '--strict-mcp-config'];
 }
@@ -149,18 +152,14 @@ export function defaultJudge(judgeCell) {
   };
 }
 
-function globMatches(pattern, dir) {
-  return fs.globSync(pattern, { cwd: dir });
-}
-
-export function gradeLine(line, { answer, dir, judge, votes = JUDGE_VOTES }) {
+function gradeLine(line, { answer, dir, judge, votes }) {
   const { tag, text } = line;
   if (tag.kind === 'match' || tag.kind === 'no-match') {
     const found = new RegExp(tag.source, tag.flags.replace(/[gy]/g, '')).test(answer);
     return { text, pass: found === (tag.kind === 'match'), reason: `${found ? 'matched' : 'no match for'} /${tag.source}/${tag.flags}` };
   }
   if (tag.kind === 'file' || tag.kind === 'no-file') {
-    const found = globMatches(tag.arg, dir);
+    const found = fs.globSync(tag.arg, { cwd: dir });
     const pass = (found.length > 0) === (tag.kind === 'file');
     return { text, pass, reason: found.length ? `found ${found.join(', ')}` : `nothing matches ${tag.arg}` };
   }
@@ -196,27 +195,27 @@ function wilson(passes, n) {
   return { rate, low: (centre - spread) / scale, high: (centre + spread) / scale };
 }
 
-export function newcombe(armA, armB) {
+function newcombe(armA, armB) {
   const a = wilson(armA.passed, armA.runs);
   const b = wilson(armB.passed, armB.runs);
   const delta = a.rate - b.rate;
   return [delta - Math.sqrt((a.rate - a.low) ** 2 + (b.high - b.rate) ** 2), delta + Math.sqrt((a.high - a.rate) ** 2 + (b.rate - b.low) ** 2)];
 }
 
-export function verdictFor([low, high], margin) {
+function verdictFor([low, high], margin) {
   if (low > -margin) return 'PASS';
   if (high < -margin) return 'FAIL';
   return 'INCONCLUSIVE';
 }
 
-export function runsNeeded(rateA, rateB, margin) {
+function runsNeeded(rateA, rateB, margin) {
   for (let n = 2; n <= NEEDED_N_LIMIT; n += 1) {
     if (verdictFor(newcombe({ passed: Math.round(rateA * n), runs: n }, { passed: Math.round(rateB * n), runs: n }), margin) !== 'INCONCLUSIVE') return n;
   }
   return null;
 }
 
-export function aggregate(grades, { threshold = 1, margin = DEFAULT_MARGIN, margins = new Map() } = {}) {
+export function aggregate(grades, { threshold, margin = DEFAULT_MARGIN, margins }) {
   const cases = [...new Set(grades.map((grade) => grade.case))];
   return cases.map((caseFile) => {
     const rates = {};
@@ -256,6 +255,7 @@ function checkFile(file) {
     }
     return true;
   } catch (error) {
+    if (!(error instanceof CriteriaError || UNREADABLE_FILE_CODES.has(error.code))) throw error;
     console.error(`${file}: ${error.message}`);
     return false;
   }

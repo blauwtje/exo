@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -10,15 +11,17 @@ import { redGreen, testPaths } from '#red-green';
 import { environmentMs, isMain, parseFlags, UsageError } from '#script-flags';
 import { excludeScratch, ScratchExcludeError } from '#scratch-exclude';
 import { SCRATCH_FOLDER } from '#scratch-path';
+import { CHILD_OUTPUT_LIMIT } from '#process-tree';
 import { openGate } from './run-state.mjs';
-import { runTail } from './run-tail.mjs';
+import { SCRIPT } from './run-session-paths.mjs';
 import { allowRules, denyRules } from './run-session-rules.mjs';
 import { appendLog } from './run-session.mjs';
 import { SESSION_REFUSAL, insideClaudeCode } from './run-session-env.mjs';
 import { isFileOnDisk } from './run-session-claude.mjs';
 import { projectEcosystems } from './run-session-ecosystems.mjs';
 import { sandboxSettings } from './run-session-sandbox.mjs';
-import { gitOut, shelveLeftover, untrackedPaths } from './run-worktree.mjs';
+import { gitLine } from '#git';
+import { GIT_LIMIT, shelveLeftover, untrackedPaths } from './run-worktree.mjs';
 import { planPrompt, sessionMode, taskPrompt } from './run-prompts.mjs';
 import { averageLines, clip, deniedLines, detailLines, receiptLines, summaryLines, wallClock } from './run-report.mjs';
 import { Refusal } from './cli-refusal.mjs';
@@ -36,7 +39,6 @@ import { buildTasks } from './run-plan-build.mjs';
 import { failureLine } from '#attempt-fingerprint';
 import { claudeArgs } from './run-session-args.mjs';
 import { cacheLines } from './run-cache-tokens.mjs';
-import { stopDevServer } from '../../../lib/dev-server.mjs';
 
 const RUN_PLAN_USAGE = `Runs a plan unattended, each unlanded task in a fresh headless claude process, then the review tail.
 
@@ -55,11 +57,11 @@ const RUN_PLAN_FLAG_KINDS = {
 };
 
 function requirePlanArgument(argument) {
-  if (argument === undefined || argument.startsWith('--')) throw new UsageError('the first argument names the plan file');
+  if (argument === undefined || argument.startsWith('--')) throw new UsageError(`the first argument names the plan file (got: ${argument ?? 'none'})`);
   return argument;
 }
 
-function runPlanOptions(flags, defaults = {}) {
+function runPlanOptions(flags, defaults) {
   const sessionFlag = flags.session ?? 'auto';
   if (!['auto', 'task', 'plan'].includes(sessionFlag)) throw new UsageError("flag '--session' needs auto, task or plan");
   return {
@@ -96,7 +98,6 @@ function watchStopSignals(ctx) {
 function finishRun(ctx, { stop, exitCode: planned, progressFile }) {
   const { say, run } = ctx;
   const exitCode = stopRun(ctx, stop, planned);
-  stopDevServer(path.join(run.logDir, 'state.json'));
   for (const line of averageLines(ctx.landedStats)) say(line);
   for (const line of receiptLines(ctx.spendLog ?? [])) say(line);
   if (exitCode === 0) appendLog(progressFile, 'RUN COMPLETE\n');
@@ -211,7 +212,7 @@ function sessionRules({ root, planPath, plan, planId, provider }) {
     taskSettings: sandboxSettings(sandbox),
     tailSettings: sandboxSettings(sandbox, { tail: true }),
     learnings,
-    buildPrompt: (number, retryNote = '') => taskPrompt({ plan, planPath, number, root, learnings, sandbox: sandbox.enabled, retryNote })
+    buildPrompt: (number, retryNote) => taskPrompt({ plan, planPath, number, root, learnings, sandbox: sandbox.enabled, retryNote })
   };
 }
 
@@ -226,7 +227,7 @@ function excludeRunScratch(root) {
 
 function readStartCommit({ root, planId, landedAtStart }) {
   const startFile = path.join(root, SCRATCH_FOLDER, 'run-plan', planId, 'start-commit');
-  if (!isFileOnDisk(startFile) && landedAtStart.length === 0) fs.writeFileSync(startFile, `${gitOut(root, ['rev-parse', 'HEAD'])}\n`);
+  if (!isFileOnDisk(startFile) && landedAtStart.length === 0) fs.writeFileSync(startFile, `${gitLine(root, ['rev-parse', 'HEAD'], GIT_LIMIT)}\n`);
   return isFileOnDisk(startFile) ? fs.readFileSync(startFile, 'utf8').trim() : null;
 }
 
@@ -317,8 +318,14 @@ async function finalGate(ctx, { startCommit, progressFile }) {
   const gateStop = (await successGate(ctx, startCommit)) ?? reviewRebaseStop(ctx, progressFile);
   if (gateStop !== null) return { stop: { gate: 'FAIL', ...gateStop }, exitCode: 1 };
   say('all tasks landed, final review start');
-  const tail = runTail({ planPath, root });
-  return { stop: doneStop({ run, gate: tail.gate, plan, branch }), exitCode: tail.gate.status === 0 ? 0 : 1 };
+  const gate = runGateVerify(planPath, root);
+  return { stop: doneStop({ run, gate, plan, branch }), exitCode: gate.status === 0 ? 0 : 1 };
+}
+
+function runGateVerify(planPath, root) {
+  return spawnSync(process.execPath, [SCRIPT.gate, '--plan', planPath, '--root', root], {
+    cwd: root, encoding: 'utf8', maxBuffer: CHILD_OUTPUT_LIMIT, env: { ...process.env, EXO_RUN_TASK: undefined }
+  });
 }
 
 function redGreenSkip(plan, command, startCommit) {
@@ -340,7 +347,7 @@ async function successGate(ctx, startCommit) {
   }
   const evaluate = () => redGreen({
     root, base: startCommit, command, repeat: Number.isInteger(plan.successRepeat?.count) ? plan.successRepeat.count : 1,
-    overlay: testPaths(gitOut(root, ['diff', '--name-only', '-z', `${startCommit}..HEAD`], { trim: false }).split('\0').filter(Boolean)),
+    overlay: testPaths(gitLine(root, ['diff', '--name-only', '-z', `${startCommit}..HEAD`], { ...GIT_LIMIT, trim: false }).split('\0').filter(Boolean)),
     timeoutMs: wallBudgetMs()
   });
   let result = evaluate();

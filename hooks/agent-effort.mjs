@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
-import process from 'node:process';
-import { inSidecall, readHookText } from '#hook-input';
+import { inSidecall } from '#hook-input';
 import { briefedInput, mergedFields, refusalRound, isolationFields, resultToolsFields, workersFields } from '../lib/brief-denials.mjs';
 import { contextDecision, contextFields, roleFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { kindLabels, pairText, runsPassed } from '../lib/kind-labels.mjs';
 import { isMain } from '../lib/script-flags.mjs';
-import { refuseFields, rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
+import { refuseFields, rememberRefusal, runHook } from '../lib/hook-refusal.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 import { recordResearchDispatch, researchFields } from '../lib/research-route.mjs';
@@ -42,7 +41,7 @@ function workerScope(hookInput) {
   return sized ? { fromOrchestrator, fetchDocs } : null;
 }
 
-function readsRewrite(hookInput = {}) {
+function readsRewrite(hookInput) {
   const { tool_name: tool, tool_input: input, cwd } = hookInput;
   if (tool !== 'Agent' || !input) return { input, ambiguous: [], scope: null };
   const { prompt: located, ambiguous } = locatedReads(input.prompt, cwd, hookInput);
@@ -51,7 +50,7 @@ function readsRewrite(hookInput = {}) {
   return { input: prompt === input.prompt ? input : { ...input, prompt }, ambiguous, scope };
 }
 
-export function agentEffort(hookInput = {}, budget = budgetSetting(), rewrite = readsRewrite(hookInput)) {
+export function agentEffort(hookInput, budget, rewrite = readsRewrite(hookInput)) {
   const { tool_name: tool, tool_input: input, effort, cwd } = hookInput;
   if (tool !== 'Agent' || !input) return null;
   const updated = inlineSingleWorker(briefedInput(filled(defaulted(rewrite.input, budget), budget, effort?.level), cwd));
@@ -59,7 +58,7 @@ export function agentEffort(hookInput = {}, budget = budgetSetting(), rewrite = 
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }
 
-function mismatchFields(hookInput = {}, budget = budgetSetting()) {
+function mismatchFields(hookInput, budget) {
   const { tool_name: tool, tool_input: input } = hookInput;
   if (tool !== 'Agent' || !input) return null;
   const resolved = resolvedKind(input, budget);
@@ -81,7 +80,7 @@ function missingFields(size, { fromOrchestrator, fetchDocs }) {
   return size.sized ? [] : ['Reads'];
 }
 
-function workerSizeFields(hookInput = {}, rewrite = readsRewrite(hookInput)) {
+function workerSizeFields(hookInput, rewrite) {
   const { tool_name: tool, tool_input: input, cwd } = hookInput;
   if (tool !== 'Agent' || !input) return null;
   if (input.subagent_type === 'exo:orchestrator' && hookAgentType(hookInput) !== 'orchestrator') return workersFields(input.prompt, hookInput);
@@ -124,7 +123,7 @@ function agentFields(hookInput, budget, rewrite) {
   ]));
 }
 
-export function agentHook(hookInput, budget, enabled) {
+export function agentHook(hookInput, budget = budgetSetting(), enabled) {
   const rewrite = readsRewrite(hookInput);
   const output = agentEffort(hookInput, budget, rewrite);
   const fields = agentFields(hookInput, budget, rewrite);
@@ -141,11 +140,4 @@ export function agentHook(hookInput, budget, enabled) {
   return receipt({ hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: context } }, null);
 }
 
-if (isMain(import.meta.url) && !inSidecall()) {
-  try {
-    const input = JSON.parse(await readHookText());
-    writeHookOutput(input, agentHook(input), 'agent-effort');
-  } catch {
-    process.exitCode = 0;
-  }
-}
+if (isMain(import.meta.url) && !inSidecall()) await runHook('agent-effort', agentHook);

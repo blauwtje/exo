@@ -7,7 +7,7 @@ import path from 'node:path';
 import { after } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
+export const REPOSITORY_ROOT = fileURLToPath(new URL('../', import.meta.url));
 
 const temporaryDirectories = [];
 
@@ -18,8 +18,12 @@ export function restoreEnv(saved) {
   }
 }
 
+export function readHooks() {
+  return JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, 'hooks', 'hooks.json'), 'utf8')).hooks;
+}
+
 export function hookEntries() {
-  const { hooks } = JSON.parse(readFileSync(path.join(REPOSITORY_ROOT, 'hooks', 'hooks.json'), 'utf8'));
+  const hooks = readHooks();
   const groups = Object.entries(hooks).flatMap(([event, eventGroups]) => eventGroups.map((group) => ({ event, group })));
   return groups.flatMap(({ event, group }) => group.hooks.map((hook) => ({ event, matcher: group.matcher, hook })));
 }
@@ -46,10 +50,6 @@ export function tempDir(prefix = 'exo-test-') {
   return directory;
 }
 
-export async function fixture() {
-  return tempDir('ui-design-test-');
-}
-
 after(async () => {
   for (const directory of temporaryDirectories) {
     await fs.rm(directory, { recursive: true, force: true });
@@ -65,7 +65,7 @@ export const GIT_IDENTITY = { GIT_AUTHOR_NAME: 'stub', GIT_AUTHOR_EMAIL: 'stub@e
 let emptyConfigDirectory;
 
 function emptyConfig() {
-  emptyConfigDirectory ??= fixture();
+  emptyConfigDirectory ??= tempDir('ui-design-test-');
   return emptyConfigDirectory;
 }
 
@@ -96,18 +96,16 @@ export async function run(file, args, options = {}) {
   });
 }
 
-export async function jsonFixture(name, value) {
-  const directory = await fixture();
-  const file = path.join(directory, name);
-  await fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
-  return file;
-}
-
 const GIT_SETTINGS = ['-c', 'user.name=exo-test', '-c', 'user.email=exo-test@example.com', '-c', 'commit.gpgsign=false'];
 
 export function git(directory, ...args) {
   const output = execFileSync('git', ['-C', directory, ...GIT_SETTINGS, ...args], { encoding: 'utf8' });
   return output.trim();
+}
+
+export function squashInto(root, branch) {
+  git(root, 'merge', '--squash', branch);
+  git(root, 'commit', '-q', '-m', `squash ${branch}`);
 }
 
 export async function commitFiles(root, files, subject) {
@@ -121,7 +119,7 @@ export async function commitFiles(root, files, subject) {
 }
 
 export async function gitRepository(files) {
-  const root = await fs.realpath(await fixture());
+  const root = await fs.realpath(tempDir('ui-design-test-'));
   git(root, 'init', '-q', '-b', 'main');
   await commitFiles(root, files, 'chore: seed the fixture');
   return root;
@@ -129,7 +127,7 @@ export async function gitRepository(files) {
 
 const FENCE = '```';
 
-export function taskSection({ number, title, dependsOn = 'none', design = false, files, code = '', subject, trailer = true, commit = true }) {
+export function taskSection({ number, title, dependsOn = 'none', design = false, files, subject, trailer = true, commit = true }) {
   const commitLine = trailer
     ? `git commit -m "${subject}" -m "Plan-task: ${number}"`
     : `git commit -m "${subject}"`;
@@ -144,7 +142,7 @@ export function taskSection({ number, title, dependsOn = 'none', design = false,
     '',
     'Step 1: Write it',
     `${FENCE}js`,
-    code,
+    '',
     FENCE,
     'Run: `node --test`',
     'Expected: `pass`',
@@ -154,13 +152,12 @@ export function taskSection({ number, title, dependsOn = 'none', design = false,
   ].join('\n');
 }
 
-export function compactTask({ number, title, dependsOn = 'none', files, data = 'a plain object', design = null, proof = 'node --test' }) {
+export function compactTask({ number, title, dependsOn = 'none', files, data = 'a plain object', proof = 'node --test' }) {
   const filesSegment = `Files: ${files.map((filePath) => `\`${filePath}\``).join(', ')}`;
-  const designSegment = design === null ? '' : ` | Design: ${design}`;
   const proofSegment = proof === null ? '' : ` | Proof: ${proof}`;
   return [
     `### Task ${number}: ${title}`,
-    `Depends on: ${dependsOn} | ${filesSegment} | Data: ${data}${designSegment}${proofSegment}`
+    `Depends on: ${dependsOn} | ${filesSegment} | Data: ${data}${proofSegment}`
   ].join('\n');
 }
 
@@ -170,39 +167,6 @@ export function compactPlanFixture({ tasks }) {
     '',
     '## Goal',
     'The fixture proves the compact plan reader.',
-    '',
-    '## Plan basis',
-    'Repository: /tmp/fixture',
-    'Branch: feat/fixture',
-    '',
-    '## Success criterion',
-    '`node --test` passes.',
-    '',
-    '## Checkpoint',
-    '- Blocks first: none.',
-    '- Parallel: every task.',
-    '- Shared state: none.',
-    '- Smallest safe split: one task per file.',
-    '',
-    '## Tasks',
-    '',
-    ...tasks,
-    ''
-  ].join('\n');
-}
-
-export function briefFixture({ tasks }) {
-  return [
-    '# Brief: compact fixture',
-    '',
-    '## Goal',
-    'The fixture proves a brief with a task list checks like a plan.',
-    '',
-    '## Decisions',
-    '- The badge tone comes from the due date alone, decided during the interview.',
-    '',
-    '## Acceptance',
-    '- An overdue task shows a badge in the warning tone.',
     '',
     '## Plan basis',
     'Repository: /tmp/fixture',

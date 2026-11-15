@@ -1,44 +1,60 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
 import test from 'node:test';
-import { loginReddit, parseArgs } from '../skills/spec/scripts/search.mjs';
-import { BlockedRoute } from '../skills/spec/scripts/sources/http.mjs';
+import { tempDir } from './harness.mjs';
+import { fixturePath, runSearch } from './fixtures/search-cli.mjs';
 
-const script = new URL('../skills/spec/scripts/search.mjs', import.meta.url).pathname;
-const urls = ['a', 'b', 'c', 'd', 'e'].map((id) => `https://www.reddit.com/r/x/comments/${id}/t/`);
+const ids = ['a', 'b', 'c', 'd', 'e'];
+const urls = ids.map((id) => `https://www.reddit.com/r/x/comments/${id}/t/`);
+const BRAVE = '/Applications/Brave Browser.app';
+const RUNNING = {
+  running: true,
+  pages: [
+    { match: 'morechildren', status: 404 },
+    { match: '/_/', status: 404 },
+    { match: '/comments/', file: fixturePath('reddit-thread.json') },
+  ],
+};
+
+function threadsRead(args) {
+  const run = runSearch(['--source', 'reddit', ...args, '--run', tempDir('search-args-')], RUNNING);
+  const reads = run.events.filter((event) => event.kind === 'evaluate').map((event) => event.url.match(/\/comments\/(\w+)\.json/)?.[1]);
+  return reads.filter(Boolean).sort();
+}
 
 test('five urls after one --url are all parsed', () => {
-  assert.deepEqual(parseArgs(['--source', 'reddit', '--url', ...urls, '--run', 'r']).urls, urls);
+  assert.deepEqual(threadsRead(['--url', ...urls]), ids);
 });
 
 test('a repeated --url accumulates', () => {
-  assert.deepEqual(parseArgs(['--url', urls[0], '--url', urls[1]]).urls, urls.slice(0, 2));
+  assert.deepEqual(threadsRead(['--url', urls[0], '--url', urls[1]]), ['a', 'b']);
 });
 
-test('a value no flag owns throws naming it', () => {
-  assert.throws(() => parseArgs(['--source', 'web', 'reddit', '--query', 'x']), /reddit/);
-  assert.throws(() => parseArgs(['stray', '--query', 'x']), /stray/);
-});
-
-test('the script exits non-zero and names an unowned value', () => {
-  const run = spawnSync(process.execPath, [script, '--source', 'web', 'reddit', '--query', 'x', '--run', 'r'], { encoding: 'utf8' });
-  assert.notEqual(run.status, 0);
-  assert.match(run.stderr, /reddit/);
+test('a value no flag owns exits 2 naming it', () => {
+  const unowned = runSearch(['--source', 'web', 'reddit', '--query', 'x', '--run', 'r']);
+  assert.equal(unowned.status, 2);
+  assert.match(unowned.stderr, /reddit/);
+  const stray = runSearch(['stray', '--query', 'x']);
+  assert.equal(stray.status, 2);
+  assert.match(stray.stderr, /stray/);
 });
 
 test('--login is a flag with no value and needs no query', () => {
-  assert.deepEqual(parseArgs(['--source', 'reddit', '--login']), { source: 'reddit', login: true });
+  const run = runSearch(['--source', 'reddit', '--login'], { installed: [BRAVE], platform: 'darwin' });
+  assert.equal(run.status, 0);
+  assert.equal(run.stderr, '');
+  assert.ok(run.events.find((event) => event.kind === 'spawn').args.includes('https://www.reddit.com/login/'));
 });
 
-test('a login that cannot find a browser prints one blocked line naming the fix', async () => {
-  const open = async () => {
-    throw new BlockedRoute('reddit blocked: no Brave or Google Chrome found; install one, then run search.mjs --source reddit --login');
-  };
-  assert.match(await loginReddit(open), /^status: blocked reddit .*install one/);
-  assert.equal(await loginReddit(async () => {}), null);
+test('a login that cannot find a browser prints one blocked line naming the fix', () => {
+  const missing = runSearch(['--source', 'reddit', '--login'], { installed: [], platform: 'darwin' });
+  assert.equal(missing.status, 1);
+  assert.match(missing.stdout, /^status: blocked reddit .*install one/);
+  const found = runSearch(['--source', 'reddit', '--login'], { installed: [BRAVE], platform: 'darwin' });
+  assert.equal(found.stdout, '');
 });
 
 test('--login with another source exits 2 without a browser', () => {
-  const run = spawnSync(process.execPath, [script, '--source', 'web', '--login'], { encoding: 'utf8' });
+  const run = runSearch(['--source', 'web', '--login'], { installed: [BRAVE], platform: 'darwin' });
   assert.equal(run.status, 2);
+  assert.deepEqual(run.events, []);
 });

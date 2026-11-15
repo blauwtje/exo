@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
 import process from 'node:process';
-import { parseStream } from './pressure-stream.mjs';
+import { readPressureStream } from './pressure-stream.mjs';
 
 export const TIMEOUT_MS = 1_800_000;
 
@@ -33,12 +33,12 @@ export function runArm(run) {
     }, TIMEOUT_MS);
     child.on('close', () => {
       clearTimeout(timer);
-      resolve({ ...parseStream(stdout), timedOut, stderr, durationMs: Date.now() - started });
+      resolve({ ...readPressureStream(stdout), timedOut, stderr, durationMs: Date.now() - started });
     });
   });
 }
 
-export function runSetup(setupScript) {
+export function runCaseSetup(setupScript) {
   const setup = spawnSync('bash', [setupScript], { stdio: ['ignore', 'ignore', 'pipe'], encoding: 'utf8' });
   if (setup.error) throw setup.error;
   return { exit: setup.status ?? setup.signal, stderr: setup.stderr };

@@ -1,11 +1,6 @@
-import path from 'node:path';
 import { SIZE_CAPS } from '../budgets.mjs';
 
 const EVAL_CASE_FILES = ['prompt.md', 'case.yaml'];
-
-function relativePaths(repository) {
-  return repository.trackedFiles().map((file) => path.relative(repository.join(), file).split(path.sep).join('/'));
-}
 
 function measure(paths) {
   const evalCases = new Set();
@@ -23,7 +18,7 @@ function measure(paths) {
 }
 
 export function checkSizeBudgets(report, repository, caps = SIZE_CAPS) {
-  const counts = measure(relativePaths(repository));
+  const counts = measure(repository.trackedFiles().map((file) => repository.relative(file)));
   for (const [name, cap] of Object.entries(caps)) {
     const detail = `${counts[name]} against the cap of ${cap}`;
     if (counts[name] > cap) {

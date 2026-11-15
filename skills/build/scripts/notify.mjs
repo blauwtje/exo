@@ -11,7 +11,7 @@ function planName(plan) {
   return path.basename(plan ?? '', '.md').replace(/[^\w.-]/g, '');
 }
 
-export function noticeLine(state, phase, reason) {
+function noticeLine(state, phase, reason) {
   const head = `exo ${planName(state.plan) || state.id}`;
   if (DONE_PHASES.includes(phase)) return `${head}: done (${phase})`;
   if (phase === 'parked') return `${head}: question raised, run ${state.id} parked`;
@@ -24,15 +24,6 @@ function desktopNotice(id, phase) {
   spawnSync('osascript', ['-e', `display notification "exo run ${id.replace(/[^\w.-]/g, '')}: ${phase}" with title "exo"`], { stdio: 'ignore' });
 }
 
-function configuredUrl(root) {
-  try {
-    return resolve('notify', layers(root)).value;
-  } catch (error) {
-    process.stderr.write(`exo: notify setting unreadable: ${error.message}\n`);
-    return '';
-  }
-}
-
 async function post(url, line) {
   const response = await fetch(url, {
     method: 'POST',
@@ -43,12 +34,7 @@ async function post(url, line) {
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
 }
 
-export async function notifyRun(root, state, { phase, reason }) {
-  desktopNotice(state.id, phase);
-  const url = configuredUrl(root);
-  if (url === '') return;
-  const line = noticeLine(state, phase, reason);
-  if (line === null) return;
+async function sendNotice(url, line) {
   if (!/^https?:\/\//i.test(url)) {
     process.stderr.write('exo: notify is not an http(s) url; nothing sent\n');
     return;
@@ -58,4 +44,19 @@ export async function notifyRun(root, state, { phase, reason }) {
   } catch (error) {
     process.stderr.write(`exo: notify not sent: ${error.message}\n`);
   }
+}
+
+export async function notifyRun(root, state, { phase, reason }) {
+  desktopNotice(state.id, phase);
+  let url;
+  try {
+    url = resolve('notify', layers(root)).value;
+  } catch (error) {
+    process.stderr.write(`exo: notify setting unreadable: ${error.message}\n`);
+    return;
+  }
+  if (url === '') return;
+  const line = noticeLine(state, phase, reason);
+  if (line === null) return;
+  await sendNotice(url, line);
 }

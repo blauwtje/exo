@@ -4,8 +4,10 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { orWhenAbsent } from '#absent-path';
+import { parseLine } from '#basics';
 import { memoryDirectory } from '#memory-store';
-import { UsageError, parseFlags, isMain } from '#script-flags';
+import { USAGE_EXIT, UsageError, parseFlags, isMain } from '#script-flags';
 import { GhError, ghText } from './gh-run.mjs';
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -43,11 +45,10 @@ function repoRoot() {
 
 function issueTemplateNames(root) {
   const directory = path.join(root, '.github', 'ISSUE_TEMPLATE');
-  try {
-    return fs.readdirSync(directory).filter((name) => fs.statSync(path.join(directory, name)).isFile()).sort();
-  } catch {
-    return [];
-  }
+  return orWhenAbsent(
+    () => fs.readdirSync(directory).filter((name) => fs.statSync(path.join(directory, name)).isFile()).sort(),
+    []
+  );
 }
 
 const PULL_REQUEST_TEMPLATE_PATHS = [
@@ -123,12 +124,8 @@ function cachePath(cwd) {
 }
 
 function readCache(file) {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return typeof parsed.fetchedAt === 'string' ? parsed : null;
-  } catch {
-    return null;
-  }
+  const parsed = orWhenAbsent(() => parseLine(fs.readFileSync(file, 'utf8')), null);
+  return typeof parsed?.fetchedAt === 'string' ? parsed : null;
 }
 
 function isFresh(entry) {
@@ -190,7 +187,7 @@ function priorityForCategory(category, options) {
   return options[Math.floor((options.length - 1) / 2)];
 }
 
-export function sizeFields({ paths, criteria, shape, shipped = false, blocking = false, options }) {
+function sizeFields({ paths, criteria, shape, shipped, blocking, options }) {
   const size = sizeForCount(Math.max(paths, criteria));
   const category = priorityCategory({ shape, shipped, blocking });
   return { size, estimate: ESTIMATE_BY_SIZE[size], priority: priorityForCategory(category, options) };
@@ -231,7 +228,7 @@ function runSize(flags) {
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     console.error(`usage: repo-fields.mjs --size --paths <n> --criteria <n> --shape spec|report [--shipped] [--blocking] [--options "<highest>,...,<lowest>"]: ${error.message}`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   console.log(JSON.stringify(sizeFields(sizeFlags)));
@@ -244,7 +241,7 @@ function main() {
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     console.error(`usage: repo-fields.mjs [--refresh] | --size --paths <n> --criteria <n> --shape spec|report [--shipped] [--blocking] [--options "<highest>,...,<lowest>"]: ${error.message}`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   if (flags.size) {

@@ -1,18 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { parseLine } from '#basics';
 
 const LEDGER = 'done.jsonl';
 
 function entriesOf(out) {
   const file = path.join(out, LEDGER);
   if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, 'utf8').split('\n').flatMap((line) => {
-    try {
-      return [JSON.parse(line)];
-    } catch {
-      return [];
-    }
-  });
+  return fs.readFileSync(file, 'utf8').split('\n').map(parseLine).filter((entry) => entry !== null);
 }
 
 export function findDone(out, key) {

@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { liveShells, shellStopDecision } from '../lib/live-shells.mjs';
+import { shellStopFields } from '../lib/live-shells.mjs';
 import { tempDir } from './harness.mjs';
 
 const start = (toolId, command = 'npm test') => ({ type: 'assistant', message: { content: [{ type: 'tool_use', id: toolId, name: 'Bash', input: { command, run_in_background: true } }] } });
@@ -23,6 +23,20 @@ function transcript(entries) {
   return file;
 }
 
+const write = (file, extra) => ({ session_id: `s-${process.pid}-${Math.random()}`, agent_id: `shells-${process.pid}-${Math.random().toString(36).slice(2)}`, agent_transcript_path: file, tool_name: 'Write', tool_input: { file_path: '/repo/.exo/run/result.md', content: 'x' }, ...extra });
+
+function shellStopDecision(input) {
+  const fields = shellStopFields(input);
+  if (!fields) return null;
+  return { deny: fields.additionalContext ?? fields.permissionDecisionReason };
+}
+
+function liveShells(file) {
+  const decision = shellStopDecision(write(file));
+  if (!decision) return [];
+  return decision.deny.match(/still run: (.*?)\. Do instead/)[1].split(', ');
+}
+
 test('liveShells lists background shells that were started and neither stopped nor finished', () => {
   const file = transcript([start('t1'), started('t1', 'bg1'), start('t2'), started('t2', 'bg2'), start('t3'), started('t3', 'bg3'), start('t4'), started('t4', 'bg4'), foreground, stop('bg2'), finished('bg3', 'completed'), finished('bg4', 'running')]);
   assert.deepEqual(liveShells(file), ['bg1', 'bg4']);
@@ -34,7 +48,6 @@ test('liveShells is empty for a missing transcript, a foreground-only transcript
   assert.deepEqual(liveShells(transcript([start('t1'), started('t1', 'bg1'), start('t2'), started('t2', 'bg2'), finished('bg1', 'failed'), finished('bg2', 'killed')])), []);
 });
 
-const write = (file, extra) => ({ session_id: `s-${process.pid}-${Math.random()}`, agent_id: `shells-${process.pid}-${Math.random().toString(36).slice(2)}`, agent_transcript_path: file, tool_name: 'Write', tool_input: { file_path: '/repo/.exo/run/result.md', content: 'x' }, ...extra });
 
 test('a result-file Write with a live background shell is refused once, naming the shell, then passes', () => {
   const file = transcript([start('t1'), started('t1', 'bg1')]);

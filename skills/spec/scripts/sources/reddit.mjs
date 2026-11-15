@@ -1,8 +1,8 @@
 import os from 'node:os';
 import { environmentMs } from '#script-flags';
 import { runDefaults } from '../../../build/scripts/run-config.mjs';
+import { BlockedRoute } from './http.mjs';
 import { createClient, threadWait } from './reddit-bucket.mjs';
-import { splitSubreddit } from './reddit-discover.mjs';
 import { commentsAsText, parseMoreChildren, parseSearchPage, parseThread, searchUrl } from './reddit-text.mjs';
 
 const WAIT_CAP_MS = 65_000;
@@ -12,6 +12,13 @@ const THREAD_PATH = /\/(?:r\/(\w+)\/)?(?:comments|posts)\/(\w+)/;
 function settingsOf(context) {
   const configured = context.defaults ?? runDefaults(os.homedir()).reddit ?? {};
   return { concurrency: 3, capacity: 3, refillMs: 400, waitCapMs: WAIT_CAP_MS, threadMs: environmentMs('EXO_REDDIT_THREAD_MS', THREAD_MS), now: context.now ?? Date.now, ...configured };
+}
+
+function splitSubreddit(query, subreddit) {
+  const inline = query.match(/(?:^|\s)r\/(\w+)/);
+  if (!inline) return { subreddit, text: query };
+  const text = query.replace(inline[0], ' ').replace(/\s+/g, ' ').trim();
+  return { subreddit: subreddit || inline[1], text };
 }
 
 async function searchHits(client, { query, limit, subreddit, sort = 'new', time = 'all' }) {
@@ -54,8 +61,9 @@ function addComments(state, part) {
 async function readBatch(client, { id, wait }, state) {
   const ids = state.ids.splice(0, BATCH);
   try {
-    addComments(state, parseMoreChildren(JSON.parse(await client.get(moreChildrenUrl(id, ids), { wait }))));
-  } catch {
+    addComments(state, parseMoreChildren(JSON.parse(await client.get(moreChildrenUrl(id, ids), { wait })), id));
+  } catch (error) {
+    if (!(error instanceof BlockedRoute || error instanceof SyntaxError)) throw error;
     state.ids.unshift(...ids);
     state.single = true;
   }

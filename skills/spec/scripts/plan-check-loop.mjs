@@ -17,7 +17,7 @@ export const realPath = (filePath) => (fs.existsSync(filePath) ? fs.realpathSync
 const repoPath = (filePath) => path.normalize(filePath).split(path.sep).join('/').replace(/^\.\//, '');
 
 function checkLoopLandGate(basis, root) {
-  if (root === undefined || root === null) return [];
+  if (root === undefined) return [];
   const packageJsonPath = path.join(root, 'package.json');
   if (!fs.existsSync(packageJsonPath)) return [];
   const scripts = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).scripts ?? {};
@@ -28,7 +28,7 @@ function checkLoopLandGate(basis, root) {
 }
 
 function checkCriterionRuns(command, root) {
-  if (command === null || root === undefined || root === null || !fs.existsSync(root) || mcpToolCall(command.trim()) !== null) return [];
+  if (command === null || root === undefined || !fs.existsSync(root) || mcpToolCall(command.trim()) !== null) return [];
   const timeoutMs = environmentMs('EXO_CRITERION_TIMEOUT_MS', 120000);
   const run = runTreeSync(command, { cwd: root, timeoutMs });
   if (run.timedOut) return [`loop: the plan's '## Success criterion' '${command}' timed out after ${timeoutMs} ms`];

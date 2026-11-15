@@ -5,16 +5,16 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
+import { commitFiles, tempDir, git, gitRepository, run } from './harness.mjs';
 
 const SHIP = fileURLToPath(new URL('../skills/ship/scripts/ship.mjs', import.meta.url));
 
 async function shipRepository() {
   const seed = await gitRepository({ 'README.md': '# fixture\n' });
-  const bareRoot = await fixture();
+  const bareRoot = await tempDir('ui-design-test-');
   const origin = path.join(bareRoot, 'origin.git');
   execFileSync('git', ['clone', '-q', '--bare', seed, origin]);
-  const cloneRoot = await fs.realpath(await fixture());
+  const cloneRoot = await fs.realpath(await tempDir('ui-design-test-'));
   const workDir = path.join(cloneRoot, 'work');
   execFileSync('git', ['clone', '-q', origin, workDir]);
   return { workDir, origin };
@@ -43,7 +43,7 @@ const GH_STAND_IN = [
 ].join('\n');
 
 async function ghBin(scenario) {
-  const directory = await fixture();
+  const directory = await tempDir('ui-design-test-');
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
   await fs.writeFile(path.join(bin, 'gh'), GH_STAND_IN, { mode: 0o755 });

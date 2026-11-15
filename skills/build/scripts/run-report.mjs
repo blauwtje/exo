@@ -1,7 +1,8 @@
 import path from 'node:path';
 import process from 'node:process';
 import { readDecisions } from '#run-decision';
-import { cacheTokenText } from './run-cache-tokens.mjs';
+import { shortSha } from '#git';
+import { cacheTokenText, thousands } from './run-cache-tokens.mjs';
 import { report as loopReport } from '../../../lib/loop-budget.mjs';
 import { reportLines } from './run-report-lines.mjs';
 import { timelineLines } from '../../../lib/timeline.mjs';
@@ -9,11 +10,9 @@ import { ledgerDirOf } from './run-state.mjs';
 
 export const money = (cost) => `$${cost.toFixed(2)}`;
 
-const thousands = (tokens) => Math.round(tokens / 1000);
-
 export const clip = (text, length) => (text.length > length ? `${text.slice(0, length)}...` : text);
 
-export function clock(ms) {
+function clock(ms) {
   const total = Math.floor(ms / 1000);
   const two = (value) => String(value).padStart(2, '0');
   return total >= 3600 ? `${Math.floor(total / 3600)}:${two(Math.floor(total / 60) % 60)}:${two(total % 60)}` : `${two(Math.floor(total / 60))}:${two(total % 60)}`;
@@ -33,11 +32,11 @@ export const taskSubject = (heading) => heading.replace(/^\s*\w+(?:\([^)]*\))?!?
 
 export const startLine = ({ number, subject, model, effort }) => `task ${number} start: ${subject} · ${model} ${effort}`;
 
-export const landedLine = ({ number, sha, ms, turns, weightedTokens, cost }) => `task ${number} landed ${sha.slice(0, 7)} · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(weightedTokens)}k weighted tokens · ${money(cost)}`;
+export const landedLine = ({ number, sha, ms, turns, weightedTokens, cost }) => `task ${number} landed ${shortSha(sha)} · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(weightedTokens)}k weighted tokens · ${money(cost)}`;
 
-export const planLandedLine = ({ number, sha }) => `task ${number} landed ${sha.slice(0, 7)} · (plan session)`;
+export const planLandedLine = ({ number, sha }) => `task ${number} landed ${shortSha(sha)} · (plan session)`;
 
-export const scriptLandedLine = ({ number, sha }) => `task ${number} landed ${sha.slice(0, 7)} · by script`;
+export const scriptLandedLine = ({ number, sha }) => `task ${number} landed ${shortSha(sha)} · by script`;
 
 export const planSessionLine = ({ count, ms, turns, weightedTokens, cost }) => `plan session: ${count} ${count === 1 ? 'task' : 'tasks'} landed · ${Math.round(ms / 1000)}s · ${turns} turns · ${thousands(weightedTokens)}k weighted tokens · ${money(cost)}`;
 

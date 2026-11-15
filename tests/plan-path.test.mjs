@@ -48,7 +48,7 @@ test('land-task from a worktree finds a relative plan that lives in the main che
 
 test('next-task from a worktree finds a relative plan that lives in the main checkout', async () => {
   const { worktree } = await mainAndWorktree();
-  const result = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', worktree, '--frame'], { cwd: worktree });
+  const result = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', worktree], { cwd: worktree });
   assert.doesNotMatch(result.stderr, /no plan at/);
   assert.equal(result.code, 0, result.stderr);
 });

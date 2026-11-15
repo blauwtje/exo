@@ -2,15 +2,16 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { decide, formatLine, loadKinds, readLedger, recordRound, report, roundCap } from '../lib/loop-budget.mjs';
+import { decide, formatLine, recordRound, report, roundCap } from '../lib/loop-budget.mjs';
 import { execFileSync } from 'node:child_process';
 import { kindWallMs } from '../lib/loop-budget.mjs';
 import { tempDir } from './harness.mjs';
 
 const root = path.resolve(import.meta.dirname, '..');
+const kinds = JSON.parse(fs.readFileSync(path.join(root, 'lib', 'loop-kinds.json'), 'utf8'));
 
 test('every kind has a cap, a progress count and an existing owner script', () => {
-  for (const [kind, entry] of Object.entries(loadKinds())) {
+  for (const [kind, entry] of Object.entries(kinds)) {
     assert.ok(entry.cap > 0, kind);
     assert.ok(entry.progress, kind);
     assert.ok(fs.existsSync(path.join(root, entry.owner)), `${kind} owner ${entry.owner}`);
@@ -48,7 +49,6 @@ test('the ledger persists rows and the report totals per kind', () => {
   const dir = tempDir('exo-loop-');
   recordRound(dir, { kind: 'fix', openAfter: 3, wallMs: 10, costUsd: 0.5 });
   recordRound(dir, { kind: 'fix', openBefore: 3, openAfter: 1, wallMs: 20, costUsd: 0.25 });
-  assert.equal(readLedger(dir).length, 2);
   assert.equal(report(dir), 'kind\trounds\twall_ms\tcost_usd\nfix\t2\t30\t0.75');
 });
 
@@ -84,6 +84,6 @@ test('pollUntil stops at the wall cap and records a wait row', async () => {
   assert.equal(stopped, false);
   const ready = await pollUntil(() => true, { runDir: dir });
   assert.equal(ready, true);
-  assert.deepEqual(readLedger(dir).map((row) => row.kind), ['wait', 'wait']);
+  assert.match(report(dir), /^wait\t2\t/m);
   assert.ok(kindWallMs('wait', {}) > 0);
 });

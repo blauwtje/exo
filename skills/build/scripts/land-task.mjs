@@ -1,6 +1,6 @@
+import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { frameOf } from '#plan-frame';
 import { landedTasks, planIdOf, proofRecordPath, decisionsPathOf } from '#plan-landed';
@@ -10,17 +10,18 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { appendRuledOut } from '../../../lib/ruled-out.mjs';
 import { forCaller, keepLines } from '#script-output';
 import { resolvePlanPath } from '#checkout';
-import { chainedForCaller, refreshProgress } from './next-task.mjs';
-import { nextTaskReport } from './next-task-report.mjs';
+import { refreshProgress, taskNumberFlag } from './next-task.mjs';
 import { refusalTail } from '../../../lib/refusal-handlers.mjs';
 import { dockerHost } from '../../../lib/services.mjs';
 import { LandingError, PlanDriftError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';
 import { parsePin, refuseOutsidePin, refuseMismatchedToplevel } from './land-pin.mjs';
 import { fixLand } from './land-fix.mjs';
+import { scriptPath } from './run-session-paths.mjs';
+import { runDefaults } from './run-config.mjs';
 import { quiet, quietText } from './land-proof.mjs';
 import { appendTimeline } from '../../../lib/timeline.mjs';
-import { proofEvidenceOf } from './land-gate.mjs';
+import { unlandedEvidenceOf } from './land-gate.mjs';
 import { refuseAlreadyLanded, refuseUnfinishedMerge, taskChangedPaths } from './land-refusals.mjs';
 import { checkTask, checkCodeRules } from './land-check.mjs';
 import { taskOf, refuseBeforeProof, proveTask } from './land-prove.mjs';
@@ -58,8 +59,7 @@ function writeProofRecord({ root, planId, number, proofs, redLine }) {
 
 function nextLine(wave, planPath, root) {
   if (wave.length === 0) return waveLine(wave);
-  const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'next-task.mjs');
-  return `Then: node "${script}" --block --plan "${planPath}" --root "${root}"`;
+  return `Then: node "${scriptPath('next-task.mjs')}" --block --plan "${planPath}" --root "${root}"`;
 }
 
 
@@ -67,7 +67,7 @@ function landingReport({ plan, frame, root, planPath, number, sha, landed, proof
   const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (${proofOutcomeOf(tail)})`, ...tail].join('\n')}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
   const route = planRoute(plan.tasks);
-  const wave = nextWave(plan.tasks, landed, { worktreeSetup: route.route === 'inline' || isolatedCheckout(root, frame.repository) ? null : frame.worktreeSetup, parallel: frame.parallel });
+  const wave = nextWave(plan.tasks, landed, { worktreeSetup: route.route === 'inline' || isolatedCheckout(root, frame.repository) ? null : frame.worktreeSetup, parallel: frame.parallel, limit: runDefaults(os.homedir()).waveLimit });
   return `Committed: ${sha} Task ${number}\n${proofLines}${gateLine}${pendingLine}Landed: ${landed.join(', ')}\n${routeLine(route)}\n${nextLine(wave, planPath, root)}\n`;
 }
 
@@ -77,12 +77,6 @@ const NEXT_REPEATS = /^(?:Landed|Route|Then): /;
 
 export function landingForCaller(text, { followed = false } = {}) {
   return keepLines(text, (line) => !PROOF_TAIL.test(line) && !(followed && NEXT_REPEATS.test(line)));
-}
-
-function withNext(output, { planPath, planText, root }) {
-  const kept = output.split('\n').filter((line) => !line.startsWith('Then: ')).join('\n');
-  const next = nextTaskReport({ planPath, planText, root, open: true });
-  return { full: `${kept}${next}`, shown: `${landingForCaller(output, { followed: true })}${chainedForCaller(next)}` };
 }
 
 export function landTask({ planText, number, root, reportText = null, reportPath = null, planPath, pin = null, docker = dockerHost }) {
@@ -121,7 +115,7 @@ function landPlanned({ planText, number, root, reportText, reportPath, planPath,
   const task = taskOf(plan, number);
   refuseAlreadyLanded(plan, task, { root, planId });
   const { block, warning: filesWarning, outside } = refuseBeforeProof(plan, task, { root, planPath, pin, planId, reportText, reportPath });
-  const pendingEvidence = proofEvidenceOf(plan, root, planId);
+  const pendingEvidence = unlandedEvidenceOf({ plan, root, planId });
   const { proofs, pending, redLine, warning: redWarning } = proveTask(task, { root, planPath, docker, reportText, reportPath, pendingEvidence });
   const frame = frameOf(plan.frame);
   const { changed, candidate, gateLine } = stageCandidate({ plan, task, frame, block, outside, root, planId, reportText });
@@ -135,40 +129,39 @@ function landPlanned({ planText, number, root, reportText, reportPath, planPath,
 }
 
 const USAGE = [
-  'usage: land-task.mjs --plan <plan> --task <n> [--root <dir>] [--report <file>|-] [--check] [--code-rules] [--next]',
+  'usage: land-task.mjs --plan <plan> --task <n> [--root <dir>] [--report <file>|-] [--check] [--code-rules]',
   '       land-task.mjs --fix <subject> [--body <text>] [--plan <plan>] [--root <dir>]',
-  "Lands a plan task from its implementer report (a file, or stdin with `--report -`), or with --check validates the report without committing; --code-rules runs only the code-rule check, --next appends the next-task report, --fix commits a repair with no Plan-task trailer, --body adds the commit body after a blank line. Exits 2 on a usage error."
+  "Lands a plan task from its implementer report (a file, or stdin with `--report -`), or with --check validates the report without committing; --code-rules runs only the code-rule check, --fix commits a repair with no Plan-task trailer, --body adds the commit body after a blank line. Exits 2 on a usage error."
 ].join('\n');
 
-function callerParts(output, { run, next, planPath, planText, root }) {
+function callerParts(output, { run }) {
   if (run !== landTask) return { full: output, shown: output };
-  if (next) return withNext(output, { planPath, planText, root });
   return { full: output, shown: landingForCaller(output) };
 }
 
 function main(argv) {
-  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', body: 'value', check: 'boolean', 'code-rules': 'boolean', next: 'boolean' }, { usage: USAGE });
+  const flags = parseFlags(argv, { plan: 'value', task: 'value', root: 'value', report: 'value', fix: 'value', body: 'value', check: 'boolean', 'code-rules': 'boolean' }, { usage: USAGE });
   const root = flags.root ?? process.cwd();
   const plan = resolvePlanPath({ plan: flags.plan, root: flags.root });
   const pin = parsePin(process.env.EXO_RUN_TASK);
   const codeRulesOnly = flags['code-rules'] === true;
   if (pin !== null && !codeRulesOnly && flags.check !== true) quiet.file = proofRecordPath(root, pin.planId, pin.number);
   if (flags.fix !== undefined) {
-    process.stdout.write(fixLand({ root, subject: flags.fix, body: flags.body ?? null, plan: plan ?? null, pin }));
+    process.stdout.write(fixLand({ root, subject: flags.fix, body: flags.body, plan, pin }));
     return;
   }
   if (flags.plan === undefined) throw new UsageError("flag '--plan' names the plan file");
-  if (!/^\d+$/.test(flags.task ?? '')) throw new UsageError("flag '--task' needs a task number");
+  const number = taskNumberFlag(flags);
   if (!fs.existsSync(plan)) throw new UsageError(`no plan at '${flags.plan}'`);
   const planText = fs.readFileSync(plan, 'utf8');
   if (codeRulesOnly) {
-    process.stdout.write(checkCodeRules({ planText, number: Number(flags.task), root, planPath: plan, pin }));
+    process.stdout.write(checkCodeRules({ planText, number, root, planPath: plan, pin }));
     return;
   }
   const { reportPath, reportText } = reportFlagOf(flags.report);
   const run = flags.check === true ? checkTask : landTask;
-  const output = run({ planText, number: Number(flags.task), root, reportText, reportPath, planPath: plan, pin });
-  const { full, shown } = callerParts(output, { run, next: flags.next === true, planPath: plan, planText, root });
+  const output = run({ planText, number, root, reportText, reportPath, planPath: plan, pin });
+  const { full, shown } = callerParts(output, { run });
   process.stdout.write(quiet.file === null ? forCaller({ root, name: `land-task-${flags.task}`, full, shown }) : quietText(full, true));
   if (run === landTask) refreshProgress({ planPath: plan, planText, root });
 }

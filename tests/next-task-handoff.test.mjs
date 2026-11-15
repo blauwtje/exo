@@ -3,41 +3,54 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { SCRATCH_FOLDER } from '../lib/scratch-path.mjs';
-import { taskBrief } from '../skills/build/scripts/next-task-brief.mjs';
-import { commitFiles, git } from './harness.mjs';
-import { landingCheckout } from './land-task-fixture.mjs';
+import { commitFiles, git, planFixture, run } from './harness.mjs';
+import { landingCheckout, taskSection } from './land-task-fixture.mjs';
 
-function briefTask(number) {
-  return { number, files: [], section: `### Task ${number}: x`, runs: [], proof: null, design: false };
-}
+const NEXT_TASK = new URL('../skills/build/scripts/next-task.mjs', import.meta.url).pathname;
 
-const frame = { goal: 'goal', successCriterion: null, nonGoals: [], context: [], decisions: [], assumptions: [], visualDirection: null };
+const PLAN = planFixture({ tasks: [taskSection({ number: 1, title: 'Mine', files: ['- Create: `lib/mine.mjs`'], subject: 'feat(app): mine' })] });
 
 async function checkpointCommit(root, file, trailer) {
   await commitFiles(root, { [file]: `${trailer}\n` }, `checkpoint: ${trailer}\n\nPlan-checkpoint: ${trailer}`);
   return git(root, 'rev-parse', '--short', 'HEAD');
 }
 
-test('a brief names the existing handoff file of its task', async () => {
-  const { root } = await landingCheckout();
-  const handoff = path.join(root, SCRATCH_FOLDER, 'handoff-task-1.md');
+async function writtenBrief({ root, planPath }) {
+  const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root });
+  return fs.readFile(result.stdout.match(/^Brief: (.+)$/m)[1], 'utf8');
+}
+
+async function writeHandoff(root, number) {
+  const handoff = path.join(root, SCRATCH_FOLDER, `handoff-task-${number}.md`);
   await fs.mkdir(path.dirname(handoff), { recursive: true });
   await fs.writeFile(handoff, 'left off at step 2\n');
-  assert.match(taskBrief(briefTask(1), frame, root), new RegExp(`^Handoff: .*${handoff}`, 'm'));
-  assert.doesNotMatch(taskBrief(briefTask(2), frame, root), /^Handoff:/m);
+  return handoff;
+}
+
+async function planCheckout() {
+  const checkout = await landingCheckout();
+  await commitFiles(checkout.root, { 'docs/plans/fixture.md': PLAN }, 'chore: plan');
+  return checkout;
+}
+
+test('a brief names the existing handoff file of its task', async () => {
+  const checkout = await planCheckout();
+  await writeHandoff(checkout.root, 2);
+  assert.doesNotMatch(await writtenBrief(checkout), /^Handoff:/m);
+  const handoff = await writeHandoff(checkout.root, 1);
+  assert.match(await writtenBrief(checkout), new RegExp(`^Handoff: .*${handoff}`, 'm'));
 });
 
 test('a brief names the latest Plan-checkpoint commit of its task only', async () => {
-  const { root } = await landingCheckout();
-  await checkpointCommit(root, 'one.txt', 'demo/1');
-  const second = await checkpointCommit(root, 'two.txt', 'demo/1');
-  await checkpointCommit(root, 'three.txt', 'demo/2');
-  assert.match(taskBrief(briefTask(1), frame, root), new RegExp(`^Plan-checkpoint: ${second}$`, 'm'));
+  const checkout = await planCheckout();
+  await checkpointCommit(checkout.root, 'one.txt', 'demo/1');
+  const second = await checkpointCommit(checkout.root, 'two.txt', 'demo/1');
+  await checkpointCommit(checkout.root, 'three.txt', 'demo/2');
+  assert.match(await writtenBrief(checkout), new RegExp(`^Plan-checkpoint: ${second}$`, 'm'));
 });
 
 test('a brief with no handoff and no checkpoint names neither', async () => {
-  const { root } = await landingCheckout();
-  const brief = taskBrief(briefTask(1), frame, root);
+  const brief = await writtenBrief(await planCheckout());
   assert.doesNotMatch(brief, /^Handoff:/m);
   assert.doesNotMatch(brief, /^Plan-checkpoint:/m);
 });

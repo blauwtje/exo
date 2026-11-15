@@ -5,9 +5,9 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { headMessage } from './land-git.mjs';
 import { gitText } from '#git';
 
-export const CHECKPOINT_TRAILER = /^(?:Plan-checkpoint|Checkpoint): /m;
+const CHECKPOINT_TRAILER = /^(?:Plan-checkpoint|Checkpoint): /m;
 
-export const handoffPathOf = (root, number) => path.join(root, SCRATCH_FOLDER, `handoff-task-${number}.md`);
+const handoffPathOf = (root, number) => path.join(root, SCRATCH_FOLDER, `handoff-task-${number}.md`);
 
 function checkpointRun(root) {
   let count = 0;
@@ -24,9 +24,9 @@ export function foldCheckpoints(root) {
   return count;
 }
 
-export const STDIN_REPORT = 'stdin';
+const STDIN_REPORT = 'stdin';
 
-export const implementerReportPath = (root, number) => path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`);
+const implementerReportPath = (root, number) => path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`);
 
 function fileReportOf(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
@@ -49,7 +49,7 @@ export function reportFlagOf(report) {
 
 const filled = (text) => text !== null && text.trim() !== '';
 
-export function reportSourceOf({ root, number, reportText = null, reportPath = null }) {
+export function reportSourceOf({ root, number, reportText, reportPath }) {
   const named = reportPath ?? (reportText === null ? implementerReportPath(root, number) : STDIN_REPORT);
   if (filled(reportText)) return { reportText, reportPath: named };
   const file = named === STDIN_REPORT ? implementerReportPath(root, number) : named;

@@ -31,22 +31,21 @@ test('a stray path beside a refused report is refused once for the report, and c
   const { compactCheckout } = await import('./land-task-fixture.mjs');
   const fs = await import('node:fs/promises');
   const path = await import('node:path');
-  const { readLedger } = await import('../lib/loop-budget.mjs');
+  const { report } = await import('../lib/loop-budget.mjs');
   const { root, planPath } = await compactCheckout();
   await fs.writeFile(path.join(root, 'stray.txt'), 'x\n');
   const refused = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });
   assert.equal(refused.code, 1);
   assert.doesNotMatch(refused.stderr, /outside Files/);
   assert.match(refused.stderr, /LOOP refusal CONTINUE/);
-  const rows = readLedger(path.join(root, '.exo/refusals/task-1'));
-  assert.equal(rows.length, 1);
+  assert.match(report(path.join(root, '.exo/refusals/task-1')), /^refusal\t1\t/m);
 });
 
 test('a missing Data literal and a missing report are refused together, and count one refusal round', async () => {
   const { compactCheckout, compactTask } = await import('./land-task-fixture.mjs');
   const { compactPlanFixture } = await import('./harness.mjs');
   const path = await import('node:path');
-  const { readLedger } = await import('../lib/loop-budget.mjs');
+  const { report } = await import('../lib/loop-budget.mjs');
   const plan = compactPlanFixture({ tasks: [
     compactTask({ number: 1, title: 'feat(app): greet', files: ['src/app.js'], data: '`missingLiteralName` in the greeting', proof: 'node tests/app.test.mjs' })
   ] });
@@ -55,5 +54,5 @@ test('a missing Data literal and a missing report are refused together, and coun
   assert.equal(refused.code, 1);
   assert.match(refused.stderr, /missingLiteralName/);
   assert.match(refused.stderr, /no build report at /);
-  assert.equal(readLedger(path.join(root, '.exo/refusals/task-1')).length, 1);
+  assert.match(report(path.join(root, '.exo/refusals/task-1')), /^refusal\t1\t/m);
 });

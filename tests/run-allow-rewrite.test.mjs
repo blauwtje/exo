@@ -15,7 +15,7 @@ test('an allowed command with an = word stays allowed after the Bash shell fix',
   const rules = allowRules({ root: '/tmp/root', planPath: '/tmp/root/plan.md', plan: { frame: {}, tasks: [] }, decisions: false });
   const command = 'grep -n =foo f';
   assert.equal(matches(rules, command), true, 'precondition: the original command is allowed');
-  process.env.EXO_RUN_SESSION = childEnv(null, { name: 'claude', env: {}, effort: null, promptCacheTtl: null }).EXO_RUN_SESSION;
+  process.env.EXO_RUN_SESSION = childEnv(null, { name: 'claude', env: {}, effort: null, promptCacheTtl: null }, { handoff: null, ecosystemEnv: {}, repair: false, refuseCommits: null }).EXO_RUN_SESSION;
   try {
     const output = await dispatchBash({ hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command } }, undefined, () => false);
     const rewritten = output?.hookSpecificOutput?.updatedInput?.command ?? command;

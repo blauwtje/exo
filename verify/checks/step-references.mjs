@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-
 const LOAD_SENTENCE = /Load the `exo:(?<skill>[a-z0-9-]+)` skill/;
 const STEP_REFERENCE = /\bSteps? (?<first>\d+)(?:(?: to |-)(?<last>\d+)| and (?<second>\d+))?/g;
 const FRONT_MATTER = /^---\r?\n(?<data>[\s\S]*?)\r?\n---\r?\n/;
@@ -41,9 +39,7 @@ function stepReferences(body) {
 
 function stepsOf(repository, skill) {
   const skillFile = repository.join('skills', skill, 'SKILL.md');
-  if (!fs.existsSync(skillFile)) return null;
-  const numbers = [...repository.text(skillFile).matchAll(NUMBERED_STEP)].map((match) => Number(match[1]));
-  return numbers.length === 0 ? null : new Set(numbers);
+  return new Set([...repository.text(skillFile).matchAll(NUMBERED_STEP)].map((match) => Number(match[1])));
 }
 
 function ownerOf(relativePath) {

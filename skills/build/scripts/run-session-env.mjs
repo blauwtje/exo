@@ -10,7 +10,7 @@ const SESSION_MARKERS = [
 ];
 
 export const SESSION_REFUSAL = 'exo run starts headless claude -p sessions and runs only from a terminal, not inside a Claude Code session; in the session run /exo:build <plan>, which builds with subagents';
-export const insideClaudeCode = (env = process.env) => Boolean(env.CLAUDECODE);
+export const insideClaudeCode = () => Boolean(process.env.CLAUDECODE);
 
 const SESSION_GIT_HOOKS = path.join(SCRIPTS_DIR, 'session-git-hooks');
 
@@ -26,7 +26,7 @@ function refusingCommits(env, root) {
   };
 }
 
-export function childEnv(pin, provider, { handoff = null, ecosystemEnv = {}, repair = false, refuseCommits = null } = {}) {
+export function childEnv(pin, provider, { handoff, ecosystemEnv, repair, refuseCommits }) {
   const env = { ...process.env };
   for (const name of SESSION_MARKERS) delete env[name];
   for (const name of ['EXO_RUN_TASK', 'EXO_RUN_HANDOFF', 'EXO_RUN_REPAIR', 'EXO_RUN_SESSION']) delete env[name];

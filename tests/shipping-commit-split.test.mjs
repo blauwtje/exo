@@ -5,12 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture } from './harness.mjs';
+import { tempDir } from './harness.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/ship/scripts/commit-split.mjs', import.meta.url));
 
 async function isolatedEnv() {
-  const root = await fs.realpath(await fixture());
+  const root = await fs.realpath(await tempDir('ui-design-test-'));
   const globalConfig = path.join(root, 'gitconfig');
   await fs.writeFile(globalConfig, '');
   return { ...process.env, GIT_CONFIG_GLOBAL: globalConfig, GIT_CONFIG_NOSYSTEM: '1', HOME: root };
@@ -29,7 +29,7 @@ async function write(dir, files) {
 
 async function dirtyRepository() {
   const env = await isolatedEnv();
-  const dir = await fs.realpath(await fixture());
+  const dir = await fs.realpath(await tempDir('ui-design-test-'));
   git(dir, env, 'init', '-q', '-b', 'main');
   git(dir, env, 'config', 'user.email', 'user@example.com');
   git(dir, env, 'config', 'user.name', 'Jane Doe');
@@ -48,7 +48,7 @@ function planFile(dir, groups) {
 }
 
 function runSplit(dir, env, args) {
-  return spawnSync('node', [SCRIPT, '--dir', dir, ...args], { encoding: 'utf8', env });
+  return spawnSync('node', [SCRIPT, ...args], { encoding: 'utf8', env, cwd: dir });
 }
 
 const FULL_PLAN = [

@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
+import { orWhenAbsent } from '#absent-path';
 import { createWorktree, worktreePath } from '#checkout';
 import { defaultBranch, gitLine, gitResult } from '#git';
 import { readPluginRoot } from '#plugin-pointer';
@@ -45,11 +46,7 @@ function pluginPointer() {
 }
 
 export function isPluginCheckout(root) {
-  try {
-    return fs.realpathSync(pluginPointer()) === fs.realpathSync(root);
-  } catch {
-    return false;
-  }
+  return orWhenAbsent(() => fs.realpathSync(pluginPointer()) === fs.realpathSync(root), false);
 }
 
 export function refuseLoadedCheckout(root, script) {

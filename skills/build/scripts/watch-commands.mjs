@@ -2,9 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { environmentMs } from '#script-flags';
+import { orWhenAbsent } from '#absent-path';
+import { parseLine } from '#basics';
+import { isAlive } from '#land-lock';
 import { pollUntil } from '../../../lib/loop-budget.mjs';
-import { CLI, watchCommand } from './cli-paths.mjs';
-import { FINAL_PHASES, isAlive, keptDir, listRuns, readGates, readState, runDir } from './run-state.mjs';
+import { CLI, watchCommand } from './run-session-paths.mjs';
+import { FINAL_PHASES, keptDir, listRuns, readGates, readState, runDir } from './run-state.mjs';
 import { Refusal, checkoutRoot } from './cli-refusal.mjs';
 
 const WAIT_MS = 6 * 60 * 60 * 1000;
@@ -17,7 +20,7 @@ function phaseText(state) {
 }
 
 export function statusCommand(args) {
-  const root = checkoutRoot();
+  const root = checkoutRoot(process.cwd());
   const runs = args[0] === undefined ? listRuns(root) : [readState(root, args[0])].filter(Boolean);
   if (runs.length === 0) throw new Refusal(args[0] === undefined ? 'no runs in this checkout' : `no run ${args[0]} in this checkout`);
   for (const run of runs) {
@@ -31,13 +34,11 @@ export function statusCommand(args) {
 }
 
 function findRun(root, id) {
-  try {
-    const dir = keptDir(root, id);
-    return { state: JSON.parse(fs.readFileSync(path.join(dir, 'state.json'), 'utf8')), dir, kept: true };
-  } catch {
-    const state = readState(root, id);
-    return state === null ? null : { state, dir: runDir(root, id), kept: false };
-  }
+  const dir = keptDir(root, id);
+  const kept = orWhenAbsent(() => parseLine(fs.readFileSync(path.join(dir, 'state.json'), 'utf8')), null);
+  if (kept !== null) return { state: kept, dir, kept: true };
+  const state = readState(root, id);
+  return state === null ? null : { state, dir: runDir(root, id), kept: false };
 }
 
 function finishWait(state, id, dir) {
@@ -73,9 +74,9 @@ function settledExit(root, id) {
 }
 
 export async function waitCommand(args) {
-  const root = checkoutRoot();
+  const root = checkoutRoot(process.cwd());
   const id = args[0];
-  if (id === undefined || args.length !== 1) throw new Refusal('usage: exo wait <id>');
+  if (id === undefined || args.length !== 1) throw new Refusal(`usage: exo wait <id> (got: ${args.join(' ') || 'no arguments'})`);
   const settled = await pollUntil(() => runSettled(root, id), { intervalMs: POLL_MS, wallMs: environmentMs('EXO_WAIT_MS', WAIT_MS) });
   if (settled) return settledExit(root, id);
   const { state } = findRun(root, id);

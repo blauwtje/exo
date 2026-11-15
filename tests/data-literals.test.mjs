@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
-import { dataLiterals, literalFinder, literalFragments, textPresence } from '../lib/data-literals.mjs';
+import { dataLiterals, literalFinder, literalFragments } from '../lib/data-literals.mjs';
 import { gitRepository } from './harness.mjs';
 
 test('the finder finds a tracked path and a text inside a tracked file, and refuses an absent literal', async () => {
@@ -11,8 +11,8 @@ test('the finder finds a tracked path and a text inside a tracked file, and refu
   assert.equal(found('src/widget.mjs'), true);
   assert.equal(found('quartz-lantern'), true);
   assert.equal(found('src/absent-file.mjs'), false);
-  assert.equal(textPresence(root, null)('quartz-lantern'), true);
-  assert.equal(textPresence(root, null)('nothing-here-at-all'), false);
+  assert.equal(literalFinder(root, null)('quartz-lantern'), true);
+  assert.equal(found('nothing-here-at-all'), false);
 });
 
 test('the finder finds a literal or fragment that names a run of whole path segments', async () => {

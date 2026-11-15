@@ -12,10 +12,15 @@ async function get(url, { fetchImpl, gate, headers }) {
   return response.ok ? response : null;
 }
 
+function nullForBadJson(error) {
+  if (!(error instanceof SyntaxError)) throw error;
+  return null;
+}
+
 async function closestTimestamp(url, context) {
   const response = await get(`${AVAILABLE}${encodeURIComponent(url)}`, context);
   if (!response) return null;
-  const body = await response.json().catch(() => null);
+  const body = await response.json().catch(nullForBadJson);
   const closest = body?.archived_snapshots?.closest;
   if (!closest?.available || !/^\d{8,14}$/.test(closest.timestamp ?? '')) return null;
   return closest.timestamp;

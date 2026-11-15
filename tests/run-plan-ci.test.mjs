@@ -11,7 +11,7 @@ const SCRIPTS = fileURLToPath(new URL('../skills/build/scripts/', import.meta.ur
 const RENDER = path.join(SCRIPTS, 'ci-render.mjs');
 const WORKFLOW = path.join('.github', 'workflows', 'exo-run.yml');
 
-const render = (root, ...flags) => spawnSync(process.execPath, [RENDER, '--root', root, ...flags], { encoding: 'utf8' });
+const render = (root, ...flags) => spawnSync(process.execPath, [RENDER, ...flags], { cwd: root, encoding: 'utf8' });
 
 function renderedWorkflow() {
   const root = tempDir('exo-ci-');
@@ -80,24 +80,40 @@ test('a dry run on a fixture repo writes the workflow once and keeps a user edit
   assert.match(fs.readFileSync(target, 'utf8'), /# mine/);
   assert.equal(render(root, '--force').status, 0);
   assert.doesNotMatch(fs.readFileSync(target, 'utf8'), /# mine/);
-  assert.notEqual(render(root, '--label', 'x y').status, 0);
 });
+
+const STUB_EXO_CLI = `import { spawnSync } from 'node:child_process';
+const git = (...args) => spawnSync('git', args, { stdio: 'ignore' });
+git('switch', '-c', 'feature');
+git('commit', '--allow-empty', '-m', 'work');
+`;
+
+function stubbedCiRun() {
+  const plugin = tempDir('exo-ci-plugin-');
+  const scripts = path.join(plugin, 'skills', 'build', 'scripts');
+  fs.mkdirSync(scripts, { recursive: true });
+  for (const name of ['ci-run.mjs', 'ci-plan-path.mjs', 'run-session-paths.mjs']) fs.copyFileSync(path.join(SCRIPTS, name), path.join(scripts, name));
+  fs.writeFileSync(path.join(scripts, 'exo-cli.mjs'), STUB_EXO_CLI);
+  const pluginRoot = path.join(SCRIPTS, '..', '..', '..');
+  fs.copyFileSync(path.join(pluginRoot, 'package.json'), path.join(plugin, 'package.json'));
+  for (const folder of ['lib', 'verify', 'harnesses']) fs.symlinkSync(path.join(pluginRoot, folder), path.join(plugin, folder));
+  return path.join(scripts, 'ci-run.mjs');
+}
 
 test('the agent result bundles as one ref the push job can fetch', () => {
   const root = tempDir('exo-ci-bundle-');
-  const git = (...args) => spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 's', GIT_AUTHOR_EMAIL: 's@example.com', GIT_COMMITTER_NAME: 's', GIT_COMMITTER_EMAIL: 's@example.com' } });
+  const identity = { ...process.env, GIT_AUTHOR_NAME: 's', GIT_AUTHOR_EMAIL: 's@example.com', GIT_COMMITTER_NAME: 's', GIT_COMMITTER_EMAIL: 's@example.com' };
+  const git = (...args) => spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', env: identity });
   git('init', '-b', 'main');
   git('commit', '--allow-empty', '-m', 'base');
-  const base = git('rev-parse', 'HEAD').stdout.trim();
-  git('switch', '-c', 'feature');
-  git('commit', '--allow-empty', '-m', 'work');
   const out = path.join(tempDir('exo-ci-out-'), 'result');
-  return import(path.join(SCRIPTS, 'ci-run.mjs')).then(({ bundleResult }) => {
-    assert.equal(bundleResult(root, base, out).branch, 'feature');
-    const target = tempDir('exo-ci-fetch-');
-    spawnSync('git', ['init', '-b', 'main', target]);
-    spawnSync('git', ['-C', target, 'fetch', root, 'main']);
-    const fetched = spawnSync('git', ['-C', target, 'fetch', path.join(out, 'result.bundle'), 'exo-result:refs/exo/incoming'], { encoding: 'utf8' });
-    assert.equal(fetched.status, 0, fetched.stderr);
-  });
+  const output = path.join(tempDir('exo-ci-output-'), 'github-output');
+  const ran = spawnSync(process.execPath, [stubbedCiRun()], { cwd: root, encoding: 'utf8', env: { ...identity, EXO_PLAN: 'docs/plans/x.md', EXO_RESULT_DIR: out, GITHUB_OUTPUT: output } });
+  assert.equal(ran.status, 0, ran.stderr);
+  assert.equal(fs.readFileSync(output, 'utf8'), 'has-result=true\n');
+  const target = tempDir('exo-ci-fetch-');
+  spawnSync('git', ['init', '-b', 'main', target]);
+  spawnSync('git', ['-C', target, 'fetch', root, 'main']);
+  const fetched = spawnSync('git', ['-C', target, 'fetch', path.join(out, 'result.bundle'), 'exo-result:refs/exo/incoming'], { encoding: 'utf8' });
+  assert.equal(fetched.status, 0, fetched.stderr);
 });

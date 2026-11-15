@@ -2,11 +2,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { FIXTURES } from './hook-refusals.mjs';
 
-const FIXTURES = 'tests/fixtures/hook-refusal-calls.json';
 const OWN_ENV = /^(?:EXO_|CLAUDE_PLUGIN_OPTION_)/;
 
-function cleanEnv(tmp, extra = {}) {
+function cleanEnv(tmp, extra) {
   const kept = Object.entries(process.env).filter(([name]) => !OWN_ENV.test(name));
   return { ...Object.fromEntries(kept), TMPDIR: tmp, ...extra };
 }
@@ -23,7 +23,7 @@ function stdinOf(call, folder, session) {
   return JSON.stringify(input);
 }
 
-export function verdictOf(stdout) {
+function verdictOf(stdout) {
   if (stdout.trim() === '') return 'pass';
   const output = JSON.parse(stdout);
   const fields = output.hookSpecificOutput ?? {};
@@ -43,7 +43,7 @@ function runCall({ root, tmp }, call, index) {
   return run;
 }
 
-export function refusalFixtureFindings(root, calls) {
+function refusalFixtureFindings(root, calls) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-refusal-fixtures-'));
   const findings = calls.flatMap((call, index) => {
     const run = runCall({ root, tmp }, call, index);
@@ -57,9 +57,7 @@ export function refusalFixtureFindings(root, calls) {
 }
 
 export function checkRefusalFixtures(report, repository) {
-  const file = path.join(repository.root, FIXTURES);
-  if (!fs.existsSync(file)) return;
-  const calls = JSON.parse(fs.readFileSync(file, 'utf8'));
+  const calls = JSON.parse(repository.text(repository.join(FIXTURES)));
   const findings = refusalFixtureFindings(repository.root, calls);
   for (const finding of findings) report.result('FAIL', 'refusal fixtures', `${finding}: a legitimate call was refused or a harm call passed`);
   if (findings.length === 0) report.result('PASS', 'refusal fixtures', `${calls.length} real calls got their expected pass, note or deny`);

@@ -1,4 +1,4 @@
-import { DEFAULTS } from './defaults.mjs';
+import { WATCH_URL } from './video-url.mjs';
 
 export const HOUR = 3600;
 
@@ -6,7 +6,7 @@ function pad(number) {
   return String(number).padStart(2, '0');
 }
 
-export function formatStamp(seconds, withHours) {
+function formatStamp(seconds, withHours) {
   const whole = Math.floor(seconds);
   if (!withHours) return `[${pad(Math.floor(whole / 60))}:${pad(whole % 60)}]`;
   return `[${Math.floor(whole / HOUR)}:${pad(Math.floor((whole % HOUR) / 60))}:${pad(whole % 60)}]`;
@@ -17,7 +17,7 @@ const VIMEO_ID = /^vimeo-(\d+)$/;
 
 export function timeLinkOf(id) {
   const youtube = YOUTUBE_ID.exec(String(id));
-  if (youtube) return (seconds) => `https://www.youtube.com/watch?v=${youtube[1]}&t=${Math.floor(seconds)}s`;
+  if (youtube) return (seconds) => `${WATCH_URL}${youtube[1]}&t=${Math.floor(seconds)}s`;
   const vimeo = VIMEO_ID.exec(String(id));
   if (vimeo) return (seconds) => `https://vimeo.com/${vimeo[1]}#t=${Math.floor(seconds)}s`;
   return null;
@@ -32,7 +32,7 @@ export function formatDuration(seconds) {
   return formatStamp(seconds, true).slice(1, -1);
 }
 
-export function renderTranscript(cues, { chapters = [], stampSeconds = DEFAULTS.stampSeconds, withHours = false, link = null } = {}) {
+export function renderTranscript(cues, { chapters, stampSeconds, withHours, link }) {
   const output = [];
   let nextStamp = 0;
   let paragraph = null;

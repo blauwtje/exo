@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { UsageError } from '#script-flags';
 import { scratchPath } from '#scratch-path';
@@ -7,8 +8,9 @@ import { defaultBranch } from '#git';
 import { frameOf } from '#plan-frame';
 import { isolatedCheckout, nextWave, planRoute, routeLine, waveLine } from '#plan-waves';
 import { landedTasks, planIdOf } from '#plan-landed';
+import { runDefaults } from './run-config.mjs';
 import { parsePlan } from '#plan-tasks';
-import { SKILL_DIRECTORY, GATE_DIRECTORY } from './next-task-paths.mjs';
+import { SKILL_DIRECTORY, GATE_DIRECTORY } from './run-session-paths.mjs';
 import { taskLines, inlineTaskLines } from './next-task-brief.mjs';
 import { dispatchBlock, windowLines, openedLines } from './next-task-window.mjs';
 
@@ -38,7 +40,7 @@ export function nextTaskReport({ planPath, planText, root, inFlight = [], open =
   const landed = landedTasks(plan.tasks, root, planIdOf(planPath));
   const route = planRoute(plan.tasks);
   const inline = route.route === 'inline';
-  const ready = nextWave(plan.tasks, landed, { worktreeSetup: inline || isolatedCheckout(root, frame.repository) ? null : frame.worktreeSetup, parallel: frame.parallel, inFlight, only });
+  const ready = nextWave(plan.tasks, landed, { worktreeSetup: inline || isolatedCheckout(root, frame.repository) ? null : frame.worktreeSetup, parallel: frame.parallel, inFlight, only, limit: runDefaults(os.homedir()).waveLimit });
   const wave = landed.length === 0 && inFlight.length === 0 && !allIndependent(ready, frame) ? ready.slice(0, 1) : ready;
   const lines = [
     `Plan: ${planPath}`,

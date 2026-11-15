@@ -1,11 +1,13 @@
-const USER_AGENT = 'Mozilla/5.0 (compatible; exo-research)';
+import { USER_AGENT } from './sources/http.mjs';
+
 const NAVIGATION_MS = 30000;
 
 async function loadPlaywright() {
   try {
     return await import('playwright');
-  } catch {
-    return null;
+  } catch (error) {
+    if (error.code === 'ERR_MODULE_NOT_FOUND') return null;
+    throw error;
   }
 }
 

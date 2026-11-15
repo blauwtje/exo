@@ -1,15 +1,16 @@
 import { gateRequest } from '../../../watch/scripts/request-gate.mjs';
 import { createHostState } from './host-state.mjs';
 
-const USER_AGENT = 'Mozilla/5.0 (compatible; exo-research)';
+export const USER_AGENT = 'Mozilla/5.0 (compatible; exo-research)';
 
 const NOT_PUBLIC = new Set([401, 403, 451]);
 
 export class BlockedRoute extends Error {}
 
 function refuseKnownBlock(url, hostState) {
-  if (hostState.isBlocked(url)) throw new BlockedRoute('url was blocked earlier in this run');
-  if (hostState.isOpen(new URL(url).hostname)) throw new BlockedRoute('host breaker is open after repeated 429 or 5xx');
+  if (hostState.isBlocked(url)) throw new BlockedRoute(`${url} was blocked earlier in this run`);
+  const { hostname } = new URL(url);
+  if (hostState.isOpen(hostname)) throw new BlockedRoute(`host breaker is open for ${hostname} after repeated 429 or 5xx`);
 }
 
 export async function getText(url, context, userAgent = USER_AGENT) {
@@ -29,7 +30,7 @@ export async function getJson(url, context, userAgent) {
   try {
     return JSON.parse(body);
   } catch {
-    throw new BlockedRoute('answer was not JSON');
+    throw new BlockedRoute(`answer from ${url} was not JSON`);
   }
 }
 
@@ -37,7 +38,7 @@ export function isoDate(seconds) {
   return new Date(Number(seconds) * 1000).toISOString().slice(0, 10);
 }
 
-export function resultList(list) {
-  if (!Array.isArray(list)) throw new BlockedRoute('answer had no result list');
+export function resultList(list, url) {
+  if (!Array.isArray(list)) throw new BlockedRoute(`answer from ${url} had no result list`);
   return list;
 }

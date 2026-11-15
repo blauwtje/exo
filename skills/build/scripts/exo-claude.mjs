@@ -21,7 +21,7 @@ function parseArgs(args) {
   return { flags, passed };
 }
 
-export function claudeEnvironment({ config, keys, home, env, provider: name, effort }) {
+function claudeEnvironment({ config, keys, home, env, provider: name, effort }) {
   if (!Object.hasOwn(config.providers, name)) {
     return { refused: `refused: unknown provider ${JSON.stringify(name)}; known: ${Object.keys(config.providers).join(', ')}` };
   }
@@ -62,24 +62,23 @@ function printPeakNotice(provider, config, env) {
   if (notice) process.stderr.write(`${notice}\n`);
 }
 
-export async function startClaude(args, { home, env = process.env }) {
-  if (insideClaudeCode(env)) return { refused: 'refused: exo claude starts an interactive session and runs only from a terminal, not inside a Claude Code session' };
+export async function startClaude(args, { home }) {
+  if (insideClaudeCode()) return { refused: 'refused: exo claude starts an interactive session and runs only from a terminal, not inside a Claude Code session' };
   const parsed = parseArgs(args);
   if (parsed.refused) return parsed;
   const loaded = loadConfig(home);
   if (loaded.refused) return loaded;
-  const { config } = loaded;
   const built = claudeEnvironment({
-    config,
+    config: loaded.config,
     keys: readKeys(path.join(configDir(home), 'keys.env')),
     home,
-    env,
-    provider: parsed.flags.provider ?? config.defaults.provider,
+    env: process.env,
+    provider: parsed.flags.provider ?? loaded.config.defaults.provider,
     effort: parsed.flags.effort
   });
   if (built.refused) return built;
-  printPeakNotice(built.provider, config, env);
-  const claude = resolveClaude({ pathValue: env.PATH ?? '' });
+  printPeakNotice(built.provider, loaded.config, process.env);
+  const claude = resolveClaude({});
   if (claude.refused) return { refused: `refused: ${claude.refused}` };
   return runChild(claude.command, [...claude.prefix, ...parsed.passed], built.env);
 }

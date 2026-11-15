@@ -2,17 +2,15 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { hookEntries, tempDir } from './harness.mjs';
+import { hookEntries, readHooks, REPOSITORY_ROOT as REPOSITORY, tempDir } from './harness.mjs';
 
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import os from 'node:os';
-import { fileURLToPath } from 'node:url';
 
 delete process.env.EXO_PROVIDER;
 
-const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
-const HOOKS = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'hooks.json'), 'utf8')).hooks;
+const HOOKS = readHooks();
 const PLUGIN_PATH = /\$\{CLAUDE_PLUGIN_ROOT\}\/([^"\s]+)/g;
 
 test('every hook command resolves under the plugin root to a file the repository ships', () => {
@@ -331,24 +329,24 @@ function bestTimes(smallAction, largeAction) {
   return { small, large };
 }
 
-function decideAllGitCommands(sharesGitState, count, repeats = 1) {
+function decideAllGitCommands(sharedStateReason, count, repeats = 1) {
   const allowed = allowedGitCommands(count);
   const denied = deniedGitCommand(count);
   return () => {
     for (let repeat = 0; repeat < repeats; repeat += 1) {
-      allowed.forEach((command) => sharesGitState(command));
-      sharesGitState(denied);
+      allowed.forEach((command) => sharedStateReason(command));
+      sharedStateReason(denied);
     }
   };
 }
 
 test('deciding a long run of git global options grows linearly with its length', async () => {
-  const { sharesGitState } = await import('../lib/git-deny.mjs');
-  allowedGitCommands(LINEAR_SMALL).forEach((command) => assert.equal(sharesGitState(command), false, command.slice(0, 40)));
-  assert.equal(sharesGitState(deniedGitCommand(LINEAR_SMALL)), true);
-  const smallRepeated = decideAllGitCommands(sharesGitState, LINEAR_SMALL, LINEAR_GROWTH);
+  const { sharedStateReason } = await import('../lib/git-deny.mjs');
+  allowedGitCommands(LINEAR_SMALL).forEach((command) => assert.equal(sharedStateReason(command) !== null, false, command.slice(0, 40)));
+  assert.equal(sharedStateReason(deniedGitCommand(LINEAR_SMALL)) !== null, true);
+  const smallRepeated = decideAllGitCommands(sharedStateReason, LINEAR_SMALL, LINEAR_GROWTH);
   smallRepeated();
-  const times = bestTimes(smallRepeated, decideAllGitCommands(sharesGitState, LINEAR_SMALL * LINEAR_GROWTH));
+  const times = bestTimes(smallRepeated, decideAllGitCommands(sharedStateReason, LINEAR_SMALL * LINEAR_GROWTH));
   const small = times.small / LINEAR_GROWTH;
   const large = times.large;
   const ratio = large / Math.max(small, 0.05);
@@ -427,7 +425,7 @@ test('the script-size step reads its cap from defaults.scriptBytes', async () =>
   const { SCRIPT_SIZE_STEP } = await import('../hooks/dispatch-bash.mjs');
   const { scriptBytes } = await import('../lib/context-limits.mjs');
   const limit = scriptBytes();
-  const run = (size) => SCRIPT_SIZE_STEP.run({ agent_id: 'a', tool_input: { command: 'x'.repeat(size) } });
+  const run = (size) => SCRIPT_SIZE_STEP.run({ agent_id: 'a', tool_input: { command: 'x'.repeat(size) } }, []);
   assert.equal(run(limit), null);
   const rewritten = run(limit + 1);
   assert.equal(rewritten.hookSpecificOutput.permissionDecision, undefined);
@@ -483,9 +481,9 @@ const ROOM_TRANSCRIPT = path.join(tempDir('exo-room-'), 'agent.jsonl');
 const { agentContextTarget, dispatchBytesPerToken } = await import('../lib/context-limits.mjs');
 fs.writeFileSync(ROOM_TRANSCRIPT, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: agentContextTarget() - ROOM_BYTES / dispatchBytesPerToken() } } })}\n`);
 
-async function cappedRun(command, extra = {}) {
+async function cappedRun(command) {
   const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
-  const hookInput = { hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'cap-agent', agent_type: 'general-purpose', permission_mode: 'bypassPermissions', agent_transcript_path: ROOM_TRANSCRIPT, tool_input: { command }, ...extra };
+  const hookInput = { hook_event_name: 'PreToolUse', tool_name: 'Bash', agent_id: 'cap-agent', agent_type: 'general-purpose', permission_mode: 'bypassPermissions', agent_transcript_path: ROOM_TRANSCRIPT, tool_input: { command } };
   const output = await dispatchBash(hookInput, undefined, () => false);
   const rewritten = output?.hookSpecificOutput?.updatedInput?.command;
   assert.ok(rewritten, command);

@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
+import { orWhenAbsent } from '#absent-path';
 import { decisionsPathOf, isCovered, isPlanDoc, landedTasks, planIdOf } from '#plan-landed';
 import { SCRATCH_FOLDER } from '#scratch-path';
 import { addedPathspecs } from './land-signatures.mjs';
@@ -19,9 +20,9 @@ export function isProtectedPath(changed) {
 export function nestedWorktrees(root) {
   const listed = spawnSync('git', ['-C', root, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' });
   if (listed.status !== 0) return new Set();
-  return new Set(listed.stdout.split('\n').filter((line) => line.startsWith('worktree ')).flatMap((line) => {
-    try { return [realpathSync(line.slice('worktree '.length))]; } catch { return []; }
-  }));
+  return new Set(listed.stdout.split('\n').filter((line) => line.startsWith('worktree ')).flatMap((line) => (
+    orWhenAbsent(() => [realpathSync(line.slice('worktree '.length))], [])
+  )));
 }
 
 function untrackedPaths(root) {

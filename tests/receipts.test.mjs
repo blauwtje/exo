@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { agentHook } from '../hooks/agent-effort.mjs';
-import { contextHook, receiptsOn } from '../hooks/context-limit.mjs';
+import { contextHook } from '../hooks/context-limit.mjs';
 import { dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { tempDir } from './harness.mjs';
 
@@ -99,12 +99,6 @@ test('receipts off gives no systemMessage anywhere', async () => {
 
 test('a call with nothing to show gives no output', async () => {
   assert.equal(await dispatchBash({ tool_name: 'Bash', tool_input: { command: 'ls' } }, undefined, ON), null);
-});
-
-test('receiptsOn is on by default and off only for off', () => {
-  assert.equal(receiptsOn(() => { throw new Error('unknown setting receipts'); }), true);
-  for (const value of ['on', true, undefined]) assert.equal(receiptsOn(() => value), true);
-  for (const value of ['off', false]) assert.equal(receiptsOn(() => value), false);
 });
 
 test('the hook script prints the line on stdout with receipts at their default', () => {

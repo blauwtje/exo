@@ -4,7 +4,7 @@ import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import { compactPlanFixture, compactTask } from './harness.mjs';
 
 function evidenceProblems(tasks) {
-  return planCheckReport(compactPlanFixture({ tasks }), {}).lines.filter((line) => line.includes('Evidence'));
+  return planCheckReport(compactPlanFixture({ tasks }), { loop: false, run: false }).lines.filter((line) => line.includes('Evidence'));
 }
 
 const withEvidence = (task, value) => task.replace(' | Proof:', ` | Evidence: ${value} | Proof:`);

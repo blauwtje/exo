@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { pruneAfterDays, pruneExo } from '#exo-prune';
+import { pruneExo } from '#exo-prune';
 import { tempDir } from './harness.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -36,6 +36,12 @@ function exists(target) {
 function writeConfig(home, defaults) {
   fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
   fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), typeof defaults === 'string' ? defaults : JSON.stringify({ defaults }));
+}
+
+function survivesAfter(days, { cwd, exo, home }) {
+  const file = put(path.join(exo, `aged-${days}.log`), days);
+  pruneExo({ cwd, now: NOW, home });
+  return exists(file);
 }
 
 test('an entry whose files are all older than 7 days is removed and a fresh one stays', () => {
@@ -167,8 +173,12 @@ test('a symlinked stamp blocks the walk and writes nothing through it', () => {
 });
 
 test('pruneAfterDays reads the catalog default of 7', () => {
-  const { home } = workspace();
-  assert.equal(pruneAfterDays(home), 7);
+  const space = workspace();
+  const fresh = put(path.join(space.exo, 'new.log'), 6);
+  const stale = put(path.join(space.exo, 'old.log'), 8);
+  pruneExo({ cwd: space.cwd, now: NOW, home: space.home });
+  assert.equal(exists(fresh), true);
+  assert.equal(exists(stale), false);
 });
 
 test('a user run.json overrides the number of days', () => {
@@ -176,7 +186,6 @@ test('a user run.json overrides the number of days', () => {
   writeConfig(home, { pruneAfterDays: 30 });
   const midway = put(path.join(exo, 'midway.log'), 20);
   const ancient = put(path.join(exo, 'ancient.log'), 31);
-  assert.equal(pruneAfterDays(home), 30);
   pruneExo({ cwd, now: NOW, home });
   assert.equal(exists(midway), true);
   assert.equal(exists(ancient), false);
@@ -184,13 +193,15 @@ test('a user run.json overrides the number of days', () => {
 
 test('an invalid or unreadable setting falls back to 7 and never removes everything', () => {
   for (const bad of [0, -3, 1.5, '3', null, [], {}]) {
-    const { home } = workspace();
-    writeConfig(home, { pruneAfterDays: bad });
-    assert.equal(pruneAfterDays(home), 7, JSON.stringify(bad));
+    const space = workspace();
+    writeConfig(space.home, { pruneAfterDays: bad });
+    assert.equal(survivesAfter(6, space), true, JSON.stringify(bad));
+    fs.rmSync(path.join(space.cwd, '.exo', 'pruned-at'));
+    assert.equal(survivesAfter(8, space), false, JSON.stringify(bad));
   }
   const broken = workspace();
   writeConfig(broken.home, '{ not json');
-  assert.equal(pruneAfterDays(broken.home), 7);
+  assert.equal(survivesAfter(8, broken), false);
 });
 
 test('a removal that fails leaves the files in place and does not throw', () => {

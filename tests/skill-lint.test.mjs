@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { createRepository } from '../verify/repository.mjs';
-import { skillLintFindings } from '../verify/checks/skill-lint.mjs';
+import { checkSkillLint } from '../verify/checks/skill-lint.mjs';
 
 function repositoryWith(files) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-lint-'));
@@ -13,6 +13,17 @@ function repositoryWith(files) {
     fs.writeFileSync(path.join(root, name), text);
   }
   return createRepository(root);
+}
+
+function skillLintFindings(repository) {
+  const failures = [];
+  const report = { result: (status, name, detail) => status === 'FAIL' && failures.push(detail) };
+  checkSkillLint(report, repository);
+  return failures.map((detail) => {
+    const [, location, rule] = detail.match(/^(\S+) (.+)$/);
+    const split = location.lastIndexOf(':');
+    return { path: location.slice(0, split), line: Number(location.slice(split + 1)), rule };
+  });
 }
 
 function rules(files) {

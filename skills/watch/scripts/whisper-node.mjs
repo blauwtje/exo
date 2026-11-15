@@ -2,6 +2,8 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { orWhenAbsent } from '#absent-path';
+import { parseLine } from '#basics';
 import { toolReason } from './run-tool.mjs';
 import { cachePath, ensureModel } from './whisper-model.mjs';
 import { detectSpeech, windowOf } from './whisper-vad.mjs';
@@ -32,12 +34,8 @@ function packageFolder(prefix) {
 }
 
 function isInstalled(prefix) {
-  try {
-    const manifest = JSON.parse(fs.readFileSync(path.join(packageFolder(prefix), 'package.json'), 'utf8'));
-    return manifest.version === VERSION;
-  } catch {
-    return false;
-  }
+  const text = orWhenAbsent(() => fs.readFileSync(path.join(packageFolder(prefix), 'package.json'), 'utf8'), null);
+  return parseLine(text)?.version === VERSION;
 }
 
 async function install(prefix, options) {

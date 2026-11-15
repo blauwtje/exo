@@ -3,13 +3,28 @@ import os from 'node:os';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { findForkSkillTierFailures, writeForkSkillTiers } from '../verify/checks/fork-skill-tier.mjs';
+import { execFileSync } from 'node:child_process';
+import { checkForkSkillTier } from '../verify/checks/fork-skill-tier.mjs';
+import { REPOSITORY_ROOT as REPO } from './harness.mjs';
 
-const REPO = path.resolve(import.meta.dirname, '..');
 const SKILL = '---\nname: demo\ncontext: fork\nagent: exo:orchestrator\n---\nBody.\n';
 
+function findForkSkillTierFailures(root) {
+  const report = { result: null, assert(ok, name, { fail }) { this.result = ok ? [] : fail.split('; '); } };
+  checkForkSkillTier(report, { root });
+  return report.result;
+}
+
+function writeTiers(root) {
+  fs.copyFileSync(path.join(REPO, 'package.json'), path.join(root, 'package.json'));
+  for (const folder of ['lib', 'verify']) {
+    fs.cpSync(path.join(REPO, folder), path.join(root, folder), { recursive: true, force: false });
+  }
+  execFileSync('node', [path.join(root, 'verify', 'checks', 'fork-skill-tier.mjs'), '--write']);
+}
+
 function fixture(skillText, kind = 'orchestrator') {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'fork-tier-'));
+  const root = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'fork-tier-'));
   const table = JSON.parse(fs.readFileSync(path.join(REPO, 'lib', 'model-kinds.json'), 'utf8'));
   table.skills = kind === null ? {} : { 'skills/demo/SKILL.md': kind };
   fs.mkdirSync(path.join(root, 'lib'));
@@ -26,7 +41,7 @@ test('a fork skill with no pin fails and names the write command', () => {
 
 test('write then check passes with the kind model and effort', () => {
   const root = fixture(SKILL);
-  writeForkSkillTiers(root);
+  writeTiers(root);
   assert.deepEqual(findForkSkillTierFailures(root), []);
   const text = fs.readFileSync(path.join(root, 'skills', 'demo', 'SKILL.md'), 'utf8');
   assert.match(text, /model: opus\neffort: medium\n---/);

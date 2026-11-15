@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
-import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { tempDir } from './harness.mjs';
+import { readHooks, REPOSITORY_ROOT as REPOSITORY, tempDir } from './harness.mjs';
 
-const REPOSITORY = fileURLToPath(new URL('../', import.meta.url));
-const HOOKS = JSON.parse(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'hooks.json'), 'utf8')).hooks;
+const HOOKS = readHooks();
 
 const PAYLOADS = {
   SessionStart: { hook_event_name: 'SessionStart', source: 'startup', session_id: 'sidecall' },

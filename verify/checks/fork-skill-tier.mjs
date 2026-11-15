@@ -2,11 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { INHERIT, readKindTable } from '../../lib/model-kinds.mjs';
-import { findUnknownKindLabels } from '../model-kinds.mjs';
+import { FRONTMATTER } from '../markdown.mjs';
+import { findUnknownKindLabels, PINNED_FIELDS } from '../model-kinds.mjs';
 
 const WRITE_COMMAND = 'node verify/checks/fork-skill-tier.mjs --write';
-const FRONTMATTER = /^---\n([\s\S]*?)\n---\n/;
-const TIER_FIELDS = ['model', 'effort'];
 
 function readRawTable(root) {
   return JSON.parse(fs.readFileSync(path.join(root, 'lib', 'model-kinds.json'), 'utf8'));
@@ -44,7 +43,7 @@ function findInheritKinds(root) {
     .map(([name]) => `kind ${name} sits on tier ${INHERIT} for the default provider ${raw.provider}; give it a tier of the provider`);
 }
 
-export function findForkSkillTierFailures(root) {
+function findForkSkillTierFailures(root) {
   const table = readKindTable(path.join(root, 'lib', 'model-kinds.json'));
   const failures = findInheritKinds(root);
   for (const file of forkSkillFiles(root)) {
@@ -59,13 +58,13 @@ export function findForkSkillTierFailures(root) {
       continue;
     }
     const lines = frontmatterLines(fs.readFileSync(path.join(root, file), 'utf8'));
-    const differs = TIER_FIELDS.some((field) => currentValue(lines, field) !== expected[field]);
+    const differs = PINNED_FIELDS.some((field) => currentValue(lines, field) !== expected[field]);
     if (differs) failures.push(`${file}: model and effort differ from kind ${kind} (${expected.model}, ${expected.effort}); run ${WRITE_COMMAND}`);
   }
   return [...failures, ...findUnknownKindLabels(root, table).map((line) => `${line}; use a kind of lib/model-kinds.json`)];
 }
 
-export function writeForkSkillTiers(root) {
+function writeForkSkillTiers(root) {
   const table = readKindTable(path.join(root, 'lib', 'model-kinds.json'));
   for (const file of forkSkillFiles(root)) {
     const kind = table.skills?.[file];
@@ -73,7 +72,7 @@ export function writeForkSkillTiers(root) {
     const expected = expectedLines(root, kind);
     if (expected.tier !== undefined) continue;
     const text = fs.readFileSync(path.join(root, file), 'utf8');
-    const kept = frontmatterLines(text).filter((row) => !TIER_FIELDS.some((field) => row.startsWith(`${field}:`)));
+    const kept = frontmatterLines(text).filter((row) => !PINNED_FIELDS.some((field) => row.startsWith(`${field}:`)));
     const written = [...kept, `model: ${expected.model}`, `effort: ${expected.effort}`].join('\n');
     fs.writeFileSync(path.join(root, file), text.replace(FRONTMATTER, `---\n${written}\n---\n`));
   }

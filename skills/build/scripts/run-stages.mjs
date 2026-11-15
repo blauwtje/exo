@@ -1,7 +1,7 @@
 import process from 'node:process';
 import { spawn } from 'node:child_process';
 import { defaultBranch, gitLine, gitResult } from '#git';
-import { CLI, RUN_PLAN } from './cli-paths.mjs';
+import { CLI, RUN_PLAN } from './run-session-paths.mjs';
 import { readState, runDir } from './run-state.mjs';
 import { Refusal } from './cli-refusal.mjs';
 import { planFrame } from './plan-file.mjs';

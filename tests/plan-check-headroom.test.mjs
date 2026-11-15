@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
+import { STAGE_BODY_TOKENS } from '../verify/budgets.mjs';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 import { compactPlanFixture, compactTask, gitRepository } from './harness.mjs';
 
 const VERIFY = ['budgets.mjs', 'body-size.mjs', 'markdown.mjs', 'repository.mjs'];
 const verifyFiles = (edit = (text) => text) => Object.fromEntries(VERIFY.map((name) => [`verify/${name}`, edit(fs.readFileSync(new URL(`../verify/${name}`, import.meta.url), 'utf8'))]));
 
-const BUILD_CAP = Number(/'build': (\d+)/.exec(verifyFiles()['verify/budgets.mjs'])[1]);
+const BUILD_CAP = STAGE_BODY_TOKENS.build;
 const NEAR_CAP = BUILD_CAP * 4 - 20;
 const AT_THRESHOLD = BUILD_CAP * 4 - 201;
 
@@ -19,7 +20,7 @@ async function warningsFor(files, withBudgets = true) {
     compactTask({ number: 1, title: 'Edit build', files: ['skills/build/SKILL.md'] }),
     compactTask({ number: 2, title: 'Edit roomy', files: ['skills/roomy/SKILL.md'], dependsOn: '1' })
   ] });
-  return planCheckReport(plan, { root }).lines.filter((line) => line.startsWith('[WARN] Task') && line.includes('headroom'));
+  return planCheckReport(plan, { root, loop: false, run: false }).lines.filter((line) => line.startsWith('[WARN] Task') && line.includes('headroom'));
 }
 
 test('a task editing a skill within the headroom threshold of its cap draws a warning', async () => {
@@ -41,7 +42,7 @@ test('a skill with exactly the threshold of headroom draws no warning', async ()
 test('a task listing a references file of the same skill draws no warning', async () => {
   const root = await gitRepository({ ...verifyFiles(), 'skills/build/SKILL.md': skill(NEAR_CAP), 'skills/build/references/a.md': 'a\n' });
   const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Edit build', files: ['skills/build/references/a.md', 'skills/build/SKILL.md'] })] });
-  assert.deepEqual(planCheckReport(plan, { root }).lines.filter((line) => line.includes('headroom')), []);
+  assert.deepEqual(planCheckReport(plan, { root, loop: false, run: false }).lines.filter((line) => line.includes('headroom')), []);
 });
 
 test('an earlier task listing a references file of the same skill also clears the warning', async () => {
@@ -50,13 +51,13 @@ test('an earlier task listing a references file of the same skill also clears th
     compactTask({ number: 1, title: 'Add reference', files: ['skills/build/references/a.md'] }),
     compactTask({ number: 2, title: 'Edit build', files: ['skills/build/SKILL.md'], dependsOn: '1' })
   ] });
-  assert.deepEqual(planCheckReport(plan, { root }).lines.filter((line) => line.includes('headroom')), []);
+  assert.deepEqual(planCheckReport(plan, { root, loop: false, run: false }).lines.filter((line) => line.includes('headroom')), []);
 });
 
 test('the caps come from the target root, not the plugin', async () => {
   const root = await gitRepository({ ...verifyFiles((text) => text.replace(`'build': ${BUILD_CAP}`, `'build': ${BUILD_CAP + 250}`)), 'skills/build/SKILL.md': skill(NEAR_CAP) });
   const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Edit build', files: ['skills/build/SKILL.md'] })] });
-  assert.deepEqual(planCheckReport(plan, { root }).lines.filter((line) => line.includes('headroom')), []);
+  assert.deepEqual(planCheckReport(plan, { root, loop: false, run: false }).lines.filter((line) => line.includes('headroom')), []);
 });
 
 test('EXO_BODY_SIZE_TIMEOUT_MS bounds the body-size child and a timeout skips the headroom check', async () => {
@@ -65,7 +66,7 @@ test('EXO_BODY_SIZE_TIMEOUT_MS bounds the body-size child and a timeout skips th
   const before = process.env.EXO_BODY_SIZE_TIMEOUT_MS;
   process.env.EXO_BODY_SIZE_TIMEOUT_MS = '1';
   try {
-    const lines = planCheckReport(plan, { root }).lines.filter((line) => line.includes('headroom'));
+    const lines = planCheckReport(plan, { root, loop: false, run: false }).lines.filter((line) => line.includes('headroom'));
     assert.equal(lines.length, 1);
     assert.match(lines[0], /^\[WARN\] headroom check skipped, the root's verify\/body-size\.mjs failed: .*ETIMEDOUT/);
   } finally {
@@ -81,13 +82,13 @@ const changelog = (history) => `# Changelog\n\n## Unreleased\n\n### Changed\n\n-
 async function flaggedForSize(file, data) {
   const root = await gitRepository({ 'CHANGELOG.md': file });
   const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Record', files: ['CHANGELOG.md'], data })] });
-  return planCheckReport(plan, { root }).lines.some((line) => /^\[WARN\] Task 1: split Task 1 \(about \d+ tokens/.test(line));
+  return planCheckReport(plan, { root, loop: false, run: false }).lines.some((line) => /^\[WARN\] Task 1: split Task 1 \(about \d+ tokens/.test(line));
 }
 
 async function flaggedForFiles(contents, listed) {
   const root = await gitRepository(contents);
   const plan = compactPlanFixture({ tasks: [compactTask({ number: 1, title: 'Edit', files: listed })] });
-  return planCheckReport(plan, { root }).lines.some((line) => /^\[WARN\] Task 1: split Task 1 \(about \d+ tokens/.test(line));
+  return planCheckReport(plan, { root, loop: false, run: false }).lines.some((line) => /^\[WARN\] Task 1: split Task 1 \(about \d+ tokens/.test(line));
 }
 
 test('a Files entry that names another Files entry counts only by its matching lines', async () => {

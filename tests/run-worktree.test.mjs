@@ -36,10 +36,10 @@ function fixture({ own = true } = {}) {
   return { dir, root, other };
 }
 
-const foreignPush = (other, branch = 'main', from = 'main') => {
-  git(other, 'switch', '-q', from);
+const foreignPush = (other, branch = 'main') => {
+  git(other, 'switch', '-q', 'main');
   commit(other, `${branch}-${Date.now()}.txt`, `foreign ${branch}`);
-  git(other, 'push', '-q', 'origin', `${from}:${branch}`);
+  git(other, 'push', '-q', 'origin', `main:${branch}`);
 };
 
 test('breachOf ignores a foreign push to main fetched into root', () => {
@@ -47,21 +47,21 @@ test('breachOf ignores a foreign push to main fetched into root', () => {
   const before = snapshot(root);
   foreignPush(other);
   git(root, 'fetch', '-q', 'origin');
-  assert.equal(breachOf(root, before), null);
+  assert.equal(breachOf(root, before, {}), null);
 });
 
 test('breachOf flags a push of the run branch', () => {
   const { root } = fixture();
   const before = snapshot(root);
   git(root, 'push', '-q', 'origin', 'feat');
-  assert.equal(breachOf(root, before), 'remote ref moved');
+  assert.equal(breachOf(root, before, {}), 'remote ref moved');
 });
 
 test('breachOf flags a run commit pushed to another remote branch', () => {
   const { root } = fixture();
   const before = snapshot(root);
   git(root, 'push', '-q', 'origin', 'feat:main');
-  assert.equal(breachOf(root, before), 'remote ref moved');
+  assert.equal(breachOf(root, before, {}), 'remote ref moved');
 });
 
 test('breachOf ignores a new foreign branch', () => {
@@ -69,7 +69,7 @@ test('breachOf ignores a new foreign branch', () => {
   const before = snapshot(root);
   foreignPush(other, 'topic');
   git(root, 'fetch', '-q', 'origin');
-  assert.equal(breachOf(root, before), null);
+  assert.equal(breachOf(root, before, {}), null);
 });
 
 test('breachOf ignores a deleted foreign branch', () => {
@@ -79,12 +79,12 @@ test('breachOf ignores a deleted foreign branch', () => {
   const before = snapshot(root);
   git(other, 'push', '-q', 'origin', ':topic');
   git(root, 'fetch', '-q', '--prune', 'origin');
-  assert.equal(breachOf(root, before), null);
+  assert.equal(breachOf(root, before, {}), null);
 });
 
 test('breachOf passes when nothing moved', () => {
   const { root } = fixture();
-  assert.equal(breachOf(root, snapshot(root)), null);
+  assert.equal(breachOf(root, snapshot(root), {}), null);
 });
 
 test('breachOf ignores a foreign push on top of the commit the run was cut from', () => {
@@ -92,7 +92,7 @@ test('breachOf ignores a foreign push on top of the commit the run was cut from'
   const before = snapshot(root);
   foreignPush(other);
   git(root, 'fetch', '-q', 'origin');
-  assert.equal(breachOf(root, before), null);
+  assert.equal(breachOf(root, before, {}), null);
 });
 
 test('breachOf flags a run commit pushed through a local branch the session made', () => {
@@ -100,7 +100,7 @@ test('breachOf flags a run commit pushed through a local branch the session made
   const before = snapshot(root);
   git(root, 'branch', 'tmp', 'HEAD');
   git(root, 'push', '-q', 'origin', 'tmp:main');
-  assert.equal(breachOf(root, before), 'remote ref moved');
+  assert.equal(breachOf(root, before, {}), 'remote ref moved');
 });
 
 test('breachOf ignores a push of the unpushed local main the run was cut from', () => {
@@ -110,7 +110,7 @@ test('breachOf ignores a push of the unpushed local main the run was cut from', 
   git(root, 'switch', '-q', '-c', 'run');
   const before = snapshot(root);
   git(root, 'push', '-q', 'origin', 'main');
-  assert.equal(breachOf(root, before), null);
+  assert.equal(breachOf(root, before, {}), null);
 });
 
 test('worktreeFor places the run worktree under .claude/worktrees', () => {

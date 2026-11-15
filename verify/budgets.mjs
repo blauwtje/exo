@@ -27,11 +27,11 @@ export const HOOK_WORK_LOCK = {
 export const SESSION_LOAD_LOCK = { words: 850, measured: '2026-11-13' };
 export const SESSION_START_BYTES_LOCK = { bytes: 2729, measured: '2026-11-13' };
 export const BYTES_PER_TOKEN = 4;
-export const SKILL_BODY_TOKENS = { realistic: 2000, ceiling: 2500 };
+export const SKILL_BODY_TOKENS = { ceiling: 2500 };
 export const STAGE_BODY_TOKENS = {
   'spec': 935, 'build': 1360, 'gate': 750, 'find-cause': 746, 'ship': 750,
 };
-export const AGENT_BODY_TOKENS = { ceiling: 750, exempt: [] };
+export const AGENT_BODY_TOKENS = { ceiling: 750 };
 
 export const SCRIPT_OUTPUT_EXEMPT = ['skills/build/scripts/remove-worktree.mjs'];
 

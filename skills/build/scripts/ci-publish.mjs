@@ -15,7 +15,7 @@ function gitOutput(root, args) {
   return { ok: done.status === 0, text: `${done.stdout}${done.stderr}`.trim() };
 }
 
-export function publishPlan(root, env) {
+function publishPlan(root, env) {
   const { EXO_RESULT_DIR: directory, EXO_BASE: base, EXO_ISSUE: issue, EXO_RUN_ID: runId } = env;
   if (!directory || !BASE_NAME.test(base ?? '') || !NUMBER.test(issue ?? '') || !NUMBER.test(runId ?? '')) return { ok: false, text: 'refused: a publish input is missing or malformed' };
   const branch = `exo/issue-${issue}-${runId}`;

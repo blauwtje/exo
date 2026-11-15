@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { Refusal, checkoutRoot } from './cli-refusal.mjs';
 import { readOps } from './run-state.mjs';
-import { gitResult } from '#git';
+import { gitResult, shortSha } from '#git';
 
-const shortSha = (sha) => (sha === null ? 'none' : sha.slice(0, 7));
+const shaLabel = (sha) => (sha === null ? 'none' : shortSha(sha));
 const refSha = (root, ref) => {
   const found = gitResult(root, ['rev-parse', '-q', '--verify', ref]);
   return found.ok ? found.text : null;
@@ -22,13 +22,13 @@ const settled = (text) => ({ status: 'already', text });
 
 function reverseRef(root, id, op) {
   const current = refSha(root, op.ref);
-  const label = `${op.ref} ${shortSha(op.after)} -> ${shortSha(op.before)}`;
+  const label = `${op.ref} ${shaLabel(op.after)} -> ${shaLabel(op.before)}`;
   if (current === op.before) return settled(`${label}: already undone`);
-  if (current !== op.after) return refused(`${label}: ${op.ref} is now at ${shortSha(current)}, not the recorded ${shortSha(op.after)}`);
+  if (current !== op.after) return refused(`${label}: ${op.ref} is now at ${shaLabel(current)}, not the recorded ${shaLabel(op.after)}`);
   const holder = checkedOutAt(root, op.ref);
   const backup = `refs/exo/undo/${id}/${op.ref.replace(/^refs\//, '')}`;
   if (op.after === null) {
-    if (!gitResult(root, ['cat-file', '-e', `${op.before}^{commit}`]).ok) return refused(`${label}: commit ${shortSha(op.before)} is gone`);
+    if (!gitResult(root, ['cat-file', '-e', `${op.before}^{commit}`]).ok) return refused(`${label}: commit ${shaLabel(op.before)} is gone`);
     return { status: 'would', text: `${label}: recreate the deleted ref`, run: () => gitResult(root, ['update-ref', op.ref, op.before, '']) };
   }
   if (holder !== null && isDirty(holder)) return refused(`${label}: checked out in ${holder} with uncommitted work`);
@@ -71,7 +71,7 @@ function reverseWorktree(op) {
 
 const reversePush = (op) => ({
   status: 'manual',
-  text: `pushed ${op.sha.slice(0, 7)} to ${op.remote}/${op.ref}; remote operations are not reversed, revert it on the remote yourself`,
+  text: `pushed ${shortSha(op.sha)} to ${op.remote}/${op.ref}; remote operations are not reversed, revert it on the remote yourself`,
 });
 
 const REVERSERS = {
@@ -81,7 +81,7 @@ const REVERSERS = {
   push: (root, id, op) => reversePush(op),
 };
 
-export function planUndo(root, id, ops) {
+function planUndo(root, id, ops) {
   return [...ops].reverse().map((op) => (REVERSERS[op.kind] ?? (() => refused(`unknown operation ${op.kind}`)))(root, id, op));
 }
 
@@ -91,7 +91,7 @@ function settle(item, apply) {
   return done.ok ? { status: 'done', text: item.text } : refused(`${item.text}: ${done.error.split('\n')[0]}`);
 }
 
-export function undoRun(root, id, { apply }) {
+function undoRun(root, id, { apply }) {
   const ops = readOps(root, id);
   if (ops.length === 0) throw new Refusal(`run ${id} recorded no operations in this checkout`);
   const items = [];
@@ -110,8 +110,8 @@ export function undoRun(root, id, { apply }) {
 export function undoCommand(args) {
   const apply = args.includes('--apply');
   const ids = args.filter((arg) => arg !== '--apply');
-  if (ids.length !== 1 || ids[0].startsWith('-')) throw new Refusal('usage: exo undo <id> [--apply]');
-  const result = undoRun(checkoutRoot(), ids[0], { apply });
+  if (ids.length !== 1 || ids[0].startsWith('-')) throw new Refusal(`usage: exo undo <id> [--apply] (got: ${args.join(' ') || 'no arguments'})`);
+  const result = undoRun(checkoutRoot(process.cwd()), ids[0], { apply });
   process.stdout.write(`${result.lines.join('\n')}\n`);
   const plural = result.pending === 1 ? '' : 's';
   if (!apply) process.stdout.write(`exo: dry run, nothing changed; ${result.pending} step${plural} to apply with: exo undo ${ids[0]} --apply\n`);

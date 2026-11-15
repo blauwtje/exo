@@ -3,10 +3,10 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { unfinishedMerge } from '../lib/merge-state.mjs';
+import { unfinishedMergeNote } from '../lib/merge-state.mjs';
 import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { removeWorktree, RemoveWorktreeError } from '../skills/build/scripts/remove-worktree.mjs';
-import { commitFiles, GIT_IDENTITY, git, gitRepository, run } from './harness.mjs';
+import { commitFiles, GIT_IDENTITY, git, gitRepository, run, squashInto } from './harness.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { landingCheckout, PLAN } from './land-task-fixture.mjs';
 
@@ -27,12 +27,7 @@ async function repositoryWithBranches(files) {
 }
 
 function squashCheck(root, branch) {
-  return spawnSync(process.execPath, [SQUASH_CHECK, '--branch', branch, '--root', root], { encoding: 'utf8' });
-}
-
-function squashInto(root, branch) {
-  git(root, 'merge', '--squash', branch);
-  git(root, 'commit', '-q', '-m', `squash ${branch}`);
+  return spawnSync(process.execPath, [SQUASH_CHECK, '--branch', branch], { cwd: root, encoding: 'utf8' });
 }
 
 function conflictingBranches() {
@@ -51,7 +46,7 @@ test('squash-check names the conflicting file before any squash and touches noth
   assert.equal(result.status, 1);
   assert.match(result.stdout, /feat\/b conflicts with main in: src\/app\.js; the branch is kept; rebase it onto main first/);
   assert.equal(git(root, 'status', '--porcelain'), '');
-  assert.equal(unfinishedMerge(root), null);
+  assert.equal(unfinishedMergeNote(root), null);
 });
 
 test('squash-check and remove-worktree pass a clean branch', async () => {
@@ -88,7 +83,7 @@ test('after a conflicting squash, squash-check and remove-worktree refuse and na
   squashInto(root, 'feat/a');
   const merge = spawnSync('git', ['-C', root, 'merge', '--squash', 'feat/b'], { encoding: 'utf8', env: { ...process.env, ...GIT_IDENTITY } });
   assert.match(merge.stdout, /CONFLICT/);
-  assert.deepEqual(unfinishedMerge(root).files, ['src/app.js']);
+  assert.match(unfinishedMergeNote(root), /unmerged paths: src\/app\.js/);
 
   const check = squashCheck(root, 'feat/b');
   assert.equal(check.status, 1);
@@ -112,7 +107,7 @@ async function unfinishedCheckout() {
   git(root, 'switch', '-q', 'main');
   await commitFiles(root, { 'src/app.js': 'export const main = 1;\n' }, 'feat: main');
   spawnSync('git', ['-C', root, 'merge', '--squash', 'side'], { encoding: 'utf8' });
-  assert.deepEqual(unfinishedMerge(root).files, ['src/app.js']);
+  assert.match(unfinishedMergeNote(root), /unmerged paths: src\/app\.js/);
   return { root, planPath };
 }
 

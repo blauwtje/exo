@@ -59,6 +59,6 @@ test('--check regenerates a stale behaviour file before the gate', async () => {
   git(root, 'commit', '-m', 'seed behaviour');
   await editApp(root);
   const reportText = 'Task 1: GREEN\nLanded: src/app.js\nTest first: skipped\nRed: none\nProof: skipped\nUnresolved: none\n';
-  const output = checkTask({ planPath, planText: withBehaviourGate(root), number: 1, root, reportText });
+  const output = checkTask({ planPath, planText: withBehaviourGate(root), number: 1, root, reportText, reportPath: null, pin: null });
   assert.match(output, /Report OK: Task 1/);
 });

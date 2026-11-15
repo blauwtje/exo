@@ -22,7 +22,7 @@ test('a Bash call with an = word is rewritten, and a denied one is not', async (
 
 test('a run child env from childEnv carries the run marker, and the dispatcher then leaves the Bash command alone', async () => {
   const input = { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_input: { command: 'echo =ls' } };
-  const marker = childEnv(null, PROVIDER).EXO_RUN_SESSION;
+  const marker = childEnv(null, PROVIDER, { handoff: null, ecosystemEnv: {}, repair: false, refuseCommits: null }).EXO_RUN_SESSION;
   assert.equal(marker, '1');
   process.env.EXO_RUN_SESSION = marker;
   try {

@@ -1,3 +1,4 @@
+import { parseLine } from '#basics';
 import { realpathOr } from './run-session-paths.mjs';
 
 const CACHE_READ_RATE = 0.1;
@@ -32,14 +33,6 @@ function sumCounts(countsList) {
 
 const denialText = (denial) => denial.tool_input?.command ?? `${denial.tool_name} ${JSON.stringify(denial.tool_input ?? {})}`;
 export const deniedFields = (parsed) => ({ denied: parsed.denials.map(denialText), refused: parsed.refusals.map(denialText) });
-
-function parseJsonLine(line) {
-  try {
-    return JSON.parse(line);
-  } catch {
-    return null;
-  }
-}
 
 function splitDenials(events, results) {
   const denials = new Map();
@@ -82,7 +75,7 @@ function usageFigures(events, results) {
 }
 
 export function parseStream(text) {
-  const events = text.split(/\r?\n/).map(parseJsonLine).filter((event) => event !== null && typeof event === 'object');
+  const events = text.split(/\r?\n/).map(parseLine).filter((event) => event !== null && typeof event === 'object');
   const init = events.find((event) => event.type === 'system' && event.subtype === 'init') ?? null;
   const results = events.filter((event) => event.type === 'result');
   const final = results.at(-1) ?? null;

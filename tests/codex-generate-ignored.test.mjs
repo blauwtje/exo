@@ -2,10 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { tempDir } from './harness.mjs';
+import { REPOSITORY_ROOT as ROOT, tempDir } from './harness.mjs';
 import { generateTree } from '../harnesses/codex/generate.mjs';
 
-const ROOT = new URL('../', import.meta.url).pathname;
 const COPIED = ['lib', 'skills', 'agents', 'harnesses', '.claude-plugin', 'package.json'];
 
 test('the Codex tree skips a run-state .exo folder inside a skill folder', () => {

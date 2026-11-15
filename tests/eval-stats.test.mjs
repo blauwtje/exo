@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { clusteredMeanCi, decideKeep, judgeIdea, mad, meanCi, median, pairedDiff, pooledSd } from '../lib/eval-stats.mjs';
+import { decideKeep, meanCi, pairedDiff, pooledSd } from '../lib/eval-stats.mjs';
 
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
 
 test('meanCi gives the mean, the standard error of the mean and a z-wide interval', () => {
-  const result = meanCi([1, 2, 3, 4]);
+  const result = meanCi([1, 2, 3, 4], 1.96);
   const se = Math.sqrt(5 / 3 / 4);
   assert.equal(result.mean, 2.5);
   assert.equal(result.n, 4);
@@ -16,35 +16,17 @@ test('meanCi gives the mean, the standard error of the mean and a z-wide interva
 });
 
 test('meanCi leaves se, lo and hi null under two values and refuses none', () => {
-  assert.deepEqual(meanCi([7]), { mean: 7, se: null, lo: null, hi: null, n: 1 });
-  assert.throws(() => meanCi([]), RangeError);
+  assert.deepEqual(meanCi([7], 1.96), { mean: 7, se: null, lo: null, hi: null, n: 1 });
+  assert.throws(() => meanCi([], 1.96), RangeError);
 });
 
 test('pairedDiff is meanCi over candidate minus base', () => {
-  const result = pairedDiff([[1, 2], [3, 5], [2, 2]]);
-  const plain = meanCi([1, 2, 0]);
+  const result = pairedDiff([[1, 2], [3, 5], [2, 2]], 1.96);
+  const plain = meanCi([1, 2, 0], 1.96);
   assert.deepEqual(result, plain);
 });
 
-test('clusteredMeanCi equals meanCi when every cluster holds one value', () => {
-  const rows = [1, 2, 3, 4].map((value, at) => ({ cluster: `c${at}`, value }));
-  assert.deepEqual(clusteredMeanCi(rows), { ...meanCi([1, 2, 3, 4]), clusters: 4 });
-});
-
-test('clusteredMeanCi widens the error when values move together within a cluster', () => {
-  const rows = [{ cluster: 'a', value: 1 }, { cluster: 'a', value: 1 }, { cluster: 'b', value: 3 }, { cluster: 'b', value: 3 }];
-  const result = clusteredMeanCi(rows);
-  close(result.se, Math.sqrt(4 / 3 / 4 + 4 / 16));
-  assert.ok(result.se > meanCi([1, 1, 3, 3]).se);
-  assert.equal(result.clusters, 2);
-});
-
-test('clusteredMeanCi has no error with a single cluster', () => {
-  const result = clusteredMeanCi([{ cluster: 'a', value: 1 }, { cluster: 'a', value: 3 }]);
-  assert.deepEqual(result, { mean: 2, se: null, lo: null, hi: null, n: 2, clusters: 1 });
-});
-
-const keepSettings = { z: 1.96, floor: 0, maxRuns: 3 };
+const keepSettings = { z: 1.96, floor: 0, maxRuns: 3, noiseSd: null };
 
 test('decideKeep replays the recorded 0dc2ee2e runs 100, 50 and 37.5 against the 46.3 baseline and never keeps', () => {
   const best = { runs: [46.3] };
@@ -119,35 +101,4 @@ test('decideKeep throws naming each keep setting the call leaves out', () => {
   const call = { best: { runs: [10] }, candidate: { runs: [12] } };
   assert.throws(() => decideKeep(call), { message: 'decideKeep needs z, floor, maxRuns' });
   assert.throws(() => decideKeep({ ...call, z: 1.96, maxRuns: 3 }), { message: 'decideKeep needs floor' });
-});
-
-test('median takes the middle value or the mean of the two middle values', () => {
-  assert.equal(median([3, 1, 2]), 2);
-  assert.equal(median([4, 1, 3, 2]), 2.5);
-});
-
-test('mad is the median absolute deviation from the median', () => {
-  assert.equal(mad([1, 2, 3, 4, 100]), 1);
-});
-
-test('median and mad reject an empty list', () => {
-  assert.throws(() => median([]), RangeError);
-  assert.throws(() => mad([]), RangeError);
-});
-
-test('judgeIdea returns worse, better or not-shown from the paired interval and a failed check', () => {
-  const base = [10, 12, 11, 13, 12, 10];
-  const lower = judgeIdea({ pairs: base.map((value) => [value, value - 3]), checksPassed: true });
-  assert.equal(lower.verdict, 'better');
-  const higher = judgeIdea({ pairs: base.map((value) => [value, value + 3]), checksPassed: true });
-  assert.equal(higher.verdict, 'worse');
-  const mixed = judgeIdea({ pairs: [[10, 12], [12, 10], [11, 11], [13, 12]], checksPassed: true });
-  assert.equal(mixed.verdict, 'not-shown');
-  assert.equal(judgeIdea({ pairs: base.map((value) => [value, value - 3]), checksPassed: false }).verdict, 'worse');
-});
-
-test('judgeIdea reports the runs needed from the measured pool noise', () => {
-  const scores = { base: { a: [10, 12], b: [20, 22], c: [15, 17] }, candidate: { a: [9, 11], b: [19, 21], c: [14, 16] } };
-  const { runs } = judgeIdea({ pairs: [[10, 9], [20, 19], [15, 14]], checksPassed: true, scores, paired: true, samples: 2, effect: 1 });
-  assert.match(runs, /^power: 3 tasks x 2 samples x 2 arms = 12 runs; an effect of 1 needs \d+ tasks/);
 });

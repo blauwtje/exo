@@ -4,7 +4,7 @@ Each phase hands the next a file, so a delegate starts from recorded evidence, n
 
 ## Fields
 
-- Every phase after Step 1 hands off through one file, `<scratch>/<slug>.md` in the checkout's `.exo/debug/`.
+- Every phase after Step 1 hands off through one file, `<debug-dir>/<slug>.md` in the checkout's `.exo/debug/`.
 - `<slug>` = symptom in kebab-case, at most 40 characters.
 - `build`'s bug fixer → `task-<n>` in place of `<slug>`; writes both parts.
 - Output over a field's line cap → log; field names the log path, because the report phase reads the handoff, never its logs.
@@ -17,7 +17,7 @@ Investigate part: at most 25 lines, one line per field, this order; field the lo
 - `Actual`.
 - `Log`, a path.
 - `First bad`, the bisect `First bad` and `Diff` lines, or `none`.
-- `Hypotheses`, one line each: claim, deciding observation, kept or dropped. Run `node "${CLAUDE_SKILL_DIR}/../../lib/ruled-out.mjs" show <n>` first when the symptom is a failed plan task `<n>`, and seed the dropped ones from its lines.
+- `Hypotheses`, one line each: claim, deciding observation, kept or dropped. When the symptom is a failed plan task, seed the dropped ones from `Ruled out`.
 - `Cause`, path:line symbol.
 - `Mechanism`, causal line and why it produced the symptom, at most 3 lines.
 - `Prediction`, output the fix changes.

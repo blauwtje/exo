@@ -5,6 +5,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { orWhenAbsent } from '#absent-path';
+import { isFetchFailure, ToolFailure } from './run-tool.mjs';
 import { cacheRoot } from './ytdlp-binary.mjs';
 
 const MODEL = {
@@ -16,6 +18,10 @@ const MODEL = {
 
 export function cachePath(options, ...parts) {
   return path.join(cacheRoot(options.env ?? process.env, options.home ?? os.homedir()), ...parts);
+}
+
+function isKnownDownloadFailure(error) {
+  return error instanceof ToolFailure || isFetchFailure(error) || typeof error.code === 'string';
 }
 
 function failureText(error, ms) {
@@ -32,22 +38,18 @@ async function sha256Of(file) {
 async function download(pin, target, options) {
   const fetchFn = options.fetchFn ?? globalThis.fetch;
   const response = await fetchFn(pin.url, { signal: AbortSignal.timeout(options.transcribeMs) });
-  if (!response.ok) throw new Error(`${pin.url} answered ${response.status}`);
+  if (!response.ok) throw new ToolFailure(`${pin.url} answered ${response.status}`);
   await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(target));
 }
 
 async function check(file, pin) {
   const { size } = fs.statSync(file);
-  if (size !== pin.size) throw new Error(`${pin.file} has ${size} bytes, expected ${pin.size}`);
-  if ((await sha256Of(file)) !== pin.sha256) throw new Error(`${pin.file} differs from its pinned checksum`);
+  if (size !== pin.size) throw new ToolFailure(`${pin.file} has ${size} bytes, expected ${pin.size}`);
+  if ((await sha256Of(file)) !== pin.sha256) throw new ToolFailure(`${pin.file} differs from its pinned checksum`);
 }
 
 function isCached(file, pin) {
-  try {
-    return fs.statSync(file).size === pin.size;
-  } catch {
-    return false;
-  }
+  return orWhenAbsent(() => fs.statSync(file).size === pin.size, false);
 }
 
 export async function ensureFile(pin, options, name) {
@@ -62,6 +64,7 @@ export async function ensureFile(pin, options, name) {
     return { model: target };
   } catch (error) {
     fs.rmSync(temp, { force: true });
+    if (!isKnownDownloadFailure(error)) throw error;
     return { failure: `downloading the ${name} failed: ${failureText(error, options.transcribeMs)}` };
   }
 }

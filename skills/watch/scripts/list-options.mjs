@@ -1,8 +1,6 @@
-import { UsageError, environmentMs } from '#script-flags';
+import { UsageError, POSITIVE_INTEGER, environmentMs } from '#script-flags';
 import { DEFAULTS } from './defaults.mjs';
 import { urlOf } from './video-url.mjs';
-
-const POSITIVE_INTEGER = /^[1-9]\d*$/;
 
 export const SPEC = { url: 'string', limit: 'string', help: 'boolean' };
 export const USAGE = [

@@ -57,7 +57,7 @@ export async function claudeCommand(args) {
 }
 
 export async function keyCommand(args) {
-  if (args[0] !== 'set' || args.length !== 2) throw new Refusal('usage: exo key set <provider>');
+  if (args[0] !== 'set' || args.length !== 2) throw new Refusal(`usage: exo key set <provider> (got: ${args.join(' ') || 'no arguments'})`);
   const home = os.homedir();
   const name = args[1];
   const providers = loadRunConfig({ home }).providers;
@@ -67,7 +67,7 @@ export async function keyCommand(args) {
   try {
     writeKey(file, variable, await readKeyInput(process.stdin, process.stderr));
   } catch (error) {
-    throw new Refusal(`refused: ${error.message}`);
+    throw new Refusal(`refused: ${error.message} (${file})`);
   }
   process.stdout.write(`exo: ${variable} stored in ${file}\n`);
 }
@@ -79,12 +79,12 @@ const SETUP_BY_RUNNER = [
   { runner: /\bcypress\b/, command: 'npx -y cypress install' },
 ];
 
-export function setupCommands(frame, tasks) {
+function setupCommands(frame, tasks) {
   const text = [frame.app?.start ?? '', ...tasks.map((task) => task.proof ?? '')].join('\n');
   return SETUP_BY_RUNNER.filter(({ runner }) => runner.test(text)).map(({ command }) => command);
 }
 
-export async function runSetupCommands(commands, checkout) {
+async function runSetupCommands(commands, checkout) {
   if (commands.length === 0) return null;
   const logFile = scratchPath(checkout, 'logs/env-preflight.log');
   fs.mkdirSync(scratchPath(checkout, 'logs'), { recursive: true });

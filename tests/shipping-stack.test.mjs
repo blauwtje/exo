@@ -4,7 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { fixture, git, gitRepository, planFixture, run, taskSection } from './harness.mjs';
+import { git, gitRepository, planFixture, run, taskSection, tempDir } from './harness.mjs';
 
 const STACK = fileURLToPath(new URL('../skills/ship/scripts/stack.mjs', import.meta.url));
 const OPEN_LIST = 'pr list --state open --json number,url,headRefName,baseRefName,body';
@@ -38,10 +38,10 @@ const CREATES = {
 
 async function stackRepository() {
   const seed = await gitRepository({ 'README.md': '# fixture\n' });
-  const bareRoot = await fixture();
+  const bareRoot = tempDir('ui-design-test-');
   const origin = path.join(bareRoot, 'origin.git');
   execFileSync('git', ['clone', '-q', '--bare', seed, origin]);
-  const cloneRoot = await fs.realpath(await fixture());
+  const cloneRoot = await fs.realpath(tempDir('ui-design-test-'));
   const workDir = path.join(cloneRoot, 'work');
   execFileSync('git', ['clone', '-q', origin, workDir]);
   git(workDir, 'checkout', '-q', '-b', 'feature');
@@ -65,7 +65,7 @@ async function stackRepository() {
 }
 
 async function ghEnv(scenario) {
-  const directory = await fixture();
+  const directory = tempDir('ui-design-test-');
   const bin = path.join(directory, 'bin');
   await fs.mkdir(bin);
   await fs.writeFile(path.join(bin, 'gh'), GH_STAND_IN, { mode: 0o755 });
@@ -90,7 +90,7 @@ async function stackRun(workDir, args, scenario) {
 }
 
 async function restackDriver() {
-  const driver = path.join(await fixture(), 'driver.mjs');
+  const driver = path.join(tempDir('ui-design-test-'), 'driver.mjs');
   const source = `import { restackChildren } from ${JSON.stringify(pathToFileURL(STACK).href)};\nrestackChildren('feature-wave-1', 'main');\n`;
   await fs.writeFile(driver, source);
   return driver;

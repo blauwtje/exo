@@ -1,6 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { isCommandFailure } from '#basics';
 import { gitLine } from '#git';
 import { squashBlock } from '#merge-state';
 import { parseFlags, UsageError, isMain } from '#script-flags';
@@ -185,6 +186,7 @@ function gitRemoveFailure({ worktree, run, discard }) {
   try {
     execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
   } catch (error) {
+    if (!isCommandFailure(error)) throw error;
     return String(error.stderr ?? error.message).split('\n')[0];
   }
   return undefined;
@@ -201,7 +203,7 @@ function main(argv) {
   const flags = parseFlags(argv, { worktree: 'value', run: 'value', report: 'value', patch: 'value', kept: 'boolean' }, { usage: USAGE });
   if (flags.worktree === undefined) throw new UsageError("flag '--worktree' names the worktree to remove");
   if (flags.run === undefined) throw new UsageError("flag '--run' names the run's checkout");
-  process.stdout.write(removeWorktree({ worktree: flags.worktree, run: flags.run, report: flags.report, patch: flags.patch, kept: flags.kept ?? false }));
+  process.stdout.write(removeWorktree({ worktree: flags.worktree, run: flags.run, report: flags.report, patch: flags.patch, kept: flags.kept }));
 }
 
 function exitCodeOf(error) {

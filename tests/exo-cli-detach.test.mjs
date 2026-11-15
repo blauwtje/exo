@@ -4,7 +4,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, git, gitRepository, run } from './harness.mjs';
+import { tempDir, git, gitRepository, run } from './harness.mjs';
+import { runPlanText } from './setup-fixture.mjs';
 
 const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
 
@@ -13,22 +14,12 @@ import fs from 'node:fs';
 fs.appendFileSync(process.env.STUB_RECORD, JSON.stringify([process.cwd(), ...process.argv.slice(2)]) + '\\n');
 `;
 
-const planText = (root, branch) => [
-  '# Plan: cli fixture', '', '## Goal', 'One file.', '',
-  '## Plan basis', `Repository: ${root}`, `Branch: ${branch}`, 'Land: local', 'Commit: feat(fixture): add the fixture', 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', '',
-  '## Success criterion', '`node --version`', '',
-  '## Checkpoint', '- Blocks first: Task 1.', '- Parallel: none.', '- Shared state: none.', '- Smallest safe split: one file per task.', '',
-  '## Manual checks', '- Open the file.', '',
-  '## Tasks', '### Task 1: feat(a): add a',
-  'Depends on: none | Files: `a.txt` | Data: a line | Proof: node --version', ''
-].join('\n');
-
 async function setup() {
   const root = await gitRepository({ 'README.md': 'fixture\n' });
   const specs = path.join(root, 'docs', 'specs');
   await fs.mkdir(specs, { recursive: true });
-  await fs.writeFile(path.join(specs, 'old.md'), planText(root, 'feat/old'));
-  await fs.writeFile(path.join(specs, 'new.md'), planText(root, 'feat/new'));
+  await fs.writeFile(path.join(specs, 'old.md'), runPlanText(root, { title: 'cli fixture', branch: 'feat/old', tasks: ['### Task 1: feat(a): add a', 'Depends on: none | Files: `a.txt` | Data: a line | Proof: node --version', ''] }));
+  await fs.writeFile(path.join(specs, 'new.md'), runPlanText(root, { title: 'cli fixture', branch: 'feat/new', tasks: ['### Task 1: feat(a): add a', 'Depends on: none | Files: `a.txt` | Data: a line | Proof: node --version', ''] }));
   await fs.writeFile(path.join(specs, 'new-decisions.md'), 'decisions\n');
   git(root, 'add', '-A');
   git(root, 'commit', '-q', '-m', 'docs: add plans');
@@ -37,10 +28,10 @@ async function setup() {
   const now = new Date(Date.now() - 30_000);
   await fs.utimes(path.join(specs, 'new.md'), now, now);
   await fs.utimes(path.join(specs, 'new-decisions.md'), new Date(), new Date());
-  const tools = await fixture();
+  const tools = tempDir('ui-design-test-');
   const stub = path.join(tools, 'claude.mjs');
   await fs.writeFile(stub, STUB);
-  return { root, stub, record: path.join(tools, 'calls.jsonl'), home: await fixture() };
+  return { root, stub, record: path.join(tools, 'calls.jsonl'), home: tempDir('ui-design-test-') };
 }
 
 const exo = (context, args) => run(CLI, args, {
@@ -71,7 +62,7 @@ async function finished(root) {
 
 test('a detached dry run checks the tracked tree twice, not three times', async () => {
   const context = await setup();
-  const shims = await fixture();
+  const shims = tempDir('ui-design-test-');
   const log = path.join(shims, 'status.log');
   await fs.writeFile(path.join(shims, 'git'), GIT_SHIM(log, process.env.PATH), { mode: 0o755 });
   const result = await run(CLI, ['run', path.join(context.root, 'docs', 'specs', 'new.md'), '--detach', '--dry-run', '--claude', context.stub], {

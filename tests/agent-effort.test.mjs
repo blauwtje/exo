@@ -68,7 +68,7 @@ test('an explicit model or effort, an exo-kind line, off and other types leave t
 });
 
 test('an unnamed call with no exo-kind line runs as build with the line prepended, an unknown label becomes build', () => {
-  const decision = (input, budget = 'on') => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', ...input } }, budget, () => false)?.hookSpecificOutput.permissionDecision;
+  const decision = (input) => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', ...input } }, 'on', () => false)?.hookSpecificOutput.permissionDecision;
   const { kinds } = readKindTable(undefined, { budget: 'on' });
   const unlabelled = call({ description: 'Edit-evidence false block', prompt: 'x' });
   assert.equal(decision({ description: 'Edit-evidence false block', prompt: 'Reads: none\nx' }), 'allow');

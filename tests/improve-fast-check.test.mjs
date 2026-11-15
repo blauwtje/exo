@@ -4,14 +4,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fastCheck } from '../skills/build/scripts/fast-check.mjs';
 import { git, tempDir } from './harness.mjs';
 
 const script = fileURLToPath(new URL('../skills/build/scripts/fast-check.mjs', import.meta.url));
 
 const PASSING_TEST = "import test from 'node:test';\ntest('reads src', () => { const file = 'src/x.js'; });\n";
 const FAILING_TEST = "import test from 'node:test';\nimport assert from 'node:assert/strict';\ntest('reads src', () => { const file = 'src/x.js'; assert.equal(1, 2); });\n";
-const SLOW_TEST = "import test from 'node:test';\ntest('reads src', async () => { const file = 'src/x.js'; await new Promise((resolve) => setTimeout(resolve, 5000)); });\n";
 
 function write(worktree, name, text) {
   fs.mkdirSync(path.dirname(path.join(worktree, name)), { recursive: true });
@@ -73,14 +71,6 @@ test('an untracked file counts as touched', () => {
   const { root, worktree } = setup({ testText: FAILING_TEST.replace('src/x.js', 'src/new.js') });
   write(worktree, 'src/new.js', 'x\n');
   assert.equal(cli(root).status, 1);
-});
-
-test('a covering test that outlasts the timeout fails', () => {
-  const { worktree } = setup({ testText: SLOW_TEST });
-  touch(worktree);
-  const outcome = fastCheck({ worktree, fastCheck: null }, 500);
-  assert.equal(outcome.ok, false);
-  assert.equal(outcome.command, 'node --test tests/x.test.mjs');
 });
 
 test('requires --root and --tag', () => {

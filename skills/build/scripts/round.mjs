@@ -104,7 +104,7 @@ function keptSamples(lines, kept) {
 
 const scorerNoise = (lines, cfg) => pooledSd(lines.map((line) => line.runs ?? []).filter((runs) => runs.length > 1), cfg.noiseSd ?? null);
 
-export const improveDefaults = (home = os.homedir()) => loadRunConfig({ home }).defaults.improve;
+export const improveDefaults = () => loadRunConfig({ home: os.homedir() }).defaults.improve;
 
 export const scoreEnv = (cfg) => ({ ...process.env, EXO_SEED: String(cfg.seed ?? improveDefaults().seed) });
 
@@ -205,15 +205,16 @@ function sampleRuns({ cfg, cwd, logs, judge }) {
   return { samples, verdict: judge(samples, samples.runs.length), output };
 }
 
-function outputTail(output, count = improveDefaults().outputLines) {
+function outputTail(output) {
   const frame = /^\s+at \S|^Node\.js v\d/;
-  return output.split('\n').map((line) => line.trimEnd()).filter((line) => line.trim() && !frame.test(line)).slice(-count);
+  return output.split('\n').map((line) => line.trimEnd()).filter((line) => line.trim() && !frame.test(line)).slice(-improveDefaults().outputLines);
 }
 
 const diffLines = (cwd, from, to) => (gitLine(cwd, ['diff', '--numstat', from, to]) ?? '').split('\n').filter(Boolean)
   .reduce((sum, row) => { const [add, del] = row.split('\t'); return { added: sum.added + (Number(add) || 0), removed: sum.removed + (Number(del) || 0) }; }, { added: 0, removed: 0 });
 
-function keepSettings(defaults = improveDefaults()) {
+function keepSettings() {
+  const defaults = improveDefaults();
   return { maxRuns: defaults.maxRuns, z: defaults.keepZ, floor: defaults.keepFloor };
 }
 
@@ -224,7 +225,7 @@ function oriented(cfg, samples) {
   return { runs: flip(samples.runs), items: Object.fromEntries(Object.entries(samples.items ?? {}).map(([id, values]) => [id, flip(values)])) };
 }
 
-export function judgeKeep({ cfg, best, samples, shrinks, maxRuns, noiseSd = null }) {
+function judgeKeep({ cfg, best, samples, shrinks, maxRuns, noiseSd }) {
   const { z, floor } = keepSettings();
   const result = decideKeep({ best: oriented(cfg, best), candidate: oriented(cfg, samples), z, floor, maxRuns, noiseSd });
   if (result.verdict !== 'discard' || result.diff < 0 || !shrinks) return result;
@@ -232,7 +233,7 @@ export function judgeKeep({ cfg, best, samples, shrinks, maxRuns, noiseSd = null
   return { ...result, verdict: 'keep', reason: 'tie-shrinks' };
 }
 
-const round4 = (value) => Number(value.toFixed(4));
+export const round4 = (value) => (value === null ? null : Number(value.toFixed(4)));
 
 export const sampleScore = (runs) => (runs.length === 1 ? runs[0] : round4(runs.reduce((sum, value) => sum + value, 0) / runs.length));
 
@@ -293,14 +294,14 @@ function record({ dir, tag, commit, outcome, cwd }) {
 }
 
 
-export function caseMovers(best, candidate, count = improveDefaults().caseMovers) {
+function caseMovers(best, candidate) {
   const ids = Object.keys(candidate?.items ?? {}).filter((id) => best?.items?.[id]?.length > 0 && candidate.items[id].length > 0);
   if (ids.length === 0) return null;
   const moves = ids.map((id) => ({ id, from: round4(mean(best.items[id])), to: round4(mean(candidate.items[id])) }))
     .filter((move) => move.from !== move.to)
     .sort((a, b) => Math.abs(b.to - b.from) - Math.abs(a.to - a.from) || a.id.localeCompare(b.id));
   if (moves.length === 0) return 'CASES none moved';
-  return `CASES ${moves.slice(0, count).map((move) => `${move.id} ${move.from}->${move.to}`).join(', ')}`;
+  return `CASES ${moves.slice(0, improveDefaults().caseMovers).map((move) => `${move.id} ${move.from}->${move.to}`).join(', ')}`;
 }
 
 function roundLines(commit, outcome, best) {

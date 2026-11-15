@@ -8,7 +8,6 @@ import { excludeScratch } from '../lib/scratch-exclude.mjs';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { chainedForCaller, refreshProgress } from '../skills/build/scripts/next-task.mjs';
 import { nextTaskReport } from '../skills/build/scripts/next-task-report.mjs';
-import { taskBrief } from '../skills/build/scripts/next-task-brief.mjs';
 import { commitFiles, git, planFixture, run, tempDir } from './harness.mjs';
 import { editApp, landingCheckout, PLAN, SCRIPT as LAND_TASK, taskSection } from './land-task-fixture.mjs';
 
@@ -103,30 +102,34 @@ async function planWithInput(input, region = 'greet') {
   return run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root });
 }
 
-function briefTask(files) {
-  return { number: 1, files: files.map((file) => ({ path: file, region: null, kind: 'Modify' })), section: '### Task 1: x', runs: [], proof: null, design: false };
-}
+const briefPlan = (file, decisions = []) => {
+  const section = decisions.length === 0 ? '' : `## Decisions\n\n${decisions.join('\n')}\n\n`;
+  const tasks = [taskSection({ number: 1, title: 'Mine', files: [`- Create: \`${file}\``], subject: 'feat(app): mine' })];
+  return planFixture({ tasks }).replace('## Tasks', `${section}## Tasks`);
+};
 
-function briefFrame(decisions) {
-  return { goal: 'goal', successCriterion: null, nonGoals: [], context: [], decisions, assumptions: [], visualDirection: null };
+async function writtenBrief({ root, planPath }, plan) {
+  await commitFiles(root, { 'docs/plans/fixture.md': plan }, 'chore: plan');
+  const result = await run(NEXT_TASK, ['--plan', planPath, '--root', root], { cwd: root });
+  return fs.readFile(result.stdout.match(/^Brief: (.+)$/m)[1], 'utf8');
 }
 
 test('every Decision reaches a task brief, even one naming only another task\'s file', async () => {
   const decisions = ['4. keep `lib/other.mjs` unchanged', '5. no file named'];
-  const brief = taskBrief(briefTask(['lib/mine.mjs']), briefFrame(decisions), (await landingCheckout()).root);
+  const brief = await writtenBrief(await landingCheckout(), briefPlan('lib/mine.mjs', decisions));
   assert.ok(brief.includes('Decisions for these paths:\n- 4. keep `lib/other.mjs` unchanged\n- 5. no file named\n'), brief);
 });
 
 test('a brief carries one Covering: line naming the tests that mention its files', async () => {
-  const { root } = await landingCheckout();
-  await commitFiles(root, { 'tests/mine.test.mjs': "import 'lib/mine.mjs';\n", 'tests/other.test.mjs': 'nothing\n' }, 'test: mine');
-  const brief = taskBrief(briefTask(['lib/mine.mjs']), briefFrame([]), root);
+  const checkout = await landingCheckout();
+  await commitFiles(checkout.root, { 'tests/mine.test.mjs': "import 'lib/mine.mjs';\n", 'tests/other.test.mjs': 'nothing\n' }, 'test: mine');
+  const brief = await writtenBrief(checkout, briefPlan('lib/mine.mjs'));
   assert.match(brief, /^Covering: node --test --test-timeout=60000 tests\/mine\.test\.mjs$/m);
-  assert.doesNotMatch(taskBrief(briefTask(['lib/none.mjs']), briefFrame([]), root), /^Covering:/m);
+  assert.doesNotMatch(await writtenBrief(checkout, briefPlan('lib/none.mjs')), /^Covering:/m);
 });
 
 test('a small task with no Decision prints no Decisions section', async () => {
-  const brief = taskBrief(briefTask(['lib/mine.mjs']), briefFrame([]), (await landingCheckout()).root);
+  const brief = await writtenBrief(await landingCheckout(), briefPlan('lib/mine.mjs'));
   assert.doesNotMatch(brief, /^Decisions for these paths:/m);
 });
 
@@ -373,18 +376,7 @@ test('a non-numeric --only is a usage error', async () => {
   assert.match(result.stderr, /--only/);
 });
 
-test('land-task --next replaces the Then: line with next-task\'s report', async () => {
-  const { root, planPath } = await landingCheckout();
-  await editApp(root);
-  const result = await run(LAND_TASK, ['--plan', planPath, '--task', '1', '--root', root, '--next'], { cwd: root });
-  assert.equal(result.code, 0, result.stderr);
-  assert.match(result.stdout, /^Landed: 1$/m);
-  assert.doesNotMatch(result.stdout, /^Then:/m);
-  assert.match(result.stdout, /^Next: Task 2$/m);
-  assert.match(result.stdout, /^Prompt:\nTask 2 of /m);
-});
-
-test('land-task without --next keeps the Then: line', async () => {
+test('land-task ends its report with a Then: line naming next-task --block', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   const result = await run(LAND_TASK, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root });

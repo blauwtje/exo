@@ -15,23 +15,10 @@ Goal: draft user-facing notes for a range of commits, in the repo's changelog st
    - The script's lines are commit subjects in sentence form. Rewrite each to say what the user sees, with the real command, flag or file name, and follow the loop in this skill's body.
    - Fill every `Upgrade: not stated in the commit.` line from the commit diff (`git show <ref> -- <path>`). When the diff does not show a step, write what the user must change from the removed or renamed name.
    - Keep the section order and the `Upgrade:` line under each breaking entry.
+   - A subject that is not a conventional commit is left out. Say so when it hides user-facing work.
 4. **Deliver.**
    - Reply with the notes, or write them to the file the user names.
    - Name the range used in one line, so the user can rerun it with `--from`.
-
-## Mapping
-
-| Commit | Section |
-|---|---|
-| `type!:` or a `BREAKING CHANGE:` footer | Breaking changes, with the footer text as its upgrade step |
-| `feat` | Added |
-| `feat` whose subject starts with remove, drop or delete | Removed |
-| `perf` | Changed |
-| `fix` | Fixed |
-| `revert` | Removed |
-| `build`, `chore`, `ci`, `docs`, `refactor`, `style`, `test` | left out, unless breaking |
-
-A subject that is not a conventional commit is left out. Say so when it hides user-facing work.
 
 ## Missing `## Unreleased` lines
 

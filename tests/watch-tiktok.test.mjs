@@ -4,7 +4,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import './watch-gate-env.mjs';
 import { readTikTok, isTikTokUrl, prefetchTikTok } from '../skills/watch/scripts/tiktok.mjs';
-import { watchOne } from '../skills/watch/scripts/watch.mjs';
+import { watchGuarded } from '../skills/watch/scripts/watch.mjs';
 import { tempDir } from './harness.mjs';
 
 const VTT = 'WEBVTT\n\n00:00:00.000 --> 00:00:02.000\nHello there\n\n00:00:02.000 --> 00:00:04.000\nSecond line\n';
@@ -70,7 +70,7 @@ test('the watch entry point reads a TikTok link with the TikTok reader and write
   const subtitle = [{ LanguageCodeName: 'eng-US', Format: 'webvtt', Url: 'https://v16.tiktokcdn.com/sub.vtt' }];
   const fetchFn = fetchStub({ [VIDEO_URL]: pageWith(subtitle), 'https://v16.tiktokcdn.com/sub.vtt': VTT });
   const options = routeOptions();
-  const result = await watchOne(VIDEO_URL, options, fetchFn);
+  const result = await watchGuarded(VIDEO_URL, options, fetchFn);
   assert.equal(result.failure, undefined);
   assert.match(result.line, /id=tiktok-7300000000000000000 title="A clip" duration=0:00:04 captions=tiktok:eng/);
   assert.match(fs.readFileSync(result.transcript, 'utf8'), /Hello there/);
@@ -79,7 +79,7 @@ test('the watch entry point reads a TikTok link with the TikTok reader and write
 test('a machine-made page caption track is labelled auto with its own language', async () => {
   const subtitle = [{ LanguageCodeName: 'fra-FR', Source: 'ASR', Format: 'webvtt', Url: 'https://v16.tiktokcdn.com/sub.vtt' }];
   const fetchFn = fetchStub({ [VIDEO_URL]: pageWith(subtitle), 'https://v16.tiktokcdn.com/sub.vtt': VTT });
-  const result = await watchOne(VIDEO_URL, routeOptions(), fetchFn);
+  const result = await watchGuarded(VIDEO_URL, routeOptions(), fetchFn);
   assert.match(result.line, /captions=auto:fra( |$)/);
 });
 
@@ -91,7 +91,7 @@ test('a TikTok page the reader cannot read goes to yt-dlp when it is on PATH', a
   const saved = process.env.PATH;
   process.env.PATH = bin;
   try {
-    const result = await watchOne(VIDEO_URL, routeOptions(), fetchStub({}));
+    const result = await watchGuarded(VIDEO_URL, routeOptions(), fetchStub({}));
     assert.match(result.failure, /yt-dlp/);
   } finally {
     process.env.PATH = saved;
@@ -112,12 +112,12 @@ test('a readable TikTok page with no captions goes to yt-dlp for speech when it 
   const bin = path.join(fs.realpathSync(tempDir('watch-tiktok-speech-')), 'bin');
   fs.mkdirSync(bin);
   fs.writeFileSync(path.join(bin, 'yt-dlp'), '#!/bin/sh\necho "fake yt-dlp ran" >&2\nexit 3\n', { mode: 0o755 });
-  const result = await withPath(bin, () => watchOne(VIDEO_URL, routeOptions(), fetchStub({ [VIDEO_URL]: pageWith([]) })));
+  const result = await withPath(bin, () => watchGuarded(VIDEO_URL, routeOptions(), fetchStub({ [VIDEO_URL]: pageWith([]) })));
   assert.match(result.failure, /fake yt-dlp ran/);
 });
 
 test('without yt-dlp the speech and keyframes request is a gap naming what was not done and downloads nothing', async () => {
-  const result = await withPath('', () => watchOne(VIDEO_URL, routeOptions(), fetchStub({ [VIDEO_URL]: pageWith([]) })));
+  const result = await withPath('', () => watchGuarded(VIDEO_URL, routeOptions(), fetchStub({ [VIDEO_URL]: pageWith([]) })));
   assert.match(result.failure, /speech-to-text and keyframes were not done: yt-dlp is not on PATH/);
 });
 

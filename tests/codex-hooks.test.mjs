@@ -6,9 +6,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { codexHookEntries, codexHookTargets, DOCUMENTED_FIELDS } from '../harnesses/codex/hooks.mjs';
-import { tempDir } from './harness.mjs';
+import { REPOSITORY_ROOT as ROOT, tempDir } from './harness.mjs';
 
-const ROOT = new URL('../', import.meta.url).pathname;
 const TARGETS = ['hooks/session-start.mjs', 'hooks/dispatch-bash.mjs'];
 
 function handlersOf(entries) {

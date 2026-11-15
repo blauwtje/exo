@@ -7,10 +7,9 @@ import { HOOK_WORK_LOCK } from '../verify/budgets.mjs';
 import { checkHookWork } from '../verify/checks/hook-budgets.mjs';
 import { HOOK_INPUTS, countHookWork } from '../verify/hook-work.mjs';
 import { createRepository } from '../verify/repository.mjs';
-import { tempDir } from './harness.mjs';
-import { localGitDefinitions } from '../verify/checks/git-helper.mjs';
+import { REPOSITORY_ROOT as ROOT, tempDir } from './harness.mjs';
+import { checkGitHelper } from '../verify/checks/git-helper.mjs';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
 const QUIET = 'process.stdin.resume();\nprocess.stdin.on("end", () => process.exit(0));\n';
 
 function registered(names) {
@@ -76,6 +75,18 @@ test('a quiet hook script counts one module and no reads', () => {
 });
 
 const file = (relativePath, text) => ({ relativePath, text });
+
+function localGitDefinitions(files) {
+  const results = [];
+  const repository = {
+    trackedFiles: () => files.map(({ relativePath }) => relativePath),
+    relative: (relativePath) => relativePath,
+    join: (relativePath) => relativePath,
+    text: (relativePath) => files.find((entry) => entry.relativePath === relativePath).text
+  };
+  checkGitHelper({ result: (status, name, detail) => results.push({ status, detail }) }, repository);
+  return results.filter(({ status }) => status === 'FAIL').map(({ detail }) => detail.split(' ')[0]);
+}
 
 test('a local function git definition fails', () => {
   assert.deepEqual(localGitDefinitions([file('skills/x/scripts/a.mjs', 'function git(root, args) {}\n')]), ['skills/x/scripts/a.mjs']);

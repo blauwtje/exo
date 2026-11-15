@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { limitLifetime } from '#lifetime';
+import { USAGE_EXIT } from '#script-flags';
 import { gateRequest } from '../../watch/scripts/request-gate.mjs';
 import { cookieHeader, confirmStep } from './age-gate.mjs';
 import { waybackSnapshot } from './archive.mjs';
@@ -9,13 +10,11 @@ import { BlockedPage, blockReason } from './block-detect.mjs';
 import { renderWithBrowser } from './browser-render.mjs';
 import { khorosFeedText } from './khoros-feed.mjs';
 import { appendMetric } from './search.mjs';
-import { BlockedRoute } from './sources/http.mjs';
+import { BlockedRoute, USER_AGENT } from './sources/http.mjs';
 import { createHostState } from './sources/host-state.mjs';
 import { pageRoute } from './sources/pages.mjs';
 import { pageText } from './page-text.mjs';
 import { excludeScratchIfGit, pagePath, recordSource } from './ledger.mjs';
-
-const USER_AGENT = 'Mozilla/5.0 (compatible; exo-research)';
 
 async function load(url, context, init = {}) {
   await gateRequest(url, context.gate);
@@ -94,7 +93,7 @@ async function direct(row, context, runDir) {
   throw blockedPage(reason, runDir, row.url);
 }
 
-export async function fetchPage(url, options) {
+async function fetchPage(url, options) {
   const { runDir, fetchImpl = fetch, gate = {}, render = renderWithBrowser } = options;
   const row = recordSource(runDir, { url, fields: {} });
   const file = pagePath(runDir, row.ref);
@@ -108,7 +107,7 @@ export async function fetchPage(url, options) {
   return { ...row, file, cached: false, via: found.via };
 }
 
-export async function savePageText(url, text, options) {
+async function savePageText(url, text, options) {
   const row = recordSource(options.runDir, { url, fields: {} });
   const file = pagePath(options.runDir, row.ref);
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -129,7 +128,7 @@ async function fetchOne(url, options) {
   }
 }
 
-export async function fetchMany(urls, options) {
+async function fetchMany(urls, options) {
   const outcomes = await Promise.all(urls.map((url) => fetchOne(url, options)));
   const lines = outcomes.map((outcome) => outcome.failure ?? outcome);
   const failures = outcomes.flatMap((outcome) => outcome.failure ?? []);
@@ -148,7 +147,7 @@ async function main(argv) {
   const [runDir, ...urls] = argv;
   if (!runDir || urls.length === 0) {
     process.stderr.write('usage: fetch.mjs <run-dir> <url>... | fetch.mjs --save <run-dir> <url> < text\n');
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   const { lines, failed } = await fetchMany(urls, { runDir });

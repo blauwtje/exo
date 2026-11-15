@@ -1,6 +1,6 @@
 # Prompt rules
 
-Read this when you write a skill or agent body, a delegate prompt or a brief. Each rule here is one the instruction-style guide does not hold.
+Each rule here is one the instruction-style guide does not hold.
 
 ## Keep what was asked
 

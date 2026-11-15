@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { test } from 'node:test';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
-import { redGreen, runOnBase } from '../lib/red-green.mjs';
+import { redGreen, runInWorktree } from '../lib/red-green.mjs';
 import { commitFiles, gitRepository, restoreEnv } from './harness.mjs';
 import { CHANGED, PLAN, editApp, landingCheckout } from './land-task-fixture.mjs';
 
@@ -63,26 +63,26 @@ test('a base that passes within head plus margin warns of no red proof and lands
   assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-test('runOnBase names both times in the red line of a base stopped at the bound', async () => {
+test('runInWorktree names both times in the red line of a base stopped at the bound', async () => {
   const { root } = await landingCheckout();
-  const result = await withEnv(TINY, () => runOnBase({
-    root, base: 'HEAD', command: HANGS_AFTER_FAILING, timeoutMs: 4000, headMs: 100
+  const result = await withEnv(TINY, () => runInWorktree({
+    root, base: 'HEAD', command: HANGS_AFTER_FAILING, overlay: [], timeoutMs: 4000, headMs: 100
   }));
   assert.equal(result.status, 'red');
   assert.match(result.output, /not ok 1 - boom/);
   assert.match(result.output, /base run did not finish within 1\.1 s; head run took 0\.1 s/);
 });
 
-test('runOnBase without a head time still reports the proof timeout as error', async () => {
+test('runInWorktree without a head time still reports the proof timeout as error', async () => {
   const { root } = await landingCheckout();
-  const result = await withEnv(TINY, () => runOnBase({ root, base: 'HEAD', command: HANGS_AFTER_FAILING, timeoutMs: 1500 }));
+  const result = await withEnv(TINY, () => runInWorktree({ root, base: 'HEAD', command: HANGS_AFTER_FAILING, overlay: [], timeoutMs: 1500 }));
   assert.equal(result.status, 'error');
   assert.match(result.output, /timed out after 1500 ms/);
 });
 
-test('runOnBase keeps error when the bound reaches the proof timeout', async () => {
+test('runInWorktree keeps error when the bound reaches the proof timeout', async () => {
   const { root } = await landingCheckout();
-  const result = await withEnv(TINY, () => runOnBase({ root, base: 'HEAD', command: HANGS_AFTER_FAILING, timeoutMs: 1000, headMs: 100 }));
+  const result = await withEnv(TINY, () => runInWorktree({ root, base: 'HEAD', command: HANGS_AFTER_FAILING, overlay: [], timeoutMs: 1000, headMs: 100 }));
   assert.equal(result.status, 'error');
 });
 
@@ -90,6 +90,6 @@ test('redGreen proves a Success criterion whose base never exits after failing',
   const root = await gitRepository({ 'a.txt': 'a\n' });
   await commitFiles(root, { ok: 'x\n' }, 'feat: the fix');
   const command = 'if test -f ok; then exit 0; fi; echo "not ok"; sleep 300';
-  const result = await withEnv(TINY, () => redGreen({ root, base: 'HEAD~1', command, timeoutMs: 4000 }));
+  const result = await withEnv(TINY, () => redGreen({ root, base: 'HEAD~1', command, overlay: [], repeat: 1, timeoutMs: 4000 }));
   assert.equal(result.outcome, 'proved', result.lines.join('\n'));
 });

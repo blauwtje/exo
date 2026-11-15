@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { limitLifetime, SPEC_SEARCH_LIFETIME_MS } from '#lifetime';
+import { USAGE_EXIT } from '#script-flags';
 import { excludeScratchIfGit, recordSource } from './ledger.mjs';
 import { BlockedRoute } from './sources/http.mjs';
 import { SOURCES } from './sources/index.mjs';
@@ -9,7 +10,7 @@ import { loginBrowser } from './sources/reddit-browser.mjs';
 
 const DEFAULT_LIMIT = 5;
 
-export async function searchSource(request, context) {
+async function searchSource(request, context) {
   const { source, query, limit = DEFAULT_LIMIT, runDir, subreddit, sort, time, urls } = request;
   const adapter = SOURCES[source];
   if (!adapter) throw new Error(`unknown source ${source}; use ${Object.keys(SOURCES).join(', ')}`);
@@ -44,7 +45,7 @@ function failureLine(source, error) {
   return `status: ${kind} ${source} ${error.message}`;
 }
 
-export async function searchMany(request, context) {
+async function searchMany(request, context) {
   const { sources, ...rest } = request;
   const settled = await Promise.allSettled(sources.map((source) => timedSearch({ ...rest, source }, context)));
   const lines = [];
@@ -69,7 +70,7 @@ function flagName(token) {
   return name;
 }
 
-export function parseArgs(argv) {
+function parseArgs(argv) {
   const values = {};
   let owner = null;
   for (const token of argv) {
@@ -92,9 +93,9 @@ export function parseArgs(argv) {
   return values;
 }
 
-export async function loginReddit(open = loginBrowser) {
+async function loginReddit() {
   try {
-    await open();
+    await loginBrowser();
     return null;
   } catch (error) {
     if (!(error instanceof BlockedRoute)) throw error;
@@ -110,13 +111,13 @@ async function main(argv) {
     args = parseArgs(argv);
   } catch (error) {
     process.stderr.write(`${error.message}\n`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   if (args.login) {
     if (args.source !== 'reddit') {
       process.stderr.write('usage: search.mjs --source reddit --login\n');
-      process.exitCode = 2;
+      process.exitCode = USAGE_EXIT;
       return;
     }
     const line = await loginReddit();
@@ -127,7 +128,7 @@ async function main(argv) {
   const hasInput = args.query || args.urls;
   if (!args.source || !hasInput || !args.run) {
     process.stderr.write('usage: search.mjs --source <name>[,<name>...] (--query <text> | --url <thread url>...) --run <dir> [--limit <n>] [--subreddit <name>] [--sort <order>] [--time <window>]\n');
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   const request = { sources: args.source.split(','), query: args.query ?? '', limit: Number(args.limit ?? DEFAULT_LIMIT), runDir: args.run, subreddit: args.subreddit, sort: args.sort, time: args.time, urls: args.urls };

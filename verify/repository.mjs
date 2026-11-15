@@ -4,6 +4,19 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { EXPECTED_SKILLS } from './budgets.mjs';
 
+export const SHIPPED_ROOTS = ['skills', 'lib', 'hooks', 'agents'];
+
+export function isFile(target) {
+  return fs.existsSync(target) && fs.statSync(target).isFile();
+}
+
+export function matchingLines(text, pattern) {
+  return text.split('\n')
+    .map((line, index) => ({ line, number: index + 1 }))
+    .filter(({ line }) => pattern.test(line))
+    .map(({ number }) => number);
+}
+
 function comparePaths(left, right) {
   const loweredLeft = left.toLowerCase();
   const loweredRight = right.toLowerCase();
@@ -18,7 +31,7 @@ function listTrackedFiles(absoluteRoot) {
     return listing.stdout.split('\0')
       .filter((entry) => entry !== '')
       .map((entry) => path.join(absoluteRoot, entry))
-      .filter((full) => fs.existsSync(full) && fs.statSync(full).isFile())
+      .filter(isFile)
       .sort(comparePaths);
   }
   return fs.readdirSync(absoluteRoot, { recursive: true, withFileTypes: true })
@@ -39,6 +52,16 @@ function listEverySkillFile(skillsRoot) {
     .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(skillsRoot, entry.name, 'SKILL.md')))
     .map((entry) => path.join(skillsRoot, entry.name, 'SKILL.md'))
     .sort(comparePaths);
+}
+
+function listSkillScriptFiles(skillsRoot, skillDirectories) {
+  return skillDirectories
+    .map((name) => path.join(skillsRoot, name, 'scripts'))
+    .filter((folder) => fs.existsSync(folder) && fs.statSync(folder).isDirectory())
+    .flatMap((folder) => fs.readdirSync(folder).sort()
+      .filter((name) => !name.startsWith('.'))
+      .map((name) => path.join(folder, name))
+      .filter(isFile));
 }
 
 function readLines(file) {
@@ -76,7 +99,7 @@ export function createRepository(root) {
     return found.sort(comparePaths);
   }
 
-  return {
+  const repository = {
     root: absoluteRoot,
     skillsRoot,
     relative,
@@ -94,7 +117,15 @@ export function createRepository(root) {
       if (!fs.existsSync(agentsRoot)) return [];
       return walk(agentsRoot, (full) => full.endsWith('.md'));
     },
+    skillScriptFiles: () => listSkillScriptFiles(skillsRoot, listSkillDirectories(skillsRoot)),
+    shippedTextFiles: () => [...new Set([
+      ...repository.processFiles(),
+      ...repository.promptFiles(),
+      ...repository.agentFiles(),
+      ...repository.everySkillFile()
+    ])],
     lines: readLines,
     text: createTextCache()
   };
+  return repository;
 }

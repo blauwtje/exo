@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const KEY_NAME = /^\w+$/;
 
-export function checkKeyValue(value) {
+function checkKeyValue(value) {
   if (!value) return 'the key is empty';
   if (/\s/.test(value)) return 'the key holds whitespace or a newline';
   return null;
@@ -18,7 +18,7 @@ function replaced(lines, name, value) {
   return lines.map((line, index) => (index === at ? `${name}=${value}` : line));
 }
 
-export function keysFileText(existing, name, value) {
+function keysFileText(existing, name, value) {
   const lines = existing.split('\n');
   const swapped = replaced(lines, name, value);
   if (swapped) return swapped.join('\n');

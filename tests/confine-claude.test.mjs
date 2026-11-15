@@ -8,10 +8,6 @@ import { tempDir } from './harness.mjs';
 
 const darwin = process.platform === 'darwin';
 
-function userTempDir() {
-  return fs.realpathSync(execFileSync('getconf', ['DARWIN_USER_TEMP_DIR'], { encoding: 'utf8' }).trim());
-}
-
 function sandboxedTouch(profile, file) {
   return spawnSync('sandbox-exec', ['-p', profile, '/usr/bin/touch', file], { encoding: 'utf8' });
 }
@@ -19,7 +15,7 @@ function sandboxedTouch(profile, file) {
 test('sandbox profile lets xcrun refresh its cache in the user temp dir', { skip: !darwin }, () => {
   const root = fs.realpathSync(tempDir('confine-root-'));
   const profile = sandboxProfile([root]);
-  const dir = userTempDir();
+  const dir = fs.realpathSync(execFileSync('getconf', ['DARWIN_USER_TEMP_DIR'], { encoding: 'utf8' }).trim());
   const cache = path.join(dir, `xcrun_db-confine-test-${process.pid}`);
   const other = path.join(dir, `confine-test-other-${process.pid}`);
   try {

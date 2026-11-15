@@ -54,7 +54,7 @@ Exo run words (gate, brief, spec, round, worker and the rest) are listed in `out
 
 ## Sources
 
-The check `user-read format` reads this table. A listed file needs an answer line before its first heading, the user's-language rule, no banned phrase and at most 2 plain-word entries per 100 words.
+`verify/user-read.mjs` reads this table. A listed file needs an answer line before its first heading, the user's-language rule, no banned phrase and at most 2 plain-word entries per 100 words.
 
 | File | Section |
 |---|---|

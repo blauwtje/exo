@@ -56,6 +56,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `node benchmarks/adhd-score.mjs --base-style <file>` runs the style in `<file>` and the current `adhd` style on the same quick cases in one run under one cost limit, and prints the paired candidate-minus-base interval for facts kept and visible ratio; `benchmarks/results/2026-11-12-adhd-style-pair.md` records one such round, whose figure rule showed no facts-kept difference and stays unlanded.
 
 ### Changed
+- `build refactor` gains a repo-wide route: a tool pass, one rubric and golden file per type up front, a 3-file dry run, a batched fan-out with per-file retries, one diff review and one `npm run check` at the end, in place of review-and-replan rounds; `waveLimit` in run.json `defaults` sets how many tasks run at once (default 4).
+- Every skill script has one owner per value and no flag or default only its tests used.
+- `lib/` has one owner per decision, with dead functions, forwarders, test-only exports and defaults no caller passes removed (112 files and 9422 lines to 111 files and 9229 lines).
+- Four hooks share one stdin entry point and drop dead defaults and test-only options.
+- Each rule in the skill and agent texts has one owner, and rule parts lost in earlier edits are back.
+- `verify/` has one owner per reader, with dead scripts, forwarders and test-only exports removed (60 files to 58).
+- Test helpers have one owner in `tests/harness.mjs`, `tests/setup-fixture.mjs` and `tests/check-outcome.mjs`, with forwarders and defaults no test passes removed.
 - The whole codebase meets the code rules (328 failing findings to 1 deliberate fixture), single-use modules live in their only importer (30 fewer files), `run-command.mjs` is split by concern into itself and `run-stages.mjs`, and each limit, refusal class and gh error has one owner.
 - Session-start, dispatch and skill text say each rule once, about 3,000 tokens shorter in total; an `exo:research-worker` brief opening `exo-kind: hardest` or `exo-kind: review` now runs on that kind's model.
 - `gate --recheck` replaces `gate --since <rev>`: after the one fix round the gate reruns only the plan's checks and runs no second review, and its report is final.

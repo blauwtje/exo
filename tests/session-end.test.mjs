@@ -52,10 +52,10 @@ test('a session that wrote no handoff leaves a stub with dirty files, the progre
   assert.ok(lines.includes(`Resume: read ${handoff} and continue the work`));
 });
 
-function stubFor(extra = {}) {
+function stubFor() {
   const { cwd, handoff } = repository();
   fs.writeFileSync(path.join(cwd, 'draft.txt'), 'x');
-  endSession(cwd, extra);
+  endSession(cwd);
   return fs.readFileSync(handoff, 'utf8');
 }
 

@@ -1,16 +1,14 @@
+import { stripFrontmatter } from '../markdown.mjs';
+
 function frontmatterTools(text) {
   const line = /^tools:\s*(.+)$/m.exec(text)?.[1] ?? '';
   return line.split(',').map((tool) => tool.trim());
 }
 
-function bodyOf(text) {
-  return text.replace(/^---\n[\s\S]*?\n---\n/, '');
-}
-
 function leaksBackground(text) {
   const tools = frontmatterTools(text);
   if (!tools.includes('Monitor')) return false;
-  const body = bodyOf(text);
+  const body = stripFrontmatter(text);
   if (tools.includes('TaskStop') && body.includes('TaskStop')) return false;
   return true;
 }

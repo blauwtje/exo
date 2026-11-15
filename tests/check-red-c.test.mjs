@@ -1,38 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { createRepository } from '../verify/repository.mjs';
 import { checkQuestionOptions } from '../verify/checks/question-options.mjs';
 import { checkScriptOutput } from '../verify/checks/script-output.mjs';
 import { checkSessionLoad } from '../verify/checks/session-load.mjs';
-
-function recorder() {
-  const results = [];
-  const result = (...entry) => results.push({ status: entry[0], name: entry[1], detail: entry[2] });
-  return {
-    results,
-    result,
-    note: () => {},
-    assert: (ok, name, details) => result(ok ? 'PASS' : 'FAIL', name, ok ? details.pass : details.fail)
-  };
-}
-
-function tree(files) {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-check-red-'));
-  for (const [relativePath, text] of Object.entries(files)) {
-    fs.mkdirSync(path.dirname(path.join(root, relativePath)), { recursive: true });
-    fs.writeFileSync(path.join(root, relativePath), text);
-  }
-  return root;
-}
-
-function failures(check, root) {
-  const report = recorder();
-  check(report, createRepository(root));
-  return report.results.filter((entry) => entry.status === 'FAIL');
-}
+import { failures, recorder, tree } from './check-outcome.mjs';
 
 test('question options fails on an option list that skips a letter', () => {
   const root = tree({ 'skills/x/SKILL.md': '---\nname: x\n---\n- **(A)** one\n- **(C)** two\n' });

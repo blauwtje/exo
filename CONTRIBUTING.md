@@ -95,7 +95,7 @@ A new setting is one entry in `skills/configure/schema.json` plus the matching `
 ## How a skill dispatches work
 
 - Four roles are plugin agents under `agents/`, because an agent file fixes a tool list and a turn limit, and its body is the system prompt rather than text pasted into every dispatch. A role becomes an agent only when one effort, one tool list and one turn limit fit every dispatch. Each agent's description says what it does. `agents/orchestrator.md` is the general orchestrator, added after a `general-purpose` orchestrator was refused twice by `hooks/agent-effort.mjs` for worker briefs with no `exo-kind:`, was refused a report file Write, and hit the 60k context note while waiting on workers. It runs on the `orchestrator` kind, Opus at `medium`, lowered from `high`.
-- `lib/model-kinds.json` owns every model and effort: it maps each agent file to a task kind and each kind to a tier and an effort, so this page names neither. `lib/model-kinds.mjs` validates it, `hooks/agent-effort.mjs` applies it to a dispatch, and `skills/build/scripts/run-plan.mjs` and `run-tail.mjs` pick the kinds a headless run uses. An `exo-kind:` label moves an `exo:` agent off its own kind only when the call also passes `model` or `effort`, or the agent's entry lists that label under `labels`.
+- `lib/model-kinds.json` owns every model and effort: it maps each agent file to a task kind and each kind to a tier and an effort, so this page names neither. `lib/model-kinds.mjs` validates it, `hooks/agent-effort.mjs` applies it to a dispatch, and `skills/build/scripts/run-plan.mjs` picks the kinds a headless run uses. An `exo-kind:` label moves an `exo:` agent off its own kind only when the call also passes `model` or `effort`, or the agent's entry lists that label under `labels`.
 - The `budget` setting turns the per-kind table on or off. Under `on`, `agent-effort` sets each dispatch's model and effort from the kind's `on` cell and denies an `exo:` call whose passed pair differs; under `off` every agent inherits the session. A refused `land-task` ends with `exo-retry`, which gives the dispatch the kind's `retry` cell (`lib/refusal-handlers.mjs` holds each `Then:` line, `land-task.mjs` the refusals that skip it). `lib/settings-store.mjs` holds the `budget` schema and its old-name aliases.
 - The `claude` provider maps the `deep` tier to `inherit`, so `hardest` runs on the main session's model with the kind's effort.
 - `next-task.mjs` prints the `input unreachable` handler, not the `plan drift` handler, when a drift item is an input path this machine cannot read, because no repair session can supply it; the run stops `BLOCKED` with that path. `lib/refusal-handlers.mjs` holds the handler and `skills/build/references/run-loop-direct.md` the routing.
@@ -211,8 +211,6 @@ Rules for writing a hook live in `skills/edit-skills/references/hook-shape.md`.
 Each hook entry pins `"shell": "bash"`, else a Windows host without Git Bash falls back to PowerShell; the hook command stays in shell form, not `args`, so Claude Code resolves the shell, not `bash` on `PATH`. The session hook stays Node (`hooks/session-start.mjs`), with no `jq`. `.gitattributes` forces LF, because a CRLF shebang fails silently on Windows.
 
 The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration.
-
-- **Figure sources** (`unsourcedFigures` in `lib/evidence-rules.mjs`): returns each report line holding a cost, count or wall figure with no path or command beside it; the orchestrator sends such a report back.
 
 ## Codex
 

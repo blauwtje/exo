@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, gitRepository, run } from './harness.mjs';
+import { tempDir, gitRepository, run } from './harness.mjs';
 
 const PLAN_CHECK = fileURLToPath(new URL('../skills/spec/scripts/plan-check.mjs', import.meta.url));
 const CORPUS = fileURLToPath(new URL('./fixtures/plans', import.meta.url));
@@ -27,7 +27,7 @@ function seedFiles(repo) {
 
 async function check(planText, header) {
   const root = await gitRepository(seedFiles(header.repo));
-  const planPath = path.join(await fixture(), 'plan.md');
+  const planPath = path.join(await tempDir('ui-design-test-'), 'plan.md');
   fs.writeFileSync(planPath, planText);
   const flags = (header.flags ?? '').split(' ').filter(Boolean);
   const rootArguments = flags.includes('noroot') ? [] : ['--root', root];

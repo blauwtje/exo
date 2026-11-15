@@ -30,8 +30,9 @@ export function loadRunConfig({ home }) {
 export function runDefaults(home) {
   try {
     return loadRunConfig({ home }).defaults ?? {};
-  } catch {
-    return {};
+  } catch (error) {
+    if (error instanceof SyntaxError) return {};
+    throw error;
   }
 }
 
@@ -48,7 +49,7 @@ export function readKeys(file) {
   return keys;
 }
 
-export function mapEffort(level, accepted, order) {
+function mapEffort(level, accepted, order) {
   if (accepted.includes(level)) return level;
   const at = order.indexOf(level);
   let best = null;

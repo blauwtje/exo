@@ -1,21 +1,23 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { clearlyWorse, heldOutDiff, itemsMean, planHoldout, splitIds, splitItems } from '../lib/holdout.mjs';
+import { clearlyWorse, heldOutDiff, itemsMean, planHoldout, splitItems } from '../lib/holdout.mjs';
 
 const IDS = Array.from({ length: 12 }, (_, at) => `case-${at}`);
+const SETTINGS = { holdoutMin: 8, holdoutShare: 0.25 };
 
 test('the split depends only on the ids, not their order or repeats', () => {
-  const split = splitIds(IDS, 0.25);
-  assert.equal(split.held.length, 3);
-  assert.equal(split.tune.length, 9);
-  assert.deepEqual(splitIds([...IDS].reverse(), 0.25), split);
-  assert.deepEqual(splitIds([...IDS, ...IDS.slice(0, 4)], 0.25), split);
-  assert.deepEqual([...split.held, ...split.tune].sort(), [...IDS].sort());
+  const split = planHoldout(IDS, SETTINGS);
+  assert.deepEqual(split, { held: ['case-2', 'case-3', 'case-6'], cases: 12 });
+  assert.deepEqual(planHoldout([...IDS].reverse(), SETTINGS), split);
+  assert.deepEqual(planHoldout([...IDS, ...IDS.slice(0, 4)], SETTINGS), split);
+  const parts = splitItems(Object.fromEntries(IDS.map((id) => [id, 1])), split.held);
+  assert.equal(Object.keys(parts.tune).length, 9);
+  assert.deepEqual([...Object.keys(parts.held), ...Object.keys(parts.tune)].sort(), [...IDS].sort());
 });
 
 test('adding a case keeps every earlier held-out case held out or moves at most one', () => {
-  const before = splitIds(IDS.slice(0, 11), 0.25).held;
-  const after = splitIds(IDS, 0.25).held;
+  const before = planHoldout(IDS.slice(0, 11), SETTINGS).held;
+  const after = planHoldout(IDS, SETTINGS).held;
   assert.ok(before.filter((id) => !after.includes(id)).length <= 1);
 });
 
@@ -25,7 +27,7 @@ test('planHoldout holds out nothing under holdoutMin ids, with no held share or 
   assert.equal(planHoldout([], settings), null);
   assert.equal(planHoldout(IDS, { ...settings, holdoutShare: 0 }), null);
   assert.equal(planHoldout(IDS.slice(0, 8), { holdoutMin: 8, holdoutShare: 0.9 }), null);
-  assert.deepEqual(planHoldout(IDS.slice(0, 8), settings), { held: splitIds(IDS.slice(0, 8), 0.25).held, cases: 8 });
+  assert.deepEqual(planHoldout(IDS.slice(0, 8), settings), { held: ['case-2', 'case-3'], cases: 8 });
 });
 
 test('splitItems sorts each value into tuning or held-out by id', () => {

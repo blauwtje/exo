@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { runTool, toolReason } from './run-tool.mjs';
+import { isExecutable } from './ytdlp-binary.mjs';
+import { runTool, ToolFailure, toolReason } from './run-tool.mjs';
 import { ensureModel } from './whisper-model.mjs';
 import { transcribeWithNode, vttOf } from './whisper-node.mjs';
 
@@ -13,14 +14,7 @@ let engineQueue = Promise.resolve();
 
 function onPath(tool, env) {
   const folders = (env.PATH ?? '').split(path.delimiter).filter(Boolean);
-  return folders.some((folder) => {
-    try {
-      fs.accessSync(path.join(folder, tool), fs.constants.X_OK);
-      return true;
-    } catch {
-      return false;
-    }
-  });
+  return folders.some((folder) => isExecutable(path.join(folder, tool)));
 }
 
 function engineOf(options) {
@@ -62,6 +56,7 @@ async function readableAudio(audio, options) {
     const toWav = options.toWav ?? (await import('./decoder.mjs')).toWav;
     return { file: await toWav(audio, options) };
   } catch (error) {
+    if (!(error instanceof ToolFailure)) throw error;
     return { failure: `converting the audio failed: ${error.message}` };
   }
 }

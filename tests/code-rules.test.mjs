@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { git, tempDir } from './harness.mjs';
-import { codeRuleConcerns, codeRuleFindings } from '../lib/code-rules.mjs';
+import { codeRuleFindings } from '../lib/code-rules.mjs';
 
 const FAKE_ESLINT = `#!/usr/bin/env node
 const args = process.argv.slice(2);
@@ -152,58 +152,7 @@ function fixtureBranch() {
   return branchWith(Object.fromEntries(FIXTURE_FILES.map((name) => [name, fs.readFileSync(path.join(FIXTURE, name), 'utf8')])));
 }
 
-function rulesAt(findings) {
-  return findings.map((finding) => finding.split(' ').slice(0, 2).join(' '));
-}
-
-test('the scan flags the duplicate literal and the unused export planted in the fixture', () => {
-  const found = codeRuleConcerns(fixtureBranch()).map((concern) => concern.split('; ').slice(0, 3).join('; '));
-  assert.deepEqual(found, [`${MODULE}:3; concern; duplicate-literal`, `${MODULE}:21; concern; unused-export`]);
-});
-
 test('the scan flags the swallowed catch planted in the fixture', () => {
   const { fails } = codeRuleFindings(fixtureBranch());
-  assert.deepEqual(rulesAt(fails), [`${MODULE}:14 swallowed-catch`]);
-});
-
-test('a concern has the review finding shape: location, severity, id, one action', () => {
-  const concerns = codeRuleConcerns(fixtureBranch());
-  assert.equal(concerns.length, 2);
-  for (const concern of concerns) assert.match(concern, /^\S+:\d+; concern; [\w-]+; [^;]+; report$/);
-  assert.deepEqual(concerns.map((concern) => concern.split('; ')[2]), ['duplicate-literal', 'unused-export']);
-});
-
-test('an export another file imports is not flagged', () => {
-  const branch = branchWith({ 'src/a.mjs': 'export function used() {\n  return 1;\n}\n', 'src/b.mjs': "import { used } from './a.mjs';\nexport default used;\n" });
-  assert.deepEqual(codeRuleConcerns({ ...branch, paths: ['src/a.mjs'] }), []);
-});
-
-test('an export listed under a name another file imports is not flagged', () => {
-  const branch = branchWith({ 'src/a.mjs': 'const value = 1;\nexport { value as shared };\n', 'src/b.mjs': "import { shared } from './a.mjs';\nconsole.log(shared);\n" });
-  assert.deepEqual(codeRuleConcerns({ ...branch, paths: ['src/a.mjs'] }), []);
-});
-
-test('an export of the package entry file is not flagged', () => {
-  const branch = branchWith({ 'src/main.mjs': 'export function api() {\n  return 1;\n}\n' }, { type: 'module', main: './src/main.mjs' });
-  assert.deepEqual(codeRuleConcerns(branch), []);
-});
-
-test('an unused export in a test file is not flagged', () => {
-  const branch = branchWith({ 'tests/helper.test.mjs': 'export function helper() {\n  return 1;\n}\n' });
-  assert.deepEqual(codeRuleConcerns(branch), []);
-});
-
-test('a literal bound once is not flagged', () => {
-  const branch = branchWith({ 'src/a.mjs': "const port = 8080;\nconst host = 'localhost';\nconsole.log(port, host);\n" });
-  assert.deepEqual(codeRuleConcerns(branch), []);
-});
-
-test('a literal compared twice or a short literal bound twice is not flagged', () => {
-  const branch = branchWith({ 'src/a.mjs': "const one = 10;\nconst two = 10;\nconsole.log(one === 8080, two === 8080);\nconsole.log(one === 'localhost', two === 'localhost');\n" });
-  assert.deepEqual(codeRuleConcerns(branch), []);
-});
-
-test('a literal bound twice only in a test file is not flagged', () => {
-  const branch = branchWith({ 'tests/a.test.mjs': 'const first = 8080;\nconst second = 8080;\nconsole.log(first, second);\n' });
-  assert.deepEqual(codeRuleConcerns(branch), []);
+  assert.deepEqual(fails.map((finding) => finding.split(' ').slice(0, 2).join(' ')), [`${MODULE}:14 swallowed-catch`]);
 });

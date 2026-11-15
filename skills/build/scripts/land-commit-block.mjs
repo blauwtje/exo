@@ -2,9 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { withoutRunVariables } from '#process-tree';
 import { UsageError } from '#script-flags';
 import { planTaskTrailer } from '#plan-landed';
-import { escapeRegExp, shellQuote } from '#basics';
-
-export { escapeRegExp };
+import { shellQuote } from '#basics';
 import { LandingError } from './land-errors.mjs';
 
 function trailersOf(planId, number, signatures) {
@@ -44,7 +42,7 @@ function deriveCommit({ task, number, planId, signatures, root }) {
 }
 
 
-export function commitBlockOf({ plan, number, planId, signatures = [], root = '.' }) {
+export function commitBlockOf({ plan, number, planId, signatures, root }) {
   const task = plan.tasks.find((entry) => entry.number === number);
   if (task === undefined) throw new UsageError(`no Task ${number} in the plan`);
   if (task.commitBlock !== null) {

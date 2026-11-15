@@ -22,7 +22,6 @@ Work in this order:
 
 ## The stop conditions
 
-- At the round limit (three) short of green, stop, summarize what remains and hand back.
 - Call it ready when the build is green, every comment is resolved and the branch merges cleanly.
 - The draft stays a draft until then, because marking it ready earlier misrepresents its state.
 - When the next fix needs a design choice, stop and ask the user to make it.

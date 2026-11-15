@@ -7,8 +7,9 @@
   "type": "module",
   "imports": {
     "#basics": "./lib/basics.mjs",
+    "#absent-path": "./lib/absent-path.mjs",
     "#attempt-fingerprint": "./lib/attempt-fingerprint.mjs",
-    "#branch-code-rules": "./lib/branch-code-rules.mjs",
+    "#best-effort": "./lib/best-effort.mjs",
     "#budgets": "./verify/budgets.mjs",
     "#build-progress": "./lib/build-progress.mjs",
     "#check-cache": "./lib/check-cache.mjs",

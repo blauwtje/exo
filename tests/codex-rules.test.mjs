@@ -2,13 +2,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { generateTree } from '../harnesses/codex/generate.mjs';
 import { codexBody, codexMarkdown } from '../harnesses/codex/rules.mjs';
-import { tempDir } from './harness.mjs';
-
-const SOURCE_ROOT = fileURLToPath(new URL('..', import.meta.url));
+import { REPOSITORY_ROOT as SOURCE_ROOT, tempDir } from './harness.mjs';
 
 const KNOWN = { skills: [], agents: [] };
 

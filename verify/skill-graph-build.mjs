@@ -1,11 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { escapeRegExp } from '#basics';
+import { SCHEME, HARNESS_ROOT_FILES } from './markdown.mjs';
 import { ROOT, relFromRoot, listDocFiles, listCodeFiles, skillNameFromPath, parseSections, normalizeHeading } from './skill-graph-files.mjs';
 
 const MD_LINK = /\[[^\]]*\]\(([^)]+)\)/g;
 const BACKTICK_SPAN = /`([^`]+)`/g;
-const SCHEME = /^[a-z][a-z0-9+.-]*:\/\//i;
-const HARNESS_ROOT_FILES = ['AGENTS.md', 'CLAUDE.md'];
 
 function looksLikePath(candidate) {
   if (!candidate.includes('/')) return false;
@@ -45,13 +45,9 @@ function extractLinks(relativePath, lines) {
 
 const BACKTICK_HEADING = /`(#{1,6}\s[^`]+)`/g;
 
-function escapeForRegExp(text) {
-  return text.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-}
-
 function mentionsSkill(line, skillName) {
   if (line.includes('`' + skillName + '`')) return true;
-  const bare = new RegExp(`(?<![\\w-])${escapeForRegExp(skillName)}(?![\\w-])`);
+  const bare = new RegExp(`(?<![\\w-])${escapeRegExp(skillName)}(?![\\w-])`);
   return bare.test(line);
 }
 

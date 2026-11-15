@@ -26,19 +26,19 @@ function runFastCommand(worktree, command) {
   return runCheck(worktree, command).ok ? null : command;
 }
 
-function runCoveringTests(worktree, tests, timeoutMs) {
+function runCoveringTests(worktree, tests) {
   const command = `node --test ${tests.join(' ')}`;
   const env = { ...process.env };
   delete env.NODE_TEST_CONTEXT;
-  return runCheck(worktree, command, { env, timeoutMs, record: false, fresh: true }).ok ? null : command;
+  return runCheck(worktree, command, { env, timeoutMs: TEST_TIMEOUT_MS, record: false, fresh: true }).ok ? null : command;
 }
 
-export function fastCheck({ worktree, fastCheck: command }, timeoutMs = TEST_TIMEOUT_MS) {
+function fastCheck({ worktree, fastCheck: command }) {
   const failedCommand = command ? runFastCommand(worktree, command) : null;
   if (failedCommand) return { ok: false, command: failedCommand };
   const tests = coveringTests(worktree, touchedPaths(worktree));
   if (tests.length === 0) return { ok: true };
-  const failedTests = runCoveringTests(worktree, tests, timeoutMs);
+  const failedTests = runCoveringTests(worktree, tests);
   return failedTests ? { ok: false, command: failedTests } : { ok: true };
 }
 

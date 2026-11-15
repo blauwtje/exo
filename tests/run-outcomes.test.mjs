@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { test } from 'node:test';
-import { RUN_OUTCOMES, outcome, outcomeLine, parkQuestion } from '../lib/run-outcomes.mjs';
+import { roundCap } from '../lib/loop-budget.mjs';
+import { RUN_OUTCOMES, outcomeLine } from '../lib/run-outcomes.mjs';
 
 const ACTIONS = ['continue', 'repair', 'park', 'stop'];
 
@@ -19,34 +17,27 @@ test('every row has its own kind, one known action and a single Then: line', () 
 test('the table is frozen and an unknown kind throws', () => {
   assert.ok(Object.isFrozen(RUN_OUTCOMES));
   assert.ok(Object.isFrozen(RUN_OUTCOMES.lock));
-  assert.throws(() => outcome('mystery'), /no run outcome for 'mystery'/);
+  assert.throws(() => outcomeLine('mystery'), /no run outcome for 'mystery'/);
 });
 
 test('a gate fail repairs, a question parks and only the bound stops', () => {
-  assert.equal(outcome('gate fail').action, 'repair');
-  assert.equal(outcome('question').action, 'park');
-  assert.equal(outcome('repair bound').action, 'stop');
+  assert.equal(RUN_OUTCOMES['gate fail'].action, 'repair');
+  assert.equal(RUN_OUTCOMES['question'].action, 'park');
+  assert.equal(RUN_OUTCOMES['repair bound'].action, 'stop');
 });
 
 test('the repair line reads its cap from the fix kind', () => {
-  const repairs = JSON.parse(fs.readFileSync(new URL('../lib/loop-kinds.json', import.meta.url), 'utf8'))['fix'].cap - 1;
+  const repairs = roundCap('fix') - 1;
   assert.match(outcomeLine('proof failed'), new RegExp(`at most ${repairs} times`));
   assert.match(outcomeLine('findings'), new RegExp(`at most ${repairs} times`));
 });
 
-test('parkQuestion writes one question file under .exo/questions', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'park-'));
-  const file = parkQuestion({ root, task: 4, question: 'Which store?' });
-  assert.equal(file, path.join(root, '.exo', 'questions', 'task-4.md'));
-  assert.equal(fs.readFileSync(file, 'utf8'), 'Which store?\n');
-});
-
 test('a recurring finding stops and an unread file repairs by a re-read', () => {
-  assert.equal(outcome('recurring finding').action, 'stop');
-  assert.equal(outcome('unread file').action, 'repair');
+  assert.equal(RUN_OUTCOMES['recurring finding'].action, 'stop');
+  assert.equal(RUN_OUTCOMES['unread file'].action, 'repair');
 });
 
 test('a discarded fix continues and the spent review budget stops', () => {
-  assert.equal(outcome('fix discarded').action, 'continue');
-  assert.equal(outcome('review budget').action, 'stop');
+  assert.equal(RUN_OUTCOMES['fix discarded'].action, 'continue');
+  assert.equal(RUN_OUTCOMES['review budget'].action, 'stop');
 });

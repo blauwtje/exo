@@ -4,33 +4,23 @@ import { execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { UsageError, parseFlags, isMain } from '#script-flags';
+import { USAGE_EXIT, UsageError, parseFlags, isMain } from '#script-flags';
 import { exitWithParent } from '#lifetime';
 import { pollUntil } from '../../../lib/loop-budget.mjs';
+import { GH_ERROR_EXIT, PR_NUMBER } from './gh-run.mjs';
 
-export const DEFAULT_MINUTES = 20;
-const USAGE = 'usage: wait-checks.mjs --pr <number> [--minutes <n>] [--grace-seconds <n>]';
-const DEFAULT_GRACE_SECONDS = 120;
+export const WAIT_MINUTES = 20;
+const USAGE = 'usage: wait-checks.mjs --pr <number>';
+const GRACE_SECONDS = 120;
 const RETRY_MS = 15_000;
 const TIMEOUT_EXIT = 124;
-export const GH_ERROR_EXIT = 3;
 const NO_CHECKS = /no checks reported/i;
 const FAIL_STATUS = /^fail(ing|ed)?$/i;
 
-function numberFlag(text, { fallback, name, allowZero }) {
-  if (text === undefined) return fallback;
-  const number = Number(text);
-  const valid = Number.isFinite(number) && (allowZero ? number >= 0 : number > 0);
-  if (!valid) throw new UsageError(`${name} needs a ${allowZero ? 'non-negative' : 'positive'} number, got '${text}'`);
-  return number;
-}
-
 function readFlags(argv) {
-  const flags = parseFlags(argv, { pr: 'value', minutes: 'value', 'grace-seconds': 'value' }, { usage: USAGE });
-  if (!/^[1-9][0-9]*$/.test(flags.pr ?? '')) throw new UsageError('--pr needs a pull request number');
-  const minutes = numberFlag(flags.minutes, { fallback: DEFAULT_MINUTES, name: '--minutes', allowZero: false });
-  const graceSeconds = numberFlag(flags['grace-seconds'], { fallback: DEFAULT_GRACE_SECONDS, name: '--grace-seconds', allowZero: true });
-  return { pr: flags.pr, minutes, graceMs: graceSeconds * 1000 };
+  const flags = parseFlags(argv, { pr: 'value' }, { usage: USAGE });
+  if (!PR_NUMBER.test(flags.pr ?? '')) throw new UsageError(`--pr needs a pull request number, got '${flags.pr ?? ''}'`);
+  return { pr: flags.pr };
 }
 
 function openLog(cwd) {
@@ -74,7 +64,7 @@ function parseArguments() {
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     console.error(`${USAGE}: ${error.message}`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return null;
   }
 }
@@ -85,7 +75,7 @@ async function watchUntilSettled(flags, log) {
   const deadline = setTimeout(() => {
     timedOut = true;
     running?.kill('SIGTERM');
-  }, flags.minutes * 60_000);
+  }, WAIT_MINUTES * 60_000);
   const track = (child) => { running = child; };
   let outcome = await watchChecks(flags.pr, track, log);
   const checksReady = async () => {
@@ -93,7 +83,7 @@ async function watchUntilSettled(flags, log) {
     return !NO_CHECKS.test(outcome.errorText);
   };
   if (NO_CHECKS.test(outcome.errorText)) {
-    await pollUntil(checksReady, { intervalMs: RETRY_MS, wallMs: flags.graceMs, giveUp: () => timedOut });
+    await pollUntil(checksReady, { intervalMs: RETRY_MS, wallMs: GRACE_SECONDS * 1000, giveUp: () => timedOut });
   }
   clearTimeout(deadline);
   return { outcome, timedOut };

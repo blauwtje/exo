@@ -6,10 +6,8 @@ import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { isMain, parseFlags } from '#script-flags';
 import { gitLine } from '#git';
-import { PLUGIN_ROOT, SCRIPTS_DIR } from '../../build/scripts/run-session-paths.mjs';
+import { CLI, PLUGIN_ROOT } from './run-session-paths.mjs';
 import { planPathFrom } from './ci-plan-path.mjs';
-
-const EXO_CLI = path.join(SCRIPTS_DIR, 'exo-cli.mjs');
 
 export const RESULT_REF = 'exo-result';
 export const BUNDLE_FILE = 'result.bundle';
@@ -19,7 +17,7 @@ function branchesAhead(root, base) {
   return names.split('\n').filter((name) => name !== '' && name !== RESULT_REF && gitLine(root, ['rev-list', '--count', `${base}..${name}`]) !== '0');
 }
 
-export function bundleResult(root, base, directory) {
+function bundleResult(root, base, directory) {
   const ahead = branchesAhead(root, base);
   if (ahead.length !== 1) return { branch: null, ahead };
   fs.mkdirSync(directory, { recursive: true });
@@ -42,10 +40,10 @@ function report(name, value) {
   if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
 }
 
-export function runPlan(root, plan, resultDirectory) {
+function runPlan(root, plan, resultDirectory) {
   if (planPathFrom(`/exo run ${plan}`) === null) return fail(`refused plan path ${JSON.stringify(plan)}`);
   const base = headCommit(root);
-  const ran = spawnSync(process.execPath, [EXO_CLI, 'run', plan, '--plugin-dir', PLUGIN_ROOT], { cwd: root, stdio: 'inherit' });
+  const ran = spawnSync(process.execPath, [CLI, 'run', plan, '--plugin-dir', PLUGIN_ROOT], { cwd: root, stdio: 'inherit' });
   if (ran.status !== 0) return ran.status ?? 1;
   const { branch, ahead } = bundleResult(root, base, resultDirectory);
   if (branch === null) return fail(`the run left ${ahead.length} branches ahead of ${base}, not one; nothing to push`);

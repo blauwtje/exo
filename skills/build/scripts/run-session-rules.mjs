@@ -23,9 +23,9 @@ const scriptRules = (files) => files.flatMap((file) => spellings(file).flatMap((
 
 export const unsandboxedScripts = (tail) => [...(tail ? [SCRIPT.gate, SCRIPT.landTask] : [SCRIPT.landTask]), SCRIPT.runDecision];
 
-export function allowRules({ root, planPath, plan, tail = false, repair = false, pluginRoot = PLUGIN_ROOT, sandbox = false, decisions = Boolean(process.env.EXO_RUN_DIR) }) {
+export function allowRules({ root, planPath, plan, tail = false, repair = false, sandbox = false, decisions = Boolean(process.env.EXO_RUN_DIR) }) {
   const paths = [
-    ...[root, pluginRoot, path.dirname(planPath)].flatMap((directory) => pathRule('Read', directory)),
+    ...[root, PLUGIN_ROOT, path.dirname(planPath)].flatMap((directory) => pathRule('Read', directory)),
     ...pathRule('Edit', root),
     ...pathRule('Write', root),
     ...(repair ? fileRule('Edit', planPath) : [])

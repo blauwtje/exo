@@ -3,11 +3,9 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
 import { refusalHandler } from '../lib/refusal-handlers.mjs';
 import { GIT_IDENTITY, git, tempDir } from './harness.mjs';
-
-const SCRIPT = fileURLToPath(new URL('../skills/build/scripts/start-run.mjs', import.meta.url));
+import { START_RUN } from './setup-fixture.mjs';
 
 function fixture() {
   const base = tempDir('start-run-');
@@ -33,7 +31,7 @@ function run({ repo, plan, cache }, env) {
   delete childEnv.CLAUDE_CODE_SESSION_ID;
   delete childEnv.EXO_RUN_TASK;
   Object.assign(childEnv, env);
-  const result = spawnSync(process.execPath, [SCRIPT, '--plan', plan, '--root', repo, '--checkout', repo], { encoding: 'utf8', env: childEnv });
+  const result = spawnSync(process.execPath, [START_RUN, '--plan', plan, '--root', repo, '--checkout', repo], { encoding: 'utf8', env: childEnv });
   assert.equal(result.status, 0, result.stderr);
 }
 
@@ -71,7 +69,7 @@ test('start-run stores an absolute checkout when --checkout is relative', () => 
   const f = fixture();
   const childEnv = { ...process.env, ...GIT_IDENTITY, XDG_CACHE_HOME: f.cache, CLAUDE_CODE_SESSION_ID: 'abc-4' };
   delete childEnv.EXO_RUN_TASK;
-  const result = spawnSync(process.execPath, [SCRIPT, '--plan', f.plan, '--root', f.repo, '--checkout', '.'], { cwd: f.repo, encoding: 'utf8', env: childEnv });
+  const result = spawnSync(process.execPath, [START_RUN, '--plan', f.plan, '--root', f.repo, '--checkout', '.'], { cwd: f.repo, encoding: 'utf8', env: childEnv });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(JSON.parse(fs.readFileSync(recordFile(f.cache, 'abc-4'), 'utf8')).checkout, f.repo);
 });
@@ -90,7 +88,7 @@ test('start-run refuses a plan whose proof starts a nested claude, before it wri
   fs.writeFileSync(f.plan, text);
   git(f.repo, 'commit', '-q', '-am', 'chore: plan');
   const env = { ...process.env, ...GIT_IDENTITY, XDG_CACHE_HOME: f.cache, CLAUDE_CODE_SESSION_ID: 'abc-6' };
-  const result = spawnSync(process.execPath, [SCRIPT, '--plan', f.plan, '--root', f.repo, '--checkout', f.repo], { encoding: 'utf8', env });
+  const result = spawnSync(process.execPath, [START_RUN, '--plan', f.plan, '--root', f.repo, '--checkout', f.repo], { encoding: 'utf8', env });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /starts a nested claude/);
   assert.match(result.stderr, /Next: fix the plan.*plan-check\.mjs --loop --run --plan /s);
@@ -101,7 +99,7 @@ test('start-run refuses a plan whose proof starts a nested claude, before it wri
 });
 
 function runOutput({ repo, plan, cache }) {
-  const result = spawnSync(process.execPath, [SCRIPT, '--plan', plan, '--root', repo, '--checkout', repo], { encoding: 'utf8', env: { ...process.env, ...GIT_IDENTITY, XDG_CACHE_HOME: cache } });
+  const result = spawnSync(process.execPath, [START_RUN, '--plan', plan, '--root', repo, '--checkout', repo], { encoding: 'utf8', env: { ...process.env, ...GIT_IDENTITY, XDG_CACHE_HOME: cache } });
   assert.equal(result.status, 0, result.stderr);
   return result.stdout;
 }
@@ -130,7 +128,7 @@ test('start-run keeps the plan out of the pre-run commit when the checkout path 
   fs.writeFileSync(path.join(f.repo, 'new.txt'), 'untracked\n');
   fs.writeFileSync(f.plan, `${fs.readFileSync(f.plan, 'utf8')}\n`);
   const plan = path.join(link, 'docs', 'plans', 'demo.md');
-  const result = spawnSync(process.execPath, [SCRIPT, '--plan', plan, '--root', f.repo, '--checkout', link], { encoding: 'utf8', env: { ...process.env, ...GIT_IDENTITY, XDG_CACHE_HOME: f.cache } });
+  const result = spawnSync(process.execPath, [START_RUN, '--plan', plan, '--root', f.repo, '--checkout', link], { encoding: 'utf8', env: { ...process.env, ...GIT_IDENTITY, XDG_CACHE_HOME: f.cache } });
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(git(f.repo, 'show', '--name-only', '--format=', 'HEAD').split('\n').filter(Boolean), ['new.txt']);
 });
@@ -173,7 +171,7 @@ test('start-run stops before the pre-run commit and run started when a service t
     fs.writeFileSync(path.join(fakes, name), '#!/bin/sh\nexit 1\n', { mode: 0o755 });
   }
   const before = git(f.repo, 'rev-parse', 'HEAD');
-  const result = spawnSync(process.execPath, [SCRIPT, '--plan', f.plan, '--root', f.repo, '--checkout', f.repo], {
+  const result = spawnSync(process.execPath, [START_RUN, '--plan', f.plan, '--root', f.repo, '--checkout', f.repo], {
     encoding: 'utf8',
     env: { ...process.env, ...GIT_IDENTITY, XDG_CACHE_HOME: f.cache, PATH: `${fakes}${path.delimiter}${process.env.PATH}` },
   });

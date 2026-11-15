@@ -6,23 +6,22 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { parsePlan } from '#plan-tasks';
-import { UsageError, isMain, parseFlags } from '#script-flags';
-import { StepError, createPullRequest, refuseBadText, runGh, runGit } from './pull-request.mjs';
+import { UsageError, USAGE_EXIT, isMain, parseFlags } from '#script-flags';
+import { StepError, createPullRequest, refuseBadText, runCli } from './pull-request.mjs';
 
 const USAGE = 'usage: stack.mjs --plan <plan.md> --body <file> | --restack';
-const USAGE_EXIT = 2;
 const PARENT_LINE = /^Stack-parent:\s*(\S+)\s*$/m;
 const TASK_TRAILER = /^Plan-task:\s*(?:[^\s/]+\/)?(\d+)\s*$/m;
 const OPEN_FIELDS = 'number,url,headRefName,baseRefName,body';
 
 function gitText(step, args) {
-  const result = runGit(args);
+  const result = runCli('git', args);
   if (!result.ok) throw new StepError(step, `git=${result.error}`);
   return result.stdout.trim();
 }
 
 function ghText(step, args) {
-  const result = runGh(args);
+  const result = runCli('gh', args);
   if (!result.ok) throw new StepError(step, `gh=${result.error}`);
   return result.stdout;
 }
@@ -142,7 +141,7 @@ function syncChild(child, base) {
 }
 
 function containsBase(child, base) {
-  return runGit(['merge-base', '--is-ancestor', `origin/${base}`, `origin/${child.headRefName}`]).ok;
+  return runCli('git', ['merge-base', '--is-ancestor', `origin/${base}`, `origin/${child.headRefName}`]).ok;
 }
 
 function restackChild(child, base) {

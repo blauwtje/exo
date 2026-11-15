@@ -67,3 +67,10 @@ test('a fresh run skips a recorded pass and still runs', async () => {
   assert.equal(again.cached, false);
   assert.match(again.output, /pass 1/);
 });
+
+test('a command past timeoutMs is killed and fails', async () => {
+  const { root } = await landingCheckout();
+  const outcome = runCheck(root, 'node -e "setTimeout(() => {}, 5000)"', { timeoutMs: 200 });
+  assert.equal(outcome.ok, false);
+  assert.equal(outcome.timedOut, true);
+});

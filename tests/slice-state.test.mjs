@@ -7,7 +7,8 @@ import { agentHook } from '../hooks/agent-effort.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
 import { PREDISPATCH_STEP } from '../hooks/dispatch-bash.mjs';
 import { orchestratorPredispatchReads } from '../lib/context-limits.mjs';
-import { predispatchReadCount, recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
+import { tmpStateFile } from '../lib/basics.mjs';
+import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 import { tempDir } from './harness.mjs';
 
 function orchestrator(workers, reads = 'none', extra = '') {
@@ -83,6 +84,11 @@ test('a call noted by another check is counted', () => {
   assert.ok(output.additionalContext);
   assert.equal(sliceCount(agent.agent_id), 1);
 });
+
+function predispatchReadCount(agentId) {
+  const file = tmpStateFile('predispatch', agentId);
+  return fs.existsSync(file) ? fs.statSync(file).size : 0;
+}
 
 const cleanup = (agent) => {
   for (const kind of ['slice', 'predispatch']) fs.rmSync(path.join(os.tmpdir(), `exo-${kind}-${agent.agent_id}`), { force: true });

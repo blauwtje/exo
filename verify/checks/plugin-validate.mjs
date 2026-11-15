@@ -3,11 +3,11 @@ import path from 'node:path';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { onPath } from '#on-path';
+import { PLUGIN_FILE } from './plugin-version.mjs';
 
 const NAME = 'plugin validate';
-const PLUGIN_FILE = '.claude-plugin/plugin.json';
 
-export function findings(result, root) {
+function findings(result, root) {
   const found = [];
   for (const entry of [result.manifest, ...(result.contents ?? [])]) {
     if (!entry) continue;

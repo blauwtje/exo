@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { test } from 'node:test';
 import { transcribe } from '../skills/watch/scripts/speech.mjs';
-import { runTool } from '../skills/watch/scripts/run-tool.mjs';
+import { runTool, ToolFailure } from '../skills/watch/scripts/run-tool.mjs';
 import { tempDir } from './harness.mjs';
 
 const MODEL_BYTES = Buffer.from('fake ggml model bytes');
@@ -139,6 +139,13 @@ test('a model whose checksum or size differs is removed as its own .tmp and fail
   }
 });
 
+test('a model download that throws an unknown error propagates and leaves no .tmp', async () => {
+  const s = site();
+  const failing = async () => { throw new RangeError('bug in the fetch stub'); };
+  await assert.rejects(s.run({ fetchFn: failing }), /bug in the fetch stub/);
+  assert.deepEqual(fs.readdirSync(path.join(s.cache, 'models')), []);
+});
+
 test('a failed npm install fails the video with its last line and no missing-tool wording', async () => {
   const s = site({ npmFails: true });
   const result = await s.run();
@@ -199,8 +206,13 @@ test('mp3, wav and flac reach the engine as fetched and other formats go through
 
 test('a failing toWav fails the video with its message', async () => {
   const s = site({ ext: 'm4a' });
-  const result = await s.run({ toWav: async () => { throw new Error('cannot decode'); } });
+  const result = await s.run({ toWav: async () => { throw new ToolFailure('cannot decode'); } });
   assert.equal(result.failure, 'converting the audio failed: cannot decode');
+});
+
+test('a toWav error that is not a tool failure propagates', async () => {
+  const s = site({ ext: 'm4a' });
+  await assert.rejects(s.run({ toWav: async () => { throw new Error('disk gone'); } }), /disk gone/);
 });
 
 test('a missing yt-dlp is the only missing tool the speech code reports', async () => {

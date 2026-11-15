@@ -7,8 +7,8 @@ const SESSION_TOOLS = { build: 'Read,Edit,Write,Bash,Grep,Glob', fix: 'Read,Edit
 
 const SESSION_AGENTS = { build: 'build-task', fix: 'build-task' };
 
-export function agentMaxTurns(kind, pluginRoot = PLUGIN_ROOT) {
-  const text = fs.readFileSync(path.join(pluginRoot, 'agents', `${SESSION_AGENTS[kind]}.md`), 'utf8');
+export function agentMaxTurns(kind) {
+  const text = fs.readFileSync(path.join(PLUGIN_ROOT, 'agents', `${SESSION_AGENTS[kind]}.md`), 'utf8');
   const turns = Number(/^maxTurns:\s*(\d+)\s*$/m.exec(text)?.[1]);
   if (!Number.isInteger(turns) || turns < 1) throw new Error(`agents/${SESSION_AGENTS[kind]}.md has no maxTurns`);
   return turns;
@@ -21,7 +21,7 @@ function withStallGuard(settings) {
   return { ...(typeof settings === 'string' ? JSON.parse(settings) : settings), ...STALL_HOOK };
 }
 
-export function claudeArgs({ model, effort, budget, allow, settings: base = null, kind = 'build', pluginDir = null, stallGuard = false, resume = null, taskCount = 1, deny = DENY_RULES }) {
+export function claudeArgs({ model, effort, budget, allow, settings: base = null, kind = 'build', pluginDir, stallGuard = false, resume = null, taskCount = 1, deny = DENY_RULES }) {
   const settings = stallGuard ? withStallGuard(base) : base;
   return [
     '-p', ...(resume === null ? [] : ['--resume', resume]),

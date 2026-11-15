@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { OLD_STATUSLINE_LAUNCHERS, STATUSLINE_LAUNCHER, mainCheckout } from '#plugin-pointer';
+import { OLD_STATUSLINE_LAUNCHERS, STATUSLINE_LAUNCHER, writePluginPointer } from '#plugin-pointer';
 import { git, tempDir } from './harness.mjs';
 
 const REPOSITORY = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -20,7 +20,9 @@ function goneWorktreeConfig(main) {
   git(repo, 'commit', '-q', '--allow-empty', '-m', 'init');
   const worktree = path.join(repo, 'linked');
   git(repo, 'worktree', 'add', '-q', worktree);
-  assert.equal(fs.realpathSync(mainCheckout(worktree)), fs.realpathSync(repo));
+  const pointerDirectory = tempDir('exo-pointer-written-');
+  writePluginPointer(pointerDirectory, worktree);
+  assert.equal(fs.realpathSync(fs.readFileSync(path.join(pointerDirectory, 'plugin-main'), 'utf8').trim()), fs.realpathSync(repo));
   git(repo, 'worktree', 'remove', worktree);
   assert.equal(fs.existsSync(worktree), false);
   const config = tempDir('exo-pointer-config-');

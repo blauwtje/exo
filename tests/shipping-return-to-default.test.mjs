@@ -5,14 +5,14 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { commitFiles, fixture, git, gitRepository, run } from './harness.mjs';
+import { commitFiles, tempDir, git, gitRepository, run } from './harness.mjs';
 import { returnToDefault } from '../skills/ship/scripts/return-to-default.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../skills/ship/scripts/return-to-default.mjs', import.meta.url));
 
 async function mergedRepository() {
   const seed = await gitRepository({ 'README.md': '# fixture\n' });
-  const root = await fs.realpath(await fixture());
+  const root = await fs.realpath(await tempDir('ui-design-test-'));
   const origin = path.join(root, 'origin.git');
   execFileSync('git', ['clone', '-q', '--bare', seed, origin]);
   const workDir = path.join(root, 'work');

@@ -4,8 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { bestEffort } from '#best-effort';
+import { isCommandFailure } from '#basics';
 import { scratchPath } from '#scratch-path';
 import { blockReport } from './next-task.mjs';
 import { runRules } from './next-task-brief.mjs';
@@ -15,15 +16,15 @@ import { frameOf, openPoints } from '#plan-frame';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { pruneBuildProgress, writeBuildProgress } from '#build-progress';
 import { refusalHandler } from '../../../lib/refusal-handlers.mjs';
-import { gitText } from '../../../lib/git.mjs';
+import { gitLine, gitText } from '../../../lib/git.mjs';
 import { commitPreexistingWork } from './pre-run-commit.mjs';
 import { Refusal } from './cli-refusal.mjs';
+import { PLUGIN_ROOT, SCRIPT } from './run-session-paths.mjs';
 import { setupRefusal } from './setup-commands.mjs';
 import { ensureServices } from '../../../lib/services.mjs';
 
 const PLAN_DIRECTORIES = ['docs/plans', 'docs/specs'];
-const SCRATCH_EXCLUDE = fileURLToPath(new URL('../../../lib/scratch-exclude.mjs', import.meta.url));
-const PLAN_CHECK = fileURLToPath(new URL('../../spec/scripts/plan-check.mjs', import.meta.url));
+const SCRATCH_EXCLUDE = path.join(PLUGIN_ROOT, 'lib', 'scratch-exclude.mjs');
 const USAGE = 'usage: node start-run.mjs --find-only | --plan <path> --checkout <run-checkout> [--root <checkout>]';
 const HELP = [
   'usage: node start-run.mjs [--root <checkout>] [--checkout <run-checkout>] [--plan <path>] [--find-only]',
@@ -113,14 +114,12 @@ async function main(argv) {
 function recordProgress(planPath, checkout) {
   const sessionId = process.env.CLAUDE_CODE_SESSION_ID;
   if (!sessionId || process.env.EXO_RUN_TASK) return;
-  try {
+  bestEffort(() => {
     const { tasks } = parsePlan(fs.readFileSync(planPath, 'utf8'));
     const landed = landedTasks(tasks, checkout, planIdOf(planPath)).length;
     writeBuildProgress({ sessionId, plan: planPath, checkout: path.resolve(checkout), landed, total: tasks.length });
     pruneBuildProgress();
-  } catch {
-    return;
-  }
+  });
 }
 
 function firstBlock(planPath, checkout) {
@@ -135,7 +134,7 @@ function firstBlock(planPath, checkout) {
 function requirePlanCheck(planPath, checkout) {
   const report = planCheckReport(fs.readFileSync(planPath, 'utf8'), { root: checkout, loop: true, planPath, run: true });
   if (report.ok) return;
-  throw new Refusal(`plan-check --loop --run fails on ${planPath}:\n${report.lines.join('\n')}\nNext: fix the plan, confirm with \`node ${PLAN_CHECK} --loop --run --plan ${planPath} --root ${checkout}\`, then rerun start-run.`);
+  throw new Refusal(`plan-check --loop --run fails on ${planPath}:\n${report.lines.join('\n')}\nNext: fix the plan, confirm with \`node ${SCRIPT.planCheck} --loop --run --plan ${planPath} --root ${checkout}\`, then rerun start-run.`);
 }
 
 function requireServices(checkout) {
@@ -146,19 +145,16 @@ function requireServices(checkout) {
 
 function checkoutBranch(checkout) {
   try {
-    return execFileSync('git', ['-C', checkout, 'branch', '--show-current'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-  } catch {
-    throw new Refusal(`--checkout ${checkout} is not a git checkout. Next: create it as the workspace answer says, then rerun with --checkout <that path>.`);
+    return execFileSync('git', ['-C', checkout, 'branch', '--show-current'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  } catch (error) {
+    if (!isCommandFailure(error)) throw error;
+    const reason = String(error.stderr ?? error.message).split('\n')[0];
+    throw new Refusal(`--checkout ${checkout} is not a git checkout (${reason}). Next: create it as the workspace answer says, then rerun with --checkout <that path>.`);
   }
 }
 
 function branchExists(checkout, branch) {
-  try {
-    execFileSync('git', ['-C', checkout, 'rev-parse', '--verify', '--quiet', `refs/heads/${branch}`], { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
+  return gitLine(checkout, ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`]) !== null;
 }
 
 function failureOf(error) {

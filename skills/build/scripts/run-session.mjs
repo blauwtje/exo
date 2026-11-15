@@ -2,21 +2,18 @@ import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import process from 'node:process';
 import { environmentMs } from '../../../lib/script-flags.mjs';
-import { sleep } from '#basics';
+import { orWhenAbsent } from '#absent-path';
+import { parseLine, sleep } from '#basics';
+import { KILL_GRACE_MS } from '../../../lib/bounded-command.mjs';
 import { pollUntil, roundCap } from '../../../lib/loop-budget.mjs';
 import { parseStream } from './run-session-stream.mjs';
 import { fallbackModel } from './run-plan-provider.mjs';
 
-const KILL_GRACE_MS = 5000;
 const PARENT_POLL_MS = 5000;
 const TRANSIENT_PROVIDER_ERROR = /\b(?:429|503|529)\b|rate_limit_error|overloaded_error/;
 
 export function appendLog(file, text, write = fs.appendFileSync) {
-  try {
-    write(file, text);
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-  }
+  orWhenAbsent(() => write(file, text), undefined);
 }
 
 const EXIT_CODES = { SIGHUP: 129, SIGINT: 130, SIGTERM: 143 };
@@ -25,8 +22,9 @@ function endTree(child, signal) {
   try {
     if (process.platform === 'win32') spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F']);
     else process.kill(-child.pid, signal);
-  } catch {
-    return false;
+  } catch (error) {
+    if (error.code === 'ESRCH') return false;
+    throw error;
   }
   return true;
 }
@@ -70,7 +68,7 @@ function initWatcher() {
   };
 }
 
-function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit = () => null }) {
+function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit }) {
   return new Promise((resolve) => {
     let text = '';
     let timedOut = false;
@@ -129,14 +127,10 @@ function spawnOnce(claude, args, { cwd, env, prompt, log, timeoutMs, refuseInit 
 }
 
 function isModelContentEvent(line) {
-  try {
-    return ['assistant', 'user', 'system'].includes(JSON.parse(line)?.type);
-  } catch {
-    return false;
-  }
+  return ['assistant', 'user', 'system'].includes(parseLine(line)?.type);
 }
 
-export function isTransientProviderError(text) {
+function isTransientProviderError(text) {
   if (!TRANSIENT_PROVIDER_ERROR.test(text)) return false;
   const { final, resultText } = parseStream(text);
   if (final === null) return text.split(/\r?\n/).some((line) => TRANSIENT_PROVIDER_ERROR.test(line) && !isModelContentEvent(line));

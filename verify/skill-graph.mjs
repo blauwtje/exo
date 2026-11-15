@@ -3,53 +3,34 @@ import { buildGraph } from './skill-graph-build.mjs';
 import { cmdSize, cmdRange, cmdRangeSed, cmdInbound, cmdPins, cmdJson, cmdRefs, cmdOverlap } from './skill-graph-commands.mjs';
 
 const COMMANDS = {
-  size: { usage: 'size <skill>', required: 1 },
-  range: { usage: 'range <path-or-skill> <heading text or prefix> [--sed]', required: 2 },
-  inbound: { usage: 'inbound <path>[#heading]', required: 1 },
-  pins: { usage: 'pins <skill|path>', required: 1 },
-  refs: { usage: 'refs <skill>', required: 1 },
-  overlap: { usage: 'overlap <json-file>', required: 1 },
-  json: { usage: 'json', required: 0 }
+  size: { usage: 'size <skill>', required: 1, run: (graph, [skill]) => cmdSize(graph, skill) },
+  range: {
+    usage: 'range <path-or-skill> <heading text or prefix> [--sed]',
+    required: 2,
+    run: (graph, [target, ...heading], sed) => (sed ? cmdRangeSed : cmdRange)(graph, target, heading.join(' '))
+  },
+  inbound: { usage: 'inbound <path>[#heading]', required: 1, run: (graph, [target]) => cmdInbound(graph, target) },
+  pins: { usage: 'pins <skill|path>', required: 1, run: (graph, [target]) => cmdPins(graph, target) },
+  refs: { usage: 'refs <skill>', required: 1, run: (graph, [skill]) => cmdRefs(graph, skill) },
+  overlap: { usage: 'overlap <json-file>', required: 1, run: (graph, [file]) => cmdOverlap(graph, file) },
+  json: { usage: 'json', required: 0, run: (graph) => cmdJson(graph) }
 };
 
 function main() {
   const [command, ...args] = process.argv.slice(2);
   const positional = args.filter((arg) => arg !== '--sed');
-  const spec = COMMANDS[command];
-  if (spec && positional.length < spec.required) {
+  const spec = Object.hasOwn(COMMANDS, command) ? COMMANDS[command] : undefined;
+  if (!spec) {
+    console.error(`usage: skill-graph.mjs <${Object.keys(COMMANDS).join('|')}> [args]`);
+    process.exitCode = 1;
+    return;
+  }
+  if (positional.length < spec.required) {
     console.error(`usage: skill-graph.mjs ${spec.usage}`);
     process.exitCode = 1;
     return;
   }
-  const graph = buildGraph();
-
-  switch (command) {
-    case 'size':
-      cmdSize(graph, args[0]);
-      break;
-    case 'range':
-      const render = args.includes('--sed') ? cmdRangeSed : cmdRange;
-      render(graph, positional[0], positional.slice(1).join(' '));
-      break;
-    case 'inbound':
-      cmdInbound(graph, args[0]);
-      break;
-    case 'pins':
-      cmdPins(graph, args[0]);
-      break;
-    case 'refs':
-      cmdRefs(graph, args[0]);
-      break;
-    case 'overlap':
-      cmdOverlap(graph, args[0]);
-      break;
-    case 'json':
-      cmdJson(graph);
-      break;
-    default:
-      console.error('usage: skill-graph.mjs <size|range|inbound|pins|refs|overlap|json> [args]');
-      process.exitCode = 1;
-  }
+  spec.run(buildGraph(), positional, args.includes('--sed'));
 }
 
 main();

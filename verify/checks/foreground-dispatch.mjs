@@ -36,7 +36,7 @@ function flaggedLines(file, repository) {
     .filter((entry) => entry !== null);
 }
 
-export function scanForegroundDispatches(repository) {
+function scanForegroundDispatches(repository) {
   const forked = forkedSkillFolders(repository);
   const files = SCANNED.flatMap((directory) => filesUnder(repository.join(directory)));
   const scanned = files.filter((file) => !isSkipped(file, forked));

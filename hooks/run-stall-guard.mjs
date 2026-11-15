@@ -7,7 +7,7 @@ import { fixShell } from '../lib/shell-fixes.mjs';
 import { environmentMs, isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, writeHookOutput } from '../lib/hook-refusal.mjs';
 import { shellQuote } from '#basics';
-import { denyReason } from '../lib/guard-rules.mjs';
+import { denyReasonLines } from '../lib/guard-rules.mjs';
 
 const PLUGIN_ROOT = path.resolve(import.meta.dirname, '..');
 const GUARD = path.join(PLUGIN_ROOT, 'lib', 'stall-guard.mjs');
@@ -18,7 +18,7 @@ const runsExoScript = (command) => [`node "${PLUGIN_ROOT}${path.sep}`, `node ${P
 const refusal = (command) => {
   const file = UNSANDBOXED.find((script) => command.includes(path.basename(script)));
   if (file === undefined) return null;
-  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: denyReason('run-stall-guard', `${path.basename(file)} starts \`node "${file}" \`, one call per task`).replace('. Do instead: ', '.\nDo instead: ') } };
+  return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: denyReasonLines('run-stall-guard', `${path.basename(file)} starts \`node "${file}" \`, one call per task`) } };
 };
 
 export function stallGuardInput(input) {

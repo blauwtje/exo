@@ -39,7 +39,6 @@ The last line of the file is `Resume: <prompt>`, one sentence in the user's lang
 
 In those sections:
 
-- Record the user's decision as theirs, in their wording, not as shared.
 - When a plan is running with `<plan stem>-decisions.md` beside it, carry its lines into `## Progress` unchanged.
 - Put a claim no command proved under the unproven list in `## Evidence`, not the proven one.
 - Run `node "${CLAUDE_SKILL_DIR}/../../lib/ruled-out.mjs" show <n>` for the task in progress and carry its lines into `## Evidence` as approaches the next session must not retry.

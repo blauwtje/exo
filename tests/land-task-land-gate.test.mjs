@@ -7,17 +7,13 @@ import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { workingTreeKey } from '#check-cache';
 import { git, run, tempDir } from './harness.mjs';
 import {
-  SCRIPT, cacheFile, PLAN, landingCheckout, editApp, COMPACT_PLAN, PASS_REPORT, compactCheckout, writeReport
+  SCRIPT, cacheFile, PLAN, withGate, landingCheckout, editApp, COMPACT_PLAN, PASS_REPORT, compactCheckout, writeReport
 } from './land-task-fixture.mjs';
-
-function withLandGate(command) {
-  return PLAN.replace('Branch: feat/fixture', `Branch: feat/fixture\nLand gate: ${command}`);
-}
 
 test('a passing Land gate lets a green task land', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const output = landTask({ planPath, planText: withLandGate('true'), number: 1, root });
+  const output = landTask({ planPath, planText: withGate(PLAN, 'true'), number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/1$/m);
 });
@@ -38,7 +34,7 @@ test('a Land gate that edits a tracked file is not recorded as a pass', async ()
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   const gate = "echo '// edited' >> src/app.js";
-  landTask({ planPath, planText: withLandGate(gate), number: 1, root });
+  landTask({ planPath, planText: withGate(PLAN, gate), number: 1, root });
   const cache = JSON.parse(await fs.readFile(cacheFile(root), 'utf8').catch(() => '{}'));
   assert.ok(!(gate in cache));
 });
@@ -48,7 +44,7 @@ test('a Land gate whose last pass was slow is skipped with one line and the land
   await editApp(root);
   await fs.mkdir(path.dirname(cacheFile(root)), { recursive: true });
   await fs.writeFile(cacheFile(root), JSON.stringify({ 'echo ran >> gate.log && exit 1': { tree: 'old', ms: 60000 } }));
-  const output = landTask({ planPath, planText: withLandGate('echo ran >> gate.log && exit 1'), number: 1, root });
+  const output = landTask({ planPath, planText: withGate(PLAN, 'echo ran >> gate.log && exit 1'), number: 1, root });
   assert.match(output, /^Land gate "echo ran >> gate\.log && exit 1" skipped: its last pass took 60000 ms, so gate runs it once\.$/m);
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
   await assert.rejects(fs.access(path.join(root, 'gate.log')));
@@ -59,14 +55,14 @@ test('a fast record still runs the Land gate and refuses a failing one', async (
   await editApp(root);
   await fs.mkdir(path.dirname(cacheFile(root)), { recursive: true });
   await fs.writeFile(cacheFile(root), JSON.stringify({ 'exit 1': { tree: 'old', ms: 100 } }));
-  assert.throws(() => landTask({ planPath, planText: withLandGate('exit 1'), number: 1, root }), /Land gate "exit 1" failed/);
+  assert.throws(() => landTask({ planPath, planText: withGate(PLAN, 'exit 1'), number: 1, root }), /Land gate "exit 1" failed/);
 });
 
 test('a failing Land gate is refused before anything commits, naming the command and its output', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   assert.throws(
-    () => landTask({ planPath, planText: withLandGate('echo gate broke && exit 1'), number: 1, root }),
+    () => landTask({ planPath, planText: withGate(PLAN, 'echo gate broke && exit 1'), number: 1, root }),
     /Land gate "echo gate broke && exit 1" failed:\ngate broke/
   );
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
@@ -80,7 +76,7 @@ test('a Land gate past its deadline is stopped and refused with timed out after 
   process.env.EXO_LAND_GATE_TIMEOUT_MS = '300';
   try {
     assert.throws(
-      () => landTask({ planPath, planText: withLandGate('sleep 5'), number: 1, root }),
+      () => landTask({ planPath, planText: withGate(PLAN, 'sleep 5'), number: 1, root }),
       /Land gate "sleep 5" failed:\ntimed out after 0\.3s/
     );
   } finally {
@@ -97,7 +93,7 @@ test('a timed-out Land gate stops the processes it started too', async () => {
   const marker = path.join(tempDir('exo-tree-'), 'survivor');
   process.env.EXO_LAND_GATE_TIMEOUT_MS = '300';
   try {
-    assert.throws(() => landTask({ planPath, planText: withLandGate(survivorCommand(marker)), number: 1, root }), /timed out after 0\.3s/);
+    assert.throws(() => landTask({ planPath, planText: withGate(PLAN, survivorCommand(marker)), number: 1, root }), /timed out after 0\.3s/);
   } finally {
     delete process.env.EXO_LAND_GATE_TIMEOUT_MS;
   }
@@ -140,7 +136,7 @@ test('a plan with no Land gate line lands as before', async () => {
 test('Land gate: none opts out and lands as before', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const output = landTask({ planPath, planText: withLandGate('none'), number: 1, root });
+  const output = landTask({ planPath, planText: withGate(PLAN, 'none'), number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
@@ -165,14 +161,10 @@ async function twoFileEdit(root) {
   await fs.writeFile(path.join(root, 'src/note.md'), 'note\n');
 }
 
-function planWithGate(command) {
-  return EVIDENCE_PLAN.replace('Branch: feat/fixture', `Branch: feat/fixture\nLand gate: ${command}`);
-}
-
 test('the Land gate judges the task commit: its trailers and its new file are already in HEAD', async () => {
   const { root, planPath } = await landingCheckout();
   await twoFileEdit(root);
-  const output = landTask({ planPath, planText: planWithGate(SEES_CANDIDATE), number: 4, root });
+  const output = landTask({ planPath, planText: withGate(EVIDENCE_PLAN, SEES_CANDIDATE), number: 4, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 4$/m);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '2');
   const message = git(root, 'log', '-1', '--format=%B');
@@ -186,7 +178,7 @@ test('a failing Land gate resets the task commit and leaves the work staged', as
   await twoFileEdit(root);
   const base = git(root, 'rev-parse', 'HEAD');
   assert.throws(
-    () => landTask({ planPath, planText: planWithGate('echo gate broke && exit 1'), number: 4, root }),
+    () => landTask({ planPath, planText: withGate(EVIDENCE_PLAN, 'echo gate broke && exit 1'), number: 4, root }),
     /Land gate "echo gate broke && exit 1" failed:\ngate broke/
   );
   assert.equal(git(root, 'rev-parse', 'HEAD'), base);
@@ -198,15 +190,13 @@ test('a candidate commit left by a crashed landing is reset before the next land
   await twoFileEdit(root);
   git(root, 'add', '-A');
   git(root, 'commit', '-q', '-m', 'Task 4', '-m', 'Plan-candidate: fixture/4');
-  const output = landTask({ planPath, planText: planWithGate('true'), number: 4, root });
+  const output = landTask({ planPath, planText: withGate(EVIDENCE_PLAN, 'true'), number: 4, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 4$/m);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '2');
   assert.doesNotMatch(git(root, 'log', '-1', '--format=%B'), /Plan-candidate/);
 });
 
 const PENDING_PLAN = PLAN.replace('### Task 4: Two files\n\nDepends on: none', '### Task 4: Two files\n\nDepends on: none | Evidence: none (fixture)');
-
-const withGate = (plan, command) => plan.replace('Branch: feat/fixture', `Branch: feat/fixture\nLand gate: ${command}`);
 
 test('the Land gate gets the Evidence value of a task not yet landed', async () => {
   const { root, planPath } = await landingCheckout();
@@ -260,7 +250,7 @@ const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 test('a --check and a landing running at once leave one task commit with only its files and the prior commit untouched', async () => {
   const { root, planPath } = await afterTaskOne();
-  await fs.writeFile(planPath, withLandGate('sleep 1'));
+  await fs.writeFile(planPath, withGate(PLAN, 'sleep 1'));
   const prior = git(root, 'rev-parse', 'HEAD');
   const checking = run(SCRIPT, LANDING_ARGS(planPath, root, '--check'), { cwd: root });
   await pause(300);
@@ -279,7 +269,7 @@ test('a landing refuses and rewrites nothing when the Land gate moved HEAD off i
   const { root, planPath } = await afterTaskOne();
   const gate = "git commit -q --allow-empty -m 'other work'";
   const prior = git(root, 'rev-parse', 'HEAD');
-  assert.throws(() => landTask({ planPath, planText: withLandGate(gate), number: 4, root }), /HEAD moved/);
+  assert.throws(() => landTask({ planPath, planText: withGate(PLAN, gate), number: 4, root }), /HEAD moved/);
   assert.equal(git(root, 'log', '-1', '--format=%s'), 'other work');
   assert.match(git(root, 'log', '-1', '--skip=1', '--format=%B'), /Plan-candidate: fixture\/4/);
   assert.equal(git(root, 'rev-parse', 'HEAD~2'), prior);
@@ -288,11 +278,11 @@ test('a landing refuses and rewrites nothing when the Land gate moved HEAD off i
 test('a passing --check writes its stamp, and a failing one leaves none', async () => {
   const { root, planPath } = await afterTaskOne();
   const stamp = path.join(root, '.exo/checked-4');
-  await fs.writeFile(planPath, withLandGate('exit 1'));
+  await fs.writeFile(planPath, withGate(PLAN, 'exit 1'));
   const failed = await run(SCRIPT, LANDING_ARGS(planPath, root, '--check'), { cwd: root });
   assert.equal(failed.code, 1, failed.stderr);
   await assert.rejects(fs.access(stamp));
-  await fs.writeFile(planPath, withLandGate('sleep 1'));
+  await fs.writeFile(planPath, withGate(PLAN, 'sleep 1'));
   const checking = run(SCRIPT, LANDING_ARGS(planPath, root, '--check'), { cwd: root });
   await pause(500);
   await assert.rejects(fs.access(stamp));
@@ -370,7 +360,7 @@ test('a Budget-raise line in the report is on the candidate during the Land gate
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   const gate = `git log -1 --format=%B | grep -qF '${RAISE_LINE}'`;
-  landTask({ planPath, planText: withLandGate(gate), number: 1, root, reportText: `Done.\n${RAISE_LINE}\n` });
+  landTask({ planPath, planText: withGate(PLAN, gate), number: 1, root, reportText: `Done.\n${RAISE_LINE}\n` });
   const body = git(root, 'log', '-1', '--format=%B');
   assert.ok(body.split('\n').includes(RAISE_LINE));
   assert.match(body, /^Plan-task: fixture\/1$/m);
@@ -380,7 +370,7 @@ test('a Land gate that passes only on a nested worktree outside the commit is re
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   git(root, 'worktree', 'add', '-q', '-b', 'feat/nested', path.join(root, 'nested'));
-  const planText = withLandGate('test -e nested/.git').replace('git add .', 'git add src/app.js');
+  const planText = withGate(PLAN, 'test -e nested/.git').replace('git add .', 'git add src/app.js');
   assert.throws(() => landTask({ planPath, planText, number: 1, root }), /Land gate "test -e nested\/\.git" failed/);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
   assert.doesNotMatch(git(root, 'worktree', 'list'), /gate-/);
@@ -392,7 +382,7 @@ test('the setup of the detached candidate sees the slot variables', async () => 
   await fs.mkdir(path.join(root, '.exo'), { recursive: true });
   await fs.writeFile(path.join(root, '.exo/slot.env'), 'export EXO_SLOT="3"\n');
   git(root, 'worktree', 'add', '-q', '-b', 'feat/nested', path.join(root, 'nested'));
-  const planText = withLandGate('test "$(cat slot-seen.txt)" = 3')
+  const planText = withGate(PLAN, 'test "$(cat slot-seen.txt)" = 3')
     .replace('Branch: feat/fixture', 'Branch: feat/fixture\nWorktree setup: printf %s "$EXO_SLOT" > slot-seen.txt')
     .replace('git add .', 'git add src/app.js');
   const output = landTask({ planPath, planText, number: 1, root });
@@ -402,6 +392,6 @@ test('the setup of the detached candidate sees the slot variables', async () => 
 test('a slot equal to its candidate commit gates in place', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const output = landTask({ planPath, planText: withLandGate('test "$(pwd -P)" = "$(cd . && git rev-parse --show-toplevel)" && git worktree list | wc -l | grep -q "^ *1$"'), number: 1, root });
+  const output = landTask({ planPath, planText: withGate(PLAN, 'test "$(pwd -P)" = "$(cd . && git rev-parse --show-toplevel)" && git worktree list | wc -l | grep -q "^ *1$"'), number: 1, root });
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });

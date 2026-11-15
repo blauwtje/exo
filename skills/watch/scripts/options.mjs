@@ -1,8 +1,6 @@
 import path from 'node:path';
-import { UsageError, environmentMs, environmentDelayMs } from '#script-flags';
+import { UsageError, POSITIVE_INTEGER, environmentMs, environmentDelayMs } from '#script-flags';
 import { DEFAULTS } from './defaults.mjs';
-
-const POSITIVE_INTEGER = /^[1-9]\d*$/;
 
 export const SPEC = { url: 'list', from: 'list', force: 'boolean', lang: 'string', model: 'string', out: 'string', 'chunk-minutes': 'string', 'stamp-seconds': 'string', help: 'boolean' };
 export const USAGE = [

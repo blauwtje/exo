@@ -8,7 +8,7 @@ const fixture = (name) => fs.readFileSync(new URL(`./fixtures/${name}`, import.m
 test('searchUrl builds the global and subreddit paths', () => {
   const global = searchUrl({ query: 'a b', sort: 'top', time: 'year' });
   assert.equal(global, 'https://www.reddit.com/svc/shreddit/search/?q=a+b&type=posts&sort=top&t=year');
-  const scoped = searchUrl({ query: 'x', subreddit: 'example_sub' });
+  const scoped = searchUrl({ query: 'x', sort: 'relevance', time: 'all', subreddit: 'example_sub' });
   assert.match(scoped, /\/svc\/shreddit\/r\/example_sub\/search\/\?q=x&type=posts/);
 });
 

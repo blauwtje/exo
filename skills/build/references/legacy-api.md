@@ -26,4 +26,4 @@ Refactor reshapes an internal API → callers move to the new form, old form del
 
 ## The one exception
 
-Adapter kept on purpose needs all three: a named reason no in-repository change can remove, an owner, and a removal date written beside it. Explicit user request counts as such a reason. Missing any → shim, delete it.
+Adapter kept on purpose needs all three: a named reason no in-repository change can remove, an owner, and a removal date written beside it. Explicit user request counts as such a reason; state its cost once. Missing any → shim, delete it.

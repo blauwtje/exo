@@ -3,7 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { fixture, git, gitRepository, run } from './harness.mjs';
+import { tempDir, git, gitRepository, run } from './harness.mjs';
+import { runPlanText } from './setup-fixture.mjs';
 import { appendStep, approveGates, createRun, openGate, readState, runDir, updateRun } from '../skills/build/scripts/run-state.mjs';
 
 const RUN_PLAN = fileURLToPath(new URL('../skills/build/scripts/run-plan.mjs', import.meta.url));
@@ -16,28 +17,18 @@ fs.appendFileSync(process.env.FAKE_CALLS, 'session\\n');
 console.log(JSON.stringify({ type: 'result', subtype: 'success', num_turns: 1, total_cost_usd: 0, result: 'done' }));
 `;
 
-const planText = (root) => [
-  '# Plan: resume fixture', '', '## Goal', 'One file.', '',
-  '## Plan basis', `Repository: ${root}`, 'Branch: feat/fixture', 'Land: local', 'Commit: feat(fixture): add the fixture', 'Worktree setup: none', 'Land gate: none', 'Lint: none', 'Allow: none', '',
-  '## Success criterion', '`node --version`', '',
-  '## Checkpoint', '- Blocks first: Task 1.', '- Parallel: none.', '- Shared state: none.', '- Smallest safe split: one file per task.', '',
-  '## Manual checks', '- Open the file.', '',
-  '## Tasks', '### Task 1: feat(a): add a',
-  'Depends on: none | Files: `src/app.js` | Data: a line | Proof: node --version', ''
-].join('\n');
-
 async function setup() {
-  const tools = await fixture();
+  const tools = tempDir('ui-design-test-');
   const root = await gitRepository({ 'src/app.js': 'export const a = 1;\n' });
   git(root, 'checkout', '-q', '-b', 'feat/fixture');
   await fs.mkdir(path.join(root, 'docs', 'plans'), { recursive: true });
   const planPath = path.join(root, 'docs', 'plans', 'fixture.md');
-  await fs.writeFile(planPath, planText(root));
+  await fs.writeFile(planPath, runPlanText(root, { title: 'resume fixture' }));
   git(root, 'add', '-A');
   git(root, 'commit', '-q', '-m', 'docs: add the plan');
   const claude = path.join(tools, 'claude.mjs');
   await fs.writeFile(claude, FAKE_CLAUDE);
-  return { root, planPath, claude, calls: path.join(tools, 'calls.txt'), home: await fixture() };
+  return { root, planPath, claude, calls: path.join(tools, 'calls.txt'), home: tempDir('ui-design-test-') };
 }
 
 const exo = (context, args) => run(CLI, ['run', context.planPath, '--claude', context.claude, '--session', 'task', '--max-iterations', '1', ...args], {

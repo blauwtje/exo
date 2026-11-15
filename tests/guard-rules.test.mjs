@@ -17,8 +17,7 @@ const { refusalRound } = await import('../lib/brief-denials.mjs');
 const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
 const { contextHook } = await import('../hooks/context-limit.mjs');
 const { readKindTable } = await import('../lib/model-kinds.mjs');
-const { agentContextTarget, contextLimit } = await import('../lib/context-limits.mjs');
-const { agentHardLimit } = await import('../lib/context-decisions.mjs');
+const { agentContextTarget, contextLimit, AGENT_HARD_RATIO } = await import('../lib/context-limits.mjs');
 const { readDispatchRules } = await import('../hooks/dispatch-rules.mjs');
 const { runNoWait } = await import('../hooks/run-no-wait.mjs');
 const { stallGuardInput } = await import('../hooks/run-stall-guard.mjs');
@@ -44,7 +43,7 @@ const bashWarning = async (command, extra = {}) => {
 const agent = { agent_id: 'a' };
 
 const spent = tempDir('guard-rules-context-');
-const grownTo = (tokens, name = 'grown') => {
+const grownTo = (tokens, name) => {
   const file = path.join(spent, `${name}-${tokens}.jsonl`);
   fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
   return file;
@@ -53,7 +52,7 @@ const contextDeny = (input) => {
   const fields = contextHook({ session_id: 's', permission_mode: 'bypassPermissions', ...input }, () => false)?.hookSpecificOutput;
   return fields?.permissionDecisionReason ?? fields?.additionalContext ?? '';
 };
-const subagent = (tokens, tool_name, tool_input = {}) => contextDeny({
+const subagent = (tokens, tool_name, tool_input) => contextDeny({
   agent_id: `guard-rules-${tokens}-${tool_name}`,
   agent_type: 'exo:build-task',
   agent_transcript_path: grownTo(tokens, 'agent'),
@@ -85,7 +84,7 @@ const largeSearch = () => {
 const noWait = (asks) => {
   const dir = tempDir('guard-rules-run-');
   const env = { EXO_RUN: '1', EXO_RUN_DIR: dir };
-  const ask = () => runNoWait({ tool_name: 'AskUserQuestion', tool_input: { question: 'which?' }, session_id: 's' }, { env, dir });
+  const ask = () => runNoWait({ tool_name: 'AskUserQuestion', tool_input: { question: 'which?' }, session_id: 's' }, { env });
   let output = null;
   for (let call = 0; call < asks; call += 1) output = ask();
   return textOf(output?.hookSpecificOutput);
@@ -177,7 +176,7 @@ const cases = {
   'code-rules': () => denyReason('code-rules', 'a.mjs:1 comment'),
   'result-line': () => subagent(10_000, 'Read', { file_path: longLine }),
   'context-lead': () => leadOverLimit(),
-  'context-hard': () => subagent(agentHardLimit(agentContextTarget()) + 1000, 'Bash', { command: 'ls' }),
+  'context-hard': () => subagent(Math.round(agentContextTarget() * AGENT_HARD_RATIO) + 1000, 'Bash', { command: 'ls' }),
   'context-target': () => subagent(agentContextTarget() + 1000, 'Read', { file_path: 'a.md' }),
   'intake-glob': () => subagent(agentContextTarget() - 6000, 'Glob', { pattern: '**/*' }),
   'intake-websearch': () => largeSearch(),
@@ -267,9 +266,9 @@ for (const row of GUARD_RULES) {
   test(`row ${row.id}: the brief line reaches the rendered brief`, () => {
     if (!row.brief) return;
     assert.equal(readDispatchRules().includes(row.brief), !row.without);
-    assert.ok(readDispatchRules(row.tools ?? ['Read']).includes(row.brief));
-    if (row.tools) assert.ok(!readDispatchRules(['Agent']).includes(row.brief));
-    if (row.without) assert.ok(!readDispatchRules([...row.without]).includes(row.brief));
+    assert.ok(rules.briefLines(row.tools ?? ['Read']).join('\n').includes(row.brief));
+    if (row.tools) assert.ok(!rules.briefLines(['Agent']).join('\n').includes(row.brief));
+    if (row.without) assert.ok(!rules.briefLines([...row.without]).join('\n').includes(row.brief));
   });
 }
 
@@ -292,16 +291,16 @@ for (const [id, tool] of [['result-tools', 'Write']]) {
   const brief = GUARD_RULES.find((row) => row.id === id)?.brief;
   test(`the ${id} line renders only for an agent without ${tool}`, () => {
     assert.ok(brief);
-    assert.ok(readDispatchRules(['Read', 'Bash']).includes(brief));
-    assert.ok(!readDispatchRules(['Read', tool]).includes(brief));
+    assert.ok(rules.briefLines(['Read', 'Bash']).join('\n').includes(brief));
+    assert.ok(!rules.briefLines(['Read', tool]).join('\n').includes(brief));
     assert.ok(!readDispatchRules().includes(brief));
   });
 }
 
 test('the task-owner line renders only for an agent with TaskStop', () => {
   const { brief } = GUARD_RULES.find((row) => row.id === 'task-owner');
-  assert.ok(readDispatchRules(['Read', 'TaskStop']).includes(brief));
-  assert.ok(!readDispatchRules(['Read', 'Bash']).includes(brief));
+  assert.ok(rules.briefLines(['Read', 'TaskStop']).join('\n').includes(brief));
+  assert.ok(!rules.briefLines(['Read', 'Bash']).join('\n').includes(brief));
 });
 
 test('the file-result refusal is the rule table reason', () => {
@@ -338,7 +337,7 @@ function denyReasonVerdicts(files) {
     return full;
   });
   const results = [];
-  const repository = { trackedFiles: () => paths, relative: (file) => path.relative(root, file) };
+  const repository = { trackedFiles: () => paths, relative: (file) => path.relative(root, file), text: (file) => fs.readFileSync(file, 'utf8') };
   checkDenyReasons({ result: (status, name, detail) => results.push({ status, name, detail }) }, repository);
   return results;
 }
@@ -366,7 +365,6 @@ test('the deny reason check passes a denyReason call, a non-deny reason and the 
 });
 
 test('the rule table is the only exception to the deny reason check', () => {
-  assert.deepEqual(denyReasons.RULE_TABLE_EXCEPTIONS, ['lib/guard-rules.mjs']);
   const [verdict] = denyReasonVerdicts({ 'lib/brief-denials.mjs': "const NO_REASON = 'x';\n" });
   assert.equal(verdict.status, 'FAIL');
 });

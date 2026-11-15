@@ -2,11 +2,17 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { fileURLToPath } from 'node:url';
-import { unroutableTargets } from '../verify/checks/routing-targets.mjs';
+import { checkRoutingTargets } from '../verify/checks/routing-targets.mjs';
 import { tempDir } from './harness.mjs';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+function unroutableTargets(root) {
+  const asserted = [];
+  checkRoutingTargets({ assert: (ok, name, messages) => asserted.push({ ok, messages }) }, { root });
+  const [{ ok, messages }] = asserted;
+  if (ok) return [];
+  return messages.fail.replace('no such target: ', '').split(', ');
+}
 
 function sample(routing) {
   const root = tempDir('routing-targets-');

@@ -72,7 +72,7 @@ function skillNames(root) {
     .sort();
 }
 
-export const BASELINE = new Map([
+const BASELINE = new Map([
   ['verify ~ Claude Code bundled skill', 'rename deferred to round 2; routing eval reruns with it'],
   ['configure ~ claude-plugins-official/plugins/hookify command', 'rename deferred to round 2; hookify is optional'],
   ['configure ~ claude-plugins-official/external_plugins/discord skill', 'channel plugin, rarely installed with exo; rename deferred'],

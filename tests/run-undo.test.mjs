@@ -3,12 +3,26 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { recordPush, recordRefDiff, recordWorktree, snapshotRefs } from '../skills/build/scripts/run-ops.mjs';
-import { appendOp, keepRun, opsFile, readOps, runDir } from '../skills/build/scripts/run-state.mjs';
-import { undoRun } from '../skills/build/scripts/run-undo.mjs';
+import { appendOp, keepRun, readOps, runDir } from '../skills/build/scripts/run-state.mjs';
 import { git, tempDir } from './harness.mjs';
 
 const ID = 'run-1';
+const CLI = fileURLToPath(new URL('../skills/build/scripts/exo-cli.mjs', import.meta.url));
+
+function undoRun(root, id, { apply }) {
+  const env = { ...process.env };
+  delete env.CLAUDECODE;
+  const args = apply ? [CLI, 'undo', id, '--apply'] : [CLI, 'undo', id];
+  const result = spawnSync(process.execPath, args, { cwd: root, encoding: 'utf8', env });
+  assert.ok([0, 3].includes(result.status), result.stderr);
+  const lines = result.stdout.split('\n').filter((line) => line !== '' && !line.startsWith('exo: '));
+  const pending = Number(result.stdout.match(/(\d+) steps? to apply/)?.[1] ?? 0);
+  const refused = lines.filter((line) => line.startsWith('refused:')).length;
+  assert.equal(result.status === 3, refused > 0);
+  return { lines, pending, refused };
+}
 
 function repo() {
   const root = tempDir('run-undo-');
@@ -49,7 +63,7 @@ test('appendOp keeps one JSON line per operation in ops.jsonl', () => {
   appendOp(root, ID, { kind: 'ref', ref: 'refs/heads/x', before: null, after: 'abc' });
   appendOp(root, ID, { kind: 'push', remote: 'origin', ref: 'x', sha: 'abc' });
   assert.deepEqual(readOps(root, ID).map((op) => op.kind), ['ref', 'push']);
-  assert.equal(fs.readFileSync(opsFile(root, ID), 'utf8').trim().split('\n').length, 2);
+  assert.equal(fs.readFileSync(path.join(runDir(root, ID), 'ops.jsonl'), 'utf8').trim().split('\n').length, 2);
 });
 
 test('recordRefDiff records a created branch and a moved branch', () => {

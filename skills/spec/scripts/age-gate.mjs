@@ -14,14 +14,12 @@ function plain(markup) {
 }
 
 function sameOrigin(href, base) {
-  try {
-    const target = new URL(href.replace(/&amp;/g, '&'), base);
-    if (target.origin !== new URL(base).origin) return null;
-    if (!/^https?:$/.test(target.protocol)) return null;
-    return target;
-  } catch {
-    return null;
-  }
+  const resolved = href.replace(/&amp;/g, '&');
+  if (!URL.canParse(resolved, base)) return null;
+  const target = new URL(resolved, base);
+  if (target.origin !== new URL(base).origin) return null;
+  if (!/^https?:$/.test(target.protocol)) return null;
+  return target;
 }
 
 function linkStep(html, base) {

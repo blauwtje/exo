@@ -6,9 +6,9 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 
 - **Start with 20-50 tasks from real failures.** [1] exo: `evals/`
 - **Write unambiguous tasks with reference solutions.** [1] exo: `tests/benchmark-value.test.mjs`
-- **Report SEM and 95% CI with every score; cluster standard errors on the unit of randomisation.** [3] exo: `lib/eval-stats.mjs` `meanCi`, `clusteredMeanCi`
+- **Report SEM and 95% CI with every score; cluster standard errors on the unit of randomisation.** [3] exo: `lib/eval-stats.mjs` `meanCi`
 - **Compare to baseline as paired differences on shared tasks.** [3] exo: `lib/eval-stats.mjs` `pairedDiff`
-- **Compute task count before a paid run, and run each stage alone with a cheap limit before the paid whole.** [3][8] exo: `lib/eval-stats.mjs` `powerLine`
+- **Compute task count before a paid run, and run each stage alone with a cheap limit before the paid whole.** [3][8] exo: gap
 - **Give each run a fixed time budget; count aborted or timed-out runs as failures, or exclude and report them; never fill a default; an over-budget or broken run is a failure row, never a score; the human sets only the goal and the budget.** [4][7][9] exo: `skills/build/scripts/round.mjs` `timedOut`
 - **Fix the seed.** [6] exo: `skills/build/scripts/round.mjs` `scoreEnv`
 - **Change one thing per round, scored by one number the edited files cannot change; keep only a gain that clears the run noise, and at equal score or fewer net lines keep simpler code.** [6][7][10][11] exo: `skills/build/scripts/round.mjs` `not-one-commit`, `judgeKeep`

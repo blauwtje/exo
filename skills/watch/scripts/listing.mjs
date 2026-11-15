@@ -1,7 +1,8 @@
+import { parseLine } from '#basics';
 import { runYtDlpWithRuntime, ytDlpReason, ytDlpAvailable } from './ytdlp.mjs';
 import { formatDuration } from './format.mjs';
 import { classifyOutsideFailure } from '../../../lib/outside-limit.mjs';
-import { YOUTUBE_HOST } from './video-url.mjs';
+import { WATCH_URL, YOUTUBE_HOST } from './video-url.mjs';
 
 const MISSING = "listing a profile needs yt-dlp on PATH; install it with 'brew install yt-dlp' or 'pipx install yt-dlp', then rerun";
 
@@ -13,18 +14,15 @@ function flattened(entries = []) {
 }
 
 function absolute(link, base) {
-  try {
-    return new URL(link, base).href;
-  } catch {
-    return '';
-  }
+  if (!URL.canParse(link, base)) return '';
+  return new URL(link, base).href;
 }
 
 function urlOfEntry(entry, base) {
   const link = entry.webpage_url || entry.url;
   if (link) return absolute(link, base);
   if (!entry.id) return '';
-  if (YOUTUBE_HOST.test(new URL(base).hostname)) return `https://www.youtube.com/watch?v=${entry.id}`;
+  if (YOUTUBE_HOST.test(new URL(base).hostname)) return `${WATCH_URL}${entry.id}`;
   return String(entry.id);
 }
 
@@ -56,14 +54,6 @@ function listArgs({ url, limit }) {
   return ['--flat-playlist', '--dump-single-json', '--playlist-end', String(limit), '--no-warnings', '--', url];
 }
 
-function parsed(stdout) {
-  try {
-    return JSON.parse(stdout);
-  } catch {
-    return null;
-  }
-}
-
 export async function listProfile(options) {
   if (!(await ytDlpAvailable(options.ytDlpMs))) return { failure: `${options.url}: missing tool: ${MISSING}` };
   const run = await runYtDlpWithRuntime(listArgs(options), options.ytDlpMs);
@@ -71,7 +61,7 @@ export async function listProfile(options) {
     const rateLimited = classifyOutsideFailure({ text: run.stderr }) === 'rate-limited';
     return { failure: `${options.url}: list failed: ${ytDlpReason(run, options)}`, rateLimited };
   }
-  const root = parsed(run.stdout);
+  const root = parseLine(run.stdout);
   if (!root) return { failure: `${options.url}: list failed: yt-dlp printed no listing` };
   const entries = flattened(root.entries).slice(0, options.limit);
   if (entries.length === 0) return { failure: `${options.url}: no entries: yt-dlp lists no videos for it` };

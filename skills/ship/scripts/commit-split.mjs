@@ -5,12 +5,11 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { attributionProblem, subjectProblem } from '#commit-text';
-import { UsageError, isMain, parseFlags } from '#script-flags';
+import { UsageError, USAGE_EXIT, isMain, parseFlags } from '#script-flags';
 import { git } from '#git';
 
-const USAGE = 'usage: commit-split.mjs --list | --plan <file> [--apply] [--dir <path>]';
-const USAGE_EXIT = 2;
-const FLAGS = { dir: 'string', list: 'boolean', plan: 'string', apply: 'boolean' };
+const USAGE = 'usage: commit-split.mjs --list | --plan <file> [--apply]';
+const FLAGS = { list: 'boolean', plan: 'string', apply: 'boolean' };
 
 class SplitError extends Error {}
 
@@ -20,11 +19,11 @@ function gitStrict(root, args, env = {}) {
   return result.stdout;
 }
 
-export function repositoryRoot(dir) {
+function repositoryRoot(dir) {
   return gitStrict(dir, ['rev-parse', '--show-toplevel']).trim();
 }
 
-export function dirtyFiles(root) {
+function dirtyFiles(root) {
   const output = gitStrict(root, ['status', '--porcelain=v1', '-z', '-uall', '--no-renames']);
   return output
     .split('\0')
@@ -39,7 +38,7 @@ function readPlan(file) {
   } catch (error) {
     throw new SplitError(`plan ${file} is not readable JSON: ${error.message}`);
   }
-  if (!Array.isArray(plan?.groups) || plan.groups.length === 0) throw new SplitError('plan needs a non-empty "groups" array');
+  if (!Array.isArray(plan?.groups) || plan.groups.length === 0) throw new SplitError(`plan ${file} needs a non-empty "groups" array`);
   return plan.groups;
 }
 
@@ -67,7 +66,7 @@ function coverageProblems(groups, dirty) {
   return problems;
 }
 
-export function planProblems(groups, dirty) {
+function planProblems(groups, dirty) {
   if (dirty.length === 0) return ['the tree has no changes to split'];
   return [...groups.flatMap(groupProblems), ...coverageProblems(groups, dirty)];
 }
@@ -119,7 +118,7 @@ function formatProposal(groups) {
 }
 
 function run(flags) {
-  const root = repositoryRoot(flags.dir ?? process.cwd());
+  const root = repositoryRoot(process.cwd());
   const dirty = dirtyFiles(root);
   if (flags.list) {
     process.stdout.write(dirty.map((entry) => `${entry.status} ${entry.file}\n`).join(''));

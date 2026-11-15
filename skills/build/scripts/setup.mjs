@@ -207,7 +207,7 @@ function main() {
     const flags = parseFlags(process.argv.slice(2), SPEC, { usage: USAGE });
     const need = flags.resume ? [] : ['goal', 'command', 'regex', 'direction', 'scope'];
     for (const name of need) if (!flags[name]) throw new UsageError(`--${name} is required`);
-    if (!flags.resume && !['higher', 'lower'].includes(flags.direction)) throw new UsageError('--direction must be higher or lower');
+    if (!flags.resume && !['higher', 'lower'].includes(flags.direction)) throw new UsageError(`--direction must be higher or lower, got '${flags.direction ?? ''}'`);
     if (flags.resume) resume(flags);
     else process.exitCode = fresh(flags);
   } catch (error) {

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { USAGE_EXIT } from '#script-flags';
 import { foldText, readClaims } from './claims.mjs';
 import { readSources } from './ledger.mjs';
 
@@ -53,7 +54,7 @@ function sentenceFailures(sentence, claims, hostByRef) {
   return failures;
 }
 
-export function verifyReport(runDir) {
+function verifyReport(runDir) {
   const reportFile = path.join(runDir, 'answer.md');
   if (!fs.existsSync(reportFile)) return ['answer.md\tmissing'];
   const claims = readClaims(runDir);
@@ -66,7 +67,7 @@ function main(argv) {
   const [runDir] = argv;
   if (!runDir) {
     process.stderr.write('usage: verify.mjs <run-dir>\n');
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   const failures = verifyReport(runDir);

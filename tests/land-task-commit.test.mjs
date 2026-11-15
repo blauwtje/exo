@@ -87,7 +87,7 @@ test('strays beside the listed files raise no check warning and land', async () 
     await fs.mkdir(path.dirname(path.join(root, stray)), { recursive: true });
     await fs.writeFile(path.join(root, stray), 'x\n');
   }
-  assert.doesNotMatch(checkTask({ planPath, planText: PLAN, number: 1, root }), /outside Files/);
+  assert.doesNotMatch(checkTask({ planPath, planText: PLAN, number: 1, root, reportText: null, reportPath: null, pin: null }), /outside Files/);
   assert.match(landTask({ planPath, planText: PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);
   assert.match(git(root, 'show', '--name-only', '--format=', 'HEAD'), /src\/apple\.js/);
 });
@@ -100,7 +100,7 @@ test('a git worktree nested in the checkout is skipped, a plain untracked direct
   await fs.rm(path.join(root, 'agents', 'agent-gone'), { recursive: true });
   await fs.mkdir(path.join(root, 'stray'));
   await fs.writeFile(path.join(root, 'stray', 'file.txt'), 'x\n');
-  const checked = checkTask({ planPath, planText: PLAN, number: 1, root });
+  const checked = checkTask({ planPath, planText: PLAN, number: 1, root, reportText: null, reportPath: null, pin: null });
   assert.doesNotMatch(checked, /outside Files|agent-1/);
   assert.match(landTask({ planPath, planText: PLAN, number: 1, root }), /^Committed: [0-9a-f]+ Task 1$/m);
   const committed = git(root, 'show', '--name-only', '--format=', 'HEAD');
@@ -201,7 +201,7 @@ test('under a run pin, --check runs any task of the pinned plan while a landing 
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   const pin = { planId: 'fixture', number: 2 };
-  const output = checkTask({ planPath, planText: PLAN, number: 1, root, pin });
+  const output = checkTask({ planPath, planText: PLAN, number: 1, root, reportText: null, reportPath: null, pin });
   assert.match(output, /Report OK: Task 1\n$/);
   assert.throws(() => landTask({ planPath, planText: PLAN, number: 1, root, pin }), (error) => {
     assert.ok(error instanceof LandingError);
@@ -353,7 +353,7 @@ test('--fix commits the body after a blank line below the subject', async () => 
 test('--fix without a body commits the subject alone', async () => {
   const { root } = await landingCheckout();
   await editApp(root);
-  fixLand({ root, subject: 'fix(app): greet returns' });
+  fixLand({ root, subject: 'fix(app): greet returns', pin: null });
   assert.equal(git(root, 'log', '-1', '--format=%B'), 'fix(app): greet returns');
 });
 
@@ -361,14 +361,14 @@ test('--fix refuses a body that attributes the work to an AI and commits nothing
   const { root } = await landingCheckout();
   await editApp(root);
   const head = git(root, 'rev-parse', 'HEAD');
-  assert.throws(() => fixLand({ root, subject: 'fix(app): greet returns', body: 'Co-Authored-By: Claude <noreply@anthropic.com>' }), /commit text refused/);
+  assert.throws(() => fixLand({ root, subject: 'fix(app): greet returns', body: 'Co-Authored-By: Claude <noreply@anthropic.com>', pin: null }), /commit text refused/);
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
 });
 
 test('a --fix commit body whose Evidence line is not a result path or none (<reason>) is refused', async () => {
   const { root } = await landingCheckout();
   await editApp(root);
-  assert.throws(() => fixLand({ root, subject: 'fix(app): greet returns', body: 'Evidence: benchmarks/results/x.md, findings (a)' }), /commit text refused: Evidence:/);
+  assert.throws(() => fixLand({ root, subject: 'fix(app): greet returns', body: 'Evidence: benchmarks/results/x.md, findings (a)', pin: null }), /commit text refused: Evidence:/);
 });
 
 test('a file the block stages outside Files lands, a security-boundary one lands with a warning', async () => {
@@ -392,10 +392,10 @@ test('boundary word warns unless the task names it in Drops', async () => {
   git(root, 'commit', '-m', 'add rule');
   await fs.writeFile(path.join(root, 'skills/rule.md'), 'Run this.\n');
   const planText = await fs.readFile(planPath, 'utf8');
-  const warned = checkTask({ planPath, planText, number: 1, root, reportText: PASS_REPORT });
+  const warned = checkTask({ planPath, planText, number: 1, root, reportText: PASS_REPORT, reportPath: null, pin: null });
   assert.match(warned, /^\[WARN\] Task 1 dropped boundary words: only, never in `skills\/rule\.md`$/m);
   const named = planText.replace('Depends on: none |', 'Depends on: none | Drops: only never in skills/rule.md |');
-  assert.doesNotMatch(checkTask({ planPath, planText: named, number: 1, root, reportText: PASS_REPORT }), /dropped boundary words/);
+  assert.doesNotMatch(checkTask({ planPath, planText: named, number: 1, root, reportText: PASS_REPORT, reportPath: null, pin: null }), /dropped boundary words/);
 });
 
 test('a newly added prose file has no HEAD blob and is skipped by the dropped-words check', async () => {
@@ -404,7 +404,7 @@ test('a newly added prose file has no HEAD blob and is skipped by the dropped-wo
   await fs.writeFile(path.join(root, 'skills/fresh.md'), 'Run only this, never that.\n');
   git(root, 'add', 'skills/fresh.md');
   const planText = await fs.readFile(planPath, 'utf8');
-  const report = checkTask({ planPath, planText, number: 1, root, reportText: PASS_REPORT });
+  const report = checkTask({ planPath, planText, number: 1, root, reportText: PASS_REPORT, reportPath: null, pin: null });
   assert.doesNotMatch(report, /dropped boundary words/);
 });
 
@@ -414,6 +414,6 @@ test('a report that names a limit makes check and land print a warning and still
   const reportText = `${PASS_REPORT}Limit: an untracked plan file makes the commit fail\n`;
   const planText = await fs.readFile(planPath, 'utf8');
   const warning = /^Warning: the report of Task 1 names a limit: Limit: an untracked plan file makes the commit fail; a case that worked before the change is fixed or returned BLOCKED$/m;
-  assert.match(checkTask({ planPath, planText, number: 1, root, reportText }), warning);
+  assert.match(checkTask({ planPath, planText, number: 1, root, reportText, reportPath: null, pin: null }), warning);
   assert.match(landTask({ planPath, planText, number: 1, root, reportText }), warning);
 });

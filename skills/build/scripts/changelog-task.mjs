@@ -7,7 +7,7 @@ const PROOF = /^grep -qF '([^'`]+)' CHANGELOG\.md$/;
 const SUBHEADING = /### (Added|Changed|Fixed|Removed)\b/g;
 const LITERAL = /`([^`]+)`/g;
 
-export function changelogLine(task, text) {
+function changelogLine(task, text) {
   if (task.files.length !== 1 || task.files[0].path !== 'CHANGELOG.md') return null;
   const proof = PROOF.exec((task.proof ?? '').replace(/^`(.*)`$/, '$1'));
   if (proof === null || (task.data ?? '') === '') return null;

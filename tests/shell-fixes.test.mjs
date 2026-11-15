@@ -4,10 +4,13 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { onPath } from '#on-path';
-import { fixShell, SED_FUNCTION, TIMEOUT_FUNCTION } from '../lib/shell-fixes.mjs';
+import { fixShell, TIMEOUT_FUNCTION } from '../lib/shell-fixes.mjs';
 import { tempDir } from './harness.mjs';
 
 const fix = (command, hasTimeout = false, bsd = () => false) => fixShell({ command, description: 'd' }, hasTimeout, bsd)?.command ?? null;
+
+const SED_PROBE = 'sed -i x f';
+const SED_FUNCTION = fix(SED_PROBE, false, () => true).slice(0, -SED_PROBE.length);
 
 test('a command without an = word or timeout is left alone', () => {
   assert.equal(fix('echo a b; x=1 ls "=no"'), null);

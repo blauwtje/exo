@@ -1,28 +1,25 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { UsageError, parseFlags, isMain } from '#script-flags';
-import { GhError, ghJson } from './gh-run.mjs';
+import { USAGE_EXIT, UsageError, parseFlags, isMain } from '#script-flags';
+import { gitLine } from '#git';
+import { CHILD_OUTPUT_LIMIT } from '#process-tree';
+import { GH_ERROR_EXIT, GhError, PR_NUMBER, ghJson } from './gh-run.mjs';
 
-export const GH_ERROR_EXIT = 3;
-const USAGE = 'usage: pr-comment-tasks.mjs --pr <number> --root <checkout> [--repo <owner/repo>]';
-const PR_NUMBER = /^[1-9][0-9]*$/;
+const USAGE = 'usage: pr-comment-tasks.mjs --pr <number> --root <checkout>';
 const EVIDENCE_LIMIT = 160;
 const TASK_DIR = path.join('.exo', 'pr-comments');
 
 const THREADS_QUERY = 'query($owner:String!,$name:String!,$pr:Int!){repository(owner:$owner,name:$name){pullRequest(number:$pr){reviewThreads(first:100){nodes{isResolved isOutdated comments(first:100){nodes{databaseId}}}}}}}';
 
-function fetchComments(pr, repo) {
-  const slug = repo ?? '{owner}/{repo}';
-  return ghJson(['api', `repos/${slug}/pulls/${pr}/comments`, '--paginate', '--slurp']).flat();
+function fetchComments(pr) {
+  return ghJson(['api', `repos/{owner}/{repo}/pulls/${pr}/comments`, '--paginate', '--slurp']).flat();
 }
 
-function fetchThreadStates(pr, repo) {
-  const [owner, name] = (repo ?? '{owner}/{repo}').split('/');
-  const response = ghJson(['api', 'graphql', '-F', `owner=${owner}`, '-F', `name=${name}`, '-F', `pr=${pr}`, '-f', `query=${THREADS_QUERY}`]);
+function fetchThreadStates(pr) {
+  const response = ghJson(['api', 'graphql', '-F', 'owner={owner}', '-F', 'name={repo}', '-F', `pr=${pr}`, '-f', `query=${THREADS_QUERY}`]);
   const threads = response.data?.repository?.pullRequest?.reviewThreads?.nodes ?? [];
   const states = new Map();
   for (const thread of threads) {
@@ -49,9 +46,9 @@ function skipReason(comment, state) {
 }
 
 function lineAtHead(root, file, line) {
-  const shown = spawnSync('git', ['-C', root, 'show', `HEAD:${file}`], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-  if (shown.status !== 0) return null;
-  return shown.stdout.split('\n')[line - 1]?.trim() || null;
+  const shown = gitLine(root, ['show', `HEAD:${file}`], { trim: false, maxBuffer: CHILD_OUTPUT_LIMIT });
+  if (shown === null) return null;
+  return shown.split('\n')[line - 1]?.trim() || null;
 }
 
 function evidenceOf(body) {
@@ -96,8 +93,8 @@ function planTasks(comments, threadStates, { root, pr }) {
 }
 
 function readFlags(argv) {
-  const flags = parseFlags(argv, { pr: 'value', root: 'value', repo: 'value' }, { usage: USAGE });
-  if (!PR_NUMBER.test(flags.pr ?? '')) throw new UsageError('--pr needs a pull request number');
+  const flags = parseFlags(argv, { pr: 'value', root: 'value' }, { usage: USAGE });
+  if (!PR_NUMBER.test(flags.pr ?? '')) throw new UsageError(`--pr needs a pull request number, got '${flags.pr ?? ''}'`);
   if (!flags.root) throw new UsageError('--root needs a checkout');
   return flags;
 }
@@ -109,12 +106,12 @@ function main() {
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     console.error(`${USAGE}: ${error.message}`);
-    process.exitCode = 2;
+    process.exitCode = USAGE_EXIT;
     return;
   }
   try {
     const root = path.resolve(flags.root);
-    const { tasks, skipped } = planTasks(fetchComments(flags.pr, flags.repo), fetchThreadStates(flags.pr, flags.repo), { root, pr: flags.pr });
+    const { tasks, skipped } = planTasks(fetchComments(flags.pr), fetchThreadStates(flags.pr), { root, pr: flags.pr });
     fs.mkdirSync(path.join(root, TASK_DIR), { recursive: true });
     for (const task of tasks) {
       fs.writeFileSync(task.file, task.text);
