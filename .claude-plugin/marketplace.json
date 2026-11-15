@@ -8,7 +8,7 @@
     {
       "name": "exo",
       "description": "Claude Code plugin with skills for specs, proof-first builds, diagnosis and shipping.",
-      "version": "0.140.0",
+      "version": "1.0.0",
       "license": "MIT",
       "source": "./"
     }

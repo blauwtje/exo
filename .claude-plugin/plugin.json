@@ -1,6 +1,6 @@
 {
   "name": "exo",
-  "version": "0.140.0",
+  "version": "1.0.0",
   "description": "Claude Code plugin with skills for specs, proof-first builds, diagnosis and shipping.",
   "author": {
     "name": "Thomas Hoogteijling"

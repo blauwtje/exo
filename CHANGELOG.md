@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 1.0.0 - 2026-11-15
+
 ### Added
 
 - The code standard gains deep modules, a functional core with no parameter mutation, no behavior-picking boolean flags, one concern per change, logic-free tests, thrown errors that name the operation and value, and measured-only optimization; a fresh review merged it from 29 to 22 rules, and `lib/code-rules.mjs` now fails on `eqeqeq` and `no-implicit-coercion`, checks `no-else-return` without `else if` and warns on `no-param-reassign` (props) and `prefer-const`.
