@@ -24,6 +24,8 @@ function transcript(tokens) {
 
 let refusedCalls = 0;
 const refused = (tool, toolInput = {}) => ({ session_id: `receipts-${process.pid}-${Date.now()}-${refusedCalls++}`, agent_id: 'a1', agent_transcript_path: transcript(10_000_000), tool_name: tool, tool_input: toolInput });
+const stash = ['git', 'stash'].join(' ');
+const stashed = () => ({ tool_name: 'Bash', agent_id: 'a1', tool_input: { command: stash } });
 const skill = (name) => ({ tool_name: 'Skill', tool_input: { skill: name } });
 
 test('an exo skill start gives one user-only line and no model context', () => {
@@ -55,12 +57,12 @@ test('an agent that is not an exo agent gives no line', () => {
 });
 
 test('a refusal gives one line with its reason from the Bash, Agent and context hooks', async () => {
-  const bash = await dispatchBash(refused('Bash', { command: 'ls' }), undefined, ON);
+  const bash = await dispatchBash(stashed(), undefined, ON);
   const agent = agentHook(refused('Agent', { subagent_type: 'Explore' }), 'on', ON);
   const read = contextHook(refused('Read', { file_path: '/x' }), ON);
   for (const output of [bash, agent, read]) {
     assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
-    assert.match(output.systemMessage, /^exo blocked: Over the (hard )?context (limit|target)/);
+    assert.match(output.systemMessage, /^exo blocked: /);
     assert.ok(output.systemMessage.length <= 'exo blocked: '.length + 140);
   }
 });
@@ -85,16 +87,16 @@ test('the receipt leaves the model context byte for byte as it was', async () =>
     assert.ok(systemMessage);
     assert.equal(JSON.stringify(rest), JSON.stringify(off()));
   }
-  const bash = await dispatchBash(refused('Bash'), undefined, ON);
+  const bash = await dispatchBash(stashed(), undefined, ON);
   const { systemMessage, ...rest } = bash;
   assert.ok(systemMessage);
-  assert.equal(JSON.stringify(rest), JSON.stringify(await dispatchBash(refused('Bash'), undefined, OFF)));
+  assert.equal(JSON.stringify(rest), JSON.stringify(await dispatchBash(stashed(), undefined, OFF)));
 });
 
 test('receipts off gives no systemMessage anywhere', async () => {
   assert.equal(contextHook(skill('exo:spec'), OFF), null);
   assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', OFF).systemMessage, undefined);
-  assert.equal((await dispatchBash(refused('Bash'), undefined, OFF)).systemMessage, undefined);
+  assert.equal((await dispatchBash(stashed(), undefined, OFF)).systemMessage, undefined);
 });
 
 test('a call with nothing to show gives no output', async () => {
@@ -108,7 +110,7 @@ test('the hook script prints the line on stdout with receipts at their default',
   const run = (script, input) => execFileSync(process.execPath, [path.join(REPOSITORY, 'hooks', script)], { env, input: JSON.stringify(input), timeout: 20_000 }).toString();
   assert.deepEqual(JSON.parse(run('context-limit.mjs', skill('exo:build'))), { systemMessage: 'exo › build' });
   assert.match(JSON.parse(run('agent-effort.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'exo:review-branch' } })).systemMessage, /^exo › review-branch/);
-  assert.match(JSON.parse(run('dispatch-bash.mjs', refused('Bash'))).systemMessage, /^exo blocked: /);
+  assert.match(JSON.parse(run('dispatch-bash.mjs', stashed())).systemMessage, /^exo blocked: /);
   fs.mkdirSync(path.join(project, '.claude'));
   fs.writeFileSync(path.join(project, '.claude', 'exo.local.json'), '{"receipts":"off"}');
   assert.equal(run('context-limit.mjs', skill('exo:build')), '');

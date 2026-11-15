@@ -2,9 +2,7 @@
   "claude": {
     "hooks": [
       "SessionStart",
-      "PreToolUse",
-      "SessionEnd",
-      "Stop"
+      "PreToolUse"
     ],
     "efforts": [
       "low",

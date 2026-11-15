@@ -16,18 +16,6 @@ test('every subagent is noted on sleep and told to run it in the background and 
   assert.match(output.additionalContext, /in the background, end the turn/);
 });
 
-for (const command of ['gh pr checks 5 --watch', 'gh run watch 123']) {
-  test(`a subagent is noted on ${command}`, async () => {
-    const output = await decide(command, subagent);
-    assert.equal(output?.permissionDecision, undefined);
-    assert.match(output.additionalContext, /let the lead wait/);
-  });
-
-  test(`the main session keeps ${command}`, async () => {
-    assert.notEqual((await decide(command))?.permissionDecision, 'deny');
-  });
-}
-
-test('the main session keeps sleep', async () => {
+test('the main session is noted on sleep too and never denied', async () => {
   assert.notEqual((await decide('sleep 1'))?.permissionDecision, 'deny');
 });

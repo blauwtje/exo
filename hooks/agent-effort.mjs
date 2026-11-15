@@ -3,16 +3,13 @@
 import { inSidecall } from '#hook-input';
 import { briefedInput, mergedFields, refusalRound, isolationFields, resultToolsFields, sizeDenial, workersFields } from '../lib/brief-denials.mjs';
 import { contextDecision, contextFields, roleFields, hookAgentType } from '../lib/context-decisions.mjs';
-import { denyReason } from '../lib/guard-rules.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { refuseFields, rememberRefusal, runHook } from '../lib/hook-refusal.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
-import { recordSlice, sliceCount, sliceWorkers } from '../lib/slice-state.mjs';
 import { baseOf, budgetedReads, locatedReads, webSources, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
-import { defaulted, inlineSingleWorker, kindLabels, liftedEffort, pairText, recordResearchDispatch, researchFields, resolvedKind, runsPassed } from '../lib/kind-resolution.mjs';
-import { dispatchRules } from './dispatch-rules.mjs';
+import { defaulted, inlineSingleWorker, liftedEffort, recordResearchDispatch, researchFields, resolvedKind } from '../lib/kind-resolution.mjs';
 
 function filled(input, budget, level) {
   const kind = resolvedKind(input, budget)?.kind;
@@ -50,22 +47,6 @@ export function agentEffort(hookInput, budget, rewrite = readsRewrite(hookInput)
   return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', updatedInput: updated } };
 }
 
-function mismatchFields(hookInput, budget) {
-  const { tool_name: tool, tool_input: input } = hookInput;
-  if (tool !== 'Agent' || !input) return null;
-  const resolved = resolvedKind(input, budget);
-  if (!resolved?.agent) return null;
-  const { kind, table, agent, label } = resolved;
-  const expected = { model: kind.model === INHERIT ? undefined : kind.model, effort: kind.effort ?? undefined };
-  const differs = (key) => input[key] !== undefined && input[key] !== expected[key] && (key === 'model' || expected.effort !== undefined);
-  if (!['model', 'effort'].some(differs)) return null;
-  const passed = Object.fromEntries(['model', 'effort'].filter((key) => input[key] !== undefined).map((key) => [key, input[key]]));
-  const source = label ? `because \`exo-kind: ${label}\` in the brief moved it` : 'by the kind table';
-  const rule = Object.values(table.kinds).some((entry) => runsPassed(entry, passed)) ? 'kind-mismatch-label' : 'kind-mismatch';
-  const detail = `exo:${agent} runs on ${pairText(expected.model, expected.effort)} ${source}; the call passed ${pairText(passed.model, passed.effort)}. ${kindLabels(table.kinds, passed)}`;
-  return refuseFields(rule, denyReason(rule, detail), hookInput);
-}
-
 function missingFields(size, { fromOrchestrator, fetchDocs }) {
   if (fetchDocs) return size.missing.filter((field) => field === 'Fetches');
   if (fromOrchestrator) return size.missing;
@@ -86,31 +67,13 @@ function workerSizeFields(hookInput, rewrite) {
   return refuseFields(over ? 'brief-over-budget' : 'brief-lacks-reads', reason, hookInput);
 }
 
-function isSliceCall(hookInput) {
-  return hookInput.tool_name === 'Agent' && Boolean(hookInput.agent_id) && hookAgentType(hookInput) === 'orchestrator';
-}
-
-function sliceFields(hookInput) {
-  if (!isSliceCall(hookInput)) return null;
-  const workers = sliceWorkers(hookInput);
-  if (workers === undefined || sliceCount(hookInput.agent_id) < workers) return null;
-  return refuseFields('slice-spent', denyReason('slice-spent', `sized at ${workers} workers, retries included`), hookInput);
-}
-
-function recordDispatch(hookInput) {
-  if (isSliceCall(hookInput)) recordSlice(hookInput.agent_id);
-  recordResearchDispatch(hookInput);
-}
-
 function agentFields(hookInput, budget, rewrite) {
   return refusalRound(hookInput, mergedFields([
     roleFields(hookInput),
     researchFields(hookInput),
-    mismatchFields(hookInput, budget),
     isolationFields(hookInput),
     resultToolsFields(hookInput),
     workerSizeFields(hookInput, rewrite),
-    sliceFields(hookInput),
     contextFields(contextDecision(hookInput), hookInput)
   ]));
 }
@@ -125,11 +88,10 @@ export function agentHook(hookInput, budget = settingOrDefault('budget').value, 
     const sent = receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields);
     return fields.permissionDecisionReason.includes('LOOP ') ? sent : rememberRefusal(hookInput, sent, { guard: 'agent-effort' });
   }
-  recordDispatch(hookInput);
-  const context = [dispatchRules(hookInput), fields?.additionalContext].filter(Boolean).join('\n\n');
-  if (!context) return receipt(output, null);
+  recordResearchDispatch(hookInput);
+  if (!fields?.additionalContext) return receipt(output, null);
   const base = output ?? { hookSpecificOutput: { hookEventName: 'PreToolUse' } };
-  return receipt({ hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: context } }, null);
+  return receipt({ hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: fields.additionalContext } }, null);
 }
 
 if (isMain(import.meta.url) && !inSidecall()) await runHook('agent-effort', agentHook);

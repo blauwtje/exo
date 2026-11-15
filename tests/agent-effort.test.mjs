@@ -1,14 +1,12 @@
 
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { isDeepStrictEqual } from 'node:util';
 import { agentEffort, agentHook } from '../hooks/agent-effort.mjs';
-import { dispatchMarker, readDispatchRules } from '../hooks/dispatch-rules.mjs';
 import { agentTools } from '../lib/brief-denials.mjs';
 import { briefLines } from '../lib/guard-rules.mjs';
 import { orchestratorWorkers } from '../lib/context-limits.mjs';
@@ -89,63 +87,6 @@ test('an unnamed call with no exo-kind line runs as build with the line prepende
   assert.notEqual(decision({ subagent_type: 'exo:research-worker', description: 'Edit-evidence false block', prompt: 'x' }), 'deny');
 });
 
-test('the first lead Agent call of a session gets the dispatch rules once, a subagent call none, and session start re-arms them', () => {
-  delete process.env.EXO_RUN_DIR;
-  const sessionId = `dispatch-test-${process.pid}-${Date.now()}`;
-  const lead = { session_id: sessionId, tool_name: 'Agent', tool_input: { subagent_type: 'Explore', prompt: 'x' } };
-  const off = () => false;
-  try {
-    assert.equal(agentHook({ ...lead, agent_id: 'a1' }, 'on', off).hookSpecificOutput.additionalContext, undefined);
-    assert.equal(agentHook(lead, 'on', off).hookSpecificOutput.additionalContext, readDispatchRules());
-    assert.equal(agentHook(lead, 'on', off).hookSpecificOutput.additionalContext, undefined);
-    execFileSync(process.execPath, [path.join(import.meta.dirname, '..', 'hooks', 'session-start.mjs')], { input: JSON.stringify({ session_id: sessionId, source: 'compact' }) });
-    assert.equal(agentHook(lead, 'on', off).hookSpecificOutput.additionalContext, readDispatchRules());
-  } finally {
-    fs.rmSync(dispatchMarker(sessionId), { force: true });
-  }
-});
-
-test('a build-task Agent call gets no dispatch rules and leaves them for the next Agent call', () => {
-  delete process.env.EXO_RUN_DIR;
-  const sessionId = `dispatch-runner-${process.pid}-${Date.now()}`;
-  const call = (type) => ({ session_id: sessionId, tool_name: 'Agent', tool_input: { subagent_type: type, prompt: 'x' } });
-  const off = () => false;
-  try {
-    assert.equal(agentHook(call('exo:build-task'), 'on', off).hookSpecificOutput.additionalContext, undefined);
-    assert.equal(agentHook(call('Explore'), 'on', off).hookSpecificOutput.additionalContext, readDispatchRules());
-  } finally {
-    fs.rmSync(dispatchMarker(sessionId), { force: true });
-  }
-});
-
-test('the session text leaves the dispatch-only rules out', () => {
-  const sessionText = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8');
-  for (const line of readDispatchRules().split('\n')) assert.ok(!sessionText.includes(line.slice(2)), line);
-});
-
-test('the session text has one TaskStop bullet for the final report', () => {
-  const lines = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8').split('\n');
-  for (const file of ['session-rules.md', 'dispatch-rules.md']) assert.ok(!fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', file), 'utf8').includes('resumes when'));
-  assert.ok(!lines.some((line) => line.includes('holds the session open')));
-  assert.ok(lines.includes('- Before the final report, stop every background shell and agent this session started with TaskStop, so nothing runs on after it.'));
-});
-
-test('the blanket delegation lines are gone from the session text and the context reference', () => {
-  const root = path.join(import.meta.dirname, '..');
-  for (const file of [['hooks', 'session-rules.md']]) {
-    const text = fs.readFileSync(path.join(root, ...file), 'utf8');
-    assert.doesNotMatch(text, /^- Request with 2\+ parts/m);
-    assert.doesNotMatch(text, /^- Main-session work/m);
-  }
-});
-
-test('the session text has no Decided for you list or number-reply rule and still asks the hard cases', () => {
-  const text = fs.readFileSync(path.join(import.meta.dirname, '..', 'hooks', 'session-rules.md'), 'utf8');
-  assert.doesNotMatch(text, /\*\*Decided for you\*\*/);
-  assert.doesNotMatch(text, /reply of only a number/);
-  assert.match(text, /^- Ask instead when the step is irreversible, has no safe default, or only/m);
-});
-
 test('the Codex host note maps TaskStop to killing the process', () => {
   const note = fs.readFileSync(path.join(import.meta.dirname, '..', 'harnesses', 'codex', 'host-note.md'), 'utf8');
   assert.match(note, /^- Run TaskStop as killing the process\.$/m);
@@ -170,38 +111,6 @@ function hookOutput(input, budget = 'on') {
   return (updatedInput || output.additionalContext) && { ...output, updatedInput };
 }
 
-test('an exo call whose passed model or effort differs from the table is denied with the table pair, the passed pair and the matching labels', () => {
-  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.orchestrator;
-  const output = hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'xhigh' });
-  assert.ok(output.additionalContext);
-  assert.equal(output.updatedInput, undefined);
-  const reason = output.additionalContext;
-  assert.match(reason, new RegExp(`runs on ${model}, ${effort} by the kind table`));
-  assert.match(reason, /passed opus, xhigh/);
-  assert.match(reason, /No kind runs opus, xhigh; closest on opus: build-repair\./);
-  assert.match(reason, /Do instead: drop `model` and `effort`\.$/);
-  assert.doesNotMatch(reason, /No user request/);
-  const buildTask = readKindTable(undefined, { budget: 'on' }).kinds['build-task'];
-  const runnable = hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: buildTask.model, effort: buildTask.effort });
-  assert.match(runnable.additionalContext, new RegExp(`labels for ${buildTask.model}, ${buildTask.effort}: .*build-task`));
-  assert.ok(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', effort: 'xhigh' }).additionalContext);
-  assert.ok(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'haiku' }).additionalContext);
-});
-
-test('a denied pair that no kind runs names the closest kinds on that model, or none', () => {
-  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'max' }).additionalContext, /No kind runs opus, max; closest on opus: build-repair\./);
-  assert.match(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'fable', effort: 'high' }).additionalContext, /No kind runs fable, high, and none runs fable\./);
-});
-
-test('an exo call passing the table model and effort, a label that makes the pair the table pair, off, and a general-purpose call pass through', () => {
-  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds.orchestrator;
-  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model, effort }), undefined);
-  assert.doesNotMatch(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model })?.additionalContext ?? '', /Do instead/);
-  assert.doesNotMatch(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'exo-kind: hardest\nWorkers: 1', effort: 'high' })?.additionalContext ?? '', /Do instead/);
-  assert.equal(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'high' }, 'off'), undefined);
-  assert.equal(hookOutput({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup\nReads: none', model: 'opus', effort: 'max' }), undefined);
-});
-
 test('the session provider picks its kind column, an unlisted or unset one keeps the claude column', () => {
   const before = process.env.EXO_PROVIDER;
   const outputs = () => [call({ subagent_type: 'exo:build-task', prompt: 'x' }), call({ subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x' })];
@@ -217,20 +126,6 @@ test('the session provider picks its kind column, an unlisted or unset one keeps
       { subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x', effort: 'low' }
     ]);
     assert.deepEqual(call({ subagent_type: 'exo:research-worker', prompt: 'x' }), { subagent_type: 'exo:research-worker', prompt: 'x', effort: 'high' });
-  } finally {
-    if (before === undefined) delete process.env.EXO_PROVIDER;
-    else process.env.EXO_PROVIDER = before;
-  }
-});
-
-test('an inherit kind sets no model on an exo call, and a passed model is denied', () => {
-  const before = process.env.EXO_PROVIDER;
-  process.env.EXO_PROVIDER = 'deepseek';
-  try {
-    assert.equal(call({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: review', effort: 'medium' }), undefined);
-    const output = hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: review', model: 'opus' });
-    assert.ok(output.additionalContext);
-    assert.match(output.additionalContext, /runs on the session model/);
   } finally {
     if (before === undefined) delete process.env.EXO_PROVIDER;
     else process.env.EXO_PROVIDER = before;
@@ -358,13 +253,6 @@ test('an over-budget refusal says a qualifier is only lines N-M or by grep after
   assert.match(workerReason('Reads: big.txt\nResult: .exo/r.md', dir), /a qualifier is only `lines N-M` or `by grep` right after the path/);
 });
 
-test('a mismatch caused by an exo-kind label names the label as the source and never a model to switch to', () => {
-  const reason = hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'exo-kind: build\nWorkers: 1', model: 'opus', effort: 'xhigh' }).additionalContext;
-  assert.match(reason, /runs on [^;]+ because `exo-kind: build` in the brief moved it; the call passed opus, xhigh\./);
-  assert.match(reason, /Do instead: drop `model` and `effort`\.$/);
-  assert.doesNotMatch(hookOutput({ subagent_type: 'exo:orchestrator', prompt: 'Workers: 1', model: 'opus', effort: 'xhigh' }).additionalContext, /because/);
-});
-
 test('the orchestrator description states the Reads line shape', () => {
   const agent = fs.readFileSync(new URL('../agents/orchestrator.md', import.meta.url), 'utf8');
   assert.match(/^description: (.+)$/m.exec(agent)[1], /`Reads: a\.md, lib\/b\.mjs` or `none`/);
@@ -448,10 +336,9 @@ function refusals(tag, input) {
 }
 
 test('one dispatch breaking two rules is noted naming both once per session, with no refusal cap', () => {
-  const input = { subagent_type: 'exo:orchestrator', model: 'haiku', prompt: 'Workers: 5' };
+  const input = { subagent_type: 'exo:orchestrator', prompt: 'Workers: 5' };
   const reasons = refusals('loop', input);
   assert.match(reasons[0], /1 to 4/);
-  assert.match(reasons[0], /passed haiku/);
   assert.deepEqual(reasons.slice(1), ['', '']);
 });
 

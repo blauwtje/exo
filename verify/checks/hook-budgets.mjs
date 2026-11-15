@@ -35,7 +35,7 @@ function checkHookSize(report, repository) {
 }
 
 const NAME = 'hook cost';
-const COST_FILES = ['hooks/session-routing.md', 'hooks/session-rules.md', 'hooks/dispatch-rules.md'];
+const COST_FILES = ['hooks/session-routing.md', 'hooks/session-rules.md'];
 
 function hookEntryCount(config) {
   const { hooks = {} } = config;
@@ -135,8 +135,7 @@ export const HOOK_INPUTS = {
   'dispatch-bash.mjs': () => toolCall('Bash', { command: 'git status' }),
   'agent-effort.mjs': () => toolCall('Agent', { subagent_type: 'exo:lookup', prompt: 'Reads: none' }),
   'context-limit.mjs': (scratch) => ({ ...toolCall('Read', { file_path: path.join(scratch, 'a.txt') }), transcript_path: path.join(scratch, 'session.jsonl') }),
-  'run-no-wait.mjs': () => ({ hook_event_name: 'Stop', session_id: SESSION_ID }),
-  'session-end.mjs': () => ({ hook_event_name: 'SessionEnd', session_id: SESSION_ID })
+  'run-no-wait.mjs': () => toolCall('AskUserQuestion', { question: 'Which one?' })
 };
 
 function prepare(scratch) {

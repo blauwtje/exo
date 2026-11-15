@@ -20,17 +20,6 @@ test('no agent with Bash gets a wait line, with or without TaskStop', () => {
   }
 });
 
-test('a watch loop, background or not, is refused with the return-and-let-the-lead-wait text', async () => {
-  const watch = ['gh pr checks 1 --wat', 'ch'].join('');
-  for (const background of [false, true]) {
-    const input = bash(watch, 'general-purpose');
-    input.tool_input.run_in_background = background;
-    const text = JSON.stringify(await dispatchBash(input));
-    assert.match(text, /let the lead wait/);
-    assert.doesNotMatch(text, /start the long command in the background/);
-  }
-});
-
 test('task modes tell a worker to wait for its own shells and TaskStop only a hung one', () => {
   const text = readFileSync(new URL('../lib/agent-modes/task-modes.md', import.meta.url), 'utf8');
   assert.match(text, /use TaskStop only on a shell that hangs/);

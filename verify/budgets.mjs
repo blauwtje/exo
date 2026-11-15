@@ -20,8 +20,7 @@ export const HOOK_WORK_LOCK = {
     'dispatch-bash.mjs': { modules: 43, reads: 5 },
     'agent-effort.mjs': { modules: 46, reads: 45 },
     'context-limit.mjs': { modules: 34, reads: 5 },
-    'run-no-wait.mjs': { modules: 19, reads: 3 },
-    'session-end.mjs': { modules: 13, reads: 2 }
+    'run-no-wait.mjs': { modules: 19, reads: 3 }
   }
 };
 export const SESSION_LOAD_LOCK = { words: 850, measured: '2026-11-13' };

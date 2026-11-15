@@ -24,7 +24,7 @@ const BASH_INPUT = { hook_event_name: 'PreToolUse', tool_name: 'Bash', tool_inpu
 
 test('every hook command tests for node first, runs under bash and stays shell form', () => {
   const entries = hookEntries();
-  assert.ok(entries.length >= 7, `${entries.length} hook commands`);
+  assert.ok(entries.length >= 5, `${entries.length} hook commands`);
   for (const { event, hook } of entries) {
     assert.equal(hook.shell, 'bash', `${event}: ${hook.command}`);
     assert.equal(hook.args, undefined, `${event}: args form`);
@@ -46,9 +46,9 @@ test('without node, SessionStart prints one systemMessage and exits 0', () => {
   assert.equal(output.systemMessage.split('\n').length, 1);
 });
 
-test('without node, each PreToolUse and Stop hook exits 0 with no output over ten calls', () => {
+test('without node, each PreToolUse hook exits 0 with no output over ten calls', () => {
   const silent = hookEntries().filter((entry) => entry.event !== 'SessionStart');
-  assert.ok(silent.length >= 6, `${silent.length} silent hooks`);
+  assert.ok(silent.length >= 4, `${silent.length} silent hooks`);
   const bin = tempDir('exo-no-node-');
   for (const { event, matcher, hook } of silent) {
     for (let call = 0; call < PRE_TOOL_USE_CALLS; call += 1) {

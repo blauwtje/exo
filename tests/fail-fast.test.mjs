@@ -10,11 +10,11 @@ function twoLines(text) {
   assert.match(lines[1], /^Do instead: /);
 }
 
-test('a stop-hook block is one reason line and one next-step line', () => {
+test('a no-wait denial is one reason line and one next-step line', () => {
   const dir = tempDir('exo-fail-fast-');
   const env = { EXO_RUN: '1', EXO_RUN_DIR: dir, EXO_RUN_TASK: 'plan/3' };
-  const input = { hook_event_name: 'Stop', session_id: 's1', last_assistant_message: 'Which one?' };
-  twoLines(runNoWait(input, { env }).reason);
+  const input = { hook_event_name: 'PreToolUse', tool_name: 'AskUserQuestion', session_id: 's1', tool_input: { question: 'Which one?' } };
+  twoLines(runNoWait(input, { env }).hookSpecificOutput.permissionDecisionReason);
 });
 
 test('a stall-guard refusal is one reason line and one next-step line', () => {

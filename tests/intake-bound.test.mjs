@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { dispatchBash } from '../hooks/dispatch-bash.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
 import { agentContextTarget, dispatchBytesPerToken } from '../lib/context-limits.mjs';
 import { tempDir } from './harness.mjs';
@@ -37,7 +36,6 @@ function growTo(tokens) {
 const SESSION = `s-intake-${process.pid}`;
 const agent = { session_id: SESSION, transcript_path, agent_id: `a-intake-${process.pid}`, agent_type: 'exo:build-task', agent_transcript_path: agentTranscript, permission_mode: 'bypassPermissions' };
 const read = (tool_input, caller = agent) => contextHook({ ...caller, tool_name: 'Read', tool_input }, () => false)?.hookSpecificOutput;
-const bash = async (command, caller = agent) => (await dispatchBash({ ...caller, tool_name: 'Bash', tool_use_id: 'u1', tool_input: { command } }, undefined, () => false))?.hookSpecificOutput;
 
 const denied = (fields) => fields?.permissionDecision === 'deny';
 
@@ -63,7 +61,7 @@ test('replay: a Read whose first line alone is over the room left warns', () => 
   assert.match(denial.additionalContext, /grep|head -c/);
 });
 
-test('replay: a growing agent is steered to grep or a line range once a read would pass the room left of its target', async () => {
+test('replay: a growing agent is steered to grep or a line range once a read would pass the room left of its target', () => {
   growTo(10_000);
   assert.equal(denied(read({ file_path: smallFile })), false, 'small read at 10k');
   assert.equal(denied(read({ file_path: sourceFile })), false, 'whole source file at 10k');
@@ -74,9 +72,6 @@ test('replay: a growing agent is steered to grep or a line range once a read wou
   assert.ok(logRead.updatedInput.limit > 0 && logRead.updatedInput.limit < 2696);
   assert.match(logRead.additionalContext, new RegExp(`lines 1-${logRead.updatedInput.limit} .*offset ${logRead.updatedInput.limit + 1}.*grep -n`));
   assert.equal(denied(read({ file_path: testLog, offset: 2690, limit: 7 })), false, 'tail range of the log');
-  const roomy = (await bash(`cat '${testLog}'`))?.updatedInput?.command ?? '';
-  assert.doesNotMatch(roomy, /head -c|grep -n|exo-bash/, 'Bash with room left is not cut to a grep or line range');
-  assert.match(roomy, /timeout \d+ "\$\{SHELL:-\/bin\/sh\}" -c /, 'only the subagent timeout cap wraps it');
 
   growTo(40_000);
   assert.equal(denied(read({ file_path: smallFile })), false, 'small read at 40k');
@@ -90,60 +85,16 @@ test('replay: a growing agent is steered to grep or a line range once a read wou
   assert.equal(denied(read({ file_path: persisted, offset: 1, limit: 50 })), false, 'persisted range at 40k');
 
   growTo(50_000);
-  const room = (TARGET - 50_000) * BYTES;
-  const cut = await bash(`cat '${testLog}'`);
-  assert.match(cut.updatedInput.command, new RegExp(`head -c ${room} `));
-  assert.match(cut.updatedInput.command, /grep -n/);
   assert.equal(denied(read({ file_path: smallFile })), false, 'small read at 50k');
 
   growTo(TARGET + 1000);
   assert.match(read({ file_path: testLog }).additionalContext, /handover/);
-  assert.doesNotMatch((await bash(`cat '${testLog}'`)).updatedInput.command, /head -c/, 'past the target Bash runs uncut');
 
   const lead = { session_id: SESSION, transcript_path, permission_mode: 'bypassPermissions' };
   assert.equal(read({ file_path: testLog }, lead), undefined, 'the lead reads as before');
-  assert.equal((await bash(`cat '${testLog}'`, lead))?.updatedInput, undefined, 'the lead runs Bash as before');
 });
 
-const catalog = JSON.parse(fs.readFileSync(new URL('../lib/run-providers.json', import.meta.url), 'utf8')).defaults;
-const search = (tool_name, tool_input, caller = agent) => contextHook({ ...caller, session_id: `${caller.session_id}-${tool_name}-${JSON.stringify(tool_input)}`, tool_name, tool_input }, () => false)?.hookSpecificOutput;
-
-test('replay: a growing agent has its Grep and ToolSearch cut to the room left, and a Glob over the room steered to Grep', () => {
-  growTo(50_000);
-  const room = (TARGET - 50_000) * BYTES;
-  const lines = Math.floor(room / catalog.searchLineBytes);
-  const grep = search('Grep', { pattern: 'line', path: dir, output_mode: 'content' });
-  assert.equal(grep?.updatedInput?.head_limit, lines, 'whole Grep at 50k is cut to the room left');
-  assert.equal(grep.updatedInput.pattern, 'line');
-  assert.match(grep.additionalContext, new RegExp(`offset ${lines}`));
-  assert.equal(search('Grep', { pattern: 'line', head_limit: 0 })?.updatedInput?.head_limit, lines, 'unlimited Grep at 50k');
-  assert.equal(search('Grep', { pattern: 'line', head_limit: 10 }), undefined, 'a Grep that fits runs as asked');
-  assert.equal(search('ToolSearch', { query: 'slack' }), undefined, 'five tool schemas fit at 50k');
-  assert.equal(denied(search('Glob', { pattern: '**/*.mjs' })), false, 'a full Glob fits at 50k');
-  assert.equal(denied(search('WebSearch', { query: 'node test runner' })), false, 'a web search fits at 50k');
-
-  growTo(54_000);
-  const glob = search('Glob', { pattern: '**/*.mjs', path: dir });
-  assert.equal(denied(glob), false, 'a Glob that may pass the room left at 54k only warns');
-  assert.match(glob.additionalContext, /Grep/);
-  assert.match(glob.additionalContext, /files_with_matches/);
-
-  growTo(59_000);
-  const floor = (TARGET - 59_000) * BYTES;
-  assert.equal(search('ToolSearch', { query: 'slack', max_results: 5 })?.updatedInput?.max_results, Math.max(1, Math.floor(floor / catalog.toolSchemaBytes)), 'ToolSearch at 59k');
-  assert.equal(search('ToolSearch', { query: 'select:Monitor,WebFetch' }), undefined, 'a select ToolSearch names its tools');
-  assert.equal(search('Grep', { pattern: 'line', offset: 30 })?.updatedInput?.head_limit, Math.floor(floor / catalog.searchLineBytes));
-  assert.match(search('Grep', { pattern: 'line', offset: 30 }).additionalContext, new RegExp(`offset ${30 + Math.floor(floor / catalog.searchLineBytes)}`));
-
-  growTo(TARGET + 1000);
-  assert.match(search('Grep', { pattern: 'line' }).additionalContext, /handover/);
-
-  const lead = { session_id: SESSION, transcript_path, permission_mode: 'bypassPermissions' };
-  assert.equal(search('Grep', { pattern: 'line' }, lead), undefined, 'the lead greps as before');
-  assert.equal(search('Glob', { pattern: '**/*' }, lead), undefined, 'the lead globs as before');
-});
-
-test('replay: in every permission mode an over-room Read or Grep is cut by updatedInput alone, so the permission prompt still runs', () => {
+test('replay: in every permission mode an over-room Read is cut by updatedInput alone, so the permission prompt still runs', () => {
   growTo(40_000);
   for (const mode of ['default', 'acceptEdits', 'plan', 'bypassPermissions', 'auto']) {
     const prompted = { ...agent, permission_mode: mode };
@@ -153,13 +104,4 @@ test('replay: in every permission mode an over-room Read or Grep is cut by updat
     assert.ok(sourceRead.updatedInput.limit > 0, `${mode} mode`);
     assert.equal(read({ file_path: smallFile }, prompted), undefined, `a small Read in ${mode} mode`);
   }
-
-  growTo(50_000);
-  const lines = Math.floor((TARGET - 50_000) * BYTES / catalog.searchLineBytes);
-  const grep = search('Grep', { pattern: 'line' }, { ...agent, permission_mode: 'acceptEdits' });
-  assert.equal(denied(grep), false, 'an over-room Grep in acceptEdits mode is cut, not denied');
-  assert.equal(grep.permissionDecision, undefined);
-  assert.equal(grep.updatedInput.head_limit, lines);
-  const fits = search('Grep', { pattern: 'line', head_limit: lines }, { ...agent, permission_mode: 'default' });
-  assert.equal(fits?.updatedInput, undefined, 'the Grep that fits runs as asked');
 });

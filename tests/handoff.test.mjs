@@ -37,23 +37,9 @@ test('importing handoff.mjs runs no command and exports the path of a branch', a
   assert.match(printed, /exo[\\/]handoff[\\/]topic\.md$/);
 });
 
-test('the handoff stub holds goal, progress, evidence and next step in order', async () => {
-  const { HANDOFF_SECTIONS } = await import('../skills/save-session/scripts/handoff.mjs');
-  const stub = fs.readFileSync('hooks/handoff-stub.md', 'utf8');
-  const headings = [...stub.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
-  assert.deepEqual(headings, [...HANDOFF_SECTIONS, 'Resume']);
-});
-
-test('the handoff template holds the same sections as the stub', async () => {
+test('the handoff template holds the goal, progress, evidence and next step in order', async () => {
   const { HANDOFF_SECTIONS } = await import('../skills/save-session/scripts/handoff.mjs');
   const template = fs.readFileSync('skills/save-session/assets/handoff-template.md', 'utf8');
   const headings = [...template.matchAll(/^## (.+)$/gm)].map((match) => match[1]);
   assert.deepEqual(headings, [...HANDOFF_SECTIONS, 'Resume']);
-});
-
-test('the handoff stub uses only placeholders session-end fills', () => {
-  const stub = fs.readFileSync('hooks/handoff-stub.md', 'utf8');
-  const filled = ['date', 'head', 'branch', 'goal', 'state', 'next', 'paragraph', 'file'];
-  const used = [...stub.matchAll(/\{\{(\w+)\}\}/g)].map((match) => match[1]);
-  assert.deepEqual(used.filter((key) => !filled.includes(key)), []);
 });

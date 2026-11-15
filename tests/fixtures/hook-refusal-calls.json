@@ -125,8 +125,11 @@
    "EXO_RUN_TASK": "1"
   },
   "input": {
-   "hook_event_name": "Stop",
-   "last_assistant_message": "Task 1: GREEN"
+   "tool_name": "Read",
+   "hook_event_name": "PreToolUse",
+   "tool_input": {
+    "file_path": "a.md"
+   }
   }
  },
  {
@@ -156,8 +159,11 @@
    "EXO_RUN_TASK": "1"
   },
   "input": {
-   "hook_event_name": "Stop",
-   "last_assistant_message": "Task 1: GREEN"
+   "tool_name": "Read",
+   "hook_event_name": "PreToolUse",
+   "tool_input": {
+    "file_path": "a.md"
+   }
   }
  },
  {

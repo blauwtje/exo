@@ -28,7 +28,6 @@ test('a Codex run injects the note after the existing context and writes under .
   assert.ok(note >= 0, 'the Codex note is missing');
   assert.ok(context.includes(`The exo root is \`${REPOSITORY}\``), 'root not filled');
   assert.ok(!context.includes('{root}'), 'a placeholder is left');
-  assert.ok(context.includes(fs.readFileSync(path.join(REPOSITORY, 'hooks', 'dispatch-rules.md'), 'utf8').trimEnd()), 'Codex lacks the dispatch rules');
   assert.ok(!context.includes('EXO_HOST=codex'), 'the note still names the host prefix');
   assert.ok(Buffer.byteLength(context) / 4 <= 5000, `${Buffer.byteLength(context)} bytes`);
   assert.equal(output.systemMessage, undefined, 'a welcome is shown');
@@ -52,12 +51,11 @@ test('a clear on Codex also leaves the Claude folder alone', () => {
   assert.equal(fs.existsSync(path.join(home, '.claude', 'exo')), false);
 });
 
-test('a Claude run gets the settings line, no Codex note and the "exo is on" line', () => {
+test('a Claude run gets the settings line and no Codex note', () => {
   const { home, output } = run({ EXO_HOST: 'claude' });
   const context = output.hookSpecificOutput.additionalContext;
   assert.ok(!context.includes('exo settings:'), 'an empty config printed a settings line');
   assert.ok(!context.includes('# exo on Codex'));
-  assert.equal(output.systemMessage, 'exo is on');
   assert.ok(fs.existsSync(path.join(home, '.claude', 'exo', 'plugin-root')));
   assert.equal(fs.existsSync(path.join(home, '.codex')), false);
 });

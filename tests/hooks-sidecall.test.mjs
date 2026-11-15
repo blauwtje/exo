@@ -8,8 +8,6 @@ const HOOKS = readHooks();
 
 const PAYLOADS = {
   SessionStart: { hook_event_name: 'SessionStart', source: 'startup', session_id: 'sidecall' },
-  SessionEnd: { hook_event_name: 'SessionEnd', session_id: 'sidecall' },
-  Stop: { hook_event_name: 'Stop', session_id: 'sidecall' },
   Bash: { hook_event_name: 'PreToolUse', session_id: 'sidecall', tool_name: 'Bash', tool_input: { command: 'find / -name x' } },
   Agent: { hook_event_name: 'PreToolUse', session_id: 'sidecall', tool_name: 'Agent', tool_input: { description: 'x', prompt: 'y' } },
   Read: { hook_event_name: 'PreToolUse', session_id: 'sidecall', tool_name: 'Read', tool_input: { file_path: '/tmp/x' } },

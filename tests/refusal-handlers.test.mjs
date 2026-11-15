@@ -80,8 +80,8 @@ test('a second task\'s first refusal is not stopped by an earlier task\'s refusa
 
 test('REFUSAL_RULES entries report their rule when named violated', async () => {
   const { REFUSAL_RULES, allViolations } = await import('../lib/refusal-rules.mjs');
-  const found = allViolations(REFUSAL_RULES, { violated: ['repeat-stop', 'reddit-route'] });
-  assert.deepEqual(found.map((entry) => entry.id), ['reddit-route', 'repeat-stop']);
+  const found = allViolations(REFUSAL_RULES, { violated: ['repeat-stop', 'repeat-refusal'] });
+  assert.deepEqual(found.map((entry) => entry.id), ['repeat-refusal', 'repeat-stop']);
 });
 
 test('the refusal loop kind is owned by the handlers module', () => {

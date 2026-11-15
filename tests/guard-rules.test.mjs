@@ -16,9 +16,7 @@ const { agentHook } = await import('../hooks/agent-effort.mjs');
 const { refusalRound } = await import('../lib/brief-denials.mjs');
 const { dispatchBash } = await import('../hooks/dispatch-bash.mjs');
 const { contextHook } = await import('../hooks/context-limit.mjs');
-const { readKindTable } = await import('../lib/model-kinds.mjs');
 const { agentContextTarget, contextLimit, AGENT_HARD_RATIO } = await import('../lib/context-limits.mjs');
-const { readDispatchRules } = await import('../hooks/dispatch-rules.mjs');
 const { runNoWait } = await import('../hooks/run-no-wait.mjs');
 const { stallGuardInput } = await import('../hooks/run-stall-guard.mjs');
 
@@ -67,18 +65,6 @@ const leadOverLimit = () => {
   } finally {
     if (saved === undefined) delete process.env.EXO_RUN_HANDOFF;
     else process.env.EXO_RUN_HANDOFF = saved;
-  }
-};
-const largeSearch = () => {
-  const home = tempDir('guard-rules-home-');
-  fs.mkdirSync(path.join(home, '.config', 'exo'), { recursive: true });
-  fs.writeFileSync(path.join(home, '.config', 'exo', 'run.json'), JSON.stringify({ defaults: { fetchTokens: 9000 } }));
-  const saved = process.env.HOME;
-  process.env.HOME = home;
-  try {
-    return subagent(agentContextTarget() - 1000, 'WebSearch', { query: 'node test runner' });
-  } finally {
-    process.env.HOME = saved;
   }
 };
 const noWait = (asks) => {
@@ -144,42 +130,20 @@ execFileSync('git', ['init', '-q'], { cwd: tracked });
 execFileSync('git', ['add', '.'], { cwd: tracked });
 const holder = tempDir('guard-rules-holder-');
 fs.writeFileSync(path.join(holder, 'there.md'), 'x');
-const sliceSpent = () => {
-  const dir = tempDir('guard-rules-slice-');
-  const transcript = path.join(dir, 'agent.jsonl');
-  fs.writeFileSync(transcript, `${JSON.stringify({ message: { content: [{ type: 'text', text: 'Workers: 1\nReads: none' }] } })}\n{}\n`);
-  const caller = { agent_id: `guard-rules-slice-${path.basename(dir)}`, agent_type: 'exo:orchestrator', agent_transcript_path: transcript, cwd: dir };
-  const call = () => textOf(agentHook({ ...caller, tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', description: 'work', prompt: 'Reads: none\nResult: .exo/r.md' } }, 'on', () => false)?.hookSpecificOutput);
-  try {
-    call();
-    return call();
-  } finally {
-    fs.rmSync(path.join(os.tmpdir(), `exo-slice-${caller.agent_id}`), { force: true });
-  }
-};
 const longLine = path.join(spent, 'long-line.log');
 fs.writeFileSync(longLine, `${'x'.repeat(200_000)}\n`);
-const labelledPair = () => {
-  const { model, effort } = readKindTable(undefined, { budget: 'on' }).kinds['build-task'];
-  return { model, effort };
-};
 const cases = {
   'role-no-dispatch': () => textOf(agentHook({ tool_name: 'Agent', session_id: `guard-rules-role-${process.pid}`, agent_id: 'sub1', agent_type: 'exo:research-worker', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply\nx' } }, 'on', () => false)?.hookSpecificOutput),
   stash: () => bash('git stash', agent),
   'shared-state': () => bash('git worktree remove x', agent),
   'commit-attribution': () => bash(`git commit -m "fix: x" -m "${TRAILER}"`),
   'commit-evidence': () => bashWarning('git commit -m "fix: x\n\nEvidence: ran the tests"'),
-  'script-size': () => bashWarning(LONG, { ...agent, cwd: '/nonexistent/deep' }),
   sleep: () => bash('sleep 5', { ...agent, agent_type: 'exo:task-runner' }),
-  watch: () => bash(['gh pr checks 1 --wat', 'ch'].join(''), { ...agent, agent_type: 'exo:task-runner' }),
-  'suite-passed': () => denyReason('suite-passed', 'This tree already passed a suite'),
   'code-rules': () => denyReason('code-rules', 'a.mjs:1 comment'),
   'result-line': () => subagent(10_000, 'Read', { file_path: longLine }),
   'context-lead': () => leadOverLimit(),
   'context-hard': () => subagent(Math.round(agentContextTarget() * AGENT_HARD_RATIO) + 1000, 'Bash', { command: 'ls' }),
   'context-target': () => subagent(agentContextTarget() + 1000, 'Read', { file_path: 'a.md' }),
-  'intake-glob': () => subagent(agentContextTarget() - 6000, 'Glob', { pattern: '**/*' }),
-  'intake-websearch': () => largeSearch(),
   'live-shells': () => denyReason('live-shells', 'bg1'),
   'run-no-wait': () => noWait(1),
   'run-no-wait-final': () => noWait(2),
@@ -187,8 +151,6 @@ const cases = {
   'refusal-cap': () => refusalCap(),
   'agent-isolation': () => isolated(),
   'result-tools': () => resultFile(),
-  'kind-mismatch': () => orchestrator('Workers: 1', { model: 'opus', effort: 'max' }),
-  'kind-mismatch-label': () => orchestrator('Workers: 1', labelledPair()),
   'workers-line': () => orchestrator('Workers: 5', {}),
   'research-unnamed': () => mainResearch('general-purpose', `guard-rules-unnamed-${process.pid}`),
   'research-fanout': () => fannedOut(),
@@ -208,15 +170,12 @@ const cases = {
   'brief-over-fetches': () => refuse('Reads: none\nFetches: 19\nSources: web', 'exo:research-worker'),
   'brief-cuts-page': () => refuse('Reads: none\nSources: web\ngh api x | head -c 4000', 'exo:research-worker'),
   'brief-over-budget': () => refuse('Reads: big.txt\nResult: .exo/r.md'),
-  'slice-spent': () => sliceSpent(),
   'orchestrator-reads': () => denyReason('orchestrator-reads', '', { named: 'brief.md' }),
   'orchestrator-budget': () => denyReason('orchestrator-budget', '', { limit: 5 }),
-  'reddit-route': () => redditRouteDecision({ tool_name: 'WebFetch', tool_input: { url: 'https://www.reddit.com/r/a' } }).deny,
   'repeat-refusal': () => repeated(2),
   'repeat-stop': () => repeated(3)
 };
 
-const { redditRouteDecision } = await import('../lib/reddit-route.mjs');
 const { refusalText } = await import('../lib/hook-refusal.mjs');
 
 const repeated = (times) => {
@@ -235,7 +194,6 @@ const partText = (reason, text) => {
 
 const proofs = {
   'repeat-refusal': (reason) => assert.ok(reason.includes('follow the first refusal: first Do instead: go'), reason),
-  'reddit-route': (reason) => assert.ok(reason.includes('--source reddit --query <text> --run <run-dir>; for a thread run search.mjs --url <thread-url>'), reason),
   'brief-ambiguous-name': (reason) => partText(reason, rules.rulePart('brief-ambiguous-name', { matches: '{m}' })),
   'brief-missing-path': (reason) => partText(reason, GUARD_RULES.find((row) => row.id === 'brief-missing-path').rule),
   'brief-worktree': (reason) => assert.ok(reason.includes(rules.allowedPart('brief-worktree', { dir: holder })), reason),
@@ -265,7 +223,6 @@ for (const row of GUARD_RULES) {
 
   test(`row ${row.id}: the brief line reaches the rendered brief`, () => {
     if (!row.brief) return;
-    assert.equal(readDispatchRules().includes(row.brief), !row.without);
     assert.ok(rules.briefLines(row.tools ?? ['Read']).join('\n').includes(row.brief));
     if (row.tools) assert.ok(!rules.briefLines(['Agent']).join('\n').includes(row.brief));
     if (row.without) assert.ok(!rules.briefLines([...row.without]).join('\n').includes(row.brief));
@@ -275,7 +232,7 @@ for (const row of GUARD_RULES) {
 test('a missing Workers line or Reads line warns and lets the dispatch run', () => {
   assert.match(dispatchOutput('do it').additionalContext, /Workers/);
   assert.notEqual(dispatchOutput('do it').permissionDecision, 'deny');
-  for (const id of ['brief-lacks-reads', 'script-size']) assert.equal(rules.guardKind(id), 'warn');
+  for (const id of ['brief-lacks-reads']) assert.equal(rules.guardKind(id), 'warn');
 });
 
 test('only the final run-no-wait refusal offers the BLOCKED line', () => {
@@ -293,7 +250,6 @@ for (const [id, tool] of [['result-tools', 'Write']]) {
     assert.ok(brief);
     assert.ok(rules.briefLines(['Read', 'Bash']).join('\n').includes(brief));
     assert.ok(!rules.briefLines(['Read', tool]).join('\n').includes(brief));
-    assert.ok(!readDispatchRules().includes(brief));
   });
 }
 
@@ -406,10 +362,8 @@ test('the Bash brief carries the speed contract C1 to C4 and the byte budget hol
   const lines = rules.briefLines(['Bash']).join('\n');
   assert.match(lines, /Round: n\/3/);
   assert.match(lines, /whole suite/);
-  assert.match(lines, /gh pr checks --watch/);
   assert.match(lines, /Files:.*Proof:.*Checks:.*Reads:.*Result:/);
   assert.ok(GUARD_RULES.some((row) => row.id === 'suite' && row.brief));
-  assert.ok(GUARD_RULES.some((row) => row.id === 'watch' && row.brief));
   assert.ok(Buffer.byteLength(lines) < 4000, `prelude ${Buffer.byteLength(lines)} bytes`);
 });
 
@@ -419,11 +373,11 @@ test('the repeat refusal row carries the first refusal text', () => {
 });
 
 test('a warn-kind guard returns its reason as context and a hard guard denies', async () => {
-  const { refuse, warn } = await import('../lib/lazy-steps.mjs');
-  assert.equal(rules.guardKind('suite-passed'), 'warn');
+  const { refuse, warn } = await import('../lib/hook-refusal.mjs');
+  assert.equal(rules.guardKind('brief-lacks-reads'), 'warn');
   assert.equal(rules.guardKind('stash'), 'hard');
-  assert.deepEqual(refuse('suite-passed', 'x'), warn('x'));
-  assert.equal(refuse('suite-passed', 'x').hookSpecificOutput.permissionDecision, undefined);
+  assert.deepEqual(refuse('brief-lacks-reads', 'x'), warn('x'));
+  assert.equal(refuse('brief-lacks-reads', 'x').hookSpecificOutput.permissionDecision, undefined);
   assert.deepEqual(refuse('stash', 'x').hookSpecificOutput, { permissionDecision: 'deny', permissionDecisionReason: 'x' });
 });
 
@@ -431,10 +385,6 @@ test('the deny reason check fails a deny text returned from a template literal',
   const [verdict] = denyReasonVerdicts({ 'lib/template.mjs': 'export const f = (key) => ({ deny: `ran ${key} twice` });\n' });
   assert.equal(verdict.status, 'FAIL');
   assert.match(verdict.detail, /^lib\/template\.mjs:1 /);
-});
-
-test('the script-size warning does not say the command was refused', () => {
-  assert.doesNotMatch(denyReason('script-size'), /refused/);
 });
 
 test('evidence line warns: a commit with a bad Evidence line runs with one WARN line', async () => {
@@ -483,10 +433,10 @@ test('no tool-case rule', () => {
 });
 
 test('injected text drops native lines', async () => {
-  const dropped = ['sleep', 'script-size', 'code-rules', 'result-line', 'context-target', 'intake-glob'];
+  const dropped = ['sleep', 'code-rules', 'result-line', 'context-target'];
   for (const id of dropped) assert.equal(GUARD_RULES.find((row) => row.id === id).brief, null, id);
   const read = (name) => fs.readFileSync(new URL(`../hooks/${name}`, import.meta.url), 'utf8');
-  const texts = [read('dispatch-rules.md'), read('session-rules.md'), read('session-routing.md')].join('\n');
+  const texts = [read('session-rules.md'), read('session-routing.md')].join('\n');
   const phrases = ['keeps decisions and the user dialogue', 'Brief an agent with the goal', 'The lead reads no file', 'Send long command output', 'Give an unnamed worker brief', 'end the turn and wait for the notification, and never', 'Test an order, seed', 'Fix all diagnosed causes', 'Count all as each warning', 'Call work done only', 'T5 agent expected', 'Before saying an agent or task still runs', 'completion notice names', 'A round brief carries no final checks', 'Grep a large file', 'returns off-brief', 'safe default, check every option'];
   for (const phrase of phrases) assert.ok(!texts.includes(phrase), phrase);
   const { BRIEF_LINES_LOCK } = await import('../verify/budgets.mjs');

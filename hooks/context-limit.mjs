@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
 import { inSidecall } from '#hook-input';
-import { contextDecision, contextFields, readCapDecision, searchCapDecision } from '../lib/context-decisions.mjs';
-import { redditRouteDecision } from '../lib/reddit-route.mjs';
+import { contextDecision, contextFields, readCapDecision } from '../lib/context-decisions.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, runHook } from '../lib/hook-refusal.mjs';
-import { predispatchDecision, recordPredispatchRead } from '../lib/slice-state.mjs';
 import { settingOrDefault } from '../lib/settings-store.mjs';
 
 const REASON_MAX = 140;
@@ -45,8 +43,7 @@ export function withReceipt(output, { hookInput, fields, enabled = receiptsOn })
 }
 
 export function contextHook(input, enabled) {
-  const decision = redditRouteDecision(input) ?? predispatchDecision(input) ?? readCapDecision(input) ?? searchCapDecision(input) ?? contextDecision(input);
-  if (!decision?.deny) recordPredispatchRead(input);
+  const decision = readCapDecision(input) ?? contextDecision(input);
   const fields = contextFields(decision, input);
   const output = fields ? { hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } } : null;
   return rememberRefusal(input, withReceipt(output, { hookInput: input, fields, enabled }), { guard: 'context-limit' });

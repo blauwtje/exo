@@ -1,61 +1,17 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
-import path from 'node:path';
 import process from 'node:process';
 import { inSidecall } from '#hook-input';
-import { scriptBytes } from '../lib/context-limits.mjs';
-import { CAPPED_MODES, bashIntakeBound, contextDecision, contextFields, hookAgentType } from '../lib/context-decisions.mjs';
-import { savedOutputDirectory, savedOutputPrefix } from '../lib/saved-outputs.mjs';
 import { denyReason } from '../lib/guard-rules.mjs';
 import { stripDataHeredocs, tokenize } from '../lib/git-deny.mjs';
-import { cappedCommand, cappedInput, resultCapped, saveLongCommand } from '../lib/bash-cap.mjs';
-import { redditBashDecision } from '../lib/reddit-route.mjs';
-import { fixShellFor, pollsUnbounded } from '../lib/shell-fixes.mjs';
-import { predispatchBashDecision } from '../lib/slice-state.mjs';
+import { pollsUnbounded } from '../lib/shell-fixes.mjs';
 import { isMain } from '../lib/script-flags.mjs';
 import { rememberRefusal, runHook } from '../lib/hook-refusal.mjs';
 import { withReceipt } from './context-limit.mjs';
-import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, SHELL_STOP_STEP, SUITE_STEP, refuse } from '../lib/lazy-steps.mjs';
-
-const contextStep = (name, decide) => ({
-  name,
-  run(hookInput) {
-    const fields = contextFields(decide(hookInput), hookInput);
-    return fields && { hookSpecificOutput: fields };
-  }
-});
-
-export const CONTEXT_STEP = contextStep('context-limit', contextDecision);
-
-const REDDIT_STEP = {
-  name: 'reddit-route',
-  run(hookInput) {
-    const decision = redditBashDecision(hookInput.tool_input?.command);
-    return decision && refuse(decision.rule, decision.deny, hookInput);
-  }
-};
-
-export const SCRIPT_SIZE_STEP = {
-  name: 'script-size',
-  run(hookInput, earlier) {
-    const command = hookInput.tool_input?.command;
-    if (!hookInput.agent_id || typeof command !== 'string') return null;
-    const limit = scriptBytes();
-    if (Buffer.byteLength(command) <= limit) return null;
-    if (earlier.some((output) => output.permissionDecision === 'deny')) return null;
-    const saved = saveLongCommand(command, hookInput.cwd ?? process.cwd());
-    if (!saved) return refuse('script-size', denyReason('script-size', `this command is over ${limit} bytes`), hookInput);
-    const updatedInput = { ...hookInput.tool_input, command: `bash ${saved}` };
-    return { hookSpecificOutput: { updatedInput, additionalContext: `the command was over ${limit} bytes, so it runs from its saved copy ${saved}` } };
-  }
-};
-
-export const PREDISPATCH_STEP = contextStep('predispatch', predispatchBashDecision);
+import { COMMIT_ATTRIBUTION_STEP, SHARED_STATE_STEP, refuse } from '../lib/lazy-steps.mjs';
 
 const COMMAND_KEYWORDS = new Set(['do', 'then', 'else']);
 const runsSleep = (command) => tokenize(command).some((tokens) => tokens.find((token) => !COMMAND_KEYWORDS.has(token)) === 'sleep');
-const WATCH_COMMAND = /\bgh\s+(?:pr\s+checks\b.*--watch|run\s+watch\b)/;
 
 export const SLEEP_STEP = {
   name: 'sleep',
@@ -64,57 +20,14 @@ export const SLEEP_STEP = {
     if (typeof command !== 'string') return null;
     const scanned = stripDataHeredocs(command);
     const waitsInForeground = hookInput.tool_name !== 'Monitor' && !hookInput.tool_input.run_in_background;
-    if (waitsInForeground && (pollsUnbounded(scanned) || runsSleep(scanned))) return refuse('sleep', denyReason('sleep'), hookInput);
-    return hookInput.agent_id && WATCH_COMMAND.test(scanned) ? refuse('watch', denyReason('watch'), hookInput) : null;
+    if (!waitsInForeground) return null;
+    return pollsUnbounded(scanned) || runsSleep(scanned) ? refuse('sleep', denyReason('sleep'), hookInput) : null;
   }
 };
 
-const shellFixed = (hookInput) => (process.env.EXO_RUN_SESSION === '1' ? null : fixShellFor(hookInput, hookAgentType));
-
-const RESULT_CAP_STEP = {
-  name: 'result-cap',
-  run(hookInput) {
-    const toolInput = hookInput.tool_input;
-    if (!CAPPED_MODES.has(hookInput.permission_mode) || typeof toolInput?.command !== 'string') return null;
-    if (toolInput.run_in_background || toolInput.command.endsWith('\\')) return null;
-    const bound = bashIntakeBound(hookInput);
-    if (!bound) return null;
-    const fixed = shellFixed(hookInput);
-    fs.mkdirSync(savedOutputDirectory(), { recursive: true });
-    const log = path.join(savedOutputDirectory(), `${savedOutputPrefix(hookInput.agent_id)}${hookInput.tool_use_id ?? process.pid}.log`);
-    const inner = (fixed ?? toolInput).command;
-    const command = resultCapped(cappedCommand(hookInput, inner) ?? inner, bound, log);
-    return { hookSpecificOutput: { updatedInput: { ...toolInput, command }, timed: true } };
-  }
-};
-
-const SHELL_STEP = {
-  name: 'shell-fix',
-  run(hookInput) {
-    const updatedInput = shellFixed(hookInput);
-    return updatedInput && { hookSpecificOutput: { updatedInput } };
-  }
-};
-
-const BASH_CAP_STEP = {
-  name: 'bash-cap',
-  run(hookInput, earlier) {
-    if (earlier.some((output) => output.permissionDecision === 'deny')) return null;
-    if (earlier.some((output) => output.timed)) return null;
-    const updatedInput = cappedInput(hookInput, firstRewrite(earlier));
-    return updatedInput && { hookSpecificOutput: { updatedInput, capped: true } };
-  }
-};
-
-function firstRewrite(outputs) {
-  if (outputs.some((output) => output.permissionDecision === 'deny')) return undefined;
-  const rewrites = outputs.filter((output) => output.updatedInput && output.permissionDecision === undefined);
-  return (rewrites.find((output) => output.capped) ?? rewrites[0])?.updatedInput;
-}
-
-async function stepOutput(step, hookInput, outputs) {
+async function stepOutput(step, hookInput) {
   try {
-    const output = await step.run(hookInput, outputs);
+    const output = await step.run(hookInput);
     return output ? output.hookSpecificOutput ?? {} : undefined;
   } catch (error) {
     console.error(`${step.name}: ${error.message}`);
@@ -122,10 +35,10 @@ async function stepOutput(step, hookInput, outputs) {
   }
 }
 
-export async function dispatchBash(hookInput, steps = [CONTEXT_STEP, REDDIT_STEP, SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, PREDISPATCH_STEP, SLEEP_STEP, SHELL_STOP_STEP, SUITE_STEP, SCRIPT_SIZE_STEP, RESULT_CAP_STEP, SHELL_STEP, BASH_CAP_STEP], enabled) {
+export async function dispatchBash(hookInput, steps = [SHARED_STATE_STEP, COMMIT_ATTRIBUTION_STEP, SLEEP_STEP], enabled) {
   const outputs = [];
   for (const step of steps) {
-    const output = await stepOutput(step, hookInput, outputs);
+    const output = await stepOutput(step, hookInput);
     if (output) outputs.push(output);
   }
   const { verdict, output } = mergeOutputs(outputs);
@@ -137,8 +50,6 @@ function mergeOutputs(outputs) {
     ?? outputs.find((output) => output.permissionDecision !== undefined);
   const merged = { hookEventName: 'PreToolUse' };
   if (verdict) Object.assign(merged, { permissionDecision: verdict.permissionDecision, permissionDecisionReason: verdict.permissionDecisionReason });
-  const rewrite = firstRewrite(outputs);
-  if (rewrite) merged.updatedInput = rewrite;
   const contexts = outputs.map((output) => output.additionalContext).filter(Boolean);
   if (contexts.length > 0) merged.additionalContext = contexts.join('\n');
   return { verdict, output: Object.keys(merged).length === 1 ? null : { hookSpecificOutput: merged } };

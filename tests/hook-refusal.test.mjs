@@ -45,18 +45,11 @@ test('a context hard limit refusal stays identical on every hit', () => {
   assert.deepEqual(reasons, [reason, reason, reason]);
 });
 
-test('a run-no-wait block stays identical on every hit', () => {
-  const input = { session_id: session('wait'), hook_event_name: 'Stop' };
-  const reason = denyReason('run-no-wait', 'record the choice');
-  const reasons = [1, 2, 3].map(() => rememberRefusal(input, { decision: 'block', reason }, { guard: 'run-no-wait' }).reason);
-  assert.deepEqual(reasons, [reason, reason, reason]);
-});
-
 test('an output already remembered is not counted again', () => {
   const input = { session_id: session('once'), tool_name: 'Bash', tool_input: { command: 'x' } };
-  const first = rememberRefusal(input, deniedWith(denyReason('script-size')), { guard: 'g' });
+  const first = rememberRefusal(input, deniedWith(denyReason('stash')), { guard: 'g' });
   assert.equal(rememberRefusal(input, first, { guard: 'g' }), first);
-  assert.match(reasonOf(rememberRefusal(input, deniedWith(denyReason('script-size')), { guard: 'g' })), /refused once already/);
+  assert.match(reasonOf(rememberRefusal(input, deniedWith(denyReason('stash')), { guard: 'g' })), /refused once already/);
 });
 
 test('an allowed output passes unchanged', () => {
