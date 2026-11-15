@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { inSidecall } from '#hook-input';
-import { briefedInput, mergedFields, refusalRound, isolationFields, resultToolsFields, sizeDenial, workersFields } from '../lib/brief-denials.mjs';
+import { briefedInput, mergedFields, refusalRound, resultToolsFields, sizeDenial, workersFields } from '../lib/brief-denials.mjs';
 import { contextDecision, contextFields, roleFields, hookAgentType } from '../lib/context-decisions.mjs';
 import { INHERIT, readKindTable } from '../lib/model-kinds.mjs';
 import { isMain } from '../lib/script-flags.mjs';
@@ -9,7 +9,7 @@ import { refuseFields, rememberRefusal, runHook } from '../lib/hook-refusal.mjs'
 import { settingOrDefault } from '../lib/settings-store.mjs';
 import { baseOf, budgetedReads, locatedReads, webSources, workerSize } from '#worker-size';
 import { withReceipt } from './context-limit.mjs';
-import { defaulted, inlineSingleWorker, liftedEffort, recordResearchDispatch, researchFields, resolvedKind } from '../lib/kind-resolution.mjs';
+import { defaulted, inlineSingleWorker, liftedEffort, researchFields, resolvedKind } from '../lib/kind-resolution.mjs';
 
 function filled(input, budget, level) {
   const kind = resolvedKind(input, budget)?.kind;
@@ -49,8 +49,7 @@ export function agentEffort(hookInput, budget, rewrite = readsRewrite(hookInput)
 
 function missingFields(size, { fromOrchestrator, fetchDocs }) {
   if (fetchDocs) return size.missing.filter((field) => field === 'Fetches');
-  if (fromOrchestrator) return size.missing;
-  return size.sized ? [] : ['Reads'];
+  return fromOrchestrator ? size.missing : [];
 }
 
 function workerSizeFields(hookInput, rewrite) {
@@ -64,14 +63,13 @@ function workerSizeFields(hookInput, rewrite) {
   const over = (fromOrchestrator || size.sized) && size.tokens > size.budget;
   if (!(size.invalid.length || size.unresolved.length || missing.length || over)) return null;
   const reason = sizeDenial(size, { missing, fetchDocs, ambiguous: rewrite.ambiguous, prompt: rewrite.input.prompt, base: baseOf(rewrite.input.prompt, cwd) });
-  return refuseFields(over ? 'brief-over-budget' : 'brief-lacks-reads', reason, hookInput);
+  return refuseFields(over ? 'brief-over-budget' : 'brief-lacks-fields', reason, hookInput);
 }
 
 function agentFields(hookInput, budget, rewrite) {
   return refusalRound(hookInput, mergedFields([
     roleFields(hookInput),
     researchFields(hookInput),
-    isolationFields(hookInput),
     resultToolsFields(hookInput),
     workerSizeFields(hookInput, rewrite),
     contextFields(contextDecision(hookInput), hookInput)
@@ -88,7 +86,6 @@ export function agentHook(hookInput, budget = settingOrDefault('budget').value, 
     const sent = receipt({ hookSpecificOutput: { hookEventName: 'PreToolUse', ...fields } }, fields);
     return fields.permissionDecisionReason.includes('LOOP ') ? sent : rememberRefusal(hookInput, sent, { guard: 'agent-effort' });
   }
-  recordResearchDispatch(hookInput);
   if (!fields?.additionalContext) return receipt(output, null);
   const base = output ?? { hookSpecificOutput: { hookEventName: 'PreToolUse' } };
   return receipt({ hookSpecificOutput: { ...base.hookSpecificOutput, additionalContext: fields.additionalContext } }, null);

@@ -64,30 +64,6 @@
   }
  },
  {
-  "rule": "context-hard",
-  "expect": "pass",
-  "hook": "context-limit",
-  "agent": true,
-  "tokens": 1000,
-  "input": {
-   "tool_input": {
-    "command": "ls"
-   }
-  }
- },
- {
-  "rule": "context-hard",
-  "expect": "deny",
-  "hook": "context-limit",
-  "agent": true,
-  "tokens": 900000,
-  "input": {
-   "tool_input": {
-    "command": "ls"
-   }
-  }
- },
- {
   "rule": "context-lead",
   "expect": "pass",
   "hook": "context-limit",
@@ -215,22 +191,6 @@
     "subagent_type": "exo:orchestrator",
     "description": "x",
     "prompt": "Workers: 1\nReads: none"
-   }
-  }
- },
- {
-  "rule": "refusal-cap",
-  "expect": "deny",
-  "repeat": 12,
-  "hook": "agent-effort",
-  "agent": true,
-  "tokens": 900000,
-  "input": {
-   "tool_name": "Agent",
-   "tool_input": {
-    "subagent_type": "exo:research-worker",
-    "description": "x",
-    "prompt": "Reads: none"
    }
   }
  },

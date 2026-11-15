@@ -56,15 +56,21 @@ test('an agent that is not an exo agent gives no line', () => {
   assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'general-purpose', prompt: 'exo-kind: build\nReads: none\nx' } }, 'on', ON).systemMessage, undefined);
 });
 
-test('a refusal gives one line with its reason from the Bash, Agent and context hooks', async () => {
-  const bash = await dispatchBash(stashed(), undefined, ON);
-  const agent = agentHook(refused('Agent', { subagent_type: 'Explore' }), 'on', ON);
-  const read = contextHook(refused('Read', { file_path: '/x' }), ON);
-  for (const output of [bash, agent, read]) {
-    assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
-    assert.match(output.systemMessage, /^exo blocked: /);
-    assert.ok(output.systemMessage.length <= 'exo blocked: '.length + 140);
-  }
+test('the Agent and context hooks give a note past the limit and the receipt leaves it as it was', () => {
+  const read = refused('Read', { file_path: '/x' });
+  const shown = contextHook(read, ON);
+  assert.match(shown.hookSpecificOutput.additionalContext, /hand over now/);
+  assert.notEqual(shown.hookSpecificOutput.permissionDecision, 'deny');
+  assert.equal(shown.systemMessage, undefined);
+  const agent = agentHook(refused('Agent', { subagent_type: 'exo:fork' }), 'on', ON);
+  assert.match(agent.hookSpecificOutput.additionalContext, /hand over now/);
+});
+
+test('a refusal gives one line with its reason from the Bash hook', async () => {
+  const output = await dispatchBash(stashed(), undefined, ON);
+  assert.equal(output.hookSpecificOutput.permissionDecision, 'deny');
+  assert.match(output.systemMessage, /^exo blocked: /);
+  assert.ok(output.systemMessage.length <= 'exo blocked: '.length + 140);
 });
 
 test('a refusal line is one line even when the reason spans several', async () => {
@@ -77,8 +83,6 @@ test('a refusal line is one line even when the reason spans several', async () =
 
 test('the receipt leaves the model context byte for byte as it was', async () => {
   const cases = [
-    [() => contextHook(refused('Read', { file_path: '/x' }), ON), () => contextHook(refused('Read', { file_path: '/x' }), OFF)],
-    [() => agentHook(refused('Agent', { subagent_type: 'exo:fork' }), 'on', ON), () => agentHook(refused('Agent', { subagent_type: 'exo:fork' }), 'on', OFF)],
     [() => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', ON), () => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', OFF)]
   ];
   for (const [on, off] of cases) {

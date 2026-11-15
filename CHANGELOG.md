@@ -56,6 +56,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `node benchmarks/adhd-score.mjs --base-style <file>` runs the style in `<file>` and the current `adhd` style on the same quick cases in one run under one cost limit, and prints the paired candidate-minus-base interval for facts kept and visible ratio; `benchmarks/results/2026-11-12-adhd-style-pair.md` records one such round, whose figure rule showed no facts-kept difference and stays unlanded.
 
 ### Changed
+- Past the 75k hard context limit a helper is no longer refused: every checked call gets a hand-over note naming `checkpoint.mjs` and `Status: handover`.
 - `dispatch-bash` keeps three steps (sleep/poll deny, shared-state git deny for subagents, commit attribution); the script-size, result-cap, bash-cap, shell-fix, shell-stop, suite-unchanged, predispatch, reddit-route and context-note steps and the `watch` refusal are gone.
 - `context-limit` runs only on `Read` and `Skill` and loses its reddit-route, predispatch and search-cap decisions.
 - `agent-effort` injects no dispatch rules and drops the kind-mismatch denial and the slice counter.
@@ -206,6 +207,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `benchmarks/mde.mjs` rejects a non-numeric `--scores` value with the usage line.
 
 ### Removed
+- agent-effort's lacks-reads denial for lead dispatches, its isolation check and the unused research-unnamed and research-fanout rules.
 - The run-no-wait `Stop` hook; the `AskUserQuestion` hook stays.
 - The `SessionEnd` hook, `hooks/session-end.mjs` and its handoff stub; `save-session` still writes the handoff.
 - The `notify` setting and its remote post; the run-end desktop notice stays.

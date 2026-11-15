@@ -63,15 +63,13 @@ test('the soft and hard limit messages name the checkpoint command', async () =>
   const soft = await workerDecision(AGENT_SOFT);
   assert.match(soft?.additionalContext ?? '', /checkpoint\.mjs/);
   const hard = await workerDecision(AGENT_HARD, 'Read');
-  assert.match(hard?.deny ?? '', /checkpoint\.mjs/);
+  assert.match(hard?.note ?? '', /checkpoint\.mjs/);
   const lead = await leadDecision(LEAD_HARD, 'Read');
   assert.match(lead?.deny ?? '', /checkpoint\.mjs/);
 });
 
-test('the hard limit allows the checkpoint command and still denies other Bash', async () => {
+test('the lead hard limit allows the checkpoint command', async () => {
   const command = `node ${CHECKPOINT}`;
-  assert.equal(await workerDecision(AGENT_HARD, 'Bash', command), null);
-  assert.match((await workerDecision(AGENT_HARD, 'Bash', 'ls'))?.deny ?? '', /checkpoint\.mjs/);
   assert.equal(await leadDecision(LEAD_HARD, 'Bash', command), null);
 });
 

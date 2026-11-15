@@ -28,7 +28,7 @@ A session hook loads these rules at startup, resume, clear and compaction. They 
 
 ## Context limit
 
-A hook reads the context size of each session on every tool call. Past the soft limit it asks a subagent or detached run session to finish its step and hand off. Past the hard limit it refuses that session's tools. Your own interactive session gets no note and no refusal at any size, so you steer its context yourself.
+A hook reads the context size of each session on every tool call. Past the soft limit it asks a subagent or detached run session to finish its step and hand off. Past the hard limit it tells that session to hand over. Your own interactive session gets no note and no refusal at any size, so you steer its context yourself.
 
 The hard limit is `defaults.contextLimit` in `~/.config/exo/run.json`, else the plugin default in `lib/run-providers.json`; the soft limit is 75% of it.
 

@@ -21,7 +21,7 @@ test('a brief with no Reads line is refused with the exact Reads line to add, bu
   const dir = tempDir('brief-denials-');
   fs.writeFileSync(path.join(dir, 'notes.md'), 'small');
   const reason = refusal('Edit notes.md and fix the heading.\nResult: .exo/r.md', dir);
-  assert.match(reason, /lacks a `Reads:` line\. Do instead: add `Reads: notes\.md`/);
+  assert.match(reason, /lacks Reads\. Do instead: add `Reads: notes\.md`/);
 });
 
 test('a brief that names no file is told to write Reads: none', () => {

@@ -3,9 +3,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { agentHook } from '../hooks/agent-effort.mjs';
 import { contextHook } from '../hooks/context-limit.mjs';
 import { AGENT_HARD_RATIO, agentContextTarget, contextLimit, softLimit } from '../lib/context-limits.mjs';
-import { contextDecision, readCapDecision } from '../lib/context-decisions.mjs';
+import { contextDecision, contextFields, readCapDecision } from '../lib/context-decisions.mjs';
 import { guardKind } from '../lib/guard-rules.mjs';
 import { readHooks, tempDir } from './harness.mjs';
 
@@ -78,7 +79,7 @@ test('the interactive main session gets no note and no refusal at any context si
   }
 });
 
-test('a subagent past its soft limit is told to hand over, past its hard limit only Write and Edit still work', () => {
+test('a subagent past its soft limit is told to hand over, past its hard limit is told on every call to hand over, not refused', () => {
   const dir = tempDir('exo-agent-');
   const at = (tokens) => {
     const file = path.join(dir, `t${tokens}.jsonl`);
@@ -91,12 +92,18 @@ test('a subagent past its soft limit is told to hand over, past its hard limit o
   assert.match(soft.additionalContext, /exo context limit/);
   assert.match(soft.additionalContext, /handover/);
   assert.equal(call(AGENT_SOFT, 'Bash'), null);
-  const hard = call(AGENT_HARD, 'Bash');
-  assert.match(hard.deny, /Read, Skill and Agent are refused/);
-  assert.match(hard.deny, /checkpoint\.mjs/);
-  assert.match(hard.deny, /Status: handover/);
-  assert.equal(call(AGENT_HARD, 'Write'), null);
-  assert.equal(call(AGENT_HARD, 'Edit'), null);
+  const hard = call(AGENT_HARD, 'Read');
+  assert.equal(hard.note.includes('Over the hard context limit: hand over now'), true);
+  assert.match(hard.note, /checkpoint\.mjs/);
+  assert.match(hard.note, /Status: handover/);
+  const fields = contextFields(hard, { session_id: `hard-note-${process.pid}-${Date.now()}` });
+  assert.equal(fields.permissionDecision, undefined);
+  assert.match(fields.additionalContext, /checkpoint\.mjs/);
+  const again = { session_id: `hard-repeat-${process.pid}` };
+  assert.ok(contextFields(hard, again));
+  assert.ok(contextFields(hard, again));
+  assert.equal(call(AGENT_HARD, 'Bash').note.includes('new reads'), false);
+  assert.match(call(AGENT_HARD, 'Read').note, /new reads, skills and agents stay refused/);
 });
 
 test('a subagent is warned again after it shrinks below the soft limit', () => {
@@ -123,7 +130,7 @@ function assertAllow(call, tools, tokens) {
 }
 
 function assertHandover(call, tools, tokens) {
-  for (const tool of tools) assert.match(call(tokens, tool).deny, /Status: handover/, `${tool} at ${tokens}`);
+  for (const tool of tools) assert.match(call(tokens, tool).note ?? call(tokens, tool).deny, /Status: handover/, `${tool} at ${tokens}`);
 }
 
 function growthCall(dir, agent_id) {
@@ -148,8 +155,7 @@ function assertGrowthBands(call) {
     assertAllow(call, ['Bash', 'Write', 'Edit'], tokens);
   }
   for (const tokens of [76_000, 120_000, 159_600]) {
-    assertHandover(call, [...intake, 'Bash'], tokens);
-    assertAllow(call, ['Write', 'Edit'], tokens);
+    assertHandover(call, [...intake, 'Bash', 'Write', 'Edit'], tokens);
   }
 }
 
@@ -292,24 +298,32 @@ test('an orchestrator over the target still dispatches and stops workers but can
   assert.match(call('Grep').deny, /new reads/);
 });
 
-test('an orchestrator past the hard limit cannot dispatch', () => {
+test('an orchestrator past the hard limit is told to hand over on Agent', () => {
   const call = agentCaller(AGENT_HARD, 'exo:orchestrator');
-  for (const tool of ['Agent', 'SendMessage', 'Monitor']) assert.match(call(tool).deny, /Status: handover/, tool);
+  assert.match(call('Agent').note, /Status: handover/);
+  assert.match(call('Read').note, /new reads, skills and agents stay refused/);
+  assert.doesNotMatch(call('Monitor').note, /stay refused/);
+});
+
+test('past the hard limit the hook repeats the hand-over note and skips the checkpoint call', () => {
+  const file = path.join(tempDir('exo-hard-hook-'), 't.jsonl');
+  fs.writeFileSync(file, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: AGENT_HARD } } })}\n`);
+  const input = (tool_name, tool_input = {}) => ({ session_id: `hard-hook-${process.pid}`, agent_id: 'ha', agent_type: 'exo:orchestrator', agent_transcript_path: file, tool_name, tool_input });
+  for (const tool of ['Agent', 'SendMessage', 'Monitor']) {
+    for (let i = 0; i < 2; i += 1) {
+      const output = agentHook(input(tool, { subagent_type: 'exo:build-task', prompt: 'x' }), 'off', () => false);
+      assert.match(output?.hookSpecificOutput?.additionalContext ?? '', /hand over now/, tool);
+      assert.notEqual(output.hookSpecificOutput.permissionDecision, 'deny', tool);
+    }
+  }
+  const checkpoint = contextHook(input('Bash', { command: 'node skills/build/scripts/checkpoint.mjs' }), () => false);
+  assert.equal(checkpoint, null);
 });
 
 test('an agent that is not a coordinator is still refused Agent over the target', () => {
   for (const type of ['exo:build-task', 'general-purpose', undefined]) {
     const call = agentCaller(TARGET + 1000, type);
     assert.match(call('Agent').deny, /new reads, skills and agents/, String(type));
-  }
-});
-
-test('TaskStop stays allowed for any agent at the hard limit while Bash is refused', () => {
-  for (const type of ['exo:build-task', 'exo:orchestrator', undefined]) {
-    const call = agentCaller(AGENT_HARD, type);
-    assert.equal(call('TaskStop'), null, String(type));
-    assert.equal(call('Write'), null, String(type));
-    assert.match(call('Bash').deny, /Status: handover/, String(type));
   }
 });
 
@@ -331,7 +345,7 @@ test('a subagent refusal names the Result path of its brief, or the reply', () =
     fs.writeFileSync(file, `${JSON.stringify(user)}\n${JSON.stringify(usage)}\n`);
     return contextDecision({ session_id: 'a', agent_id: `b${process.pid}${tokens}`, agent_transcript_path: file, tool_name: 'Read' });
   };
-  assert.match(refusal('Reads: none\nResult: .exo/r.md', AGENT_HARD).deny, /write \.exo\/r\.md as a handover/);
+  assert.match(refusal('Reads: none\nResult: .exo/r.md', AGENT_HARD).note, /write \.exo\/r\.md as a handover/);
   assert.match(refusal('Reads: none\nResult: reply', TARGET + 1000).deny, /reply with a handover/);
 });
 

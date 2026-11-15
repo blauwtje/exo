@@ -258,20 +258,6 @@ test('the orchestrator description states the Reads line shape', () => {
   assert.match(/^description: (.+)$/m.exec(agent)[1], /`Reads: a\.md, lib\/b\.mjs` or `none`/);
 });
 
-test('an Agent call with worktree isolation warns and the warning names the Worktree line route', () => {
-  const output = hookOutput({ subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply', isolation: 'worktree' });
-  assert.notEqual(output.permissionDecision, 'deny');
-  assert.match(output.additionalContext, /`Worktree: <abs path>`/);
-  assert.match(output.additionalContext, /no `isolation`/);
-});
-
-test('an Agent call without isolation, or with a Worktree line, is not denied for isolation', () => {
-  const plain = hookOutput({ subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply' });
-  assert.doesNotMatch(plain?.additionalContext ?? '', /Do instead/);
-  const routed = hookOutput({ subagent_type: 'general-purpose', prompt: `Worktree: ${process.cwd()}\nReads: none\nResult: reply` });
-  assert.doesNotMatch(routed?.additionalContext ?? '', /Do instead/);
-});
-
 test('on deepseek an orchestrator part with one worker is told to run its unit itself', () => {
   const input = { subagent_type: 'exo:orchestrator', prompt: 'exo-kind: orchestrator\nWorkers: 1\nReads: none\ndo it' };
   const hook = { tool_name: 'Agent', tool_input: input };
@@ -290,30 +276,6 @@ test('on deepseek an orchestrator part with one worker is told to run its unit i
   assert.doesNotMatch(run('deepseek', three), /spawn no worker/i);
   const twice = { ...hook, tool_input: { ...input, prompt: run('deepseek', hook) } };
   assert.equal(run('deepseek', twice).match(/spawn no worker/gi).length, 1);
-});
-
-test('a main-session web research brief to an unnamed agent is denied toward the research route', () => {
-  const unnamed = (type, agentId) => agentHook({ tool_name: 'Agent', session_id: `route-unnamed-${process.pid}-${agentId ?? type}`, ...(agentId && { agent_id: agentId, agent_type: 'orchestrator' }), tool_input: { subagent_type: type, prompt: `Sources: web\nFetches: 1\nResult: .exo/r.md\n${type}` } }, 'on', () => false)?.hookSpecificOutput;
-  for (const type of ['general-purpose', 'claude']) {
-    const denied = unnamed(type);
-    assert.ok(denied.additionalContext);
-    assert.match(denied.additionalContext, /Do instead: use `exo:research-worker` for one part, or one `exo:orchestrator` with `Workers: <n>`/);
-  }
-  assert.doesNotMatch(unnamed('general-purpose', 'sub1')?.additionalContext ?? '', /research route|exo:research-worker/);
-});
-
-test('a second main-session web research dispatch inside the window is sent to one orchestrator', () => {
-  const session = `route-fanout-${process.pid}`;
-  const research = (id, agentId) => agentHook({ tool_name: 'Agent', session_id: id, ...(agentId && { agent_id: agentId }), tool_input: { subagent_type: 'exo:research-worker', prompt: 'Sources: web\nFetches: 1\nResult: .exo/r.md\nx' } }, 'on', () => false)?.hookSpecificOutput;
-  fs.rmSync(path.join(os.tmpdir(), `exo-research-${session}`), { force: true });
-  assert.doesNotMatch(research(session)?.additionalContext ?? '', /Do instead/);
-  const second = research(session);
-  assert.ok(second.additionalContext);
-  assert.match(second.additionalContext, /Do instead: send the remaining research parts to one `exo:orchestrator`/);
-  assert.doesNotMatch(research(session, 'sub1')?.additionalContext ?? '', /Do instead/);
-  assert.doesNotMatch(research(`${session}-other`)?.additionalContext ?? '', /Do instead/);
-  fs.rmSync(path.join(os.tmpdir(), `exo-research-${session}`), { force: true });
-  fs.rmSync(path.join(os.tmpdir(), `exo-research-${session}-other`), { force: true });
 });
 
 test('an Agent dispatch from a worker role is denied and one from a coordinator is not', () => {

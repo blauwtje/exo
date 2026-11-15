@@ -38,9 +38,9 @@ test('run-stall-guard escalates three identical land-task calls', async () => {
 
 const deniedWith = (reason) => ({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: reason } });
 
-test('a context hard limit refusal stays identical on every hit', () => {
+test('a lead context limit refusal stays identical on every hit', () => {
   const input = { session_id: session('hard'), tool_name: 'Read', tool_input: { file_path: 'a' } };
-  const reason = denyReason('context-hard', 'Over the 75k hard limit', { checkpoint: 'checkpoint.mjs' });
+  const reason = denyReason('context-lead', 'Over the 120k hard limit', { checkpoint: 'checkpoint.mjs' });
   const reasons = [1, 2, 3].map(() => reasonOf(rememberRefusal(input, deniedWith(reason), { guard: 'context-limit' })));
   assert.deepEqual(reasons, [reason, reason, reason]);
 });
