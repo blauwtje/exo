@@ -142,6 +142,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The first wave of a build fans out every ready task named in `Parallel:`, so a later dependent task no longer limits it to one task.
 
 ### Fixed
+- `diagnose`'s bisect names the first bad commit again on git 2.56, by reading `refs/bisect/bad` instead of the `bisect run` output text.
 
 - The status line works after a fresh install: `/exo:configure` writes a launcher that names the plugin root itself, so no pointer file is needed, and it replaces a launcher from an older exo; the status line reads context and limits from what Claude Code sends and drops the transcript scan, the limit cache and the `5h out in` warning.
 - The builder's land command and the spec sketch script path sit in the agent and skill bodies, where the plugin root is filled in; the README and contributor guide say a proof that passed first lands with a warning and the builder stops, and the doc citations point at files that exist, which the Markdown references check now also walks in `docs/` and `CONTRIBUTING.md`; `package-lock.json` matches the 0.140.0 version.

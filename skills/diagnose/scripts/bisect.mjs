@@ -42,7 +42,7 @@ function bisect(command) {
     git(worktree, 'checkout', '-q', '--detach', 'HEAD');
     git(worktree, 'bisect', 'start', 'HEAD', good);
     const run = git(worktree, 'bisect', 'run', 'sh', '-c', command);
-    const bad = /^([0-9a-f]{40}) is the first bad commit/m.exec(run.stdout)?.[1];
+    const bad = run.status === 0 ? text(git(worktree, 'rev-parse', '--verify', '-q', 'refs/bisect/bad')) : '';
     if (!bad) return 'Bisect: the repro cannot be bisected (its result alternates or every run was skipped)';
     const files = text(git(worktree, 'show', '--name-only', '--format=', bad));
     return [`First bad: ${text(git(worktree, 'log', '-1', '--format=%h %s', bad))}`, `Good: ${good.slice(0, 7)}`, `Files:\n${files}`].join('\n');
