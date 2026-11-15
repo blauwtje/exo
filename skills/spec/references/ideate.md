@@ -15,7 +15,7 @@ Work in `.exo/ideate/<slug>/`, where the slug is built as in research mode.
    - Take 2-3 repos that solve the same problem and 1 repo from a far domain.
    - Write what each does, from its `description`, as a digest in `<slug>/run.md`.
 3. **Generate** after `node "${CLAUDE_PLUGIN_ROOT}/skills/spec/scripts/plan.mjs" --mode <standard|fast>`, which prints the agent count, idea count and personas (add `--seed <n>` to repeat a draw).
-   - Dispatch one `exo:research-worker` agent with `Sources: brief` per persona in one message with the brief below.
+   - Dispatch one `exo:researcher` agent with `Sources: brief` per persona in one message with the brief below.
    - In fast mode dispatch none and write each persona's ideas yourself, with the same persona and idea counts.
 4. **Rank** in `<slug>/ranking.md` with no numeric scores.
    - Drop duplicates and restated banned defaults first.

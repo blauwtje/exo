@@ -5,7 +5,7 @@ import { DENY_RULES, SESSION_RULES } from './run-session-rules.mjs';
 
 const SESSION_TOOLS = 'Read,Edit,Write,Bash,Grep,Glob';
 
-const SESSION_AGENTS = { build: 'build-task', fix: 'build-task' };
+const SESSION_AGENTS = { build: 'builder', fix: 'builder' };
 
 export function agentMaxTurns(kind) {
   const text = fs.readFileSync(path.join(PLUGIN_ROOT, 'agents', `${SESSION_AGENTS[kind]}.md`), 'utf8');

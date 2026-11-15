@@ -42,7 +42,7 @@ Imagery is where generic pages show most, so give it real work. Each item (game,
 
 ## Build
 
-- Stack: the repo's stack and tokens, or plain HTML, CSS and JS when it has none. Split CSS, art, data and script into files; above 2 files, `exo:build-task` writes them and you keep its returns.
+- Stack: the repo's stack and tokens, or plain HTML, CSS and JS when it has none. Split CSS, art, data and script into files; above 2 files, `exo:builder` writes them and you keep its returns.
 - Restyle: keep all content, links and working behavior; change only presentation.
 - Content: the request's facts and names as given, and specific made-up data where it gives none. Invent no proof (reviews, logos, metrics).
 - Product data: rows, logs, builds, schedules, invoices and statuses inside the product can be invented freely and generously.
@@ -56,7 +56,7 @@ Imagery is where generic pages show most, so give it real work. Each item (game,
 ## Check
 
 1. Floors: `node "${CLAUDE_SKILL_DIR}/scripts/look.mjs" <file-or-url> --out <dir>`, with `--app` for an app, one `--expect "<text>"` per explicit ask, and one `--state "<name>=<js>"` per state worth seeing (a second tab, an open sheet, a filled form, an error, keyboard focus). The JS runs in the page and puts it in that state, for example `document.querySelector('#tab-friends').click()`.
-2. Fix each printed line: `CONTRAST` (the ratio decides, not the eye), `CLIP`, `OVERLAP`, `FONTS`, `FIT`, `NAV`, `OVERFLOW`, `CONSOLE`, `MISSING`, `BELOW`, `STATE`; fixes over 2 files go to `exo:build-task` with the printed lines and you keep its return. A hidden view counts for an ask only when its tab or control is visible and its content is in the DOM.
+2. Fix each printed line: `CONTRAST` (the ratio decides, not the eye), `CLIP`, `OVERLAP`, `FONTS`, `FIT`, `NAV`, `OVERFLOW`, `CONSOLE`, `MISSING`, `BELOW`, `STATE`; fixes over 2 files go to `exo:builder` with the printed lines and you keep its return. A hidden view counts for an ask only when its tab or control is visible and its content is in the DOM.
 3. Critique: dispatch one fresh delegate whose prompt opens with `exo-kind: review` as critic with `Reads: <shot paths>` and `Worktree: <abs path>` lines, briefed per the critic reference.
 4. Fix round, bounded by ledger kind `look`, as the critic reference's "Acting on it" says; rerun look with `--no-shots`.
 

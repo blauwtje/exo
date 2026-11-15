@@ -34,7 +34,7 @@ function growTo(tokens) {
 }
 
 const SESSION = `s-intake-${process.pid}`;
-const agent = { session_id: SESSION, transcript_path, agent_id: `a-intake-${process.pid}`, agent_type: 'exo:build-task', agent_transcript_path: agentTranscript, permission_mode: 'bypassPermissions' };
+const agent = { session_id: SESSION, transcript_path, agent_id: `a-intake-${process.pid}`, agent_type: 'exo:builder', agent_transcript_path: agentTranscript, permission_mode: 'bypassPermissions' };
 const read = (tool_input, caller = agent) => contextHook({ ...caller, tool_name: 'Read', tool_input }, () => false)?.hookSpecificOutput;
 
 const denied = (fields) => fields?.permissionDecision === 'deny';

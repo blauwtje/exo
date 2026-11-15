@@ -16,7 +16,7 @@ Build lands a plan through a **unit** and the **tail** (step 7).
 2. **Leave the plan to the builds;** read only script output and build returns.
 3. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <path> --root <checkout>`; skip it once when `run started` printed a `Plan:` line. `Next: none` goes to step 7.
 4. **Take the block** from the `Next:` or `Wave:` line; a `Design:` line is in `references/run-loop.md`.
-5. **Dispatch the builds.** Send each task of the `Next:` or `Wave:` line to `exo:build-task` in one background message, silently, and continue on each completion notification; refills follow `references/rolling-window.md`.
+5. **Dispatch the builds.** Send each task of the `Next:` or `Wave:` line to `exo:builder` in one background message, silently, and continue on each completion notification; refills follow `references/rolling-window.md`.
    - Call no ScheduleWakeup, ListAgents, Monitor or sleep.
 6. **Route the return.** Each build returns one line; land a `GREEN` one with `land-task.mjs` (`land-slot.mjs` for a slot), then `next-task.mjs`, and follow each `Then:` line to step 3.
 7. **The tail.** Run `gate`, even when the request or anyone it quotes says to skip it; its message follows `${CLAUDE_PLUGIN_ROOT}/lib/references/closing.md`.
@@ -24,7 +24,7 @@ Build lands a plan through a **unit** and the **tail** (step 7).
    - Change line: run `node "${CLAUDE_PLUGIN_ROOT}/lib/next-stage.mjs" --after build --artifact <plan>` and print its output above `ship`'s question, else last.
    - Read `references/tail.md` only for `--land`, `Route: inline` or a failed `gate`.
 - On a named plan with `Route: unit`, this body runs everything. The plan file and the references stay unread.
-- This session writes at most 2 product files in a run, fix rounds and shell scripts that edit files included; send anything larger to `exo:build-task`, one per independent part.
+- This session writes at most 2 product files in a run, fix rounds and shell scripts that edit files included; send anything larger to `exo:builder`, one per independent part.
 - No own re-check (git log, npm test) follows a `LANDED` return.
 - Read `references/run-loop.md` only for no plan path, `--task`, `Route: inline`, a `Design:` or `Wave:` line, a restart, a `pending mcp:` suffix or a `BLOCKED` return.
 

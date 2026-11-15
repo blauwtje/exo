@@ -23,7 +23,7 @@ function dispatchable(task, frame, root) {
 export function dispatchBlock({ task, frame, planPath, checkout, briefPath, since }) {
   if (!dispatchable(task, frame, checkout)) return [];
   appendTimeline(checkout, { event: 'dispatched', task: task.number });
-  return [`Dispatch: exo:build-task`, `Since: ${since}`, ...promptLines({ task, frame, planPath, checkout, briefPath })];
+  return [`Dispatch: exo:builder`, `Since: ${since}`, ...promptLines({ task, frame, planPath, checkout, briefPath })];
 }
 
 export function windowLines({ planPath, root, records, running, unlanded, only }) {

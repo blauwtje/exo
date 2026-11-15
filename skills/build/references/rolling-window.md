@@ -20,7 +20,7 @@ The lead starts the next ready task of its block when a window returns and its s
    - With no report still, land from the return text (`land-slot.mjs --report -`), handoff or checkpoint commit. With no report, commit or handoff after the resume the child is dead: keep its slot folder and name it in the return.
 7. **Dispatch.**
    - At most four slots build at once (`WAVE_LIMIT`).
-   - Send each window build, including a `Next:` build, to `exo:build-task`.
+   - Send each window build, including a `Next:` build, to `exo:builder`.
    - A landing's refill is in `land-slot.mjs`'s output, with slots opened. Otherwise run `next-task.mjs --in-flight <running task numbers, comma separated> --only <block>` and read its `Start: Task <n>[, Task <m>]` line.
    - On `Start: none` start no refill, land the returned slots, then return to step 1.
 8. **Wait.**

@@ -5,7 +5,7 @@ A decided change with no plan file runs these steps instead of the loop, so a sm
 1. **Orient.** A main session runs `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"`.
    - Read the ranges that a plan task's `Files:` lines or the request name, and no others.
    - When `<scratch>/implement-next.md` exists, resume from it and delete it once edits land. `<scratch>` is what `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-path.mjs"` prints.
-   - Otherwise, or after one failed direct search, dispatch `exo:research-worker` with `Sources: repo` and read only its `Read next` ranges plus direct callers or callees.
+   - Otherwise, or after one failed direct search, dispatch `exo:researcher` with `Sources: repo` and read only its `Read next` ranges plus direct callers or callees.
    - Upstream Decisions are settled.
    - Read `${CLAUDE_PLUGIN_ROOT}/lib/references/lean.md` before editing code.
 2. **Gate.**
@@ -17,8 +17,8 @@ A decided change with no plan file runs these steps instead of the loop, so a sm
    - For a multi-file change, confirm a clean working tree or name its pre-existing changed paths.
 4. **Build.**
    - Report a required edit outside the oriented paths before touching it.
-   - Over 2 files, send each independent part to `exo:build-task`, in dependency order; otherwise edit in dependency order and ask nothing between files in scope.
-   - Replace a hand edit repeated across many files with one script, which a `build-task` runs.
+   - Over 2 files, send each independent part to `exo:builder`, in dependency order; otherwise edit in dependency order and ask nothing between files in scope.
+   - Replace a hand edit repeated across many files with one script, which a `builder` runs.
    - Keep every mutating edit idempotent, so retries land the same state.
    - When a hook reports the context budget crossed, write landed and open edits to `<scratch>/implement-next.md` at a green state and report that a clear comes next.
 5. **Prove.**

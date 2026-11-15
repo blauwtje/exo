@@ -1,6 +1,6 @@
 # Step 5 under `Route: inline`
 
-- This session builds every task itself, in plan order, in the run checkout. It dispatches no `exo:build-task` and skips the wave worktrees reference.
+- This session builds every task itself, in plan order, in the run checkout. It dispatches no `exo:builder` and skips the wave worktrees reference.
 - Steps 1-3 stand: the workspace reference's answer holds, and only one `start-run.mjs` runs.
 - Build each task from its section printed below, without opening the plan or this reference.
 - Per task, write the failing test from its pasted block, run its `Run:` and expect the stated failure.

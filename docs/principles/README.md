@@ -15,6 +15,6 @@ Add or keep a hook, check, agent, review, model tier or retry only if its value 
 
 ## Refresh
 
-Run `exo:research-worker` on a page's Sources. If a page will not open, use the obscura browser.
+Run `exo:researcher` on a page's Sources. If a page will not open, use the obscura browser.
 Then edit the page's bullets and its `Checked:` date.
 `npm run check` warns when a page is stale.

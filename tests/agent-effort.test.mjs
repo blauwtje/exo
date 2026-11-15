@@ -84,7 +84,7 @@ test('an unnamed call with no exo-kind line runs as build with the line prepende
   assert.equal(call({ description: 'Fix the typo', prompt: 'exo-kind: hard\nx' }).model, kinds.build.model);
   for (const description of ['Pickup log lines', 'Picker colours', 'Designated owner', 'Collect findings', 'Add test fixtures']) assert.equal(call({ description, prompt: 'x' }).prompt, 'exo-kind: build\nx', description);
   assert.equal(call({ subagent_type: 'general-purpose', description: 'Edit-evidence false block', prompt: 'Reads: none' }, 'off'), undefined);
-  assert.notEqual(decision({ subagent_type: 'exo:research-worker', description: 'Edit-evidence false block', prompt: 'x' }), 'deny');
+  assert.notEqual(decision({ subagent_type: 'exo:researcher', description: 'Edit-evidence false block', prompt: 'x' }), 'deny');
 });
 
 test('the Codex host note maps TaskStop to killing the process', () => {
@@ -92,14 +92,14 @@ test('the Codex host note maps TaskStop to killing the process', () => {
   assert.match(note, /^- Run TaskStop as killing the process\.$/m);
 });
 
-test('a prompt with an exo-retry line gets the retry cell of a build-task, other kinds keep the on cell', () => {
+test('a prompt with an exo-retry line gets the retry cell of a builder, other kinds keep the on cell', () => {
   const on = readKindTable(undefined, { budget: 'on' });
   const retry = readKindTable(undefined, { budget: 'on', retry: true });
-  assert.notDeepEqual(retry.kinds['build-task'], on.kinds['build-task']);
-  const { model, effort } = retry.kinds['build-task'];
-  assert.deepEqual(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: build-task\nexo-retry' }, 'on'), { subagent_type: 'general-purpose', prompt: 'exo-kind: build-task\nexo-retry', model, effort });
+  assert.notDeepEqual(retry.kinds['builder'], on.kinds['builder']);
+  const { model, effort } = retry.kinds['builder'];
+  assert.deepEqual(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: builder\nexo-retry' }, 'on'), { subagent_type: 'general-purpose', prompt: 'exo-kind: builder\nexo-retry', model, effort });
   assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: lookup\nexo-retry' }, 'on').model, on.kinds.lookup.model);
-  assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: build-task' }, 'on').model, on.kinds['build-task'].model);
+  assert.equal(call({ subagent_type: 'general-purpose', prompt: 'exo-kind: builder' }, 'on').model, on.kinds['builder'].model);
 });
 
 const reasonOf = (output) => output.additionalContext;
@@ -113,19 +113,19 @@ function hookOutput(input, budget = 'on') {
 
 test('the session provider picks its kind column, an unlisted or unset one keeps the claude column', () => {
   const before = process.env.EXO_PROVIDER;
-  const outputs = () => [call({ subagent_type: 'exo:build-task', prompt: 'x' }), call({ subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x' })];
+  const outputs = () => [call({ subagent_type: 'exo:builder', prompt: 'x' }), call({ subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x' })];
   try {
     delete process.env.EXO_PROVIDER;
     const claude = outputs();
-    assert.deepEqual(claude[0], { subagent_type: 'exo:build-task', prompt: 'x', model: 'sonnet', effort: 'medium' });
+    assert.deepEqual(claude[0], { subagent_type: 'exo:builder', prompt: 'x', model: 'sonnet', effort: 'medium' });
     process.env.EXO_PROVIDER = 'zai';
     assert.deepEqual(outputs(), claude);
     process.env.EXO_PROVIDER = 'deepseek';
     assert.deepEqual(outputs(), [
-      { subagent_type: 'exo:build-task', prompt: 'x', effort: 'low' },
+      { subagent_type: 'exo:builder', prompt: 'x', effort: 'low' },
       { subagent_type: 'general-purpose', description: 'Fix the typo', prompt: 'x', effort: 'low' }
     ]);
-    assert.deepEqual(call({ subagent_type: 'exo:research-worker', prompt: 'x' }), { subagent_type: 'exo:research-worker', prompt: 'x', effort: 'high' });
+    assert.deepEqual(call({ subagent_type: 'exo:researcher', prompt: 'x' }), { subagent_type: 'exo:researcher', prompt: 'x', effort: 'high' });
   } finally {
     if (before === undefined) delete process.env.EXO_PROVIDER;
     else process.env.EXO_PROVIDER = before;
@@ -138,29 +138,29 @@ test('a label on an exo call with no model or effort moves it only to a label it
     const { model, effort } = call(input);
     return { model, effort };
   };
-  assert.deepEqual(pair({ subagent_type: 'exo:review-branch', prompt: 'exo-kind: review\nx' }), kinds.judge);
-  assert.deepEqual(pair({ subagent_type: 'exo:review-branch', prompt: 'exo-kind: hardest\nx' }), kinds.judge);
-  assert.equal(hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: review\nx' }).permissionDecision, 'allow');
-  assert.equal(hookOutput({ subagent_type: 'exo:research-worker', prompt: 'exo-kind: hardest\nx', effort: 'high' }), undefined);
+  assert.deepEqual(pair({ subagent_type: 'exo:reviewer', prompt: 'exo-kind: review\nx' }), kinds.judge);
+  assert.deepEqual(pair({ subagent_type: 'exo:reviewer', prompt: 'exo-kind: hardest\nx' }), kinds.judge);
+  assert.equal(hookOutput({ subagent_type: 'exo:researcher', prompt: 'exo-kind: review\nx' }).permissionDecision, 'allow');
+  assert.equal(hookOutput({ subagent_type: 'exo:researcher', prompt: 'exo-kind: hardest\nx', effort: 'high' }), undefined);
 });
 
 test('a kind ceiling lifts its effort to the session effort up to the ceiling, and names no agent in the hook', () => {
   const { kinds, agents } = readKindTable(undefined, { budget: 'on' });
-  const kind = kinds[agents['agents/research-worker.md'].kind];
+  const kind = kinds[agents['agents/researcher.md'].kind];
   assert.equal(kind.ceiling, 'high');
   const run = (input, level) => agentEffort({ tool_name: 'Agent', tool_input: input, effort: { level } }, 'on')?.hookSpecificOutput.updatedInput.effort;
-  const openPoints = { subagent_type: 'exo:research-worker', prompt: 'x' };
+  const openPoints = { subagent_type: 'exo:researcher', prompt: 'x' };
   for (const level of ['max', 'xhigh', 'high']) assert.equal(run(openPoints, level), 'high');
   for (const level of ['low', 'medium', undefined]) assert.equal(run(openPoints, level), kind.effort);
   assert.equal(run({ ...openPoints, effort: 'max' }, 'xhigh'), 'max');
-  assert.equal(run({ subagent_type: 'exo:build-task', prompt: 'x' }, 'max'), kinds['build-task'].effort);
+  assert.equal(run({ subagent_type: 'exo:builder', prompt: 'x' }, 'max'), kinds['builder'].effort);
   const hook = fs.readFileSync(new URL('../hooks/agent-effort.mjs', import.meta.url), 'utf8');
-  assert.doesNotMatch(hook, /exo:research-worker/);
+  assert.doesNotMatch(hook, /exo:researcher/);
 });
 
 test('the noted call shows its kind in the hook line', () => {
-  const hook = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker', prompt: 'x', model: 'opus', effort: 'max' } }, 'on', () => true);
-  assert.match(hook.systemMessage, /^exo › research-worker \(opus, max\)/);
+  const hook = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:researcher', prompt: 'x', model: 'opus', effort: 'max' } }, 'on', () => true);
+  assert.match(hook.systemMessage, /^exo › researcher \(opus, max\)/);
 });
 
 test('worker size: an orchestrator dispatch needs Reads and Result and stays in budget', () => {
@@ -280,7 +280,7 @@ test('on deepseek an orchestrator part with one worker is told to run its unit i
 
 test('an Agent dispatch from a worker role is denied and one from a coordinator is not', () => {
   const dispatch = (agentType) => agentHook({ tool_name: 'Agent', session_id: `role-${process.pid}-${agentType}`, agent_id: 'sub1', agent_type: agentType, tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply\nx' } }, 'on', () => false)?.hookSpecificOutput;
-  const worker = dispatch('exo:research-worker');
+  const worker = dispatch('exo:researcher');
   assert.ok(worker.additionalContext);
   assert.match(worker.additionalContext, /worker row has mayDispatch false/);
   assert.doesNotMatch(dispatch('exo:orchestrator')?.additionalContext ?? '', /mayDispatch false/);
@@ -316,7 +316,7 @@ test('out-of-scope: an edited brief of the same dispatch identity is noted once 
 });
 
 test('brief without fetches still dispatches with a warning', () => {
-  const output = hookOutput({ subagent_type: 'exo:research-worker', prompt: 'Sources: web\nReads: none\nResult: .exo/answer.md' });
+  const output = hookOutput({ subagent_type: 'exo:researcher', prompt: 'Sources: web\nReads: none\nResult: .exo/answer.md' });
   assert.notEqual(output.permissionDecision, 'deny');
   assert.match(output.additionalContext, /add the line `Fetches: <n>`/);
 });

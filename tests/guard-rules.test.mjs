@@ -52,7 +52,7 @@ const contextDeny = (input) => {
 };
 const subagent = (tokens, tool_name, tool_input) => contextDeny({
   agent_id: `guard-rules-${tokens}-${tool_name}`,
-  agent_type: 'exo:build-task',
+  agent_type: 'exo:builder',
   agent_transcript_path: grownTo(tokens, 'agent'),
   tool_name,
   tool_input
@@ -117,7 +117,7 @@ fs.writeFileSync(path.join(holder, 'there.md'), 'x');
 const longLine = path.join(spent, 'long-line.log');
 fs.writeFileSync(longLine, `${'x'.repeat(200_000)}\n`);
 const cases = {
-  'role-no-dispatch': () => textOf(agentHook({ tool_name: 'Agent', session_id: `guard-rules-role-${process.pid}`, agent_id: 'sub1', agent_type: 'exo:research-worker', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply\nx' } }, 'on', () => false)?.hookSpecificOutput),
+  'role-no-dispatch': () => textOf(agentHook({ tool_name: 'Agent', session_id: `guard-rules-role-${process.pid}`, agent_id: 'sub1', agent_type: 'exo:researcher', tool_input: { subagent_type: 'general-purpose', prompt: 'Reads: none\nResult: reply\nx' } }, 'on', () => false)?.hookSpecificOutput),
   stash: () => bash('git stash', agent),
   'shared-state': () => bash('git worktree remove x', agent),
   'commit-attribution': () => bash(`git commit -m "fix: x" -m "${TRAILER}"`),
@@ -135,8 +135,8 @@ const cases = {
   'refusal-cap': () => refusalCap(),
   'result-tools': () => resultFile(),
   'workers-line': () => orchestrator('Workers: 5', {}),
-  'brief-lacks-fetches': () => refuse('Sources: web\nResult: .exo/r.md', 'exo:research-worker'),
-  'brief-invalid': () => refuse('Reads: none\nFetches: many\nSources: web', 'exo:research-worker'),
+  'brief-lacks-fetches': () => refuse('Sources: web\nResult: .exo/r.md', 'exo:researcher'),
+  'brief-invalid': () => refuse('Reads: none\nFetches: many\nSources: web', 'exo:researcher'),
   'brief-unresolved': () => refuse('Reads: gone.md\nResult: .exo/r.md'),
   'brief-ambiguous-name': () => refuse('Reads: dup.txt\nResult: .exo/r.md', undefined, tracked),
   'brief-missing-path': () => refuse('Reads: gone.md\nResult: .exo/r.md'),
@@ -147,8 +147,8 @@ const cases = {
   'brief-reads-any': () => refuse('Fix big.txt\nResult: .exo/r.md'),
   'brief-range': () => refuse('Reads: ranged.txt\nResult: .exo/r.md', undefined, lined),
   'brief-lacks-fields': () => refuse('Reads: none'),
-  'brief-over-fetches': () => refuse('Reads: none\nFetches: 19\nSources: web', 'exo:research-worker'),
-  'brief-cuts-page': () => refuse('Reads: none\nSources: web\ngh api x | head -c 4000', 'exo:research-worker'),
+  'brief-over-fetches': () => refuse('Reads: none\nFetches: 19\nSources: web', 'exo:researcher'),
+  'brief-cuts-page': () => refuse('Reads: none\nSources: web\ngh api x | head -c 4000', 'exo:researcher'),
   'brief-over-budget': () => refuse('Reads: big.txt\nResult: .exo/r.md'),
   'orchestrator-reads': () => denyReason('orchestrator-reads', '', { named: 'brief.md' }),
   'orchestrator-budget': () => denyReason('orchestrator-budget', '', { limit: 5 }),
@@ -335,7 +335,7 @@ test('a dispatched brief carries the brief lines of the receiving agent tools up
   assert.ok(docs.endsWith(original) && docs.indexOf(noWrite) < docs.indexOf(original), docs);
   assert.ok(docs.includes(noWrite), docs);
   assert.ok(!docs.includes(stash), docs);
-  const builder = dispatched('exo:build-task', 'Reads: none\nResult: .exo/r.md');
+  const builder = dispatched('exo:builder', 'Reads: none\nResult: .exo/r.md');
   assert.ok(builder.includes(stash) && true, builder);
   assert.ok(!builder.includes(noWrite), builder);
 });
@@ -403,7 +403,7 @@ test('an Agent note and a context note show once per session', () => {
   const dispatchNote = () => textOf(agentHook({ session_id: session, tool_name: 'Agent', tool_input: { subagent_type: 'exo:orchestrator', prompt: 'do it' } }, 'on', () => false)?.hookSpecificOutput);
   assert.match(dispatchNote(), /Workers/);
   assert.doesNotMatch(dispatchNote(), /Workers/);
-  const read = { session_id: session, agent_id: 'notes-agent', agent_type: 'exo:build-task', agent_transcript_path: grownTo(agentContextTarget() + 1000, 'notes'), tool_name: 'Read', tool_input: { file_path: 'a.md' } };
+  const read = { session_id: session, agent_id: 'notes-agent', agent_type: 'exo:builder', agent_transcript_path: grownTo(agentContextTarget() + 1000, 'notes'), tool_name: 'Read', tool_input: { file_path: 'a.md' } };
   const contextNote = () => contextHook(read, () => false)?.hookSpecificOutput?.additionalContext ?? '';
   assert.equal(contextHook({ ...read, session_id: `${session}-shape` }, () => false).hookSpecificOutput.permissionDecision, undefined);
   assert.match(contextNote(), /target/);

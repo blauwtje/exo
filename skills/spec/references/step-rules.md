@@ -8,7 +8,7 @@
 
 ## Step 4, locate and fetch
 
-   - In one background message dispatch up to four `exo:research-worker` agents (`Sources: repo`) for ranges the map omits and one `exo:research-worker` round (`Sources: docs`) for outside facts. Read none of their output, fill no gap; use results on each completion, no polling or sleep.
+   - In one background message dispatch up to four `exo:researcher` agents (`Sources: repo`) for ranges the map omits and one `exo:researcher` round (`Sources: docs`) for outside facts. Read none of their output, fill no gap; use results on each completion, no polling or sleep.
    - Search the map with `grep -n`; never read it.
 
 ## Step 1, modes

@@ -16,7 +16,7 @@ Answer a question from many sources with a report a reader can check. Produce a 
    - standard: 2-4 workers in one orchestrator, 10-15 calls each.
    - deep: 4 workers in a first orchestrator, then at most 4 more in a second, only for gaps.
 4. **Plan** one sub-question per worker with the source routes.
-5. **Dispatch** exactly one `exo:orchestrator` per wave from the lead, with `Workers: 4` or fewer and the brief below; the orchestrator dispatches the `exo:research-worker` agents, one per sub-question, all in one message. The lead sends no worker itself, and workers spawn no agents.
+5. **Dispatch** exactly one `exo:orchestrator` per wave from the lead, with `Workers: 4` or fewer and the brief below; the orchestrator dispatches the `exo:researcher` agents, one per sub-question, all in one message. The lead sends no worker itself, and workers spawn no agents.
 6. **Collect** the indexes. Read the claims and sources files in the folder, not page text.
 7. **Write** the report in the report shape.
 8. **Verify** per `verification.md`.

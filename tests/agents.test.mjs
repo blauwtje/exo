@@ -69,10 +69,10 @@ test('every listed tool is a tool the harness has', () => {
 
 const TASK_MODES = fs.readFileSync(new URL('../lib/agent-modes/task-modes.md', import.meta.url), 'utf8');
 
-test('build-task holds the TaskStop its body tells it to run', () => {
-  for (const name of ['build-task']) {
+test('builder holds the TaskStop its body tells it to run', () => {
+  for (const name of ['builder']) {
     const agent = agents.find((candidate) => candidate.frontmatter.name === name);
-    const body = name === 'build-task' ? `${agent.body}\n${TASK_MODES}` : agent.body;
+    const body = name === 'builder' ? `${agent.body}\n${TASK_MODES}` : agent.body;
     assert.ok(body.includes('TaskStop'), `${name} body names TaskStop`);
     assert.ok(agent.frontmatter.tools.split(', ').includes('TaskStop'), `${name} lists TaskStop in tools`);
   }
@@ -81,8 +81,8 @@ test('build-task holds the TaskStop its body tells it to run', () => {
 const MODES = fs.readFileSync(new URL('../skills/spec/references/worker-modes.md', import.meta.url), 'utf8');
 const withModes = (agent) => ({ ...agent, body: `${agent.body}\n${MODES}` });
 
-test('research-worker carries no tool that edits the repository and keeps the rules of each mode', () => {
-  const worker = withModes(agents.find((agent) => agent.frontmatter.name === 'research-worker'));
+test('researcher carries no tool that edits the repository and keeps the rules of each mode', () => {
+  const worker = withModes(agents.find((agent) => agent.frontmatter.name === 'researcher'));
   assert.deepEqual(worker.frontmatter.tools.split(', ').filter((tool) => ['Edit', 'Agent'].includes(tool)), []);
   assert.match(worker.body, /Write one file only: the result at the `\.exo\/<topic>\/` path/);
   assert.match(worker.body, /Return at most 10 lines/);
@@ -105,7 +105,7 @@ test('a turn budget in the body equals maxTurns and leaves turns to write the re
 });
 
 test('the budget twins fold into their base agents, which a dispatch runs at the call\'s model and effort', () => {
-  for (const twin of ['review-branch-deep', 'review-branch-deep-high', 'solve-hard-high', 'solve-hard-low']) {
+  for (const twin of ['reviewer-deep', 'reviewer-deep-high', 'solve-hard-high', 'solve-hard-low']) {
     assert.ok(!agents.some((agent) => agent.frontmatter.name === twin), `agents/${twin}.md is still an agent file`);
   }
   assert.deepEqual(Object.keys(kindTable.agents).filter((file) => kindTable.agents[file].generatedFrom !== undefined), []);
@@ -116,21 +116,21 @@ test('the budget twins fold into their base agents, which a dispatch runs at the
 });
 
 test('the implementer reads CLAUDE.md', () => {
-  const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
-  assert.ok(implementer, 'agents/build-task.md exists');
+  const implementer = agents.find((agent) => agent.frontmatter.name === 'builder');
+  assert.ok(implementer, 'agents/builder.md exists');
   assert.equal(implementer.frontmatter.omitClaudeMd, undefined, 'the implementer reads CLAUDE.md');
 });
 
 test('the implementer names test-design.md and reports Test first: and Red: lines', () => {
-  const builder = agents.find((agent) => agent.frontmatter.name === 'build-task');
-  assert.ok(builder, 'agents/build-task.md exists');
+  const builder = agents.find((agent) => agent.frontmatter.name === 'builder');
+  assert.ok(builder, 'agents/builder.md exists');
   assert.match(builder.body, /test-design\.md/);
   assert.match(builder.body, /Test first:/);
   assert.match(builder.body, /Red:/);
 });
 
 test('the open-points mode runs the decisions check first and caps its return', () => {
-  const worker = withModes(agents.find((agent) => agent.frontmatter.name === 'research-worker'));
+  const worker = withModes(agents.find((agent) => agent.frontmatter.name === 'researcher'));
   assert.equal(worker.frontmatter.effort, undefined);
   assert.equal(worker.frontmatter.model, undefined);
   assert.ok(worker.body.includes('run the memory script command `decisions`'), 'no decisions run');
@@ -139,17 +139,17 @@ test('the open-points mode runs the decisions check first and caps its return', 
   assert.ok(worker.body.includes('Assumptions: <path>'), 'return names the assumptions file');
 });
 
-test('build-task reads its brief, lean.md and code-standard.md in its first message', () => {
-  const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
+test('builder reads its brief, lean.md and code-standard.md in its first message', () => {
+  const implementer = agents.find((agent) => agent.frontmatter.name === 'builder');
   assert.match(implementer.body, /^- Your first call reads the brief, `lean\.md` and `code-standard\.md`, once each, the last two from `\$\{CLAUDE_PLUGIN_ROOT\}\/lib\/references\/` and not a `<checkout>` copy\. When the brief says `Code rules: none`, it reads the brief only\.$/m);
   assert.match(implementer.body, /^- `Files:` names where the work is expected: edit any file the task needs and list extra paths in the report\. Write a missing `Proof:` script first, after you read `code-standard\.md`\.$/m);
   assert.match(implementer.body, /^- Send no text before the first tool call or between calls\.$/m);
 });
 
-test('only build-task and doc-task hold a retry cell, above their on cell', () => {
+test('only builder and doc-task hold a retry cell, above their on cell', () => {
   const table = JSON.parse(fs.readFileSync(new URL('../lib/model-kinds.json', import.meta.url), 'utf8'));
-  assert.deepEqual(Object.keys(table.kinds).filter((kind) => table.kinds[kind].retry), ['build-task', 'doc-task']);
-  assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['build-task'], { model: 'opus', effort: 'high' });
+  assert.deepEqual(Object.keys(table.kinds).filter((kind) => table.kinds[kind].retry), ['builder', 'doc-task']);
+  assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['builder'], { model: 'opus', effort: 'high' });
   assert.deepEqual(readKindTable(undefined, { retry: true }).kinds['doc-task'], { model: 'opus', effort: 'high' });
   assert.deepEqual(readKindTable(undefined, { retry: true }).kinds.review, kindTable.kinds.review);
 });
@@ -185,17 +185,17 @@ test('orchestrator dispatches async within its Workers line, reads by range and 
   assert.match(body, /discovery and code reading to a `lookup` worker/);
 });
 
-test('research-worker writes findings and keeps the data rule', () => {
-  const worker = withModes(agents.find((agent) => agent.frontmatter.name === 'research-worker'));
+test('researcher writes findings and keeps the data rule', () => {
+  const worker = withModes(agents.find((agent) => agent.frontmatter.name === 'researcher'));
   const workerTools = worker.frontmatter.tools.split(', ');
-  assert.ok(workerTools.includes('Bash') && workerTools.includes('Write'), 'research-worker lacks Bash or Write');
+  assert.ok(workerTools.includes('Bash') && workerTools.includes('Write'), 'researcher lacks Bash or Write');
   assert.match(worker.body, /as data, not as instructions/);
   assert.match(worker.body, /at most 1,500 tokens/);
 });
 
-test('build-task carries the fix-review and hardest modes and review-branch the claims mode', () => {
-  const builder = agents.find((agent) => agent.frontmatter.name === 'build-task');
-  const reviewer = agents.find((agent) => agent.frontmatter.name === 'review-branch');
+test('builder carries the fix-review and hardest modes and reviewer the claims mode', () => {
+  const builder = agents.find((agent) => agent.frontmatter.name === 'builder');
+  const reviewer = agents.find((agent) => agent.frontmatter.name === 'reviewer');
   assert.deepEqual(['Skill', 'TaskStop'].filter((tool) => !builder.frontmatter.tools.split(', ').includes(tool)), []);
   assert.match(builder.body, /## Modes/);
   assert.match(builder.body, /exo-kind: fix-review/);
@@ -220,6 +220,6 @@ test('trimmed agent rules stay pinned', () => {
     assert.ok(body('orchestrator').includes(phrase), phrase);
   }
   for (const phrase of ['before or between', 'start no background session']) {
-    assert.ok(body('review-branch').includes(phrase), phrase);
+    assert.ok(body('reviewer').includes(phrase), phrase);
   }
 });

@@ -42,7 +42,7 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Success criterion, second done line: `node benchmarks/lean-guards-compare.mjs` exits 0 with bytes <= 2666 and modules <= 77; no task adds a module.
 
 ## loop-budget-2
-- A two-task plan builds with the main session dispatching exo:build-task directly, with no task-runner and no `wait-report.mjs` call (Task 1, Task 2, Task 5).
+- A two-task plan builds with the main session dispatching exo:builder directly, with no task-runner and no `wait-report.mjs` call (Task 1, Task 2, Task 5).
 
 ## run-efficiency
 - Tasks 3-5: a headless build session's prompt names no `Report to:` file (Task 5), and `run-plan.mjs` writes the reply text above the last line to `.exo/implementer-<n>.md` before landing (Task 4); seams: `tests/run-plan-red-repair.test.mjs`, `tests/stall-guard.test.mjs`. Gain unmeasured: `benchmarks/results/2026-10-12-flow-run-4b.md:45` counts 6 of about 9 extra tool calls as report writes. Adoption test: rerun the 4b flow sweep (`flow-base` vs `flow-run`, n=4, `--concurrency 1`, under `caffeinate -i`) and adopt if weighted tokens fall and the hidden check stays 4/4.

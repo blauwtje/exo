@@ -27,7 +27,7 @@ export function fallbackModel(model, env = process.env) {
 
 export const hasPin = (pin) => pin.model !== undefined || pin.effort !== undefined;
 
-function budgetPin(name, flags, { kind = 'build-task', retry = false } = {}) {
+function budgetPin(name, flags, { kind = 'builder', retry = false } = {}) {
   if (flags.model !== undefined || flags.effort !== undefined) return {};
   if (!listedProvider(name)) return {};
   const budget = settingOrDefault('budget').value;

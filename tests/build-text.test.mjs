@@ -11,12 +11,12 @@ const skillsRoot = path.join(repositoryRoot, 'skills');
 const agents = readAgents();
 
 test('a Design: task with a named direction goes to a design-ui delegate, not the implementer', () => {
-  const implementer = agents.find((agent) => agent.frontmatter.name === 'build-task');
-  assert.ok(implementer, 'agents/build-task.md exists');
+  const implementer = agents.find((agent) => agent.frontmatter.name === 'builder');
+  assert.ok(implementer, 'agents/builder.md exists');
   assert.doesNotMatch(implementer.body, /enter it at its Build phase/);
   assert.doesNotMatch(implementer.frontmatter.description, /opus/);
 
   const designTasksPath = path.join(skillsRoot, 'build', 'references', 'design-tasks.md');
   const designTasks = fs.readFileSync(designTasksPath, 'utf8');
-  assert.doesNotMatch(designTasks, /exo:build-task/);
+  assert.doesNotMatch(designTasks, /exo:builder/);
 });

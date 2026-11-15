@@ -54,7 +54,7 @@ Built by `node skills/spec/scripts/behaviour.mjs` from the acceptance lines of t
 - Success criterion: `npm run check` ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
 
 ## loop-budget-2
-- A two-task plan builds with the main session dispatching exo:build-task directly, with no task-runner and no `wait-report.mjs` call (Task 1, Task 2, Task 5).
+- A two-task plan builds with the main session dispatching exo:builder directly, with no task-runner and no `wait-report.mjs` call (Task 1, Task 2, Task 5).
 
 ## loop-budget
 - look.mjs ends within its kinds-table wall timeout (Task 8).

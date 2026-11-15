@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 const bash = (command, agentType) => ({ tool_name: 'Bash', tool_input: { command }, agent_id: 'a', agent_type: agentType, cwd: process.cwd() });
 
 test('sleep is refused for every subagent', async () => {
-  for (const agent of ['research-worker', 'exo-build', 'general-purpose']) {
+  for (const agent of ['researcher', 'exo-build', 'general-purpose']) {
     const out = await dispatchBash(bash('sleep 30', agent));
     assert.match(JSON.stringify(out), /sleep/i);
   }

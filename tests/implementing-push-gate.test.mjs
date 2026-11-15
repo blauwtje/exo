@@ -23,7 +23,7 @@ test('step 1 settles the workspace before any dispatch and pushes nothing', () =
   const branchStep = loopStep(1);
   assert.ok(branchStep.includes('authorizes commits there.'));
   assert.ok(SKILL.includes('| `references/workspace.md` | Step 1 before first dispatch; No spec step 3. |'), 'the workspace is read before the first dispatch');
-  assert.ok(SKILL.indexOf('start-run.mjs') < SKILL.indexOf('`exo:build-task`'), 'the workspace settles before the unit dispatch');
+  assert.ok(SKILL.indexOf('start-run.mjs') < SKILL.indexOf('`exo:builder`'), 'the workspace settles before the unit dispatch');
   assert.ok(!branchStep.includes('git push'), 'step 1 runs no push');
   assert.ok(!branchStep.includes('release run'), 'no release run bypasses the question');
 });
@@ -38,7 +38,7 @@ test('the workspace question offers a branch, a worktree and the current branch,
 test('a failing command in a report is retried by a fresh agent', () => {
   const direct = fs.readFileSync(new URL('../skills/build/references/run-loop-direct.md', import.meta.url), 'utf8');
   const report = direct.split('\n').find((line) => line.includes('about the report'));
-  assert.ok(!report.includes('SendMessage') && report.includes('fresh `exo:build-task`'), 'a failing command in a report is retried by a fresh agent');
+  assert.ok(!report.includes('SendMessage') && report.includes('fresh `exo:builder`'), 'a failing command in a report is retried by a fresh agent');
 });
 
 test('the tail pushes only through the finish question', () => {

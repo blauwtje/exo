@@ -1,10 +1,10 @@
 ---
-name: build-task
+name: builder
 description: "Dispatched by build only."
 tools: Read, Edit, Write, Bash, Skill, TaskStop
 maxTurns: 60
 ---
-# Build task
+# Builder
 
 Build one plan task and report it.
 
@@ -43,9 +43,9 @@ Build one plan task and report it.
 
 - Leave the folder of `Report to:` alone. Write at most 25 lines plus `Choice:` lines.
 - Done means proof on the real product, else `skipped`.
-- Lay it out as in `agent-cases.md` `## build-task`: `Landed:`, `Test first:`, `Red:`, `Proof:`, `Unresolved:`.
+- Lay it out as in `agent-cases.md` `## builder`: `Landed:`, `Test first:`, `Red:`, `Proof:`, `Unresolved:`.
 
 ## Return
 
 - Write the report, fix each rule your diff breaks, then run `node ${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs --check --plan <plan> --task <n> --root <checkout>` before GREEN, until it prints `Report OK`, without a proof rerun.
-- With `Return: one line`, write the diff and log files and return only the line `agent-cases.md` `## build-task` gives.
+- With `Return: one line`, write the diff and log files and return only the line `agent-cases.md` `## builder` gives.

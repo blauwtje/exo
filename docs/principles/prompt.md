@@ -5,7 +5,7 @@ Checked: 2026-10-28
 Read it when: you write or change a prompt, skill, agent brief or delegation text.
 
 - **Start minimal, then refine against observed failures.** A short prompt shows what the model gets wrong before you add rules. [1] exo: `skills/edit-skills/references/plugging-holes.md`
-- **Say exactly what output you want.** The model infers no unstated format. [2] exo: `agents/research-worker.md`
+- **Say exactly what output you want.** The model infers no unstated format. [2] exo: `agents/researcher.md`
 - **Say what to do, not what to avoid, and give the reason.** A reason covers unlisted cases. [2] exo: gap, `skills/edit-skills/references/instruction-style.md` cuts reasons
 - **Use a few canonical examples, not lists of edge-case rules.** [1] exo: `skills/edit-skills/references/instruction-style.md`
 - **Turn subjective judgments into concrete grading criteria.** [3] exo: `skills/edit-skills/references/blind-eval.md`

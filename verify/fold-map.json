@@ -51,31 +51,31 @@
   },
   "agents": {
     "solve-hard": {
-      "owner": "build-task",
+      "owner": "builder",
       "state": "folded"
     },
     "fix-review": {
-      "owner": "build-task",
+      "owner": "builder",
       "state": "folded"
     },
     "claim-judge": {
-      "owner": "review-branch",
+      "owner": "reviewer",
       "state": "folded"
     },
     "ideate-worker": {
-      "owner": "research-worker",
+      "owner": "researcher",
       "state": "folded"
     },
     "fetch-docs": {
-      "owner": "research-worker",
+      "owner": "researcher",
       "state": "folded"
     },
     "locate-code": {
-      "owner": "research-worker",
+      "owner": "researcher",
       "state": "folded"
     },
     "find-open-points": {
-      "owner": "research-worker",
+      "owner": "researcher",
       "state": "folded"
     }
   }

@@ -89,7 +89,7 @@ function reportCap(promptText) {
 }
 
 function reportCapLines() {
-  const prompt = fs.readFileSync(path.join(SKILL_DIRECTORY, '..', '..', 'agents', 'build-task.md'), 'utf8');
+  const prompt = fs.readFileSync(path.join(SKILL_DIRECTORY, '..', '..', 'agents', 'builder.md'), 'utf8');
   const cap = reportCap(prompt);
   return cap === null ? [] : [`Report cap: ${cap} lines`];
 }

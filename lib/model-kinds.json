@@ -17,11 +17,11 @@
       "models": ["deepseek-flash"],
       "tiers": { "deep": "inherit", "strong": "inherit", "standard": "inherit", "fast": "inherit" },
       "efforts": { "low": "low", "medium": "high", "high": "high", "xhigh": "max", "max": "max" },
-      "kindEfforts": { "build-task": "low", "doc-task": "low", "build": "low", "orchestrator": "low", "judge": "low", "lookup": "low", "chore": "low", "fix-review": "high" }
+      "kindEfforts": { "builder": "low", "doc-task": "low", "build": "low", "orchestrator": "low", "judge": "low", "lookup": "low", "chore": "low", "fix-review": "high" }
     }
   },
   "kinds": {
-    "build-task": {
+    "builder": {
       "on": { "tier": "standard", "effort": "medium" },
       "retry": { "tier": "strong", "effort": "high" }
     },
@@ -79,12 +79,12 @@
       "rebase": "chore", "squash": "chore", "cleanup": "chore"
     }
   },
-  "fetchSized": ["exo:research-worker"],
+  "fetchSized": ["exo:researcher"],
   "agents": {
-    "agents/build-task.md": { "kind": "build-task", "labels": ["fix-review", "hardest", "build-repair"] },
+    "agents/builder.md": { "kind": "builder", "labels": ["fix-review", "hardest", "build-repair"] },
     "agents/orchestrator.md": { "kind": "orchestrator" },
-    "agents/research-worker.md": { "kind": "research", "labels": ["hardest", "review"] },
-    "agents/review-branch.md": { "kind": "judge" }
+    "agents/researcher.md": { "kind": "research", "labels": ["hardest", "review"] },
+    "agents/reviewer.md": { "kind": "judge" }
   },
   "skills": {
     "skills/gate/SKILL.md": "orchestrator",

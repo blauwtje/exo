@@ -176,13 +176,13 @@ test('hookAgentType reads agent_type first, else the meta file beside the subage
   const transcript_path = path.join(dir, 'session.jsonl');
   const subagents = path.join(dir, 'session', 'subagents');
   fs.mkdirSync(subagents, { recursive: true });
-  fs.writeFileSync(path.join(subagents, 'agent-a1.meta.json'), JSON.stringify({ agentType: 'exo:build-task' }));
+  fs.writeFileSync(path.join(subagents, 'agent-a1.meta.json'), JSON.stringify({ agentType: 'exo:builder' }));
   fs.writeFileSync(path.join(subagents, 'agent-a2.meta.json'), '{broken');
   fs.writeFileSync(path.join(subagents, 'agent-a3.meta.json'), JSON.stringify({ agentType: '' }));
-  assert.equal(hookAgentType({ agent_id: 'a1', agent_type: 'exo:review-branch', transcript_path }), 'review-branch');
-  assert.equal(hookAgentType({ agent_id: 'a1', agent_type: 'build-task', transcript_path }), 'build-task');
-  assert.equal(hookAgentType({ agent_id: 'a1', transcript_path }), 'build-task');
-  assert.equal(hookAgentType({ agent_id: 'a1', agent_transcript_path: path.join(subagents, 'agent-a1.jsonl') }), 'build-task');
+  assert.equal(hookAgentType({ agent_id: 'a1', agent_type: 'exo:reviewer', transcript_path }), 'reviewer');
+  assert.equal(hookAgentType({ agent_id: 'a1', agent_type: 'builder', transcript_path }), 'builder');
+  assert.equal(hookAgentType({ agent_id: 'a1', transcript_path }), 'builder');
+  assert.equal(hookAgentType({ agent_id: 'a1', agent_transcript_path: path.join(subagents, 'agent-a1.jsonl') }), 'builder');
   assert.equal(hookAgentType({ agent_id: 'a2', transcript_path }), null);
   assert.equal(hookAgentType({ agent_id: 'a3', transcript_path }), null);
   assert.equal(hookAgentType({ agent_id: 'missing', transcript_path }), null);
@@ -245,7 +245,7 @@ function roomCaller(tokens, extra = {}) {
   const dir = tempDir('exo-room-');
   const transcript = path.join(dir, 'agent.jsonl');
   fs.writeFileSync(transcript, `${JSON.stringify({ type: 'assistant', message: { usage: { input_tokens: tokens } } })}\n`);
-  return { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:research-worker', permission_mode: 'bypassPermissions', agent_transcript_path: transcript, ...extra };
+  return { tool_name: 'Read', agent_id: 'a1', agent_type: 'exo:researcher', permission_mode: 'bypassPermissions', agent_transcript_path: transcript, ...extra };
 }
 
 test('readCapDecision runs a Read with the largest limit that fits the room left instead of denying it', () => {
@@ -311,7 +311,7 @@ test('past the hard limit the hook repeats the hand-over note and skips the chec
   const input = (tool_name, tool_input = {}) => ({ session_id: `hard-hook-${process.pid}`, agent_id: 'ha', agent_type: 'exo:orchestrator', agent_transcript_path: file, tool_name, tool_input });
   for (const tool of ['Agent', 'SendMessage', 'Monitor']) {
     for (let i = 0; i < 2; i += 1) {
-      const output = agentHook(input(tool, { subagent_type: 'exo:build-task', prompt: 'x' }), 'off', () => false);
+      const output = agentHook(input(tool, { subagent_type: 'exo:builder', prompt: 'x' }), 'off', () => false);
       assert.match(output?.hookSpecificOutput?.additionalContext ?? '', /hand over now/, tool);
       assert.notEqual(output.hookSpecificOutput.permissionDecision, 'deny', tool);
     }
@@ -321,7 +321,7 @@ test('past the hard limit the hook repeats the hand-over note and skips the chec
 });
 
 test('an agent that is not a coordinator is still refused Agent over the target', () => {
-  for (const type of ['exo:build-task', 'general-purpose', undefined]) {
+  for (const type of ['exo:builder', 'general-purpose', undefined]) {
     const call = agentCaller(TARGET + 1000, type);
     assert.match(call('Agent').deny, /new reads, skills and agents/, String(type));
   }
@@ -350,7 +350,7 @@ test('a subagent refusal names the Result path of its brief, or the reply', () =
 });
 
 test('context target warns: intake past the target runs with the rule in its context', () => {
-  const call = agentCaller(TARGET + 1000, 'exo:build-task');
+  const call = agentCaller(TARGET + 1000, 'exo:builder');
   for (const tool of ['Read', 'Grep', 'Agent']) {
     const decision = call(tool);
     assert.equal(guardKind(decision.rule), 'warn', tool);

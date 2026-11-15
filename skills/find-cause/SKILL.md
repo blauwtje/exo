@@ -9,8 +9,8 @@ effort: medium
 ---
 # Find cause
 
-a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Worked before and one command reproduces it: follow `investigator-prompt.md`, then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"` (no symbol: `exo:research-worker`, `Sources: repo`).
-b. **Investigate.** Proven needs a causal line plus a mechanism predicting it or holding in source: write `Status: proven`. Else dispatch `exo:build-task` with `exo-kind: hardest` from `investigator-prompt.md`.
+a. **Locate.** Until the cause is proven this skill outranks `spec` and `build`; a read-only planning turn writes the plan per `../spec/references/task-list.md`, reproduction test as Task 1. Worked before and one command reproduces it: follow `investigator-prompt.md`, then run `node "${CLAUDE_SKILL_DIR}/../../lib/scratch-exclude.mjs"` (no symbol: `exo:researcher`, `Sources: repo`).
+b. **Investigate.** Proven needs a causal line plus a mechanism predicting it or holding in source: write `Status: proven`. Else dispatch `exo:builder` with `exo-kind: hardest` from `investigator-prompt.md`.
 c. **Fix.** Settle where it commits per `../build/references/workspace.md`, else copy the handoff to `.exo/debug/`. Change only what the request names.
    - Last round only, after failures: 2 parallel fixer candidates, keep the passing one.
    - Dispatch `general-purpose` from `fixer-prompt.md`, the prompt opening with `exo-kind: build` and a `Reads:` line, resume `failed` via SendMessage, else a fresh agent with the prior result.

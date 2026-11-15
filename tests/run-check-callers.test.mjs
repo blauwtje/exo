@@ -13,7 +13,7 @@ test('every check caller runs its command through runCheck', () => {
   }
 });
 
-test('the build-task and fixer prompts name the run-check command line', () => {
+test('the builder and fixer prompts name the run-check command line', () => {
   assert.match(read('skills/build/scripts/run-prompts.mjs'), /node \$\{RUN_CHECK\}/);
   assert.match(read('skills/build/review-fixer-prompt.md'), /lib\/run-check\.mjs/);
 });

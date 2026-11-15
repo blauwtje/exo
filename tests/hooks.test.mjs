@@ -336,7 +336,7 @@ test('the sleep step notes sleep in command position for every subagent', async 
   assert.equal(run('exo:orchestrator', 'sleep 2').hookSpecificOutput.permissionDecision, undefined);
   assert.equal(run('exo:task-runner', 'grep sleep file.txt'), null);
   assert.equal(run('exo:task-runner', 'node sleep.test.mjs'), null);
-  assert.equal(run('exo:build-task', 'sleep 5').hookSpecificOutput.permissionDecision, undefined);
+  assert.equal(run('exo:builder', 'sleep 5').hookSpecificOutput.permissionDecision, undefined);
 });
 
 test('the sleep step notes a background sleep polling loop for the lead too', async () => {

@@ -15,8 +15,8 @@ test('a ../../ link from a skill file is rewritten to the exo root', () => {
 });
 
 test('a {{SKILL_DIR}}/../../ link is rewritten to the exo root', () => {
-  const out = codexBody('skills/build/references/task-mode.md', 'See ${CLAUDE_SKILL_DIR}/../../agents/build-task.md.', KNOWN);
-  assert.equal(out, 'See {{EXO_ROOT}}/agents/build-task.md.');
+  const out = codexBody('skills/build/references/task-mode.md', 'See ${CLAUDE_SKILL_DIR}/../../agents/builder.md.', KNOWN);
+  assert.equal(out, 'See {{EXO_ROOT}}/agents/builder.md.');
 });
 
 test('a link inside the skill folder stays', () => {

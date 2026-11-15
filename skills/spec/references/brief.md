@@ -41,7 +41,7 @@ Each line says what to do, then what the user should see, in plain words in the 
 
 ## Open points step
 
-Dispatch `exo:research-worker` (`Sources: repo`) on the brief, in the background.
+Dispatch `exo:researcher` (`Sources: repo`) on the brief, in the background.
 
 - It flags contradicting statements in the spec, brief and plan.
 - Skip it for a plan of at most 3 tasks whose Proofs are all static (no `App:`, no test run).

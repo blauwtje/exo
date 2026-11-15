@@ -17,7 +17,7 @@
     "type": "string",
     "options": ["off", "on"],
     "default": "on",
-    "description": "off: no exo dispatch sets a model or effort, so every agent inherits the session. on: a hook sets each dispatch's model and effort from the kind table in lib/model-kinds.json and steps a build-task or doc-task up one level on its retry. The old names fast, balanced, quality, low, lean, medium, normal, high and full still read as on",
+    "description": "off: no exo dispatch sets a model or effort, so every agent inherits the session. on: a hook sets each dispatch's model and effort from the kind table in lib/model-kinds.json and steps a builder or doc-task up one level on its retry. The old names fast, balanced, quality, low, lean, medium, normal, high and full still read as on",
     "aliases": { "fast": "on", "balanced": "on", "quality": "on", "low": "on", "lean": "on", "medium": "on", "normal": "on", "high": "on", "full": "on" },
     "label": "Effort",
     "about": "how much care and cost each task gets",

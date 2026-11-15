@@ -8,7 +8,7 @@ import { isMain } from '../lib/script-flags.mjs';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const SCOPE = ['skills', 'agents', 'hooks', 'lib', 'verify', 'harnesses', 'output-styles'];
 const SKILLS = ['build', 'configure', 'edit-skills', 'find-cause', 'gate', 'save-session', 'ship', 'spec', 'watch', 'write-docs'];
-const AGENTS = ['build-task', 'orchestrator', 'research-worker', 'review-branch'];
+const AGENTS = ['builder', 'orchestrator', 'researcher', 'reviewer'];
 
 export const BASELINE = [
   ...SKILLS.map((name) => `skills/${name}/SKILL.md`),

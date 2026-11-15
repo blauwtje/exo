@@ -8,7 +8,7 @@ async function decide(command, extra = {}) {
   return (await dispatchBash(input, undefined, () => false))?.hookSpecificOutput;
 }
 
-const subagent = { agent_id: 'agent-1', agent_type: 'exo:build-task' };
+const subagent = { agent_id: 'agent-1', agent_type: 'exo:builder' };
 
 test('every subagent is noted on sleep and told to run it in the background and end the turn', async () => {
   const output = await decide('sleep 30', subagent);

@@ -42,13 +42,13 @@ test('a job word naming an unknown kind is rejected', () => {
 });
 
 test('an agents entry whose labels is a string is rejected', () => {
-  const file = tableWith((table) => { table.agents['agents/build-task.md'].labels = 'hardest'; });
-  assert.throws(() => readKindTable(file), /agents\/build-task\.md: labels must be an array of kind names/);
+  const file = tableWith((table) => { table.agents['agents/builder.md'].labels = 'hardest'; });
+  assert.throws(() => readKindTable(file), /agents\/builder\.md: labels must be an array of kind names/);
 });
 
 test('an agents entry whose labels names an unknown kind is rejected', () => {
-  const file = tableWith((table) => { table.agents['agents/build-task.md'].labels = ['no-such-kind']; });
-  assert.throws(() => readKindTable(file), /agents\/build-task\.md: unknown kind no-such-kind/);
+  const file = tableWith((table) => { table.agents['agents/builder.md'].labels = ['no-such-kind']; });
+  assert.throws(() => readKindTable(file), /agents\/builder\.md: unknown kind no-such-kind/);
 });
 
 test('labels on an entry outside agents is rejected', () => {
@@ -58,14 +58,14 @@ test('labels on an entry outside agents is rejected', () => {
 
 test('the deepseek column takes the kindEfforts effort on the on column and the mapped effort elsewhere', () => {
   const { kinds } = readKindTable(undefined, { provider: 'deepseek' });
-  for (const name of ['build-task', 'doc-task', 'build', 'orchestrator', 'chore']) assert.equal(kinds[name].effort, 'low', name);
+  for (const name of ['builder', 'doc-task', 'build', 'orchestrator', 'chore']) assert.equal(kinds[name].effort, 'low', name);
   for (const name of ['review', 'hardest', 'fix-review']) assert.equal(kinds[name].effort, 'high', name);
   for (const kind of Object.values(kinds)) assert.equal(kind.model, INHERIT, kind.model);
 });
 
 test('kindEfforts leaves the retry column at the provider mapping', () => {
   const { kinds } = readKindTable(undefined, { provider: 'deepseek', retry: true });
-  assert.equal(kinds['build-task'].effort, 'high');
+  assert.equal(kinds['builder'].effort, 'high');
 });
 
 test('a provider kindEfforts naming an unknown kind is rejected', () => {
@@ -120,21 +120,21 @@ test('kinds.orchestrator.on.effort is medium', () => {
   const { kinds } = readKindTable();
   assert.equal(kinds.orchestrator.effort, 'medium');
   assert.equal(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds.orchestrator.model, 'opus');
-  assert.equal(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds['build-task'].effort, 'medium');
+  assert.equal(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds['builder'].effort, 'medium');
 });
 
 test('the judge kind runs on the standard tier at low effort and the research agents map to their kinds', () => {
   const { kinds, agents } = readKindTable();
   assert.equal(kinds.judge.effort, 'low');
   assert.equal(readKindTable(TABLE_PATH, { provider: 'claude' }).kinds.judge.model, 'sonnet');
-  assert.equal(agents['agents/review-branch.md'].kind, 'judge');
-  assert.deepEqual(agents['agents/build-task.md'].labels, ['fix-review', 'hardest', 'build-repair']);
-  assert.equal(agents['agents/research-worker.md'].kind, 'research');
+  assert.equal(agents['agents/reviewer.md'].kind, 'judge');
+  assert.deepEqual(agents['agents/builder.md'].labels, ['fix-review', 'hardest', 'build-repair']);
+  assert.equal(agents['agents/researcher.md'].kind, 'research');
   assert.equal(readKindTable().unnamed.jobs.judge, 'review');
 });
 
-test('a research-worker brief opening hardest or review gets that kind and any other brief keeps research', () => {
-  const kindOf = (prompt) => resolvedKind({ subagent_type: 'exo:research-worker', prompt }, 'on').kind;
+test('a researcher brief opening hardest or review gets that kind and any other brief keeps research', () => {
+  const kindOf = (prompt) => resolvedKind({ subagent_type: 'exo:researcher', prompt }, 'on').kind;
   const { kinds } = readKindTable(TABLE_PATH, { provider: 'claude' });
   assert.deepEqual(kindOf('exo-kind: hardest\nWhy?'), kinds.hardest);
   assert.deepEqual(kindOf('exo-kind: review\nCheck'), kinds.review);
@@ -159,20 +159,20 @@ const researchCall = (subagent_type, prompt) => ({ tool_name: 'Agent', session_i
 const piped = 'Sources: web\nRun gh api repos/o/r/readme | head -c 4000 and answer.';
 
 test('research worker brief that cuts a page with head -c warns', () => {
-  const fields = researchFields(researchCall('exo:research-worker', piped));
+  const fields = researchFields(researchCall('exo:researcher', piped));
   assert.equal(fields.permissionDecision, undefined);
   assert.match(fields.additionalContext, /fetch\.mjs/);
 });
 
 test('head --bytes and cut -c warn too', () => {
   for (const cutter of ['head --bytes 900', 'cut -c1-500']) {
-    const fields = researchFields(researchCall('exo:research-worker', `Sources: web\ngh api x | ${cutter}`));
+    const fields = researchFields(researchCall('exo:researcher', `Sources: web\ngh api x | ${cutter}`));
     assert.match(fields?.additionalContext, /fetch\.mjs/, cutter);
   }
 });
 
 test('the same brief without the pipe is allowed', () => {
-  assert.equal(researchFields(researchCall('exo:research-worker', 'Sources: repo\nRead the readme of o/r.')), null);
+  assert.equal(researchFields(researchCall('exo:researcher', 'Sources: repo\nRead the readme of o/r.')), null);
 });
 
 test('a general-purpose build brief with head -c is allowed', () => {

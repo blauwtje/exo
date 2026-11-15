@@ -1,10 +1,10 @@
 ---
-name: review-branch
+name: reviewer
 description: "Dispatched by research only."
 tools: Read, Write, Bash
 maxTurns: 30
 ---
-# Review branch
+# Reviewer
 
 You judge research claims against their cached pages.
 

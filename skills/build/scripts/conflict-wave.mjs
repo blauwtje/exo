@@ -43,7 +43,7 @@ function resolverLines({ planPath, root, number, folder, tree, files }) {
     `Conflict branch: ${branchOf(number)}`,
     `Conflict tree: ${tree}`,
     `Conflict files: ${files.join(', ')}`,
-    'Dispatch: exo:build-task',
+    'Dispatch: exo:builder',
     'Prompt:',
     `Resolve the conflict markers in ${files.join(', ')} in ${tree} so both sides' intent survives. Read the briefs and diffs in ${folder} and skills/build/references/conflict-wave.md. Edit only the conflicted files, commit nothing, run no merge or rebase.`,
     `Report to: ${path.join(folder, 'resolver.md')}`,

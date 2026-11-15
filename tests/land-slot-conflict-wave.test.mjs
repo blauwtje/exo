@@ -37,7 +37,7 @@ test('with the resolver on a conflicted land keeps the pick on exo-conflict-1 wi
   assert.match(land.stdout, /^CONFLICT 1\b/);
   assert.match(land.stdout, /^Conflict branch: exo-conflict-1$/m);
   assert.match(land.stdout, /^Conflict files: src\/app\.js$/m);
-  assert.match(land.stdout, /^Dispatch: exo:build-task$/m);
+  assert.match(land.stdout, /^Dispatch: exo:builder$/m);
   assert.match(land.stdout, /^Then: node .*conflict-wave\.mjs/m);
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
   assert.equal(git(root, 'status', '--porcelain'), '');

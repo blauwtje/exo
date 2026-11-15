@@ -88,9 +88,9 @@ The agents run behind the skills; you do not call them.
 | Agent | What it does |
 |---|---|
 | `orchestrator` | Runs a multi-part task with up to 4 workers. |
-| `build-task` | Builds one plan task, folding the hard-problem and review-fix work. |
-| `review-branch` | Judges research claims against their cached pages. |
-| `research-worker` | Answers one bounded question from named sources, folding the docs fetch, idea and open-point work. |
+| `builder` | Builds one plan task, folding the hard-problem and review-fix work. |
+| `reviewer` | Judges research claims against their cached pages. |
+| `researcher` | Answers one bounded question from named sources, folding the docs fetch, idea and open-point work. |
 
 [docs/skills/](docs/skills/) has a page for every skill. [docs/settings.md](docs/settings.md) covers the settings, including shorter replies and the status line.
 

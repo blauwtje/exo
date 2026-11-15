@@ -1,6 +1,6 @@
 # Review fixer prompt
 
-The prompt `gate` hands the `exo:build-task` agent with `exo-kind: fix-review` on its findings; `ship` does the same. The dispatch line carries this file's path and the fill values, never the prompt text.
+The prompt `gate` hands the `exo:builder` agent with `exo-kind: fix-review` on its findings; `ship` does the same. The dispatch line carries this file's path and the fill values, never the prompt text.
 
 ```text
 Review fix for <plan path>, repository <root>, base <base>.

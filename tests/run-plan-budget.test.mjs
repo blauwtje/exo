@@ -34,11 +34,11 @@ const modelAndEffort = ({ model, effort }) => ({ model, effort });
 
 test('the budget pins read the on cell, and the retry cell on a retry', () => {
   const chosen = pinsWith('on', { provider: 'claude' });
-  assert.deepEqual(modelAndEffort(chosen), cell('build-task', false));
+  assert.deepEqual(modelAndEffort(chosen), cell('builder', false));
   assert.deepEqual(chosen.docPin, cell('doc-task', false));
-  assert.deepEqual(chosen.retryPin, cell('build-task', true));
+  assert.deepEqual(chosen.retryPin, cell('builder', true));
   assert.deepEqual(chosen.docRetryPin, cell('doc-task', true));
-  for (const kind of ['build-task', 'doc-task']) assert.notDeepEqual(cell(kind, true), cell(kind, false));
+  for (const kind of ['builder', 'doc-task']) assert.notDeepEqual(cell(kind, true), cell(kind, false));
 });
 
 test('budget off and an explicit flag pin nothing on a retry', () => {

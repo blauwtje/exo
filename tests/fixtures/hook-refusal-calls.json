@@ -245,7 +245,7 @@
   "input": {
    "tool_name": "Agent",
    "tool_input": {
-    "subagent_type": "exo:research-worker",
+    "subagent_type": "exo:researcher",
     "description": "x",
     "prompt": "Sources: repo\nReads: none\nResult: a path"
    }

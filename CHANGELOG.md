@@ -57,6 +57,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 - Past the 75k hard context limit a helper is no longer refused: every checked call gets a hand-over note naming `checkpoint.mjs` and `Status: handover`.
+- Renamed the agents to `builder`, `researcher` and `reviewer`.
 - `dispatch-bash` keeps three steps (sleep/poll deny, shared-state git deny for subagents, commit attribution); the script-size, result-cap, bash-cap, shell-fix, shell-stop, suite-unchanged, predispatch, reddit-route and context-note steps and the `watch` refusal are gone.
 - `context-limit` runs only on `Read` and `Skill` and loses its reddit-route, predispatch and search-cap decisions.
 - `agent-effort` injects no dispatch rules and drops the kind-mismatch denial and the slice counter.

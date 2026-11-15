@@ -9,7 +9,7 @@ test('the build skill holds no context or agent line', () => {
   assert.doesNotMatch(skill, /^(context|agent):/m);
 });
 
-test('step 5 of the build skill dispatches build-task from the lead', () => {
+test('step 5 of the build skill dispatches builder from the lead', () => {
   const skill = fs.readFileSync(`${ROOT}skills/build/SKILL.md`, 'utf8');
-  assert.ok(skill.includes('exo:build-task') && !skill.includes('task-runner'));
+  assert.ok(skill.includes('exo:builder') && !skill.includes('task-runner'));
 });

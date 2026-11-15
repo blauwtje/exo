@@ -12,7 +12,7 @@ const denial = () => agentHook({
   tool_name: 'Agent',
   agent_type: 'exo:orchestrator',
   cwd,
-  tool_input: { subagent_type: 'exo:research-worker', description: 'work', prompt }
+  tool_input: { subagent_type: 'exo:researcher', description: 'work', prompt }
 }, 'on', () => false)?.hookSpecificOutput?.additionalContext ?? '';
 
 test('a size note for Fetches: 5 on reddit keeps the asked total and names a split that fits', () => {

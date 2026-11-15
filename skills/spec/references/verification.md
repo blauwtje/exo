@@ -20,7 +20,7 @@ It refuses a quote not on the fetched page after whitespace and case folding. A 
 
 ## claim-judge
 
-After verify.mjs is clean, dispatch the `exo:review-branch` agent with `exo-kind: judge`, the run folder and the claim ids. It labels each claim `supported`, `unsupported` or `contradicted` against the cached page.
+After verify.mjs is clean, dispatch the `exo:reviewer` agent with `exo-kind: judge`, the run folder and the claim ids. It labels each claim `supported`, `unsupported` or `contradicted` against the cached page.
 
 - Repair only the failing sentences, one round: reword to what the quote supports, or remove the sentence.
 - Rerun `verify.mjs` after the repair. A claim still failing stays in the report labelled as it is, and is named in the gaps.

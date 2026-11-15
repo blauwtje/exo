@@ -41,14 +41,14 @@ test('a skill that is not exo, and tools that are not skills, give no line', () 
 });
 
 test('an exo agent dispatch shows its name with the model and effort it will run with', () => {
-  const output = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker', prompt: 'x' } }, 'on', ON);
-  assert.match(output.systemMessage, /^exo › research-worker \(\w+, \w+\)$/);
-  assert.equal(output.hookSpecificOutput.updatedInput.subagent_type, 'exo:research-worker');
+  const output = agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:researcher', prompt: 'x' } }, 'on', ON);
+  assert.match(output.systemMessage, /^exo › researcher \(\w+, \w+\)$/);
+  assert.equal(output.hookSpecificOutput.updatedInput.subagent_type, 'exo:researcher');
 });
 
 test('an exo agent with a model and effort already set shows those', () => {
-  const input = { subagent_type: 'exo:build-task', model: 'opus', effort: 'high' };
-  assert.equal(agentHook({ tool_name: 'Agent', tool_input: input }, 'off', ON).systemMessage, 'exo › build-task (opus, high)');
+  const input = { subagent_type: 'exo:builder', model: 'opus', effort: 'high' };
+  assert.equal(agentHook({ tool_name: 'Agent', tool_input: input }, 'off', ON).systemMessage, 'exo › builder (opus, high)');
 });
 
 test('an agent that is not an exo agent gives no line', () => {
@@ -83,7 +83,7 @@ test('a refusal line is one line even when the reason spans several', async () =
 
 test('the receipt leaves the model context byte for byte as it was', async () => {
   const cases = [
-    [() => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', ON), () => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', OFF)]
+    [() => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:researcher' } }, 'on', ON), () => agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:researcher' } }, 'on', OFF)]
   ];
   for (const [on, off] of cases) {
     const shown = on();
@@ -99,7 +99,7 @@ test('the receipt leaves the model context byte for byte as it was', async () =>
 
 test('receipts off gives no systemMessage anywhere', async () => {
   assert.equal(contextHook(skill('exo:spec'), OFF), null);
-  assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:research-worker' } }, 'on', OFF).systemMessage, undefined);
+  assert.equal(agentHook({ tool_name: 'Agent', tool_input: { subagent_type: 'exo:researcher' } }, 'on', OFF).systemMessage, undefined);
   assert.equal((await dispatchBash(stashed(), undefined, OFF)).systemMessage, undefined);
 });
 
@@ -113,7 +113,7 @@ test('the hook script prints the line on stdout with receipts at their default',
   const env = { ...process.env, CLAUDE_CONFIG_DIR: config, CLAUDE_PROJECT_DIR: project, CLAUDE_PLUGIN_ROOT: REPOSITORY };
   const run = (script, input) => execFileSync(process.execPath, [path.join(REPOSITORY, 'hooks', script)], { env, input: JSON.stringify(input), timeout: 20_000 }).toString();
   assert.deepEqual(JSON.parse(run('context-limit.mjs', skill('exo:build'))), { systemMessage: 'exo › build' });
-  assert.match(JSON.parse(run('agent-effort.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'exo:review-branch' } })).systemMessage, /^exo › review-branch/);
+  assert.match(JSON.parse(run('agent-effort.mjs', { tool_name: 'Agent', tool_input: { subagent_type: 'exo:reviewer' } })).systemMessage, /^exo › reviewer/);
   assert.match(JSON.parse(run('dispatch-bash.mjs', stashed())).systemMessage, /^exo blocked: /);
   fs.mkdirSync(path.join(project, '.claude'));
   fs.writeFileSync(path.join(project, '.claude', 'exo.local.json'), '{"receipts":"off"}');
