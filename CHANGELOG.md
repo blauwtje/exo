@@ -7,6 +7,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+## 1.1.0 - 2026-11-16
+
 ### Added
 
 - `learn` turns a mistake you correct twice, or a "remember this", into a lint rule, check or test that fails when the mistake returns, else one CLAUDE.md line. You pick from a short list of mined corrections; the rest are rejected, and notes use Claude Code's auto-memory shape.
