@@ -25,7 +25,7 @@ const LOCK_RETRY_MS = 50;
 const LOCK_WAIT_MS = environmentMs('EXO_LEARN_LOCK_MS', 2000);
 const FOLDER_MODE = 0o700;
 const FILE_MODE = 0o600;
-const USAGE = 'usage: node corrections.mjs hook | backfill [--cwd <dir>] | replay [--cwd <dir>] | candidates [--cwd <dir>] | keep <id...> [--cwd <dir>] | reject <id...> [--cwd <dir>] | recount [--cwd <dir>]';
+const USAGE = 'usage: node corrections.mjs hook | session-start | backfill [--cwd <dir>] | replay [--cwd <dir>] | candidates [--cwd <dir>] | keep <id...> [--cwd <dir>] | reject <id...> [--cwd <dir>] | recount [--cwd <dir>]';
 const FLAGS = { cwd: 'string', help: 'boolean' };
 
 const FIFTHS = 5;
@@ -351,17 +351,18 @@ function recount(cwd) {
   waitLocked(cwd, () => writePrivate(countFile(cwd), JSON.stringify({ ...readCount(cwd), count })));
 }
 
-function react(ledger, counts, { session, prompt, date }, textOf) {
+function announcement(counts) {
+  if (counts.count === 0 || counts.count === counts.printed) return { counts, line: '' };
+  return { counts: { ...counts, printed: counts.count }, line: `Exo found ${counts.count} new memories. Review them with /exo:learn.` };
+}
+
+function react(ledger, { session, prompt, date }, textOf) {
   const text = prompt.trim();
   const recorded = recordable(text) ? [entryOf({ date, session, text })] : [];
   const first = !ledger.seen.some(({ seen }) => seen === session) && !ledger.entries.some((entry) => entry.session === session);
   const rows = first ? [{ seen: session }, ...recorded] : recorded;
-  const quiet = { rows, first, counts, line: '', flag: null, flaggable: false };
-  if (first) {
-    if (counts.count === 0 || counts.count === counts.printed) return quiet;
-    return { ...quiet, counts: { ...counts, printed: counts.count }, line: `Exo found ${counts.count} new memories. Review them with /exo:learn.\n` };
-  }
-  if (recorded.length === 0) return quiet;
+  const quiet = { rows, first, line: '', flag: null, flaggable: false };
+  if (first || recorded.length === 0) return quiet;
   const entries = indexed([...ledger.entries, ...recorded]);
   const current = entries.at(-1);
   const counted = countedWords(entries);
@@ -403,13 +404,11 @@ function recordPrompt(cwd, session, prompt, date) {
     if (create(cwd, session, prompt, date)) return { line: '', detached: 'backfill' };
     ledger = loadOrReset(cwd);
   }
-  const counts = readCount(cwd);
   const textOf = (entry) => transcriptTexts(cwd, new Set([entry.session])).get(entry.id);
-  const result = react(ledger, counts, { session, prompt, date }, textOf);
+  const result = react(ledger, { session, prompt, date }, textOf);
   appendCache(cwd, result.rows);
   compact(cwd);
-  if (result.counts !== counts) writePrivate(countFile(cwd), JSON.stringify(result.counts));
-  return { line: result.line, detached: result.first ? 'recount' : null };
+  return { line: result.line, detached: null };
 }
 
 function hook({ session_id: session, prompt, cwd }) {
@@ -417,12 +416,19 @@ function hook({ session_id: session, prompt, cwd }) {
   const outcome = waitLocked(cwd, () => recordPrompt(cwd, session, prompt, date), LOCK_WAIT_MS);
   if (outcome === BUSY) return;
   if (outcome.detached !== null) startDetached(outcome.detached, cwd);
-  if (outcome.detached !== 'recount' || outcome.line === '') {
-    process.stdout.write(outcome.line);
-    return;
-  }
-  const message = outcome.line.trimEnd();
-  process.stdout.write(JSON.stringify({ systemMessage: message, hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: message } }));
+  process.stdout.write(outcome.line);
+}
+
+function announce(cwd) {
+  const line = waitLocked(cwd, () => {
+    const announced = announcement(readCount(cwd));
+    if (announced.line !== '') writePrivate(countFile(cwd), JSON.stringify(announced.counts));
+    return announced.line;
+  }, LOCK_WAIT_MS);
+  if (line === BUSY) return;
+  startDetached('recount', cwd);
+  if (line === '') return;
+  process.stdout.write(JSON.stringify({ systemMessage: line, hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: line } }));
 }
 
 function backfill(cwd) {
@@ -483,12 +489,13 @@ function replay(cwd) {
   for (const { session, prompt, timestamp, fifth } of prompts) {
     const date = timestamp.slice(0, 10);
     texts.set(idOf(session, cutText(prompt)), cutText(prompt));
-    const result = react(ledger, counts, { session, prompt, date }, (entry) => texts.get(entry.id));
+    const result = react(ledger, { session, prompt, date }, (entry) => texts.get(entry.id));
+    const announced = result.first ? announcement(counts) : { counts, line: '' };
     ledger = compacted(merged(ledger, result.rows));
-    counts = result.first ? { ...result.counts, count: clusters(ledger).length } : result.counts;
+    counts = result.first ? { ...announced.counts, count: clusters(ledger).length } : counts;
     if (result.flaggable) flaggable[fifth - 1] += 1;
     const target = result.flag ? flagChars : announceChars;
-    target.set(session, (target.get(session) ?? 0) + result.line.length);
+    target.set(session, (target.get(session) ?? 0) + result.line.length + announced.line.length);
     if (result.flag) flags.push({ date, fifth, session, flag: result.flag });
   }
   const sessions = new Set(prompts.map(({ session }) => session)).size;
@@ -554,6 +561,14 @@ async function main() {
       hook(JSON.parse(await readInput()));
     } catch (error) {
       console.error(`exo learn hook: ${error.message}`);
+    }
+    return;
+  }
+  if (command === 'session-start') {
+    try {
+      await readInput().then((input) => announce(JSON.parse(input).cwd));
+    } catch (error) {
+      console.error(`exo learn session-start: ${error.message}`);
     }
     return;
   }

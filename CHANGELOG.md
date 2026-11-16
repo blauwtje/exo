@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `learn` shows its new-memories line under the Claude Code banner when a session starts, resumes or clears, before you type, instead of on the first prompt.
+
 ## 1.1.0 - 2026-11-16
 
 ### Added

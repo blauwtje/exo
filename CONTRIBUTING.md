@@ -67,7 +67,7 @@ A new setting is one `userConfig` entry in `.claude-plugin/plugin.json`.
 
 ## Hook
 
-- exo ships one `UserPromptSubmit` hook, `hooks/hooks.json`, which runs `skills/learn/scripts/corrections.mjs hook` on each prompt: it records each typed prompt in a per-project ledger by word overlap, with no phrase list of any language, and prints one `exo:` line, once per cluster, when a prompt repeats one from an earlier session; the model judges whether it is a correction or wish. `corrections.mjs candidates` ranks clusters by sessions and the model lists at most 5; `keep` and `reject` record the user's answer by candidate id. Lesson notes take Claude Code's auto-memory shape (frontmatter name, description, type; rule; Why; How to apply). It calls no model and no network.
+- exo ships a `SessionStart` and a `UserPromptSubmit` hook in `hooks/hooks.json`. `corrections.mjs session-start` prints the `Exo found <n> new memories` line under the banner once per count and starts a recount; `corrections.mjs hook` runs on each prompt: it records each typed prompt in a per-project ledger by word overlap, with no phrase list of any language, and prints one `exo:` line, once per cluster, when a prompt repeats one from an earlier session; the model judges whether it is a correction or wish. `corrections.mjs candidates` ranks clusters by sessions and the model lists at most 5; `keep` and `reject` record the user's answer by candidate id. Lesson notes take Claude Code's auto-memory shape (frontmatter name, description, type; rule; Why; How to apply). It calls no model and no network.
 
 ## Verifying in one round
 

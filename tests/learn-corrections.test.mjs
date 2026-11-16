@@ -115,13 +115,21 @@ test('a word used in most entries does not count', () => {
   assert.equal(hook(env, 'now', 'please also kindly zqnewx zqnewy'), '');
 });
 
-test('the first-prompt candidates line comes from the count file and shows once per count', () => {
+function sessionStart(env, session) {
+  const result = run(env, ['session-start'], JSON.stringify({ session_id: session, cwd: env.project, hook_event_name: 'SessionStart', source: 'startup' }));
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout;
+}
+
+test('the session-start candidates line comes from the count file, shows once per count and never on a prompt', () => {
   const env = fixture();
   writeLedger(env, [...fillers(60), EARLIER]);
   fs.writeFileSync(`${env.ledger}.count`, JSON.stringify({ count: 2, printed: 0 }));
   const line = 'Exo found 2 new memories. Review them with /exo:learn.';
-  assert.deepEqual(JSON.parse(hook(env, 'now', 'hello')), { systemMessage: line, hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: line } });
-  assert.equal(hook(env, 'now', 'something unrelated entirely'), '');
+  assert.deepEqual(JSON.parse(sessionStart(env, 'now')), { systemMessage: line, hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: line } });
+  assert.equal(sessionStart(env, 'next'), '');
+  fs.writeFileSync(`${env.ledger}.count`, JSON.stringify({ count: 3, printed: 2 }));
+  assert.equal(hook(env, 'now', 'hello'), '');
 });
 
 test('a hook that fails reports on stderr and still exits 0', () => {
