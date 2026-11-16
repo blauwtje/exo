@@ -48,6 +48,7 @@ Say what you want in your own words and Claude starts the skill that fits. A typ
 | "ship it" or "open a PR" | `ship` asks once how far the commits go, then pushes, opens or merges. |
 | "save this session", then "continue from the handoff" in a new one | `save` writes a handoff file and reads it back. |
 | a video link and a question | `watch` answers from the captions or a transcript. |
+| "do not leave `console.log` in `src/`, remember this" | `learn` turns the correction into a lint rule or check that fails when it recurs, else a small lesson note, and starts by itself when you repeat a request. |
 | "write a README for this" | `document` writes prose that is read later. |
 
 One skill runs only when typed: `/exo:author` edits exo's own skills and agents.

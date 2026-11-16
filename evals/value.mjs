@@ -79,22 +79,26 @@ function evalCaseNames() {
     .map((entry) => entry.name);
 }
 
+export function unmeasuredParts(rows) {
+  const fitting = planBudget(rows).filter((step) => step.fits).map((step) => step.part);
+  return fitting.filter((name) => FIGURES.some((figure) => rows.find((row) => row.part === name)[figure] === '-'));
+}
+
 export function measuredProblems(rows) {
-  const fitting = new Set(planBudget(rows).filter((step) => step.fits).map((step) => step.part));
-  return rows
-    .filter((row) => fitting.has(row.part))
-    .filter((row) => FIGURES.some((name) => row[name] === '-'))
-    .map((row) => `part ${row.part} is not measured`);
+  return unmeasuredParts(rows).map((name) => `part ${name} is not measured`);
 }
 
 function runCost(run) {
   return (run.costUsd ?? 0) + (run.judgeCostUsd ?? 0);
 }
 
-function armFigures(cases, arm) {
+export function armFigures(cases, arm) {
   const runs = cases.map((testCase) => Object.values(testCase.arms?.[arm] ?? {}));
-  const passed = runs.filter((caseRuns) => caseRuns.filter((run) => run.passed).length * 2 > caseRuns.length).length;
-  return { passed, cost: runs.flat().reduce((sum, run) => sum + runCost(run), 0) };
+  const counted = runs.map((caseRuns) => caseRuns.filter((run) => !run.skippedPaidGraders));
+  const cost = runs.flat().reduce((sum, run) => sum + runCost(run), 0);
+  if (counted.some((caseRuns) => caseRuns.length === 0)) return { passed: '-', cost };
+  const passed = counted.filter((caseRuns) => caseRuns.filter((run) => run.passed).length * 2 > caseRuns.length).length;
+  return { passed, cost };
 }
 
 function evalCase(name, maxCost) {
@@ -106,7 +110,7 @@ function evalCase(name, maxCost) {
     '--json', jsonPath, '--output-dir', path.join(directory, 'out'), '--max-cost-usd', String(maxCost), '--no-publish', '--trust-plugin',
   ];
   const run = spawnSync('claude', args, { cwd: ROOT, stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, EXO_ROOT: ROOT } });
-  if (run.status !== 0 || !fs.existsSync(jsonPath)) throw new Error(`eval of ${name} did not finish`);
+  if (!fs.existsSync(jsonPath)) throw new Error(`eval of ${name} did not finish`);
   return JSON.parse(fs.readFileSync(jsonPath, 'utf8')).cases;
 }
 
@@ -125,8 +129,7 @@ function measure(row) {
 }
 
 function runNext(text, rows, partName) {
-  const fitting = planBudget(rows).filter((step) => step.fits).map((step) => step.part);
-  const target = partName ?? fitting.find((name) => rows.find((row) => row.part === name).date === '-');
+  const target = partName ?? unmeasuredParts(rows)[0];
   if (target === undefined) {
     process.stdout.write('nothing left to measure\n');
     return text;

@@ -63,7 +63,11 @@ A new setting is one `userConfig` entry in `.claude-plugin/plugin.json`.
 - An agent that takes everything from its dispatch sets `omitClaudeMd: true` (Claude Code 2.1.271 or later) and carries the rule against deleting past a blocked state in its own body, because it loads no `CLAUDE.md`.
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251. `CLAUDE_CODE_EFFORT_LEVEL` overrides an agent's effort.
 - A subagent takes the model and effort in its agent file's frontmatter: `builder` runs `sonnet` at medium effort, and `build` passes `model: opus` and high effort to the second attempt of a failed task, because escalating after a failure costs less than running every task at high effort.
-- `spec`, `build` and `save` pin no model and run on the session's model. `diagnose`, `ship` and `author` pin `opus` at medium effort, and `document` and `watch` pin `sonnet` at medium effort. A pinned model overrides the session's model and rebuilds the prompt cache mid-session, so set `model` or `effort` in a skill only where its work always needs that tier.
+- `spec`, `build`, `save` and `learn` pin no model and run on the session's model. `diagnose`, `ship` and `author` pin `opus` at medium effort, and `document` and `watch` pin `sonnet` at medium effort. A pinned model overrides the session's model and rebuilds the prompt cache mid-session, so set `model` or `effort` in a skill only where its work always needs that tier.
+
+## Hook
+
+- exo ships one `UserPromptSubmit` hook, `hooks/hooks.json`, which runs `skills/learn/scripts/corrections.mjs hook` on each prompt: it records each typed prompt in a per-project ledger by word overlap, with no phrase list of any language, and prints one `exo:` line, once per cluster, when a prompt repeats one from an earlier session; the model judges whether it is a correction or wish. `corrections.mjs candidates` ranks clusters by sessions and the model lists at most 5; `keep` and `reject` record the user's answer by script number. Lesson notes take Claude Code's auto-memory shape (frontmatter name, description, type; rule; Why; How to apply). It calls no model and no network.
 
 ## Verifying in one round
 

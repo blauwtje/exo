@@ -7,6 +7,23 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- `learn` turns a mistake you correct twice, or a "remember this", into a lint rule, check or test that fails when the mistake returns, else one CLAUDE.md line. You pick from a short list of mined corrections; the rest are rejected, and notes use Claude Code's auto-memory shape.
+- One eval case (`learn-lint-first`) and its `evals/value.md` row.
+- `node skills/learn/scripts/corrections.mjs replay` runs the repeat hook's own code over past sessions and reports its flags, flags per session fifth against flaggable prompts, and hook output in tokens, writing nothing.
+
+### Changed
+
+- `learn` starts from a prompt hook when you repeat a request from an earlier session, judges whether it is a correction or wish, writes a check at once, and offers lessons mined from past sessions as a numbered list; the other lessons become notes under `.claude/lessons/`.
+- `learn` keeps a rebuildable cache of your past prompts that holds no prompt text, only hashed words, and a separate file for your keep and reject decisions that is never discarded.
+- `learn` candidates carry a stable id, so `keep` and `reject` act on the ones you were shown; a repeat flag alone no longer hides a candidate, and flags that share the same words are not repeated.
+- `learn` imports a lessons index into CLAUDE.md with `@`, so a session sees every note's description, and the skill mines by id.
+
+### Fixed
+
+- `node evals/value.mjs --run` marks a part not measured when the cost cap skipped its graders, instead of counting the run as failed.
+
 ## 1.0.0 - 2026-11-15
 
 ### Added

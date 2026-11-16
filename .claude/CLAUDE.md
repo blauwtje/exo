@@ -23,6 +23,8 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 ## Editing
 
 - Before designing a prompt, context, agent, tool, harness or eval, read `docs/principles/README.md` and open only the page it names.
+- Hooks and scripts do mechanical work only: count, match, parse, store, run. Code that judges meaning, like a word list per language, breaks on other languages.
+- Skills and agents give that mechanical part to a script and keep the judgment, because the model reads every language and phrasing.
 - Run `claude plugin eval` only before a release, always with `--max-cost-usd`.
 - A bare skill name in a skill or prompt body means `exo:<name>`.
 - Derive a new value from the repo, or use one overridable default or an `EXO_*_MS` var via `environmentMs`.

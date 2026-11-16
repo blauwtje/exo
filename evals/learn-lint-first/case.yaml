@@ -1,0 +1,24 @@
+schema_version: "1.1"
+name: learn-lint-first
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 15
+  allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write]
+  prompt: |
+    You are in the tinyshop checkout.
+
+    I told you last week and again yesterday: do not leave console.log calls in src/. You did it again in src/cart.js, and I had to remove it by hand. Remove it, and remember this so it stops happening.
+graders:
+  - name: criteria
+    type: llm
+    weight: 1
+    criteria: |
+      Pass only when all of these hold:
+
+      - The console.log call is removed from src/cart.js.
+      - The run adds a lint rule or check that fails on console.log in src/ (for example a new rule in the rules list of lint.mjs, or a script or test that does the same). A note in CLAUDE.md or memory alone does not pass.
+      - The final answer names what enforces the lesson.
+  - name: skill
+    type: tool_used
+    tool: Skill
