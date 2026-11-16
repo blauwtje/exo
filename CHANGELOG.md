@@ -15,10 +15,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `docs/principles/eval.md` reads a flat 100% or 0% baseline as a test that cannot see the effect, so its verdict is void, and asks a positive control to inject a known effect through the measured path.
 - `learn` starts from a prompt hook when you repeat a request from an earlier session, judges whether it is a correction or wish, writes a check at once, and offers lessons mined from past sessions as a numbered list; the other lessons become notes under `.claude/lessons/`.
 - `learn` keeps a rebuildable cache of your past prompts that holds no prompt text, only hashed words, and a separate file for your keep and reject decisions that is never discarded.
 - `learn` candidates carry a stable id, so `keep` and `reject` act on the ones you were shown; a repeat flag alone no longer hides a candidate, and flags that share the same words are not repeated.
 - `learn` imports a lessons index into CLAUDE.md with `@`, so a session sees every note's description, and the skill mines by id.
+- `learn` shows you `Exo found <n> new memories. Review them with /exo:learn.` on a session's first prompt, as a message you see, not only one Claude reads.
+- `learn` hook writes an error to the debug log instead of dropping it, and still never blocks your prompt.
 
 ### Fixed
 

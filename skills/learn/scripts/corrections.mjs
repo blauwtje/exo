@@ -359,7 +359,7 @@ function react(ledger, counts, { session, prompt, date }, textOf) {
   const quiet = { rows, first, counts, line: '', flag: null, flaggable: false };
   if (first) {
     if (counts.count === 0 || counts.count === counts.printed) return quiet;
-    return { ...quiet, counts: { ...counts, printed: counts.count }, line: `exo: ${counts.count} lesson candidates from past sessions; after this task, run exo:learn to list them.\n` };
+    return { ...quiet, counts: { ...counts, printed: counts.count }, line: `Exo found ${counts.count} new memories. Review them with /exo:learn.\n` };
   }
   if (recorded.length === 0) return quiet;
   const entries = indexed([...ledger.entries, ...recorded]);
@@ -417,7 +417,12 @@ function hook({ session_id: session, prompt, cwd }) {
   const outcome = waitLocked(cwd, () => recordPrompt(cwd, session, prompt, date), LOCK_WAIT_MS);
   if (outcome === BUSY) return;
   if (outcome.detached !== null) startDetached(outcome.detached, cwd);
-  process.stdout.write(outcome.line);
+  if (outcome.detached !== 'recount' || outcome.line === '') {
+    process.stdout.write(outcome.line);
+    return;
+  }
+  const message = outcome.line.trimEnd();
+  process.stdout.write(JSON.stringify({ systemMessage: message, hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: message } }));
 }
 
 function backfill(cwd) {
@@ -547,8 +552,8 @@ async function main() {
   if (command === 'hook') {
     try {
       hook(JSON.parse(await readInput()));
-    } catch {
-      process.exitCode = 0;
+    } catch (error) {
+      console.error(`exo learn hook: ${error.message}`);
     }
     return;
   }

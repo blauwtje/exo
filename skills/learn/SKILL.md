@@ -1,6 +1,6 @@
 ---
 name: learn
-description: "Turns a correction the user gives again into a check that fails when the mistake returns, else one small lesson note, and offers lessons mined from past sessions as a numbered list. Use when a hook line starting `exo:` says the user asked something like this before or lists lesson candidates, when the user repeats a correction or says something like 'remember this', or asks to mine past sessions or prune CLAUDE.md. Not for a first correction mid-task, unfinished work (save) or a bug (diagnose)."
+description: "Turns a correction the user gives again into a check that fails when the mistake returns, else one small lesson note, and offers lessons mined from past sessions as a numbered list. Use when a hook line starting `exo:` says the user asked something like this before or a hook line says Exo found new memories, when the user repeats a correction or says something like 'remember this', or asks to mine past sessions or prune CLAUDE.md. Not for a first correction mid-task, unfinished work (save) or a bug (diagnose)."
 argument-hint: "[capture | mine | prune]"
 ---
 
@@ -11,7 +11,7 @@ Turn a lesson into the cheapest form that stops the mistake, and keep CLAUDE.md 
 ## Start
 
 - The hook line `exo: you asked something like this on <date>` flags a prompt that repeats an earlier one. Judge whether it is a correction or wish; when it is neither, say nothing and go on. Otherwise run Capture on it.
-- The hook line `exo: <n> lesson candidates` means the candidates wait; finish the current task, then run Mine.
+- The hook line `Exo found <n> new memories` means the candidates wait; finish the current task, then run Mine.
 - The user says they have corrected this before, or asks you to remember something, in any language: run Capture.
 - A request to mine past sessions runs Mine; a request to prune runs Prune.
 

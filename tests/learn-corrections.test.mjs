@@ -119,8 +119,15 @@ test('the first-prompt candidates line comes from the count file and shows once 
   const env = fixture();
   writeLedger(env, [...fillers(60), EARLIER]);
   fs.writeFileSync(`${env.ledger}.count`, JSON.stringify({ count: 2, printed: 0 }));
-  assert.equal(hook(env, 'now', 'hello'), 'exo: 2 lesson candidates from past sessions; after this task, run exo:learn to list them.\n');
+  const line = 'Exo found 2 new memories. Review them with /exo:learn.';
+  assert.deepEqual(JSON.parse(hook(env, 'now', 'hello')), { systemMessage: line, hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: line } });
   assert.equal(hook(env, 'now', 'something unrelated entirely'), '');
+});
+
+test('a hook that fails reports on stderr and still exits 0', () => {
+  const result = run(fixture(), ['hook'], 'not json');
+  assert.equal(result.status, 0);
+  assert.notEqual(result.stderr, '');
 });
 
 test('candidates needs 2 or more sessions', () => {
