@@ -92,3 +92,4 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-16 learn lesson store root: the project lesson store and index use the shell's folder, so a lesson written from a subfolder lands where no session loads it; 50 of 101,529 session files hold "lessons.mjs paths" (user request).
 - 2026-11-16 learn memory count: ledger entries recorded from task notifications before the filter still count toward "new memories" while the list hides them; 68 of 101,529 session files hold "new memories" (user request).
 - 2026-11-16 learn candidates total: the hook line counts every memory while candidates lists 15 with no total, so 40 announced shows as 15; 64 of 72,278 session files hold "new memories" (user request).
+- 2026-11-16 replies: the user asked "wat raad jij aan" 3 times after a reply listed options with no recommendation, because `output-styles/adhd.md:21` handed the choice over without one (3 session files, user request).

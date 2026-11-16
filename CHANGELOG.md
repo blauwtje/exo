@@ -15,6 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `learn` strengthens a kept lesson that repeats (check, path rule, else a reworded note), rejects only on an explicit no, and reads the project's auto-memory index before it writes a note.
 - `learn` shows its new-memories line under the Claude Code banner when a session starts, resumes or clears, before you type, instead of on the first prompt.
 - The `learn` hook lines are stated as facts, and `learn` Capture proves a new check on the session's own mistake, edits a skill or agent in the project or config folder, writes nothing for a lesson that would not recur, and Prune marks stale lesson notes and points to `/doctor prompt-audit`.
+- The `adhd` output style marks one option `(Recommended)` with its reason when it hands a choice to the user.
 - The eval principles page voids a flat 0% or 100% result only when a positive control, an injected known effect of at least the threshold size, goes undetected; when the control is detected, the flat result stands.
 
 ### Fixed

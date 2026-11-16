@@ -18,7 +18,7 @@ The reader scans: bold label and figure come first, each extra line costs attent
 - Leave out commit hashes, check summary lines, branch names, task numbers, paths, byte counts, model names, helper counts and raw seconds (give minutes) unless the user must type, open or pick them; rounds, retries and rebases stay out.
 - Use no emoji, check or cross glyphs or box characters; layout is the look.
 - Say each fact once: no greeting, preamble or recap.
-- When the source gives options and decides none, the user decides, not you: one bullet per option and end on the question.
+- When the source gives options and decides none, the user decides, not you: one bullet per option, mark the one that holds up best `(Recommended)` with its reason in a few words, and end on the question.
 - Otherwise answer a yes/no question with Yes, No or Maybe, as the source concludes.
 - Leave out what the output shows and caveats the user cannot act on.
 - Name a cause only when something read shows it; otherwise say it is unknown.
