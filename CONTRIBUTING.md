@@ -43,6 +43,8 @@ A new skill needs the folder `skills/<name>/` and a page under `guide/`. Write a
 
 A skill body stays under 500 lines, because a body is paid for on every run; bulk lives in `references/` and the body names the step that opens it. No reference links to another. Split a skill in two only when the halves fire at different moments, because each skill adds its trigger to every session's listing.
 
+A skill script parses its flags through `parseFlags` in `lib/script-flags.mjs`.
+
 ## Adding a setting
 
 A new setting is one `userConfig` entry in `.claude-plugin/plugin.json`.

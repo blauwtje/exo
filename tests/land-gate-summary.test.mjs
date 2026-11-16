@@ -42,8 +42,8 @@ test('a cached pass whose kept log ends clean on this tree is skipped', async ()
   assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-test('a check gate needs a SUMMARY line, FAIL=0 and, unless static, WARN=0 UNRUN=0', () => {
-  assert.match(gateRefusal('npm run check', 'ok'), /no SUMMARY line/);
+test('a gate log with a SUMMARY line needs FAIL=0 and, unless static, WARN=0 UNRUN=0; a log without one is left to the exit status', () => {
+  assert.equal(gateRefusal('npm run check', 'ok'), null);
   assert.match(gateRefusal('npm run check', 'SUMMARY PASS=9 FAIL=0 WARN=1 UNRUN=0'), /not FAIL=0 WARN=0 UNRUN=0/);
   assert.match(gateRefusal('npm run validate:static', FAILING), /FAIL=1/);
   assert.equal(gateRefusal('npm run validate:static', 'SUMMARY PASS=9 FAIL=0 WARN=2 UNRUN=3'), null);

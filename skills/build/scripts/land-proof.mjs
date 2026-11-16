@@ -56,9 +56,11 @@ function testRunFailure(file, testRun, deadlineMs) {
 }
 
 function testFileFailure(file, { root }) {
+  const flags = projectNodeFlags(root);
+  if (flags === null) return null;
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   const { NODE_TEST_CONTEXT, ...env } = withoutRunVariables();
-  const testRun = runCheck(root, ['node', ...projectNodeFlags(root), '--test', '--test-reporter=spec', file].join(' '), { timeoutMs: deadlineMs, env, record: false, fresh: true });
+  const testRun = runCheck(root, ['node', ...flags, '--test', '--test-reporter=spec', file].join(' '), { timeoutMs: deadlineMs, env, record: false, fresh: true });
   return testRunFailure(file, { status: testRun.ok ? 0 : (testRun.code ?? 1), timedOut: testRun.timedOut, output: testRun.output }, deadlineMs);
 }
 
@@ -144,8 +146,9 @@ function projectNodeFlags(root) {
   } catch {
     return [];
   }
-  const words = String(script ?? '').trim().split(/\s+/);
+  if (script === undefined) return [];
+  const words = String(script).trim().split(/\s+/);
   const testAt = words.indexOf('--test');
-  if (words[0] !== 'node' || testAt < 0) return [];
+  if (words[0] !== 'node' || testAt < 0) return null;
   return words.slice(1, testAt);
 }

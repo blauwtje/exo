@@ -13,6 +13,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- A gate passes on its exit status in any project; a `SUMMARY` line is judged only when the log has one.
+- Covering tests run only when the project's test script is `node --test` or absent; otherwise the gate decides.
+- Commits need a Conventional Commits subject only in a repository whose recent history uses them, and the pull request title follows the repository's commit style.
+- `spec` no longer assumes `docs/specs/` is gitignored, and `document` follows the project's own changelog format for a breaking change.
+- `author` fires for any Claude Code skill, agent or skill script, in any repository or plugin, and its body holds no rules for working on exo itself.
 - The principle pages, skill guides, settings page and failure and score logs moved out of the gitignored `docs/` folder.
 - `learn` keeps its lessons index in the rules folder (`<project>/.claude/rules/lessons.md` or `<config>/rules/lessons.md`), so CLAUDE.md needs no import line; `lessons.mjs paths` prints the paths and `lessons.mjs check` reads the new place.
 - `lessons.mjs migrate` moves an old index and its CLAUDE.md import line to the rules folder and prints each removed line, and a second run changes nothing.
@@ -36,6 +41,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 
+- The commit check no longer refuses an AI attribution trailer, and the cache no longer skips `*-decisions.md` and `CHANGELOG.md`.
 - The `corrections.mjs replay` command added in 1.1.0, its helpers, the old `{verdict, text}` verdict rows and the copy of verdicts out of an old ledger in `reset`.
 - The `sessions.mjs` command line.
 

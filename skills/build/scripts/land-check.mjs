@@ -78,7 +78,7 @@ export function refuseBeforeProof(task, { root, planPath, planId, reportText, re
   const outside = changedPaths(root, planPath);
   refuseUnlisted(task, outside);
   const block = commitBlockOf({ task, planId, root });
-  refuseBadCommitText(task.title, block);
+  refuseBadCommitText(task.title, root);
   return { block, outside };
 }
 
@@ -96,15 +96,15 @@ export function proveTask(task, { root, planPath, reportText, reportPath }) {
   return { proofs, pending, redLine: line };
 }
 
-function refuseBadCommitText(subject, rest) {
-  const problem = subjectProblem(subject) ?? attributionProblem(`${subject}\n${rest}`);
+function refuseBadCommitText(subject, root) {
+  const problem = subjectProblem(subject, root);
   if (problem !== null) throw new LandingError(`commit text refused: ${problem}`);
 }
 
 export function fixLand({ root, subject, body = null }) {
   refuseMismatchedToplevel(root);
   refuseUnfinishedMerge(root);
-  refuseBadCommitText(subject, body ?? '');
+  refuseBadCommitText(subject, root);
   return locked(root, () => fixLandLocked({ root, subject, body }));
 }
 
@@ -308,21 +308,17 @@ function runSetup(slot, setup, variables) {
   return { reason: `Worktree setup failed in ${slot}: ${`${ran.stdout}${ran.stderr}`.trim().split('\n').at(-1)}` };
 }
 
-const SHARED_ATTRIBUTION_PHRASES = 'co-authored-by|generated\\s+with|generated\\s+by|noreply@anthropic\\.com|robot_face';
-const PRODUCT_CREDIT = '\\b(?:made|written|built|created|authored|assisted|produced|generated)\\s+(?:with|by|using|via|in)\\s+\\[?claude\\s+code|claude\\.com/claude-code';
-const ATTRIBUTION = new RegExp(`${SHARED_ATTRIBUTION_PHRASES}|${PRODUCT_CREDIT}`, 'i');
-
 const COMMIT_TYPES = ['build', 'chore', 'ci', 'docs', 'feat', 'fix', 'merge', 'perf', 'refactor', 'revert', 'style', 'test'];
 const CONVENTIONAL_SUBJECT = new RegExp(`^(${COMMIT_TYPES.join('|')})(\\([^()]+\\))?!?: [^ ]`);
 
-function attributionProblem(text) {
-  if (!ATTRIBUTION.test(text)) return null;
-  return 'commit and pull-request text must not attribute the work to an AI. Remove the Co-Authored-By trailer, the "Generated with" line and every tool name.';
+function followsConventionalCommits(root) {
+  const subjects = (gitLine(root, ['log', '--no-merges', '-n', '20', '--format=%s']) ?? '').split('\n').filter(Boolean);
+  return subjects.filter((subject) => CONVENTIONAL_SUBJECT.test(subject)).length * 2 > subjects.length;
 }
 
-function subjectProblem(subject) {
-  if (CONVENTIONAL_SUBJECT.test(subject)) return null;
-  return `a subject follows Conventional Commits so the log can be read by type: type(scope): subject, such as feat(hooks): add the commit check. The scope is optional and the type is one of ${COMMIT_TYPES.join(', ')}.`;
+function subjectProblem(subject, root) {
+  if (!followsConventionalCommits(root) || CONVENTIONAL_SUBJECT.test(subject)) return null;
+  return `this repository's log uses Conventional Commits, so a subject follows them: type(scope): subject, such as feat(hooks): add the commit check. The scope is optional and the type is one of ${COMMIT_TYPES.join(', ')}.`;
 }
 
 function unmergedPaths(root) {
