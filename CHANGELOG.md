@@ -10,6 +10,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Changed
 
 - `learn` shows its new-memories line under the Claude Code banner when a session starts, resumes or clears, before you type, instead of on the first prompt.
+- The eval principles page voids a flat 0% or 100% result only when a positive control, an injected known effect of at least the threshold size, goes undetected; when the control is detected, the flat result stands.
+
+### Fixed
+
+- `spec` plan check reports a task whose `Files:` path git ignores, so a plan can no longer pass and then fail to land.
 
 ## 1.1.0 - 2026-11-16
 

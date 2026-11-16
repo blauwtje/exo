@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import test from 'node:test';
 import { planCheckReport } from '../skills/spec/scripts/plan-check.mjs';
 
@@ -53,4 +56,13 @@ test('a Files path in a folder that does not exist warns once', () => {
 test('a Data reader that does not depend on the task is named', () => {
   const unlinked = example.replace('Depends on: 1, 2 |', 'Depends on: 2 |');
   assert.match(problemsOf(unlinked), /Task 1 says 'read by Task 3' but Task 3 does not depend on Task 1/);
+});
+
+test('a Files path that git ignores is a problem', () => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'plan-check-ignored-'));
+  execFileSync('git', ['-C', repo, 'init', '-q']);
+  fs.writeFileSync(path.join(repo, '.gitignore'), 'src/tasks/\n');
+  const report = planCheckReport(example.replace('Repository: /repo', `Repository: ${repo}`));
+  assert.equal(report.ok, false);
+  assert.match(report.lines.join('\n'), /Task 1: 'src\/tasks\/task.js' is ignored by git, so the task cannot land/);
 });

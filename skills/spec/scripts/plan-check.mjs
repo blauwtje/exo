@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { onPath } from '#basics';
 import { parseFlags, UsageError, isMain } from '#script-flags';
@@ -63,9 +64,25 @@ function acceptanceProblems(plan) {
     .map((item) => `the Acceptance item '${item}' cites no task number, 'Data:' segment or the Success criterion; cite one or move it to Manual checks`);
 }
 
-function folderWarnings(plan) {
+function repositoryRoot(plan) {
   const root = (plan.frame['Plan basis'] ?? '').match(/^Repository: (.+)$/m)?.[1].trim();
-  if (root === undefined || !fs.existsSync(root)) return [];
+  return root !== undefined && fs.existsSync(root) ? root : undefined;
+}
+
+function ignoredFileProblems(plan) {
+  const root = repositoryRoot(plan);
+  if (root === undefined) return [];
+  const paths = [...new Set(plan.tasks.flatMap((task) => task.files.map((file) => file.path)))];
+  const result = spawnSync('git', ['-C', root, 'check-ignore', '-z', '--stdin'], { input: paths.join('\0'), encoding: 'utf8' });
+  const ignored = new Set(result.stdout.split('\0'));
+  return plan.tasks.flatMap((task) => task.files
+    .filter((file) => ignored.has(file.path))
+    .map((file) => `Task ${task.number}: '${file.path}' is ignored by git, so the task cannot land`));
+}
+
+function folderWarnings(plan) {
+  const root = repositoryRoot(plan);
+  if (root === undefined) return [];
   const seen = new Set();
   return plan.tasks.flatMap((task) => task.files.flatMap((file) => {
     const folder = path.dirname(file.path.replace(/\/$/, ''));
@@ -85,7 +102,7 @@ function warnings(plan) {
 export function planCheckReport(planText) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
-  const problems = [...frameProblems(plan, planText), ...plan.tasks.flatMap(taskProblems), ...sharedFileProblems(plan.tasks), ...readerProblems(plan.tasks), ...acceptanceProblems(plan)];
+  const problems = [...frameProblems(plan, planText), ...plan.tasks.flatMap(taskProblems), ...sharedFileProblems(plan.tasks), ...readerProblems(plan.tasks), ...acceptanceProblems(plan), ...ignoredFileProblems(plan)];
   if (problems.length > 0) return { ok: false, lines: problems };
   return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks`, ...warnings(plan)] };
 }

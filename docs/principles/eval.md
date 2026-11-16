@@ -1,6 +1,6 @@
 # Eval engineering
 
-Checked: 2026-11-14
+Checked: 2026-11-16
 
 Read it when: you design, grade or change an eval, benchmark, regression check or keep/discard rule.
 
@@ -13,7 +13,7 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 - **Fix the seed.** [6] exo: gap
 - **Change one thing per round, scored by one number the edited files cannot change; keep only a gain that clears the run noise, and at equal score or fewer net lines keep simpler code.** [6][7][10][11] exo: gap
 - **Read a 0% pass rate as a broken task; the task verifier must be nearly perfect.** [1][2] exo: gap
-- **A flat 100% or 0% on every level or arm means the test cannot see the effect, so its verdict is void, not fail; a positive control injects a known effect of at least the threshold size through the path the test measures, and the test must detect it.** [1] exo: gap
+- **A flat 100% or 0% on every level or arm is void, not fail, unless a positive control that injects a known effect of at least the threshold size, through the path the test measures, is detected; when it is detected, the flat result stands as the verdict, because a true null also looks flat.** [1] exo: gap
 - **Grade outcomes, not step paths; choose deterministic graders first.** [1] exo: `skills/build/references/code-rules.md`
 - **Use a pairwise or pass/fail judge; swap response order and control length for position and verbosity bias.** [5] exo: gap
 - **Grade each dimension with an isolated judge, calibrated against humans.** [1][5] exo: gap
