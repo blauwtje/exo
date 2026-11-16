@@ -22,6 +22,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `learn` hook waits for the store lock for up to 2 s and reads, decides and writes inside one hold, so many prompts at once no longer lose rows or print a flag without its row; the first prompt of a new project is no longer lost. Every write to the count, the cache and your keep and reject decisions stays inside a hold, and the slow work of grouping prompts runs outside it.
+- `learn` creates its store readable by its owner only (`0700` folder, `0600` files), and leaves the shared `exo/` folder at its default mode.
+- `learn` writes the lessons import path relative to the CLAUDE.md that holds it.
+- `learn` hook reads its input to the end even when Claude Code writes it late, so prompts no longer vanish with a silent `EAGAIN` when many arrive at once.
 - `node evals/value.mjs --run` marks a part not measured when the cost cap skipped its graders, instead of counting the run as failed.
 
 ## 1.0.0 - 2026-11-15

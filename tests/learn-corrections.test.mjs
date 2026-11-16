@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { entryOf } from '../skills/learn/scripts/corrections.mjs';
@@ -48,8 +48,8 @@ function readLedger({ ledger }) {
   return fs.readFileSync(ledger, 'utf8').split('\n').filter((row) => row !== '').map((row) => JSON.parse(row));
 }
 
-function run(env, args, input) {
-  return spawnSync('node', [script, ...args], { encoding: 'utf8', input, env: { ...process.env, CLAUDE_CONFIG_DIR: env.config } });
+function run(env, args, input, extra = {}) {
+  return spawnSync('node', [script, ...args], { encoding: 'utf8', input, env: { ...process.env, CLAUDE_CONFIG_DIR: env.config, ...extra } });
 }
 
 function hook(env, session, prompt) {
@@ -280,19 +280,39 @@ test('a half-written last row is an append in progress and keeps the cache', () 
   assert.equal(readLedger(env).length, 62);
 });
 
-test('the hook writes nothing while the lock is held and removes a stale lock', () => {
+test('a hook that cannot get the lock in time writes and prints nothing, and a stale lock is taken over', () => {
   const env = fixture();
-  writeLedger(env, [...fillers(60), { seen: 'now' }]);
+  writeLedger(env, [...fillers(60), EARLIER, { seen: 'now' }]);
   const lock = `${env.ledger}.lock`;
   const before = fs.readFileSync(env.ledger, 'utf8');
   fs.writeFileSync(lock, '');
-  hook(env, 'now', REPEAT);
+  const held = run(env, ['hook'], JSON.stringify({ session_id: 'now', prompt: REPEAT, cwd: env.project }), { EXO_LEARN_LOCK_MS: '100' });
+  assert.equal(held.status, 0, held.stderr);
+  assert.equal(held.stdout, '');
   assert.equal(fs.readFileSync(env.ledger, 'utf8'), before);
   const old = new Date(Date.now() - 60_000);
   fs.utimesSync(lock, old, old);
-  hook(env, 'now', REPEAT);
-  assert.equal(readLedger(env).length, 62);
+  assert.equal(hook(env, 'now', REPEAT).includes('on 2026-01-02'), true);
+  assert.equal(readLedger(env).filter((row) => row.flagged !== undefined).length, 1);
   assert.equal(fs.existsSync(lock), false);
+});
+
+test('12 hooks started at once each leave their seen row and entry', async () => {
+  const env = fixture();
+  writeLedger(env, [...fillers(60), { seen: 'seed' }]);
+  const sessions = Array.from({ length: 12 }, (_, index) => `racer-${index}`);
+  const children = sessions.map((session) => new Promise((resolve) => {
+    const child = spawn('node', [script, 'hook'], { env: { ...process.env, CLAUDE_CONFIG_DIR: env.config, EXO_LEARN_LOCK_MS: '60000' } });
+    child.on('close', resolve);
+    child.stdin.end(JSON.stringify({ session_id: session, prompt: `racer prompt ${session} unique words here`, cwd: env.project }));
+  }));
+  await Promise.all(children);
+  const rows = readLedger(env);
+  assert.equal(rows.length, 61 + 24);
+  for (const session of sessions) {
+    assert.equal(rows.filter((row) => row.seen === session).length, 1);
+    assert.equal(rows.filter((row) => row.session === session).length, 1);
+  }
 });
 
 test('recount drops an entry whose transcript is gone only when it is from before today', () => {
@@ -382,4 +402,58 @@ test('replay flags the same prompts as the hook, including slash commands and pa
   const fromReplay = [...replayed.stdout.matchAll(/^\d+\. (\S+), fifth \d+ of its session\n {3}prompt: "(.*)"\n {3}matched: "(.*)" \(/gm)].map(([, date, prompt, matched]) => ({ prompt, date, matched }));
   assert.equal(fromHook.length, 2);
   assert.deepEqual(fromReplay, fromHook);
+});
+
+const modeOf = (file) => fs.statSync(file).mode & 0o777;
+
+function assertPrivateStore(env) {
+  assert.equal(modeOf(path.dirname(env.ledger)), 0o700);
+  for (const file of [env.ledger, `${env.ledger}.count`, verdictsPath(env)]) {
+    if (fs.existsSync(file)) assert.equal(modeOf(file), 0o600, file);
+  }
+  assert.equal(fs.existsSync(`${env.ledger}.lock`), false);
+}
+
+test('a store the hook creates is readable by its owner only and leaves its parent folder alone', () => {
+  const env = fixture();
+  hook(env, 'first', REPEAT);
+  hook(env, 'second', REPEAT);
+  assertPrivateStore(env);
+  assert.notEqual(modeOf(path.dirname(path.dirname(env.ledger))), 0o700);
+  assert.equal(fs.existsSync(env.ledger), true);
+});
+
+test('the hook narrows a widened store folder and cache back to their owner', () => {
+  const env = fixture();
+  writeLedger(env, [EARLIER, ...fillers(2)]);
+  fs.chmodSync(path.dirname(env.ledger), 0o755);
+  fs.chmodSync(env.ledger, 0o644);
+  hook(env, 'later', REPEAT);
+  assertPrivateStore(env);
+});
+
+test('keep and reject narrow widened verdict and count files back to their owner', () => {
+  const env = fixture();
+  const [first, second] = [pair('alpha bravo charlie delta echo', '2026-03-01'), pair('foxtrot golf hotel india juliet', '2026-02-01')];
+  writeLedger(env, [...fillers(60), ...first, ...second]);
+  fs.chmodSync(env.ledger, 0o600);
+  assert.equal(run(env, ['keep', idOf(second[0]), '--cwd', env.project]).status, 0);
+  fs.chmodSync(verdictsPath(env), 0o644);
+  fs.chmodSync(`${env.ledger}.count`, 0o644);
+  assert.equal(run(env, ['reject', idOf(first[0]), '--cwd', env.project]).status, 0);
+  assertPrivateStore(env);
+  assert.equal(fs.existsSync(`${env.ledger}.count`), true);
+});
+
+test('a hook started while a slow recount runs still stores its row', async () => {
+  const env = fixture();
+  const today = new Date().toISOString().slice(0, 10);
+  const rows = Array.from({ length: 2000 }, (_, index) => entryOf({ date: today, session: `s${index % 60}`, text: Array.from({ length: 20 + (index % 30) }, (_, j) => `w${(index * 7919 + j) % 3000}`).join(' ') }));
+  writeRows(env.ledger, rows);
+  const recount = spawn('node', [script, 'recount', '--cwd', env.project], { env: { ...process.env, CLAUDE_CONFIG_DIR: env.config }, stdio: 'ignore' });
+  const finished = new Promise((resolve) => recount.on('exit', resolve));
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  hook(env, 'new-session', 'please never amend commits without asking me first');
+  await finished;
+  assert.equal(readLedger(env).some((row) => row.seen === 'new-session'), true);
 });

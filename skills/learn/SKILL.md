@@ -52,7 +52,7 @@ How to apply: <where and when>
 - Keep the store to 15 notes. At 15, merge the new lesson into an old note or replace one, because a store that only grows is read less.
 - Store a project lesson in `.claude/lessons/`, and a personal one in `$CLAUDE_CONFIG_DIR/lessons/` when that variable is set, else `$HOME/.claude/lessons/`.
 - Run `node "${CLAUDE_SKILL_DIR}/scripts/lessons.mjs" check --dir <store>` after each write and fix what it reports.
-- Give the CLAUDE.md for that store one line, `Lessons, open a note when its description fits the task: @<store>/index.md`, if it has none, because a path alone is never loaded. The personal file is `$CLAUDE_CONFIG_DIR/CLAUDE.md` when that variable is set, else `$HOME/.claude/CLAUDE.md`. When it only imports another file with `@<path>`, put the store in a `lessons/` folder beside the imported file and the line in that file, so every profile that imports it shares one store. The project file is CLAUDE.md or .claude/CLAUDE.md, whichever exists.
+- Give the CLAUDE.md for that store one line, `Lessons, open a note when its description fits the task: @<path>/index.md`, if it has none, because a path alone is never loaded. `<path>` is `lessons` for .claude/CLAUDE.md and for the personal file, where the store sits beside the file, and `.claude/lessons` for a root CLAUDE.md, because an import resolves from the file that contains it. The personal file is `$CLAUDE_CONFIG_DIR/CLAUDE.md` when that variable is set, else `$HOME/.claude/CLAUDE.md`. When it only imports another file with `@<file>`, put the store in a `lessons/` folder beside the imported file and the line in that file, so every profile that imports it shares one store. The project file is CLAUDE.md or .claude/CLAUDE.md, whichever exists.
 
 ## Prune
 

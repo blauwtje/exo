@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { sleepSync } from '#basics';
 import { configDirectory } from '#config-directory';
-import { isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
+import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 import { projectFolder, sessionFiles, promptMessages } from './sessions.mjs';
 
 const MAX_PROMPT_CHARS = 600;
@@ -22,6 +22,9 @@ const MIN_JACCARD = 0.4;
 const INTERRUPT_MARK = '[Request interrupted';
 const STALE_LOCK_MS = 10_000;
 const LOCK_RETRY_MS = 50;
+const LOCK_WAIT_MS = environmentMs('EXO_LEARN_LOCK_MS', 2000);
+const FOLDER_MODE = 0o700;
+const FILE_MODE = 0o600;
 const USAGE = 'usage: node corrections.mjs hook | backfill [--cwd <dir>] | replay [--cwd <dir>] | candidates [--cwd <dir>] | keep <id...> [--cwd <dir>] | reject <id...> [--cwd <dir>] | recount [--cwd <dir>]';
 const FLAGS = { cwd: 'string', help: 'boolean' };
 
@@ -30,6 +33,7 @@ const MAX_REPLAY_CHARS = 120;
 const CHARS_PER_TOKEN = 4;
 
 const VERDICTS = { keep: 'kept', reject: 'rejected' };
+const BUSY = Symbol('busy');
 
 const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
 
@@ -63,9 +67,23 @@ function verdictsFile(cwd) {
   return ledgerFile(cwd).replace(/\.jsonl$/, '.verdicts.jsonl');
 }
 
+function ensureFolder(file) {
+  const folder = path.dirname(file);
+  fs.mkdirSync(path.dirname(folder), { recursive: true });
+  fs.mkdirSync(folder, { recursive: true, mode: FOLDER_MODE });
+  fs.chmodSync(folder, FOLDER_MODE);
+}
+
+function writePrivate(file, text) {
+  ensureFolder(file);
+  fs.writeFileSync(file, text, { mode: FILE_MODE });
+  fs.chmodSync(file, FILE_MODE);
+}
+
 function append(file, objects) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, objects.map((object) => `${JSON.stringify(object)}\n`).join(''));
+  ensureFolder(file);
+  fs.appendFileSync(file, objects.map((object) => `${JSON.stringify(object)}\n`).join(''), { mode: FILE_MODE });
+  fs.chmodSync(file, FILE_MODE);
 }
 
 function lockFile(cwd) {
@@ -74,7 +92,7 @@ function lockFile(cwd) {
 
 function acquired(lock) {
   try {
-    fs.closeSync(fs.openSync(lock, 'wx'));
+    fs.closeSync(fs.openSync(lock, 'wx', FILE_MODE));
     return true;
   } catch (error) {
     if (error.code !== 'EEXIST') throw error;
@@ -82,25 +100,29 @@ function acquired(lock) {
   }
 }
 
-function locked(cwd, work) {
-  const lock = lockFile(cwd);
-  fs.mkdirSync(path.dirname(lock), { recursive: true });
+function locked(lock, work) {
   if (!acquired(lock)) {
     const stat = fs.statSync(lock, { throwIfNoEntry: false });
-    if (stat === undefined || Date.now() - stat.mtimeMs < STALE_LOCK_MS) return false;
+    if (stat === undefined || Date.now() - stat.mtimeMs < STALE_LOCK_MS) return BUSY;
     fs.rmSync(lock, { force: true });
-    if (!acquired(lock)) return false;
+    if (!acquired(lock)) return BUSY;
   }
   try {
-    work();
-    return true;
+    return work();
   } finally {
     fs.rmSync(lock, { force: true });
   }
 }
 
-function waitLocked(cwd, work) {
-  while (!locked(cwd, work)) sleepSync(LOCK_RETRY_MS);
+function waitLocked(cwd, work, waitMs = Infinity) {
+  const lock = lockFile(cwd);
+  ensureFolder(lock);
+  const deadline = Date.now() + waitMs;
+  for (;;) {
+    const result = locked(lock, work);
+    if (result !== BUSY || Date.now() >= deadline) return result;
+    sleepSync(LOCK_RETRY_MS);
+  }
 }
 
 function rowsOf(text) {
@@ -175,10 +197,10 @@ function reset(cwd) {
   for (const name of [ledgerFile(cwd), countFile(cwd), `${ledgerFile(cwd)}.shown.json`]) fs.rmSync(name, { force: true });
 }
 
-function readLedger(cwd) {
+function loadOrReset(cwd) {
   const ledger = currentLedger(cwd);
   if (ledger === null) {
-    locked(cwd, () => reset(cwd));
+    reset(cwd);
     return null;
   }
   return { ...ledger, verdicts: readVerdicts(cwd) };
@@ -200,7 +222,7 @@ function compacted(ledger) {
 
 function rewrite(file, ledger) {
   const temp = `${file}.${process.pid}.tmp`;
-  fs.writeFileSync(temp, [...ledger.seen, ...ledger.flagged, ...ledger.entries].map((row) => `${JSON.stringify(row)}\n`).join(''));
+  writePrivate(temp, [...ledger.seen, ...ledger.flagged, ...ledger.entries].map((row) => `${JSON.stringify(row)}\n`).join(''));
   fs.renameSync(temp, file);
 }
 
@@ -315,11 +337,18 @@ function dropGone(cwd) {
   if (kept.entries.length !== ledger.entries.length) rewrite(ledgerFile(cwd), kept);
 }
 
+function snapshot(cwd) {
+  return waitLocked(cwd, () => loadOrReset(cwd));
+}
+
 function recount(cwd) {
-  waitLocked(cwd, () => dropGone(cwd));
-  const ledger = readLedger(cwd);
+  const ledger = waitLocked(cwd, () => {
+    dropGone(cwd);
+    return loadOrReset(cwd);
+  });
   if (ledger === null) return;
-  fs.writeFileSync(countFile(cwd), JSON.stringify({ ...readCount(cwd), count: clusters(ledger).length }));
+  const count = clusters(ledger).length;
+  waitLocked(cwd, () => writePrivate(countFile(cwd), JSON.stringify({ ...readCount(cwd), count })));
 }
 
 function react(ledger, counts, { session, prompt, date }, textOf) {
@@ -356,35 +385,39 @@ function create(cwd, session, prompt, date) {
   const file = ledgerFile(cwd);
   let descriptor;
   try {
-    descriptor = fs.openSync(file, 'wx');
+    descriptor = fs.openSync(file, 'wx', FILE_MODE);
   } catch (error) {
-    if (error.code === 'EEXIST') return;
+    if (error.code === 'EEXIST') return false;
     throw error;
   }
   const text = prompt.trim();
   const rows = [{ seen: session }, ...(recordable(text) ? [entryOf({ date, session, text })] : [])];
   fs.writeSync(descriptor, rows.map((row) => `${JSON.stringify(row)}\n`).join(''));
   fs.closeSync(descriptor);
-  startDetached('backfill', cwd);
+  return true;
 }
 
-function hook({ session_id: session, prompt, cwd }) {
-  const date = today();
-  const ledger = readLedger(cwd);
+function recordPrompt(cwd, session, prompt, date) {
+  let ledger = loadOrReset(cwd);
   if (ledger === null) {
-    locked(cwd, () => create(cwd, session, prompt, date));
-    return;
+    if (create(cwd, session, prompt, date)) return { line: '', detached: 'backfill' };
+    ledger = loadOrReset(cwd);
   }
   const counts = readCount(cwd);
   const textOf = (entry) => transcriptTexts(cwd, new Set([entry.session])).get(entry.id);
   const result = react(ledger, counts, { session, prompt, date }, textOf);
-  const written = locked(cwd, () => {
-    appendCache(cwd, result.rows);
-    compact(cwd);
-    if (result.counts !== counts) fs.writeFileSync(countFile(cwd), JSON.stringify(result.counts));
-  });
-  if (written && result.first) startDetached('recount', cwd);
-  process.stdout.write(result.line);
+  appendCache(cwd, result.rows);
+  compact(cwd);
+  if (result.counts !== counts) writePrivate(countFile(cwd), JSON.stringify(result.counts));
+  return { line: result.line, detached: result.first ? 'recount' : null };
+}
+
+function hook({ session_id: session, prompt, cwd }) {
+  const date = today();
+  const outcome = waitLocked(cwd, () => recordPrompt(cwd, session, prompt, date), LOCK_WAIT_MS);
+  if (outcome === BUSY) return;
+  if (outcome.detached !== null) startDetached(outcome.detached, cwd);
+  process.stdout.write(outcome.line);
 }
 
 function backfill(cwd) {
@@ -473,7 +506,7 @@ function replay(cwd) {
 }
 
 function candidates(cwd) {
-  const ledger = readLedger(cwd);
+  const ledger = snapshot(cwd);
   if (ledger === null) return;
   const top = clusters(ledger).slice(0, MAX_CANDIDATES);
   const texts = transcriptTexts(cwd, new Set(top.flatMap(({ group }) => group.map(({ session }) => session))));
@@ -485,27 +518,35 @@ function candidates(cwd) {
 
 function decide(command, ids, cwd) {
   if (ids.length === 0) throw new UsageError(`${command} needs candidate ids`);
-  const ledger = readLedger(cwd);
+  const ledger = snapshot(cwd);
   const open = ledger === null ? [] : clusters(ledger);
   const chosen = ids.map((id) => {
     const cluster = open.find(({ group }) => group.some((entry) => entry.id === id));
     if (cluster === undefined) throw new UsageError(`${command} id '${id}' is not in an open candidate`);
     return cluster;
   });
-  append(verdictsFile(cwd), chosen.map(({ group, counted }) => {
+  const rows = chosen.map(({ group, counted }) => {
     const neighbours = neighbourCount(group, counted);
     const centre = group.reduce((best, entry) => (neighbours(entry) > neighbours(best) ? entry : best));
     return { verdict: VERDICTS[command], ids: group.map(({ id }) => id), words: [...centre.words] };
-  }));
+  });
+  waitLocked(cwd, () => append(verdictsFile(cwd), rows));
   process.stdout.write(chosen.map(({ id }) => `${id} ${VERDICTS[command]}\n`).join(''));
   recount(cwd);
 }
 
-function main() {
+async function readInput() {
+  let text = '';
+  process.stdin.setEncoding('utf8');
+  for await (const chunk of process.stdin) text += chunk;
+  return text;
+}
+
+async function main() {
   const [command, ...rest] = process.argv.slice(2);
   if (command === 'hook') {
     try {
-      hook(JSON.parse(fs.readFileSync(0, 'utf8')));
+      hook(JSON.parse(await readInput()));
     } catch {
       process.exitCode = 0;
     }
@@ -525,7 +566,7 @@ function main() {
 
 if (isMain(import.meta.url)) {
   try {
-    main();
+    await main();
   } catch (error) {
     if (!(error instanceof UsageError)) throw error;
     console.error(error.message);
