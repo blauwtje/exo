@@ -89,3 +89,5 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-16 learn prune: Prune reads only CLAUDE.md, so notes a check now enforces stay, and it repeats `/doctor prompt-audit`; 274 of 72,275 session files hold "prompt-audit" (user request).
 - 2026-11-16 learn skill route: a lesson about a skill becomes a note instead of a skill edit, and no step asks whether it holds for a different task; 716 of 72,275 session files hold "different task" (user request).
 - 2026-11-16 learn check proof: a new check is shown failing on old behavior in general, not on the mistake the user corrected; 56 of 72,275 session files hold "failing on the old behavior" (user request).
+- 2026-11-16 learn lesson store root: the project lesson store and index use the shell's folder, so a lesson written from a subfolder lands where no session loads it; 50 of 101,529 session files hold "lessons.mjs paths" (user request).
+- 2026-11-16 learn memory count: ledger entries recorded from task notifications before the filter still count toward "new memories" while the list hides them; 68 of 101,529 session files hold "new memories" (user request).

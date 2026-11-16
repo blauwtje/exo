@@ -16,7 +16,7 @@ const TYPES = ['feedback', 'project'];
 const LINK = /\]\(([^)]*)\)/g;
 const OLD_INDEX_LINE = /Lessons, open a note when its description fits the task:.*@(\S+)/;
 const IMPORT_LINE = /^@(\S+)$/;
-const USAGE = 'usage: node lessons.mjs check [--dir <dir>]\n       node lessons.mjs paths [--cwd <dir>]\n       node lessons.mjs migrate [--cwd <dir>]\ncheck tests the lesson store (default .claude/lessons) and its index in the rules folder beside it against the cap and note shape; paths prints where each lesson file lives; migrate moves an old CLAUDE.md lessons index to the rules folder.';
+const USAGE = 'usage: node lessons.mjs check [--dir <dir>]\n       node lessons.mjs paths [--cwd <dir>]\n       node lessons.mjs migrate [--cwd <dir>]\ncheck tests the lesson store (default the project store) and its index in the rules folder beside it against the cap and note shape; paths prints where each lesson file lives; migrate moves an old CLAUDE.md lessons index to the rules folder.';
 
 function parseNote(lines) {
   const close = lines[0] === '---' ? lines.indexOf('---', 1) : -1;
@@ -114,6 +114,11 @@ function repoRoot(root) {
   return result.status === 0 ? path.dirname(result.stdout.trim()) : root;
 }
 
+function topFolder(cwd) {
+  const result = spawnSync('git', ['rev-parse', '--show-toplevel'], { cwd, encoding: 'utf8' });
+  return result.status === 0 ? path.resolve(result.stdout.trim()) : cwd;
+}
+
 function autoMemoryPath(root) {
   const settings = [path.join(root, '.claude', 'settings.local.json'), path.join(root, '.claude', 'settings.json'), path.join(configDirectory(), 'settings.json')].map(readSettings);
   const setting = (key) => settings.find((file) => file[key] !== undefined)?.[key];
@@ -125,8 +130,12 @@ function autoMemoryPath(root) {
   return path.join(named, 'memory', 'MEMORY.md');
 }
 
-function lessonPaths(cwd) {
-  const root = path.resolve(cwd);
+function projectRoot(cwd, { explicit }) {
+  if (!explicit && process.env.CLAUDE_PROJECT_DIR) return path.resolve(process.env.CLAUDE_PROJECT_DIR);
+  return topFolder(path.resolve(cwd));
+}
+
+function lessonPaths(root) {
   const rules = path.join(configDirectory(), 'rules');
   const personalRules = fs.existsSync(rules) ? fs.realpathSync(rules) : rules;
   return [
@@ -200,14 +209,13 @@ function migrateFile(file, scope) {
   return removed.map((line) => `removed: ${file}: ${line}`);
 }
 
-function migrate(cwd) {
-  const root = path.resolve(cwd);
+function migrate(cwd, root) {
   const places = Object.fromEntries(lessonPaths(root));
   const config = configDirectory();
   const personalFiles = importedFiles(path.join(config, 'CLAUDE.md'));
   const personalReal = new Set(personalFiles.filter((file) => fs.existsSync(file)).map(realOrResolved));
   const project = {
-    files: [path.join(root, 'CLAUDE.md'), path.join(root, '.claude', 'CLAUDE.md')].filter((file) => fs.existsSync(file) && !personalReal.has(realOrResolved(file))),
+    files: [...new Set([cwd, root].flatMap((folder) => [path.join(folder, 'CLAUDE.md'), path.join(folder, '.claude', 'CLAUDE.md')]))].filter((file) => fs.existsSync(file) && !personalReal.has(realOrResolved(file))),
     newIndex: places['project index'],
     store: places['project store'],
     toLink: (target) => path.relative(root, target).split(path.sep).join('/')
@@ -225,12 +233,14 @@ function main() {
   const command = process.argv[2];
   if (command === 'migrate') {
     const values = parseFlags(process.argv.slice(3), { cwd: 'string', help: 'boolean' }, { usage: USAGE });
-    for (const line of migrate(values.cwd ?? process.cwd())) console.log(line);
+    const cwd = path.resolve(values.cwd ?? process.cwd());
+    for (const line of migrate(cwd, projectRoot(cwd, { explicit: values.cwd !== undefined }))) console.log(line);
     return;
   }
   if (command === 'paths') {
     const values = parseFlags(process.argv.slice(3), { cwd: 'string', help: 'boolean' }, { usage: USAGE });
-    for (const [label, file] of lessonPaths(values.cwd ?? process.cwd())) console.log(`${label}: ${file}`);
+    const cwd = values.cwd ?? process.cwd();
+    for (const [label, file] of lessonPaths(projectRoot(cwd, { explicit: values.cwd !== undefined }))) console.log(`${label}: ${file}`);
     return;
   }
   if (command !== 'check') {
@@ -238,7 +248,7 @@ function main() {
     throw new UsageError(`unknown command '${command ?? ''}'\n${USAGE}`);
   }
   const values = parseFlags(process.argv.slice(3), { dir: 'string', help: 'boolean' }, { usage: USAGE });
-  const { count, problems } = checkStore(path.resolve(values.dir ?? '.claude/lessons'), { required: values.dir !== undefined });
+  const { count, problems } = checkStore(path.resolve(values.dir ?? path.join(projectRoot(process.cwd(), { explicit: false }), '.claude', 'lessons')), { required: values.dir !== undefined });
   if (problems.length > 0) {
     console.error(problems.join('\n'));
     process.exitCode = 1;

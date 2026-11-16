@@ -291,6 +291,14 @@ function clusters(ledger) {
     .map(({ group, sessions }) => ({ id: group[0].id, group, counted, sessions, first: group[0].date, last: group.at(-1).date }));
 }
 
+function listed(cwd, ledger) {
+  const top = clusters(ledger);
+  const texts = transcriptTexts(cwd, new Set(top.flatMap(({ group }) => group.map(({ session }) => session))));
+  return top
+    .map((cluster) => ({ ...cluster, text: medoid(cluster.group, cluster.counted, texts) }))
+    .filter(({ text }) => text !== undefined);
+}
+
 function describe({ id, text, sessions, first, last }) {
   return `${id} "${text}" (${sessions} sessions, ${first} to ${last})`;
 }
@@ -334,7 +342,7 @@ function recount(cwd) {
     return loadOrReset(cwd);
   });
   if (ledger === null) return;
-  const count = clusters(ledger).length;
+  const count = listed(cwd, ledger).length;
   waitLocked(cwd, () => writePrivate(countFile(cwd), JSON.stringify({ ...readCount(cwd), count })));
 }
 
@@ -455,11 +463,7 @@ function backfill(cwd) {
 function candidates(cwd) {
   const ledger = snapshot(cwd);
   if (ledger === null) return;
-  const top = clusters(ledger).slice(0, MAX_CANDIDATES);
-  const texts = transcriptTexts(cwd, new Set(top.flatMap(({ group }) => group.map(({ session }) => session))));
-  const shown = top
-    .map((cluster) => ({ ...cluster, text: medoid(cluster.group, cluster.counted, texts) }))
-    .filter(({ text }) => text !== undefined);
+  const shown = listed(cwd, ledger).slice(0, MAX_CANDIDATES);
   process.stdout.write(shown.map((cluster) => `${describe(cluster)}\n`).join(''));
 }
 

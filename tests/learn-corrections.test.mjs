@@ -422,6 +422,16 @@ test('recount drops an entry whose transcript is gone only when it is from befor
   assert.equal(sessions.includes('gone'), false);
 });
 
+test('a cluster of turns Claude Code started itself is not counted, announced or listed', () => {
+  const env = fixture();
+  const notification = (session) => ({ date: '2026-01-01', session, text: `<task-notification>${REPEAT}</task-notification>` });
+  writeLedger(env, [...fillers(60), notification('a'), notification('b')]);
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(countOf(env), 0);
+  assert.equal(sessionStart(env, 'now'), '');
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+});
+
 test('the hook prints nothing and exits 0 on bad input', () => {
   const env = fixture();
   const result = run(env, ['hook'], 'not json');

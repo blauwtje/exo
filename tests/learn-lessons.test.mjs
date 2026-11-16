@@ -330,3 +330,45 @@ test('CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 prints none', () => {
   const result = spawnSync(process.execPath, [script, 'paths', '--cwd', repo], { encoding: 'utf8', env: { ...env, CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' } });
   assert.equal(result.stdout.trim().split('\n')[4], 'auto memory: none');
 });
+
+test('project store and index sit under the repo top folder when run from a subfolder', () => {
+  const { repo, sub, env } = autoMemoryFixture();
+  const result = spawnSync(process.execPath, [script, 'paths', '--cwd', sub], { encoding: 'utf8', env });
+  const lines = result.stdout.trim().split('\n');
+  assert.equal(lines[0], `project store: ${path.join(repo, '.claude', 'lessons')}`);
+  assert.equal(lines[1], `project index: ${path.join(repo, '.claude', 'rules', 'lessons.md')}`);
+});
+
+function envWithout(name) {
+  const env = { ...process.env };
+  delete env[name];
+  return env;
+}
+
+test('CLAUDE_PROJECT_DIR sets the project root before the shell folder', () => {
+  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'learn-lessons-envroot-')));
+  const sub = path.join(base, 'proj', 'sub');
+  fs.mkdirSync(sub, { recursive: true });
+  const env = { ...process.env, CLAUDE_PROJECT_DIR: path.join(base, 'proj') };
+  const result = spawnSync(process.execPath, [script, 'paths'], { cwd: sub, encoding: 'utf8', env });
+  assert.equal(result.stdout.split('\n')[0], `project store: ${path.join(base, 'proj', '.claude', 'lessons')}`);
+});
+
+test('check without --dir reads the store at the repo top folder from a subfolder', () => {
+  const { repo, sub } = autoMemoryFixture();
+  const lessons = path.join(repo, '.claude', 'lessons');
+  fs.mkdirSync(lessons, { recursive: true });
+  fs.writeFileSync(path.join(lessons, 'broken.md'), 'no frontmatter\n');
+  const result = spawnSync(process.execPath, [script, 'check'], { cwd: sub, encoding: 'utf8', env: envWithout('CLAUDE_PROJECT_DIR') });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /broken\.md: no frontmatter/);
+});
+
+test('migrate from a subfolder also scans that folder CLAUDE.md', () => {
+  const { sub } = autoMemoryFixture();
+  const file = path.join(sub, 'CLAUDE.md');
+  fs.writeFileSync(file, `- ${OLD_LINE} @.claude/lessons/INDEX.md\n- keep\n`);
+  const result = spawnSync(process.execPath, [script, 'migrate'], { cwd: sub, encoding: 'utf8', env: envWithout('CLAUDE_PROJECT_DIR') });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(fs.readFileSync(file, 'utf8'), '- keep\n');
+});
