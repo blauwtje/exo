@@ -14,11 +14,20 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The hook flags a prompt that repeats a lesson you kept, once per keep, and `keep` and `reject` also take the id of an earlier verdict.
 - `learn` strengthens a kept lesson that repeats (check, path rule, else a reworded note), rejects only on an explicit no, and reads the project's auto-memory index before it writes a note.
 - `learn` shows its new-memories line under the Claude Code banner when a session starts, resumes or clears, before you type, instead of on the first prompt.
+- The `learn` hook lines are stated as facts, and `learn` Capture proves a new check on the session's own mistake, edits a skill or agent in the project or config folder, writes nothing for a lesson that would not recur, and Prune marks stale lesson notes and points to `/doctor prompt-audit`.
 - The eval principles page voids a flat 0% or 100% result only when a positive control, an injected known effect of at least the threshold size, goes undetected; when the control is detected, the flat result stands.
 
 ### Fixed
 
+- `learn` keys its ledger, lock, count and verdicts by `CLAUDE_PROJECT_DIR` when set, else by the hook's `cwd`, so a subfolder or worktree no longer starts a new ledger.
+- `learn` skips turns Claude Code starts itself, such as `<task-notification>` messages, when it records prompts.
+- `lessons.mjs paths` finds auto memory where Claude Code keeps it and prints `auto memory: none` when it is off.
 - `spec` plan check reports a task whose `Files:` path git ignores, so a plan can no longer pass and then fail to land.
+
+### Removed
+
+- The `corrections.mjs replay` command added in 1.1.0, its helpers, the old `{verdict, text}` verdict rows and the copy of verdicts out of an old ledger in `reset`.
+- The `sessions.mjs` command line.
 
 ## 1.1.0 - 2026-11-16
 

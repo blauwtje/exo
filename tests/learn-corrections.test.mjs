@@ -48,12 +48,17 @@ function readLedger({ ledger }) {
   return fs.readFileSync(ledger, 'utf8').split('\n').filter((row) => row !== '').map((row) => JSON.parse(row));
 }
 
-function run(env, args, input, extra = {}) {
-  return spawnSync('node', [script, ...args], { encoding: 'utf8', input, env: { ...process.env, CLAUDE_CONFIG_DIR: env.config, ...extra } });
+function inheritedEnv() {
+  const { CLAUDE_PROJECT_DIR: _project, ...inherited } = process.env;
+  return inherited;
 }
 
-function hook(env, session, prompt) {
-  const result = run(env, ['hook'], JSON.stringify({ session_id: session, prompt, cwd: env.project }));
+function run(env, args, input, extra = {}) {
+  return spawnSync('node', [script, ...args], { encoding: 'utf8', input, env: { ...inheritedEnv(), CLAUDE_CONFIG_DIR: env.config, ...extra } });
+}
+
+function hook(env, session, prompt, cwd = env.project, extra = {}) {
+  const result = run(env, ['hook'], JSON.stringify({ session_id: session, prompt, cwd }), extra);
   assert.equal(result.status, 0, result.stderr);
   return result.stdout;
 }
@@ -61,10 +66,17 @@ function hook(env, session, prompt) {
 const REPEAT = 'rename variable totalcount everywhere please';
 const EARLIER = { date: '2026-01-02', session: 'earlier', text: 'please rename variable totalcount everywhere quickly' };
 
+test('a turn Claude Code starts itself leaves no ledger row and prints nothing', () => {
+  const env = fixture();
+  const output = hook(env, 'now', `<task-notification>\n${REPEAT}</task-notification>`);
+  assert.equal(output, '');
+  assert.equal(fs.existsSync(env.ledger), false);
+});
+
 test('a repeat from another session prints the line once; a second repeat of that cluster prints nothing', () => {
   const env = fixture();
   writeLedger(env, [...fillers(60), EARLIER, { seen: 'now' }, { seen: 'later' }]);
-  assert.equal(hook(env, 'now', REPEAT), `exo: you asked something like this on 2026-01-02: "${EARLIER.text}". If it repeats a correction or wish, run exo:learn (id ${entryOf(EARLIER).id}).\n`);
+  assert.equal(hook(env, 'now', REPEAT), `exo: you asked something like this on 2026-01-02: "${EARLIER.text}". exo:learn turns a repeated correction or wish into a check or lesson (id ${entryOf(EARLIER).id}).\n`);
   assert.equal(hook(env, 'later', REPEAT), '');
 });
 
@@ -76,7 +88,19 @@ test('a flag hides only prompts similar to the flagged prompt, not to the entry 
   assert.equal(hook(env, 'b', 'echo foxtrot golf hotel yankee').includes('on 2026-01-02'), true);
 });
 
-const KEPT_LINE = `exo: this repeats a lesson you kept. It did not stop the mistake, so run exo:learn to make it stronger (id ${entryOf(EARLIER).id}).\n`;
+test('a prompt typed in a subfolder is keyed by the project root', () => {
+  const env = fixture();
+  const subfolder = path.join(env.project, 'packages', 'web');
+  fs.mkdirSync(subfolder, { recursive: true });
+  writeLedger(env, [...fillers(60), { seen: 'first' }, { seen: 'second' }]);
+  assert.equal(hook(env, 'first', REPEAT), '');
+  const line = JSON.stringify({ type: 'user', timestamp: new Date().toISOString(), message: { content: REPEAT } });
+  fs.writeFileSync(path.join(env.folder, 'first.jsonl'), `${line}\n`);
+  const output = hook(env, 'second', REPEAT, subfolder, { CLAUDE_PROJECT_DIR: env.project });
+  assert.match(output, /you asked something like this on /);
+});
+
+const KEPT_LINE = `exo: this repeats a lesson you kept, so that lesson did not stop the mistake; exo:learn makes it stronger (id ${entryOf(EARLIER).id}).\n`;
 const keptRow = { verdict: 'kept', ids: [entryOf(EARLIER).id], words: entryOf(EARLIER).words };
 
 test('a kept lesson is flagged once per keep, and a new keep re-arms it', () => {
@@ -125,7 +149,7 @@ test('a prompt similar only to an earlier entry of a kept cluster prints the kep
   const middle = { date: '2026-01-03', session: 's2', text: 'charlie delta echo foxtrot golf hotel' };
   const row = { verdict: 'kept', ids: [entryOf(kept).id], words: entryOf(kept).words };
   writeLedger(env, [...fillers(100), kept, middle, { seen: 's3' }, row]);
-  assert.equal(hook(env, 's3', 'echo foxtrot golf hotel india juliet'), `exo: this repeats a lesson you kept. It did not stop the mistake, so run exo:learn to make it stronger (id ${entryOf(kept).id}).\n`);
+  assert.equal(hook(env, 's3', 'echo foxtrot golf hotel india juliet'), `exo: this repeats a lesson you kept, so that lesson did not stop the mistake; exo:learn makes it stronger (id ${entryOf(kept).id}).\n`);
 });
 
 test('a same-session repeat prints nothing', () => {
@@ -177,7 +201,7 @@ test('the session-start candidates line comes from the count file, shows once pe
   const env = fixture();
   writeLedger(env, [...fillers(60), EARLIER]);
   fs.writeFileSync(`${env.ledger}.count`, JSON.stringify({ count: 2, printed: 0 }));
-  const line = 'Exo found 2 new memories. Review them with /exo:learn.';
+  const line = 'Exo found 2 new memories; /exo:learn lists them.';
   assert.deepEqual(JSON.parse(sessionStart(env, 'now')), { systemMessage: line, hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: line } });
   assert.equal(sessionStart(env, 'next'), '');
   fs.writeFileSync(`${env.ledger}.count`, JSON.stringify({ count: 3, printed: 2 }));
@@ -239,12 +263,6 @@ test('a rejected cluster stays hidden when a similar entry arrives from another 
   assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
 });
 
-test('a verdict row with text from an old cache still hides its cluster', () => {
-  const env = fixture();
-  writeLedger(env, [...fillers(60), ...pair('alpha bravo charlie delta echo', '2026-03-01'), { verdict: 'rejected', text: 'alpha bravo charlie delta echo' }]);
-  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
-});
-
 test('keep and reject exit 2 without ids or on an unknown id, and reject takes back a kept id', () => {
   const env = fixture();
   const rows = pair('alpha bravo charlie delta echo', '2026-03-01');
@@ -255,6 +273,17 @@ test('keep and reject exit 2 without ids or on an unknown id, and reject takes b
   assert.match(unknown.stderr, /nosuchid/);
   assert.equal(run(env, ['keep', idOf(rows[0]), '--cwd', env.project]).status, 0);
   assert.equal(run(env, ['reject', idOf(rows[0]), '--cwd', env.project]).status, 0);
+});
+
+test('keep from a subfolder reads the ledger of CLAUDE_PROJECT_DIR', () => {
+  const env = fixture();
+  const subfolder = path.join(env.project, 'sub');
+  fs.mkdirSync(subfolder);
+  const entries = pair('alpha bravo charlie delta echo', '2026-03-01');
+  writeLedger(env, [...fillers(60), ...entries]);
+  const result = spawnSync('node', [script, 'keep', idOf(entries[0])], { encoding: 'utf8', cwd: subfolder, env: { ...process.env, CLAUDE_CONFIG_DIR: env.config, CLAUDE_PROJECT_DIR: env.project } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /kept/);
 });
 
 test('keep accepts any member id and decides the whole cluster', () => {
@@ -322,14 +351,14 @@ test('the cache holds no prompt words in plain text and a cache with a text row 
   assert.equal(/walrus|zebra|marmalade|"text"/.test(cache), false);
 });
 
-test('a rebuilt cache leaves no prompt text beside it and keeps an old verdict as words', () => {
+test('a rebuilt cache leaves no prompt text beside it and copies no verdict', () => {
   const env = fixture();
   const decided = { date: '2026-01-02', session: 'earlier', text: 'purple walrus zanzibar quokka' };
   writeRows(env.ledger, [{ date: '2026-01-02', session: 'earlier', text: 'ancient prompt' }, { verdict: 'kept', text: decided.text }]);
   fs.writeFileSync(`${env.ledger}.shown.json`, JSON.stringify([{ id: 'x', text: decided.text }]));
   assert.equal(hook(env, 'now', 'hello'), '');
   assert.equal(fs.existsSync(`${env.ledger}.shown.json`), false);
-  assert.deepEqual(JSON.parse(fs.readFileSync(verdictsPath(env), 'utf8')), { verdict: 'kept', words: entryOf(decided).words });
+  assert.equal(fs.existsSync(verdictsPath(env)), false);
 });
 
 test('a row of unknown shape makes the hook rebuild the cache', () => {
@@ -369,7 +398,7 @@ test('12 hooks started at once each leave their seen row and entry', async () =>
   writeLedger(env, [...fillers(60), { seen: 'seed' }]);
   const sessions = Array.from({ length: 12 }, (_, index) => `racer-${index}`);
   const children = sessions.map((session) => new Promise((resolve) => {
-    const child = spawn('node', [script, 'hook'], { env: { ...process.env, CLAUDE_CONFIG_DIR: env.config, EXO_LEARN_LOCK_MS: '60000' } });
+    const child = spawn('node', [script, 'hook'], { env: { ...inheritedEnv(), CLAUDE_CONFIG_DIR: env.config, EXO_LEARN_LOCK_MS: '60000' } });
     child.on('close', resolve);
     child.stdin.end(JSON.stringify({ session_id: session, prompt: `racer prompt ${session} unique words here`, cwd: env.project }));
   }));
@@ -400,39 +429,6 @@ test('the hook prints nothing and exits 0 on bad input', () => {
   assert.equal(result.stdout, '');
 });
 
-test('replay lists each repeat the hook would flag and summarises sessions, fifths and printed size', () => {
-  const env = fixture();
-  const message = (text, day, minute) => `${JSON.stringify({ type: 'user', timestamp: `2026-01-${day}T10:${String(minute).padStart(2, '0')}:00.000Z`, message: { content: text } })}\n`;
-  const filler = (index) => `zq${index}a zq${index}b zq${index}c`;
-  const first = [message(EARLIER.text, '02', 0), ...Array.from({ length: 59 }, (_, index) => message(filler(index), '02', index + 1))];
-  const second = [...Array.from({ length: 4 }, (_, index) => message(filler(100 + index), '03', index)), message(REPEAT, '03', 4)];
-  fs.writeFileSync(path.join(env.folder, 'a.jsonl'), first.join(''));
-  fs.writeFileSync(path.join(env.folder, 'b.jsonl'), second.join(''));
-  const result = run(env, ['replay', '--cwd', env.project]);
-  assert.equal(result.status, 0, result.stderr);
-  assert.equal(result.stdout, [
-    '1. 2026-01-03, fifth 5 of its session',
-    `   prompt: "${REPEAT}"`,
-    `   matched: "${EARLIER.text}" (2026-01-02), held by 1 earlier sessions`,
-    'input: transcript replay from an empty ledger, no backfill, no keep/reject verdicts',
-    'rebuilt slash-command entries: 0',
-    'skipped entries: 0',
-    'sessions: 2',
-    'prompts: 65',
-    'flags: 1',
-    'sessions with a flag: 1',
-    'fifth 1: flaggable prompts 0, flags 0 (0% of flaggable)',
-    'fifth 2: flaggable prompts 0, flags 0 (0% of flaggable)',
-    'fifth 3: flaggable prompts 0, flags 0 (0% of flaggable)',
-    'fifth 4: flaggable prompts 0, flags 0 (0% of flaggable)',
-    'fifth 5: flaggable prompts 1, flags 1 (100% of flaggable)',
-    'hook output, flag lines: est. tokens per session mean 22, max 44',
-    'hook output, announce lines: est. tokens per session mean 0, max 0',
-    ''
-  ].join('\n'));
-  assert.equal(fs.existsSync(env.ledger), false);
-});
-
 function transcriptLine(content, minute) {
   const day = new Date().toISOString().slice(0, 10);
   const timestamp = `${day}T10:${String(minute).padStart(2, '0')}:00.000Z`;
@@ -442,34 +438,6 @@ function transcriptLine(content, minute) {
 function slashEntry(name, args) {
   return `<command-message>${name}</command-message>\n<command-name>/${name}</command-name>\n<command-args>${args}</command-args>`;
 }
-
-test('replay flags the same prompts as the hook, including slash commands and pasted blocks', () => {
-  const env = fixture();
-  const filler = (index) => ({ prompt: `zq${index}a zq${index}b zq${index}c` });
-  const sequence = [
-    { session: 'one', prompt: '/rename-thing totalcount variable everywhere please now', content: slashEntry('rename-thing', 'totalcount variable everywhere please now') },
-    ...Array.from({ length: 20 }, (_, index) => ({ session: 'one', ...filler(index) })),
-    { session: 'two', prompt: 'install dependencies using pnpm lockfile frozen' },
-    ...Array.from({ length: 20 }, (_, index) => ({ session: 'two', ...filler(20 + index) })),
-    { session: 'two', prompt: 'totalcount variable everywhere please now quickly' },
-    { session: 'three', prompt: 'start of third session' },
-    ...Array.from({ length: 20 }, (_, index) => ({ session: 'three', ...filler(40 + index) })),
-    { session: 'three', prompt: '<pasted_content id="1">kappa lambda</pasted_content> install dependencies using pnpm lockfile frozen' }
-  ];
-  sequence.forEach(({ session, prompt, content }, minute) => {
-    fs.appendFileSync(path.join(env.folder, `${session}.jsonl`), transcriptLine(content ?? prompt, minute));
-  });
-  writeLedger(env, [{ seen: 'seed' }]);
-  const fromHook = sequence.flatMap(({ session, prompt }) => {
-    const match = /on (\S+): "(.*)"\. If it repeats/.exec(hook(env, session, prompt));
-    return match ? [{ prompt, date: match[1], matched: match[2] }] : [];
-  });
-  const replayed = run(env, ['replay', '--cwd', env.project]);
-  assert.equal(replayed.status, 0, replayed.stderr);
-  const fromReplay = [...replayed.stdout.matchAll(/^\d+\. (\S+), fifth \d+ of its session\n {3}prompt: "(.*)"\n {3}matched: "(.*)" \(/gm)].map(([, date, prompt, matched]) => ({ prompt, date, matched }));
-  assert.equal(fromHook.length, 2);
-  assert.deepEqual(fromReplay, fromHook);
-});
 
 const modeOf = (file) => fs.statSync(file).mode & 0o777;
 
@@ -517,7 +485,7 @@ test('a hook started while a slow recount runs still stores its row', async () =
   const today = new Date().toISOString().slice(0, 10);
   const rows = Array.from({ length: 2000 }, (_, index) => entryOf({ date: today, session: `s${index % 60}`, text: Array.from({ length: 20 + (index % 30) }, (_, j) => `w${(index * 7919 + j) % 3000}`).join(' ') }));
   writeRows(env.ledger, rows);
-  const recount = spawn('node', [script, 'recount', '--cwd', env.project], { env: { ...process.env, CLAUDE_CONFIG_DIR: env.config }, stdio: 'ignore' });
+  const recount = spawn('node', [script, 'recount', '--cwd', env.project], { env: { ...inheritedEnv(), CLAUDE_CONFIG_DIR: env.config }, stdio: 'ignore' });
   const finished = new Promise((resolve) => recount.on('exit', resolve));
   await new Promise((resolve) => setTimeout(resolve, 500));
   hook(env, 'new-session', 'please never amend commits without asking me first');

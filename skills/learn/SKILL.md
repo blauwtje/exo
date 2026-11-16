@@ -10,9 +10,9 @@ Turn a lesson into the cheapest form that stops the mistake, and keep CLAUDE.md 
 
 ## Start
 
-- The hook line `exo: you asked something like this on <date>` flags a prompt that repeats an earlier one. Judge whether it is a correction or wish; when it is neither, say nothing and go on. Otherwise run Capture on it.
-- The hook line `exo: this repeats a lesson you kept. It did not stop the mistake, so run exo:learn to make it stronger (id <id>).` means a kept lesson failed. Run Strengthen on it.
-- The hook line `Exo found <n> new memories` means the candidates wait; finish the current task, then run Mine.
+- The hook line `exo: you asked something like this on <date>: "<text>". exo:learn turns a repeated correction or wish into a check or lesson (id <id>).` flags a prompt that repeats an earlier one. Judge whether it is a correction or wish; when it is neither, say nothing and go on. Otherwise run Capture on it.
+- The hook line `exo: this repeats a lesson you kept, so that lesson did not stop the mistake; exo:learn makes it stronger (id <id>).` means a kept lesson failed. Run Strengthen on it.
+- The hook line `Exo found <n> new memories; /exo:learn lists them.` means the candidates wait; finish the current task, then run Mine.
 - The user says they have corrected this before, or asks you to remember something, in any language: run Capture.
 - A request to mine past sessions runs Mine; a request to prune runs Prune.
 
@@ -28,9 +28,10 @@ Then run `node "${CLAUDE_SKILL_DIR}/scripts/corrections.mjs" keep <id>` with the
 
 ## Capture
 
-1. Look for a check the project already runs, such as a lint rule, test or script. Add the rule or case scoped to the files the lesson names, so it does not fail across old code. Run it once, show it failing on the old behavior and report how many existing lines it flags. Write it at once and quote it with how to undo it.
-2. When no check fits, offer the lesson as one line in the numbered list of Mine, because a note costs context in every session that loads it.
-3. When the lesson will not recur, say so and write nothing.
+1. When the lesson would not hold for a different task or will not recur, say so and write nothing.
+2. Look for a check the project already runs, such as a lint rule, test or script. Add the rule or case scoped to the files the lesson names, so it does not fail across old code. Run it once on the line or diff from the session where the user gave the correction, else on a copy of that mistake. Show it failing and report how many existing lines it flags. Write it at once and quote it with how to undo it.
+3. A lesson about how a skill or agent works becomes an edit to that skill or agent when its file sits in the project or the user's config folder. For a plugin's skill, name the skill and offer a note as the next step does.
+4. When no other form fits, offer the lesson as one line in the numbered list of Mine, because a note costs context in every session that loads it.
 
 ## Mine
 
@@ -66,9 +67,9 @@ How to apply: <where and when>
 - Run `node "${CLAUDE_SKILL_DIR}/scripts/lessons.mjs" paths` for the five places: project store, project index, personal store, personal index and auto memory. Store a project lesson in the project store and a personal one in the personal store, and add its line to the matching index. Claude Code loads the index from the rules folder, so it needs no line in CLAUDE.md.
 - Before each write run `node "${CLAUDE_SKILL_DIR}/scripts/lessons.mjs" migrate`. It moves an old CLAUDE.md lessons index, the line starting `Lessons, open a note when`, to the new index. Quote each `removed: <file>: <line>` it prints and say how to undo it: put that line back in that file.
 - A lesson that names files is written as `<rules>/lessons/<name>.md`, where `<rules>` is the folder of the index: the note shape plus a `paths:` list of globs on `- ` lines in its frontmatter, so it loads with the matching file. Keep its index line, because path rules fail silently under Bash reads and new files.
-- Before writing a note, read the auto memory file. When it already holds the lesson and the lesson is personal, update that memory note with the stronger wording and write no note. A project lesson is written in the project store anyway, because auto memory is not shared with the team.
+- Before writing a note, read the auto memory file; when `paths` prints `auto memory: none`, skip the read. When it already holds the lesson and the lesson is personal, update that memory note with the stronger wording and write no note. A project lesson is written in the project store anyway, because auto memory is not shared with the team.
 - Run `node "${CLAUDE_SKILL_DIR}/scripts/lessons.mjs" check --dir <store>` after each write and fix what it reports.
 
 ## Prune
 
-Read the two CLAUDE.md files and mark each line keep, update or delete against the current tree. Delete a line a check now enforces, and one the tree contradicts. Move a lesson found there to a check or a note, because CLAUDE.md loads every session. Propose the edits and wait for the user's yes; git history is the archive.
+Read the two CLAUDE.md files and mark each line keep, update or delete against the current tree. Delete a line a check now enforces, and one the tree contradicts. Move a lesson found there to a check or a note, because CLAUDE.md loads every session. Read the two lesson stores too and mark delete each note a check now enforces or the tree makes impossible. For stale references and contradictions in CLAUDE.md, rules and skills, point the user to `/doctor prompt-audit`. Propose the edits and wait for the user's yes; git history is the archive.

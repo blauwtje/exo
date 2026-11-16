@@ -81,3 +81,11 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-16 learn unpicked: a shown cluster the user did not pick is rejected for good, though not picking is not saying no; 21 of 72,223 session files hold "shown ones not picked" (user request).
 - 2026-11-16 learn auto memory: learn writes a note without reading auto memory, which may already hold the same lesson; 186 of 72,223 session files hold "auto memory" (user request).
 - 2026-11-16 learn rule source: the skill credits "the reason after it" to a named person whose guide says to skip the reason, and names a person in a skill; 22 of 72,223 session files hold "the reason after it" (user request).
+- 2026-11-16 learn ledger key: the ledger is keyed by the hook's cwd, so a subfolder or the worktrees folder starts its own ledger and repeats are missed, seen as separate ledgers on disk; 60 of 72,275 session files hold "exo/learn" (review).
+- 2026-11-16 learn self-started turns: the hook records task-notification turns as typed prompts while the transcript reader drops them; 7,940 of 72,275 session files hold "<task-notification>" (review).
+- 2026-11-16 learn auto memory path: the auto memory path is built from the cwd and ignores the repo root, `autoMemoryDirectory` and the off switch; 50 of 72,275 session files hold "autoMemoryDirectory" (user request).
+- 2026-11-16 learn hook wording: the hook lines are commands while the hooks reference asks for facts; 88 of 72,275 session files hold "run exo:learn" (user request).
+- 2026-11-16 learn extra code: the replay command, old verdict rows and the sessions command line serve no caller; 43 of 72,275 session files hold "corrections.mjs replay" (user request).
+- 2026-11-16 learn prune: Prune reads only CLAUDE.md, so notes a check now enforces stay, and it repeats `/doctor prompt-audit`; 274 of 72,275 session files hold "prompt-audit" (user request).
+- 2026-11-16 learn skill route: a lesson about a skill becomes a note instead of a skill edit, and no step asks whether it holds for a different task; 716 of 72,275 session files hold "different task" (user request).
+- 2026-11-16 learn check proof: a new check is shown failing on old behavior in general, not on the mistake the user corrected; 56 of 72,275 session files hold "failing on the old behavior" (user request).

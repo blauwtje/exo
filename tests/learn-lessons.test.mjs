@@ -258,3 +258,75 @@ test('a file in the project and personal lists is migrated once, with absolute l
   assert.equal(result.status, 0);
   assert.equal(fs.readFileSync(path.join(config, 'rules', 'lessons.md'), 'utf8'), `- [a](${path.join(config, 'lessons', 'a.md')}) — when\n`);
 });
+
+function autoMemoryFixture() {
+  const base = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'learn-lessons-auto-')));
+  const config = path.join(base, 'config');
+  const repo = path.join(base, 'repo');
+  const sub = path.join(repo, 'packages', 'app');
+  fs.mkdirSync(config);
+  fs.mkdirSync(sub, { recursive: true });
+  assert.equal(spawnSync('git', ['init', '-q'], { cwd: repo }).status, 0);
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: config };
+  delete env.CLAUDE_CODE_DISABLE_AUTO_MEMORY;
+  delete env.CLAUDE_CODE_PROJECT_DIR_NAME;
+  const autoMemory = (cwd) => {
+    const result = spawnSync(process.execPath, [script, 'paths', '--cwd', cwd], { encoding: 'utf8', env });
+    assert.equal(result.status, 0);
+    const lines = result.stdout.trim().split('\n');
+    assert.equal(lines.length, 5);
+    return lines[4];
+  };
+  const writeSettings = (dir, name, settings) => {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, name), typeof settings === 'string' ? settings : JSON.stringify(settings));
+  };
+  return { base, config, repo, sub, env, autoMemory, writeSettings };
+}
+
+test('auto memory from a subfolder sits under the repo root project folder', () => {
+  const { config, repo, sub, autoMemory } = autoMemoryFixture();
+  const folder = repo.replace(/[^A-Za-z0-9]/g, '-');
+  assert.equal(autoMemory(sub), `auto memory: ${path.join(config, 'projects', folder, 'memory', 'MEMORY.md')}`);
+});
+
+test('CLAUDE_CODE_PROJECT_DIR_NAME replaces the project folder name', () => {
+  const { config, sub, env } = autoMemoryFixture();
+  const result = spawnSync(process.execPath, [script, 'paths', '--cwd', sub], { encoding: 'utf8', env: { ...env, CLAUDE_CODE_PROJECT_DIR_NAME: 'named' } });
+  assert.equal(result.stdout.trim().split('\n')[4], `auto memory: ${path.join(config, 'projects', 'named', 'memory', 'MEMORY.md')}`);
+});
+
+test('autoMemoryDirectory in the settings files wins in order local, project, config, with ~/ expanded', () => {
+  const { config, repo, sub, autoMemory, writeSettings } = autoMemoryFixture();
+  writeSettings(config, 'settings.json', { autoMemoryDirectory: '/from/config' });
+  assert.equal(autoMemory(sub), `auto memory: ${path.join('/from/config', 'MEMORY.md')}`);
+  writeSettings(path.join(repo, '.claude'), 'settings.json', { autoMemoryDirectory: '~/from-project' });
+  assert.equal(autoMemory(repo), `auto memory: ${path.join(os.homedir(), 'from-project', 'MEMORY.md')}`);
+  writeSettings(path.join(repo, '.claude'), 'settings.local.json', { autoMemoryDirectory: 'relative/dir' });
+  assert.equal(autoMemory(repo), `auto memory: ${path.join('relative/dir', 'MEMORY.md')}`);
+});
+
+test('settings that fail to parse count as absent', () => {
+  const { repo, autoMemory, writeSettings } = autoMemoryFixture();
+  writeSettings(path.join(repo, '.claude'), 'settings.local.json', '{ not json');
+  writeSettings(path.join(repo, '.claude'), 'settings.json', { autoMemoryDirectory: '/from/project' });
+  assert.equal(autoMemory(repo), `auto memory: ${path.join('/from/project', 'MEMORY.md')}`);
+});
+
+test('autoMemoryEnabled false prints none, the first file that sets it deciding', () => {
+  const { config, repo, autoMemory, writeSettings } = autoMemoryFixture();
+  writeSettings(path.join(repo, '.claude'), 'settings.json', { autoMemoryEnabled: false });
+  assert.equal(autoMemory(repo), 'auto memory: none');
+  writeSettings(path.join(repo, '.claude'), 'settings.local.json', { autoMemoryEnabled: true });
+  assert.match(autoMemory(repo), /memory[\\/]MEMORY\.md$/);
+  writeSettings(path.join(repo, '.claude'), 'settings.local.json', {});
+  writeSettings(path.join(repo, '.claude'), 'settings.json', {});
+  writeSettings(config, 'settings.json', { autoMemoryEnabled: false });
+  assert.equal(autoMemory(repo), 'auto memory: none');
+});
+
+test('CLAUDE_CODE_DISABLE_AUTO_MEMORY=1 prints none', () => {
+  const { repo, env } = autoMemoryFixture();
+  const result = spawnSync(process.execPath, [script, 'paths', '--cwd', repo], { encoding: 'utf8', env: { ...env, CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1' } });
+  assert.equal(result.stdout.trim().split('\n')[4], 'auto memory: none');
+});

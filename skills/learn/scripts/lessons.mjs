@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -100,6 +101,30 @@ export function checkStore(dir, { required = false } = {}) {
   return { count: notes.length, problems };
 }
 
+function readSettings(file) {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8')) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function repoRoot(root) {
+  const result = spawnSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: root, encoding: 'utf8' });
+  return result.status === 0 ? path.dirname(result.stdout.trim()) : root;
+}
+
+function autoMemoryPath(root) {
+  const settings = [path.join(root, '.claude', 'settings.local.json'), path.join(root, '.claude', 'settings.json'), path.join(configDirectory(), 'settings.json')].map(readSettings);
+  const setting = (key) => settings.find((file) => file[key] !== undefined)?.[key];
+  if (process.env.CLAUDE_CODE_DISABLE_AUTO_MEMORY === '1' || setting('autoMemoryEnabled') === false) return 'none';
+  const directory = setting('autoMemoryDirectory');
+  if (typeof directory === 'string') return path.join(directory.startsWith('~/') ? path.join(os.homedir(), directory.slice(2)) : directory, 'MEMORY.md');
+  const folder = projectFolder(repoRoot(root));
+  const named = process.env.CLAUDE_CODE_PROJECT_DIR_NAME ? path.join(path.dirname(folder), process.env.CLAUDE_CODE_PROJECT_DIR_NAME) : folder;
+  return path.join(named, 'memory', 'MEMORY.md');
+}
+
 function lessonPaths(cwd) {
   const root = path.resolve(cwd);
   const rules = path.join(configDirectory(), 'rules');
@@ -109,7 +134,7 @@ function lessonPaths(cwd) {
     ['project index', path.join(root, '.claude', 'rules', INDEX)],
     ['personal store', path.join(path.dirname(personalRules), 'lessons')],
     ['personal index', path.join(rules, INDEX)],
-    ['auto memory', path.join(projectFolder(root), 'memory', 'MEMORY.md')]
+    ['auto memory', autoMemoryPath(root)]
   ];
 }
 

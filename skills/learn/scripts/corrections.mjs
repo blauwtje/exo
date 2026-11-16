@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { sleepSync } from '#basics';
 import { configDirectory } from '#config-directory';
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
-import { projectFolder, sessionFiles, promptMessages } from './sessions.mjs';
+import { projectFolder, sessionFiles, promptMessages, typedPrompt } from './sessions.mjs';
 
 const MAX_PROMPT_CHARS = 600;
 const MAX_ENTRY_CHARS = 300;
@@ -25,12 +25,9 @@ const LOCK_RETRY_MS = 50;
 const LOCK_WAIT_MS = environmentMs('EXO_LEARN_LOCK_MS', 2000);
 const FOLDER_MODE = 0o700;
 const FILE_MODE = 0o600;
-const USAGE = 'usage: node corrections.mjs hook | session-start | backfill [--cwd <dir>] | replay [--cwd <dir>] | candidates [--cwd <dir>] | keep <id...> [--cwd <dir>] | reject <id...> [--cwd <dir>] | recount [--cwd <dir>]';
+const USAGE = 'usage: node corrections.mjs hook | session-start | backfill [--cwd <dir>] | candidates [--cwd <dir>] | keep <id...> [--cwd <dir>] | reject <id...> [--cwd <dir>] | recount [--cwd <dir>]';
 const FLAGS = { cwd: 'string', help: 'boolean' };
 
-const FIFTHS = 5;
-const MAX_REPLAY_CHARS = 120;
-const CHARS_PER_TOKEN = 4;
 
 const VERDICTS = { keep: 'kept', reject: 'rejected' };
 const BUSY = Symbol('busy');
@@ -144,20 +141,11 @@ function ledgerOf(rows) {
   };
 }
 
-function isOldVerdict(row) {
-  return Object.values(VERDICTS).includes(row?.verdict) && typeof row.text === 'string';
-}
-
-function wordsVerdict({ verdict, text }) {
-  return { verdict, words: words(text) };
-}
-
 function readVerdicts(cwd) {
   const file = verdictsFile(cwd);
   if (!fs.existsSync(file)) return [];
   return rowsOf(fs.readFileSync(file, 'utf8'))
-    .filter((row) => isRepeatedRow(row) || (Object.values(VERDICTS).includes(row?.verdict) && (Array.isArray(row.ids) || Array.isArray(row.words) || typeof row.text === 'string')))
-    .map((row) => (isOldVerdict(row) ? wordsVerdict(row) : row));
+    .filter((row) => isRepeatedRow(row) || (Object.values(VERDICTS).includes(row?.verdict) && (Array.isArray(row.ids) || Array.isArray(row.words))));
 }
 
 function isRepeatedRow(row) {
@@ -196,8 +184,6 @@ function currentLedger(cwd) {
 function reset(cwd) {
   const rows = cacheRows(cwd);
   if (rows === null || rows.every(isKnownRow)) return;
-  const decided = rows.filter(isOldVerdict);
-  if (decided.length > 0) append(verdictsFile(cwd), decided.map(wordsVerdict));
   for (const name of [ledgerFile(cwd), countFile(cwd), `${ledgerFile(cwd)}.shown.json`]) fs.rmSync(name, { force: true });
 }
 
@@ -208,11 +194,6 @@ function loadOrReset(cwd) {
     return null;
   }
   return { ...ledger, verdicts: readVerdicts(cwd) };
-}
-
-function merged(ledger, rows) {
-  const added = ledgerOf(rows);
-  return { entries: [...ledger.entries, ...added.entries], verdicts: ledger.verdicts, seen: [...ledger.seen, ...added.seen], flagged: [...ledger.flagged, ...added.flagged] };
 }
 
 function indexed(rows) {
@@ -359,7 +340,7 @@ function recount(cwd) {
 
 function announcement(counts) {
   if (counts.count === 0 || counts.count === counts.printed) return { counts, line: '' };
-  return { counts: { ...counts, printed: counts.count }, line: `Exo found ${counts.count} new memories. Review them with /exo:learn.` };
+  return { counts: { ...counts, printed: counts.count }, line: `Exo found ${counts.count} new memories; /exo:learn lists them.` };
 }
 
 function keptRepeat(verdicts, kept, entries, counted) {
@@ -386,14 +367,14 @@ function react(ledger, { session, prompt, date }, textOf) {
   const newest = ledger.verdicts.findLastIndex((row) => related.some((entry) => rowMatches(row, entry, counted)));
   if (newest !== -1 && ledger.verdicts[newest].verdict === VERDICTS.reject) return flaggable;
   const repeated = newest === -1 ? null : keptRepeat(ledger.verdicts, newest, related, counted);
-  if (repeated !== null) return { ...flaggable, line: `exo: this repeats a lesson you kept. It did not stop the mistake, so run exo:learn to make it stronger (id ${repeated}).\n`, repeated };
+  if (repeated !== null) return { ...flaggable, line: `exo: this repeats a lesson you kept, so that lesson did not stop the mistake; exo:learn makes it stronger (id ${repeated}).\n`, repeated };
   if (newest !== -1 || !earlier || ledger.flagged.some((row) => similar(current.words, row.flagged, counted))) return flaggable;
   const earlierText = textOf(earlier);
   if (earlierText === undefined) return flaggable;
   return {
     ...flaggable,
     rows: [...rows, { flagged: recorded[0].words }],
-    line: `exo: you asked something like this on ${earlier.date}: "${earlierText.slice(0, MAX_FLAG_CHARS)}". If it repeats a correction or wish, run exo:learn (id ${earlier.id}).\n`,
+    line: `exo: you asked something like this on ${earlier.date}: "${earlierText.slice(0, MAX_FLAG_CHARS)}". exo:learn turns a repeated correction or wish into a check or lesson (id ${earlier.id}).\n`,
     flag: { text: cutText(text), earlier: { ...earlier, text: earlierText }, sessions: new Set(matches.map(({ session: other }) => other)).size }
   };
 }
@@ -428,7 +409,13 @@ function recordPrompt(cwd, session, prompt, date) {
   return { line: result.line, detached: null };
 }
 
-function hook({ session_id: session, prompt, cwd }) {
+function projectRoot(cwd) {
+  return process.env.CLAUDE_PROJECT_DIR || cwd;
+}
+
+function hook({ session_id: session, prompt, cwd: hookCwd }) {
+  if (!typedPrompt(prompt)) return;
+  const cwd = projectRoot(hookCwd);
   const date = today();
   const outcome = waitLocked(cwd, () => recordPrompt(cwd, session, prompt, date), LOCK_WAIT_MS);
   if (outcome === BUSY) return;
@@ -463,75 +450,6 @@ function backfill(cwd) {
     compact(cwd);
   });
   recount(cwd);
-}
-
-function cut(text) {
-  return text.slice(0, MAX_REPLAY_CHARS);
-}
-
-function replayPrompts(cwd) {
-  return sessionFiles(projectFolder(cwd)).flatMap((sessionFile) => {
-    const session = path.basename(sessionFile, '.jsonl');
-    const messages = promptMessages(sessionFile).filter(({ kind }) => kind !== 'skipped');
-    return messages.map(({ text, timestamp, kind }, index) => ({ session, prompt: text, timestamp, kind, fifth: Math.floor((index * FIFTHS) / messages.length) + 1 }));
-  }).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-}
-
-function replaySkipped(cwd) {
-  return sessionFiles(projectFolder(cwd)).reduce((total, sessionFile) => total + promptMessages(sessionFile).filter(({ kind }) => kind === 'skipped').length, 0);
-}
-
-function replayFlagBlock({ date, fifth, flag }, number) {
-  return `${number}. ${date}, fifth ${fifth} of its session\n   prompt: "${cut(flag.text)}"\n   matched: "${cut(flag.earlier.text)}" (${flag.earlier.date}), held by ${flag.sessions} earlier sessions`;
-}
-
-function percent(count, total) {
-  return total === 0 ? 0 : Math.round((count / total) * 100);
-}
-
-function tokenStats(charsBySession, sessions) {
-  const tokens = [...charsBySession.values()].map((chars) => chars / CHARS_PER_TOKEN);
-  return `mean ${sessions === 0 ? 0 : Math.round(tokens.reduce((sum, count) => sum + count, 0) / sessions)}, max ${Math.round(Math.max(0, ...tokens))}`;
-}
-
-function replay(cwd) {
-  const prompts = replayPrompts(cwd);
-  let ledger = { entries: [], verdicts: [], seen: [], flagged: [] };
-  const texts = new Map();
-  let counts = { count: 0, printed: 0 };
-  const flags = [];
-  const flaggable = Array.from({ length: FIFTHS }, () => 0);
-  const flagChars = new Map();
-  const announceChars = new Map();
-  for (const { session, prompt, timestamp, fifth } of prompts) {
-    const date = timestamp.slice(0, 10);
-    texts.set(idOf(session, cutText(prompt)), cutText(prompt));
-    const result = react(ledger, { session, prompt, date }, (entry) => texts.get(entry.id));
-    const announced = result.first ? announcement(counts) : { counts, line: '' };
-    ledger = compacted(merged(ledger, result.rows));
-    counts = result.first ? { ...announced.counts, count: clusters(ledger).length } : counts;
-    if (result.flaggable) flaggable[fifth - 1] += 1;
-    const target = result.flag ? flagChars : announceChars;
-    target.set(session, (target.get(session) ?? 0) + result.line.length + announced.line.length);
-    if (result.flag) flags.push({ date, fifth, session, flag: result.flag });
-  }
-  const sessions = new Set(prompts.map(({ session }) => session)).size;
-  process.stdout.write(`${[
-    ...flags.map((flag, index) => replayFlagBlock(flag, index + 1)),
-    'input: transcript replay from an empty ledger, no backfill, no keep/reject verdicts',
-    `rebuilt slash-command entries: ${prompts.filter(({ kind }) => kind === 'rebuilt').length}`,
-    `skipped entries: ${replaySkipped(cwd)}`,
-    `sessions: ${sessions}`,
-    `prompts: ${prompts.length}`,
-    `flags: ${flags.length}`,
-    `sessions with a flag: ${new Set(flags.map(({ session }) => session)).size}`,
-    ...flaggable.map((total, index) => {
-      const count = flags.filter(({ fifth }) => fifth === index + 1).length;
-      return `fifth ${index + 1}: flaggable prompts ${total}, flags ${count} (${percent(count, total)}% of flaggable)`;
-    }),
-    `hook output, flag lines: est. tokens per session ${tokenStats(flagChars, sessions)}`,
-    `hook output, announce lines: est. tokens per session ${tokenStats(announceChars, sessions)}`
-  ].join('\n')}\n`);
 }
 
 function candidates(cwd) {
@@ -596,7 +514,7 @@ async function main() {
   }
   if (command === 'session-start') {
     try {
-      await readInput().then((input) => announce(JSON.parse(input).cwd));
+      await readInput().then((input) => announce(projectRoot(JSON.parse(input).cwd)));
     } catch (error) {
       console.error(`exo learn session-start: ${error.message}`);
     }
@@ -605,9 +523,8 @@ async function main() {
   const split = rest.findIndex((token) => token.startsWith('--'));
   const ids = split === -1 ? rest : rest.slice(0, split);
   const values = parseFlags(split === -1 ? [] : rest.slice(split), FLAGS, { usage: USAGE });
-  const cwd = values.cwd ?? process.cwd();
+  const cwd = values.cwd ?? projectRoot(process.cwd());
   if (command === 'backfill') backfill(cwd);
-  else if (command === 'replay') replay(cwd);
   else if (command === 'candidates') candidates(cwd);
   else if (command === 'recount') recount(cwd);
   else if (command === 'keep' || command === 'reject') decide(command, ids, cwd);
