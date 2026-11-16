@@ -76,6 +76,58 @@ test('a flag hides only prompts similar to the flagged prompt, not to the entry 
   assert.equal(hook(env, 'b', 'echo foxtrot golf hotel yankee').includes('on 2026-01-02'), true);
 });
 
+const KEPT_LINE = `exo: this repeats a lesson you kept. It did not stop the mistake, so run exo:learn to make it stronger (id ${entryOf(EARLIER).id}).\n`;
+const keptRow = { verdict: 'kept', ids: [entryOf(EARLIER).id], words: entryOf(EARLIER).words };
+
+test('a kept lesson is flagged once per keep, and a new keep re-arms it', () => {
+  const env = fixture();
+  writeLedger(env, [...fillers(100), EARLIER, { seen: 'one' }, { seen: 'two' }, { seen: 'three' }, keptRow]);
+  assert.equal(hook(env, 'one', REPEAT), KEPT_LINE);
+  assert.equal(hook(env, 'two', REPEAT), '');
+  assert.equal(run(env, ['keep', entryOf(EARLIER).id, '--cwd', env.project]).status, 0);
+  assert.equal(hook(env, 'three', REPEAT), KEPT_LINE);
+});
+
+test('a cluster kept and then rejected stays silent on a repeat', () => {
+  const env = fixture();
+  writeLedger(env, [...fillers(60), EARLIER, { seen: 'one' }, keptRow]);
+  assert.equal(run(env, ['reject', entryOf(EARLIER).id, '--cwd', env.project]).status, 0);
+  assert.equal(hook(env, 'one', REPEAT), '');
+});
+
+test('a cluster flagged before its keep still prints the kept-repeat line', () => {
+  const env = fixture();
+  writeLedger(env, [...fillers(60), EARLIER, { flagged: entryOf(EARLIER).words }, { seen: 'one' }, keptRow]);
+  assert.equal(hook(env, 'one', REPEAT), KEPT_LINE);
+});
+
+test('a keep after a reject takes the cluster back, the newest matching verdict wins', () => {
+  const env = fixture();
+  const rejectedRow = { ...keptRow, verdict: 'rejected' };
+  writeLedger(env, [...fillers(60), EARLIER, { seen: 'one' }, rejectedRow]);
+  assert.equal(hook(env, 'one', REPEAT), '');
+  assert.equal(run(env, ['keep', entryOf(EARLIER).id, '--cwd', env.project]).status, 0);
+  assert.equal(hook(env, 'one', REPEAT), KEPT_LINE);
+});
+
+test('a kept row from an old cache with words and no ids is flagged once and can be kept again', () => {
+  const env = fixture();
+  writeLedger(env, [...fillers(100), EARLIER, { seen: 'one' }, { seen: 'two' }, { seen: 'three' }, { verdict: 'kept', words: entryOf(EARLIER).words }]);
+  assert.equal(hook(env, 'one', REPEAT), KEPT_LINE);
+  assert.equal(hook(env, 'two', REPEAT), '');
+  assert.equal(run(env, ['keep', entryOf(EARLIER).id, '--cwd', env.project]).status, 0);
+  assert.equal(hook(env, 'three', REPEAT), KEPT_LINE);
+});
+
+test('a prompt similar only to an earlier entry of a kept cluster prints the kept-repeat line', () => {
+  const env = fixture();
+  const kept = { date: '2026-01-02', session: 's1', text: 'alpha bravo charlie delta echo foxtrot' };
+  const middle = { date: '2026-01-03', session: 's2', text: 'charlie delta echo foxtrot golf hotel' };
+  const row = { verdict: 'kept', ids: [entryOf(kept).id], words: entryOf(kept).words };
+  writeLedger(env, [...fillers(100), kept, middle, { seen: 's3' }, row]);
+  assert.equal(hook(env, 's3', 'echo foxtrot golf hotel india juliet'), `exo: this repeats a lesson you kept. It did not stop the mistake, so run exo:learn to make it stronger (id ${entryOf(kept).id}).\n`);
+});
+
 test('a same-session repeat prints nothing', () => {
   const env = fixture();
   writeLedger(env, [...fillers(60), EARLIER, { seen: 'earlier' }]);
@@ -193,7 +245,7 @@ test('a verdict row with text from an old cache still hides its cluster', () => 
   assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
 });
 
-test('keep and reject exit 2 without ids, on an unknown id or on a decided id', () => {
+test('keep and reject exit 2 without ids or on an unknown id, and reject takes back a kept id', () => {
   const env = fixture();
   const rows = pair('alpha bravo charlie delta echo', '2026-03-01');
   writeLedger(env, [...fillers(60), ...rows]);
@@ -202,7 +254,7 @@ test('keep and reject exit 2 without ids, on an unknown id or on a decided id', 
   assert.equal(unknown.status, 2);
   assert.match(unknown.stderr, /nosuchid/);
   assert.equal(run(env, ['keep', idOf(rows[0]), '--cwd', env.project]).status, 0);
-  assert.equal(run(env, ['reject', idOf(rows[0]), '--cwd', env.project]).status, 2);
+  assert.equal(run(env, ['reject', idOf(rows[0]), '--cwd', env.project]).status, 0);
 });
 
 test('keep accepts any member id and decides the whole cluster', () => {

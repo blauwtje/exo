@@ -156,8 +156,12 @@ function readVerdicts(cwd) {
   const file = verdictsFile(cwd);
   if (!fs.existsSync(file)) return [];
   return rowsOf(fs.readFileSync(file, 'utf8'))
-    .filter((row) => Object.values(VERDICTS).includes(row?.verdict) && (Array.isArray(row.ids) || Array.isArray(row.words) || typeof row.text === 'string'))
+    .filter((row) => isRepeatedRow(row) || (Object.values(VERDICTS).includes(row?.verdict) && (Array.isArray(row.ids) || Array.isArray(row.words) || typeof row.text === 'string')))
     .map((row) => (isOldVerdict(row) ? wordsVerdict(row) : row));
+}
+
+function isRepeatedRow(row) {
+  return typeof row?.repeated === 'string';
 }
 
 const ROW_KINDS = [
@@ -263,10 +267,12 @@ function similar(a, b, counted) {
   return shared >= MIN_SHARED_WORDS && shared / (left.length + right.size - shared) >= MIN_JACCARD;
 }
 
+function rowMatches(row, entry, counted) {
+  return Boolean(row.ids?.includes(entry.id)) || (row.words !== undefined && similar(entry.words, row.words, counted));
+}
+
 function decider(verdicts, counted) {
-  const ids = new Set(verdicts.flatMap((row) => row.ids ?? []));
-  const decidedWords = verdicts.filter((row) => row.words !== undefined).map((row) => new Set(row.words));
-  return (entry) => ids.has(entry.id) || decidedWords.some((verdictWords) => similar(entry.words, verdictWords, counted));
+  return (entry) => verdicts.some((row) => rowMatches(row, entry, counted));
 }
 
 function byAge(a, b) {
@@ -356,12 +362,18 @@ function announcement(counts) {
   return { counts: { ...counts, printed: counts.count }, line: `Exo found ${counts.count} new memories. Review them with /exo:learn.` };
 }
 
+function keptRepeat(verdicts, kept, entries, counted) {
+  const row = verdicts[kept];
+  const id = row.ids?.[0] ?? entries.find((entry) => rowMatches(row, entry, counted)).id;
+  return verdicts.slice(kept + 1).some((later) => later.repeated === id) ? null : id;
+}
+
 function react(ledger, { session, prompt, date }, textOf) {
   const text = prompt.trim();
   const recorded = recordable(text) ? [entryOf({ date, session, text })] : [];
   const first = !ledger.seen.some(({ seen }) => seen === session) && !ledger.entries.some((entry) => entry.session === session);
   const rows = first ? [{ seen: session }, ...recorded] : recorded;
-  const quiet = { rows, first, line: '', flag: null, flaggable: false };
+  const quiet = { rows, first, line: '', flag: null, flaggable: false, repeated: null };
   if (first || recorded.length === 0) return quiet;
   const entries = indexed([...ledger.entries, ...recorded]);
   const current = entries.at(-1);
@@ -370,8 +382,12 @@ function react(ledger, { session, prompt, date }, textOf) {
   const flaggable = { ...quiet, flaggable: true };
   const matches = entries.filter((other) => other.session !== session && similar(current.words, other.words, counted)).sort(byAge);
   const earlier = matches.at(-1);
-  const decided = decider(ledger.verdicts, counted);
-  if (!earlier || ledger.flagged.some((row) => similar(current.words, row.flagged, counted)) || [current, ...matches].some(decided)) return flaggable;
+  const related = [...matches, current];
+  const newest = ledger.verdicts.findLastIndex((row) => related.some((entry) => rowMatches(row, entry, counted)));
+  if (newest !== -1 && ledger.verdicts[newest].verdict === VERDICTS.reject) return flaggable;
+  const repeated = newest === -1 ? null : keptRepeat(ledger.verdicts, newest, related, counted);
+  if (repeated !== null) return { ...flaggable, line: `exo: this repeats a lesson you kept. It did not stop the mistake, so run exo:learn to make it stronger (id ${repeated}).\n`, repeated };
+  if (newest !== -1 || !earlier || ledger.flagged.some((row) => similar(current.words, row.flagged, counted))) return flaggable;
   const earlierText = textOf(earlier);
   if (earlierText === undefined) return flaggable;
   return {
@@ -407,6 +423,7 @@ function recordPrompt(cwd, session, prompt, date) {
   const textOf = (entry) => transcriptTexts(cwd, new Set([entry.session])).get(entry.id);
   const result = react(ledger, { session, prompt, date }, textOf);
   appendCache(cwd, result.rows);
+  if (result.repeated !== null) append(verdictsFile(cwd), [{ repeated: result.repeated }]);
   compact(cwd);
   return { line: result.line, detached: null };
 }
@@ -528,22 +545,35 @@ function candidates(cwd) {
   process.stdout.write(shown.map((cluster) => `${describe(cluster)}\n`).join(''));
 }
 
+function openRow(command, id, open) {
+  const cluster = open.find(({ group }) => group.some((entry) => entry.id === id));
+  if (cluster === undefined) return null;
+  const { group, counted } = cluster;
+  const neighbours = neighbourCount(group, counted);
+  const centre = group.reduce((best, entry) => (neighbours(entry) > neighbours(best) ? entry : best));
+  return { verdict: VERDICTS[command], ids: group.map((entry) => entry.id), words: [...centre.words] };
+}
+
+function decidedRow(command, id, verdicts, entries) {
+  const entry = entries.find((candidate) => candidate.id === id) ?? { id, words: new Set() };
+  const counted = countedWords(entries);
+  const row = verdicts.findLast((candidate) => rowMatches(candidate, entry, counted));
+  return row === undefined ? null : { verdict: VERDICTS[command], ids: row.ids ?? [id], words: row.words };
+}
+
 function decide(command, ids, cwd) {
   if (ids.length === 0) throw new UsageError(`${command} needs candidate ids`);
   const ledger = snapshot(cwd);
   const open = ledger === null ? [] : clusters(ledger);
-  const chosen = ids.map((id) => {
-    const cluster = open.find(({ group }) => group.some((entry) => entry.id === id));
-    if (cluster === undefined) throw new UsageError(`${command} id '${id}' is not in an open candidate`);
-    return cluster;
-  });
-  const rows = chosen.map(({ group, counted }) => {
-    const neighbours = neighbourCount(group, counted);
-    const centre = group.reduce((best, entry) => (neighbours(entry) > neighbours(best) ? entry : best));
-    return { verdict: VERDICTS[command], ids: group.map(({ id }) => id), words: [...centre.words] };
+  const verdicts = waitLocked(cwd, () => readVerdicts(cwd));
+  const entries = ledger === null ? [] : indexed(ledger.entries);
+  const rows = ids.map((id) => {
+    const row = openRow(command, id, open) ?? decidedRow(command, id, verdicts, entries);
+    if (row === null) throw new UsageError(`${command} id '${id}' is not in an open or decided candidate`);
+    return row;
   });
   waitLocked(cwd, () => append(verdictsFile(cwd), rows));
-  process.stdout.write(chosen.map(({ id }) => `${id} ${VERDICTS[command]}\n`).join(''));
+  process.stdout.write(rows.map((row) => `${row.ids[0]} ${row.verdict}\n`).join(''));
   recount(cwd);
 }
 

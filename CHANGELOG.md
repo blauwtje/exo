@@ -9,6 +9,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `learn` keeps its lessons index in the rules folder (`<project>/.claude/rules/lessons.md` or `<config>/rules/lessons.md`), so CLAUDE.md needs no import line; `lessons.mjs paths` prints the paths and `lessons.mjs check` reads the new place.
+- `lessons.mjs migrate` moves an old index and its CLAUDE.md import line to the rules folder and prints each removed line, and a second run changes nothing.
+- The hook flags a prompt that repeats a lesson you kept, once per keep, and `keep` and `reject` also take the id of an earlier verdict.
+- `learn` strengthens a kept lesson that repeats (check, path rule, else a reworded note), rejects only on an explicit no, and reads the project's auto-memory index before it writes a note.
 - `learn` shows its new-memories line under the Claude Code banner when a session starts, resumes or clears, before you type, instead of on the first prompt.
 - The eval principles page voids a flat 0% or 100% result only when a positive control, an injected known effect of at least the threshold size, goes undetected; when the control is detected, the flat result stands.
 
