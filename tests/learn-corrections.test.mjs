@@ -502,3 +502,13 @@ test('a hook started while a slow recount runs still stores its row', async () =
   await finished;
   assert.equal(readLedger(env).some((row) => row.seen === 'new-session'), true);
 });
+
+test('candidates ends with a total line when more clusters wait than it lists', () => {
+  const env = fixture();
+  const clusters = Array.from({ length: 16 }, (_, index) => pair(`wa${index} wb${index} wc${index} wd${index} we${index}`, '2026-02-01'));
+  writeLedger(env, [...fillers(60), ...clusters.flat()]);
+  const lines = run(env, ['candidates', '--cwd', env.project]).stdout.trimEnd().split('\n');
+  assert.equal(lines.length, 16);
+  assert.match(lines[14], /\(2 sessions, /);
+  assert.equal(lines[15], '15 of 16 shown; keep or reject these to see more.');
+});

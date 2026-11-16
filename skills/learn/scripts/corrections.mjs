@@ -463,8 +463,10 @@ function backfill(cwd) {
 function candidates(cwd) {
   const ledger = snapshot(cwd);
   if (ledger === null) return;
-  const shown = listed(cwd, ledger).slice(0, MAX_CANDIDATES);
+  const all = listed(cwd, ledger);
+  const shown = all.slice(0, MAX_CANDIDATES);
   process.stdout.write(shown.map((cluster) => `${describe(cluster)}\n`).join(''));
+  if (all.length > shown.length) process.stdout.write(`${shown.length} of ${all.length} shown; keep or reject these to see more.\n`);
 }
 
 function openRow(command, id, open) {

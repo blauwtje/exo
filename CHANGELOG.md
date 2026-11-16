@@ -19,6 +19,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `learn candidates` ends with `<shown> of <total> shown` when more than 15 memories wait, so the hook's count and the list agree.
 - `learn` keeps the project lesson store and index at the project's top folder (`git rev-parse --show-toplevel`, else the working folder), so a lesson written from a subfolder lands where the session loads it.
 - The `learn` new-memories count leaves out prompts Claude Code started itself, so it matches the list.
 - `learn` keys its ledger, lock, count and verdicts by `CLAUDE_PROJECT_DIR` when set, else by the hook's `cwd`, so a subfolder or worktree no longer starts a new ledger.
