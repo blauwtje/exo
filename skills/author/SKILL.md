@@ -1,7 +1,6 @@
 ---
 name: author
-description: "Creates, edits and shortens the skills, agents and skill scripts of the exo plugin. Use only inside the exo repository. Not for a rule or CLAUDE.md."
-disable-model-invocation: true
+description: "Creates, edits and shortens the skills, agents and skill scripts of the exo plugin. Use when the user asks to create, edit or shorten an exo skill or agent, inside the exo repository. Not for a rule or CLAUDE.md."
 argument-hint: <skill or agent to create, edit or size>
 model: opus
 effort: medium
@@ -9,11 +8,11 @@ effort: medium
 
 # Author
 
-A skill earns its place only by stopping a mistake the model makes without it. Produce a skill or agent where every line changes what the model does and every rule carries its reason.
+A skill earns its place only by stopping a mistake the model makes without it. Produce a skill or agent where every line changes what the model does and every judgment rule carries one short reason.
 
 ## Process
 
-1. **Prove the need.** Change a skill, agent or check only for a user request or a failure seen in a real session. Grep the session transcripts for the failure, then add it with the count to the plugin docs folder's failures log before you edit, because an unrecorded failure cannot show later that the edit worked.
+1. **Prove the need.** Change a skill, agent or check only for a user request or a failure seen in a real session. Grep the session transcripts for the failure, then add it with the count to the failures log in the plugin's evals folder before you edit, because an unrecorded failure cannot show later that the edit worked.
 2. **Pick the home.** A check or test when a machine can tell right from wrong, a script when the steps never vary, a template when only the content varies, and prose last. Prose is the dearest home because it loads every time.
 3. **Write it small.** Delete before you add: remove an overlapping rule before you write a new one. Cut what the model already does without being told. Give each rule one condition, one action and, where it sets the boundary, one clause of reason. Read `references/instruction-style.md` before you word a rule.
 4. **Run the check.** Run the proof the brief names, or `npm run validate:static` when it names none. On a red check fix the structure; an exemption or allowlist entry only hides the failure.
@@ -42,4 +41,4 @@ A skill earns its place only by stopping a mistake the model makes without it. P
 ## Judgment
 
 - A rule a real failure showed outranks a rule that only reads well.
-- Cut a rule only when the request names it, and keep each rule's reason clause.
+- Cut a rule only when the request names it, and keep each judgment rule's reason clause.

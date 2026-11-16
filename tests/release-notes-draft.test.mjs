@@ -33,15 +33,12 @@ test('a breaking commit leads with its upgrade step and the rest group by type w
     '',
     '### Added',
     '',
+    '- Remove the legacy exporter.',
     '- Add the --json flag.',
     '',
     '### Fixed',
     '',
-    '- Stop the parser crashing on an empty file.',
-    '',
-    '### Removed',
-    '',
-    '- Remove the legacy exporter.'
+    '- Stop the parser crashing on an empty file.'
   ].join('\n'));
   assert.doesNotMatch(notes, /[0-9a-f]{7,}|#12/);
 });

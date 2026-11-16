@@ -17,7 +17,7 @@ seed_case() {
   cp -R "$source_dir/benchmarks/value/$task/seed/." "$workdir"
   git init -q "$workdir"
   git -C "$workdir" add -A
-  git -C "$workdir" -c user.name=eval -c user.email=eval@example.com commit -q -m "feat(fixture): add the fixture"
+  git -C "$workdir" -c user.name=Jane -c user.email=jane@example.com commit -q -m "feat(fixture): add the fixture"
   if [ -f "$source_dir/benchmarks/value/$task/setup.mjs" ]; then
     node "$source_dir/benchmarks/value/$task/setup.mjs" "$workdir"
   fi
@@ -31,7 +31,7 @@ pressure_case() {
   local pressure_dir="$source_dir/benchmarks/pressure/$skill"
   sed "s#/tmp/exo-pressure#$fixtures#g" "$pressure_dir/$setup" > "$pressure_dir/$setup.rewritten"
   mv "$pressure_dir/$setup.rewritten" "$pressure_dir/$setup"
-  bash "$pressure_dir/$setup" > /dev/null || true
+  bash "$pressure_dir/$setup" > /dev/null
   [ -z "$script" ] && return 0
   if [ "$skill" = spec ]; then
     cp -R "$fixtures/spec/$script/." "$workdir"

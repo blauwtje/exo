@@ -8,7 +8,7 @@ import { SCRATCH_FOLDER } from '#scratch-path';
 import { LandingError, RefusedError, AlreadyLandedError, UnfinishedMergeError } from './land-errors.mjs';
 import { reportSourceOf } from './land-stopped.mjs';
 import { locked, headMessage, headSha, moveHead } from './land-git.mjs';
-import { commitBlockOf, candidateTrailer } from './land-commit-block.mjs';
+import { commitBlockOf, candidatePrefix, candidateTrailer } from './land-commit-block.mjs';
 import { changedPaths } from './land-paths.mjs';
 import { runCoveringTests, runProof, runNamedTests } from './land-proof.mjs';
 import { UsageError, environmentMs } from '#script-flags';
@@ -29,14 +29,11 @@ function checkTaskLocked({ planText, number, root, reportText, reportPath, planP
   const task = taskOf(plan, number);
   const planId = planIdOf(planPath);
   clearStaleCandidate(root, planId);
-  fs.rmSync(checkStampPath(root, number), { force: true });
   refuseUntestedTestFirst(task, root);
   checkReport(task, reportText, reportPath);
   const frame = frameOf(plan.frame);
   const gateLine = gateCheckedOnCandidate({ task, frame, root, planId });
-  const report = `Report OK: Task ${number}\n`;
-  writeCheckStamp(root, number, report);
-  return `${gateLine}${report}`;
+  return `${gateLine}Report OK: Task ${number}\n`;
 }
 
 function gateCheckedOnCandidate({ task, frame, root, planId }) {
@@ -45,16 +42,6 @@ function gateCheckedOnCandidate({ task, frame, root, planId }) {
   const gateLine = gateCandidate({ frame, root, candidate });
   if (!dropCandidate(root, candidate)) throw new LandingError(`HEAD moved off the candidate ${shortSha(candidate.candidate)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
   return gateLine;
-}
-
-function checkStampPath(root, number) {
-  return path.join(root, SCRATCH_FOLDER, `checked-${number}`);
-}
-
-function writeCheckStamp(root, number, report) {
-  const stamp = checkStampPath(root, number);
-  fs.mkdirSync(path.dirname(stamp), { recursive: true });
-  fs.writeFileSync(stamp, report);
 }
 
 export function stageCandidate({ task, frame, block, outside, root, planId }) {
@@ -105,8 +92,8 @@ export function proveTask(task, { root, planPath, reportText, reportPath }) {
   const proofCommands = proofCommand === null ? [] : [proofCommand];
   const proofs = proofCommands.map((command) => runProof(task, command, { root }));
   runNamedTests(task, proofCommands, { root, planPath });
-  redGreenLine(task, { proofCommands, root, pending });
-  return { proofs, pending };
+  const { line } = redGreenLine(task, { proofCommands, root, pending });
+  return { proofs, pending, redLine: line };
 }
 
 function refuseBadCommitText(subject, rest) {
@@ -153,7 +140,7 @@ function dropCandidate(root, { base, candidate }) {
 }
 
 export function clearStaleCandidate(root, planId) {
-  if (!headMessage(root).split('\n').some((line) => line.startsWith(`Plan-candidate: ${planId}/`))) return;
+  if (!headMessage(root).split('\n').some((line) => line.startsWith(candidatePrefix(planId)))) return;
   const candidate = headSha(root);
   const base = spawnSync('git', ['-C', root, 'rev-parse', 'HEAD~1'], { encoding: 'utf8' });
   if (base.status !== 0) return;

@@ -33,7 +33,8 @@ function goodRef(worktree, command) {
 
 function bisect(command) {
   const top = text(git(process.cwd(), 'rev-parse', '--show-toplevel'));
-  const worktree = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bisect-')), 'tree');
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bisect-'));
+  const worktree = path.join(folder, 'tree');
   git(top, 'worktree', 'add', '--detach', worktree, 'HEAD');
   try {
     if (passes(worktree, command)) return 'Bisect: the repro passes at HEAD, so there is nothing to bisect';
@@ -49,6 +50,7 @@ function bisect(command) {
   } finally {
     git(worktree, 'bisect', 'reset');
     git(top, 'worktree', 'remove', '--force', worktree);
+    fs.rmSync(folder, { recursive: true, force: true });
   }
 }
 

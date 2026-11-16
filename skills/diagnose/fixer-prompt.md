@@ -12,7 +12,7 @@ Paths in scope: the Ranges paths and new test files.
 - Then make the predicted fix and rerun the repro, the isolated case and the suite. A run that skips the test or shows no pass is failed, not fixed.
 - Edit only paths in scope; for another path, stop and name it with the reason.
 - Run only the repro, the proof commands and read-only git. Do not commit, push, branch, reset, check out, install or start a service: the lead owns the checkout.
-- Ask nothing; record what is missing under Unresolved. After two failed fix attempts, report both and stop.
+- Ask nothing; record what is missing under Unresolved. After two failed fix attempts, report both and the premise they share, and stop.
 
 Append a `## Fix` section to the handoff: Tests (files holding only the new test, or none); Edits (each path, one line on what changed); Proof (failing output before, the same command after, at most 10 lines each); Unresolved (or none).
 

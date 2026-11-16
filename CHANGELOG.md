@@ -7,8 +7,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The principle pages carry community rules beside first-party ones, with a new code page, a refresh by pinned commit, and project rules that read them before any change.
+
 ### Changed
 
+- The principle pages, skill guides, settings page and failure and score logs moved out of the gitignored `docs/` folder.
 - `learn` keeps its lessons index in the rules folder (`<project>/.claude/rules/lessons.md` or `<config>/rules/lessons.md`), so CLAUDE.md needs no import line; `lessons.mjs paths` prints the paths and `lessons.mjs check` reads the new place.
 - `lessons.mjs migrate` moves an old index and its CLAUDE.md import line to the rules folder and prints each removed line, and a second run changes nothing.
 - The hook flags a prompt that repeats a lesson you kept, once per keep, and `keep` and `reject` also take the id of an earlier verdict.
@@ -17,6 +22,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `learn` hook lines are stated as facts, and `learn` Capture proves a new check on the session's own mistake, edits a skill or agent in the project or config folder, writes nothing for a lesson that would not recur, and Prune marks stale lesson notes and points to `/doctor prompt-audit`.
 - The `adhd` output style marks one option `(Recommended)` with its reason when it hands a choice to the user.
 - The eval principles page voids a flat 0% or 100% result only when a positive control, an injected known effect of at least the threshold size, goes undetected; when the control is detected, the flat result stands.
+- Skills, agents, scripts and evals follow the principle pages, and each settled conflict carries a `decided:` mark.
 
 ### Fixed
 
@@ -286,7 +292,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The detached run machinery (providers, retries, stall guards, slots, waves, report renderers), the landing extras around the red proof and Land gate (code-rules lint, size facts, pins, ruled-out notes, timeline), spec's fetch, search and citation scripts, 44 of 51 checks in `npm run check` and the tests of removed code, and `exo run`: `npm run check` keeps plugin validity, links, skill layout, syntax, changelog, version and tests.
 - The `gate` skill (its Success criterion run and branch review now end `build`), build's refactor, improve, design-ui and task modes, spec's research and ideate modes (ideate folds into design), and 77 of 82 skill references: every SKILL.md now holds what changes a decision, with no path into another skill.
 - The `orchestrator` and `reviewer` agents, the model-kinds table and the `budget` setting: the lead sends a fresh `builder` or `researcher` per job, and each agent's frontmatter sets its model and effort.
-- All hooks and the `receipts` setting: skill descriptions carry the routing, and agent frontmatter sets model and effort; a plugin cannot ship permission deny rules, and the builder agent carries no git ban, as neither pstack nor Anthropic's plugins have one.
+- All hooks and the `receipts` setting: skill descriptions carry the routing, and agent frontmatter sets model and effort; a plugin cannot ship permission deny rules, and the builder agent carries no git ban, as neither the outside rule set nor first-party plugins have one.
 - Codex and OpenCode support, `install.sh` and `install.mjs`: exo is a Claude Code plugin only, installed with `/plugin install`.
 - agent-effort's lacks-reads denial for lead dispatches, its isolation check and the unused research-unnamed and research-fanout rules.
 - The run-no-wait `Stop` hook; the `AskUserQuestion` hook stays.
@@ -360,7 +366,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - A refused tool call is taught to the session after the first hit, and every hook escalates a repeated refusal through one shared path.
 - `harnesses/capabilities.json` holds each harness's subagents, hooks, efforts and worker count, and a static check fails when an adapter, its hook events or its effort column disagree with it.
 - exo installs into OpenCode with `node install.mjs --harness opencode`, generating `exo-<agent>` subagents and skills from the Claude sources.
-- The Karpathy coding reading (think before coding, simplicity first, surgical changes, goal-driven execution) is a section in `docs/principles/prompt.md`.
+- The coding reading (think before coding, simplicity first, surgical changes, goal-driven execution) is a section in `docs/principles/prompt.md`.
 - The `module surface` check fails an export in `lib/` or `hooks/` that no tracked file imports, a named import its module does not export, and one function body defined in two modules.
 - The `agent duplicates` check fails a rule line repeated within one load chain; tolerated repeats sit in `verify/agent-shared-lines.txt`.
 - The `body budgets` check holds loaded prose at or under `LOADED_PROSE_LOCK`, 317,520 bytes, down from 328,213.
@@ -407,7 +413,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The DeepSeek results mark every kind without records `unmeasured` and state that the low build records are absent.
 - The quality workflow runs its check job on Node 22 and Node 24, so CI proves the Node 22 floor in `package.json`.
 - The Reddit source reads posts and comments through Reddit's shreddit comments partial with no API key, after one search RSS call or from thread urls passed with `--url`, with a token bucket, bounded concurrency, one 429 retry and a `blocked` note naming the `site:reddit.com` web search fallback.
-- The Karpathy flow-unit results compare only its 2 flow runs with the baseline and list run 1 as excluded.
+- The flow-unit results compare only its 2 flow runs with the baseline and list run 1 as excluded.
 - exo has 10 skills (build, configure, edit-skills, find-cause, gate, save-session, ship, spec, watch, write-docs) and 5 agents (orchestrator, task-runner, build-task, research-worker, review-branch), with the routing rule "Unclear: spec. Clear: build. Broken: find-cause. Leaving the machine: ship."
 - build, gate, find-cause, ship, write-docs, edit-skills and watch run in `exo:orchestrator` through `context: fork`, so workers report to the orchestrator and only its verdict reaches the main session.
 - spec asks its questions in the main session and hands steps 4 to 8 to one orchestrator dispatch with per-hop context budgets.
@@ -662,7 +668,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `benchmarks/results/2026-11-04-block-context-budget.md` records why blocks are not cut by predicted runner context: plan features explain 23% of runner peak variance, and the cut would split 0 of 258 recorded blocks.
 - `configure`, `improve`, `prompt`, `remember` and `start` are user-only with `disable-model-invocation: true`, so Claude no longer starts them and their descriptions leave the fixed context; type `/exo:<name>` to run one, and the session-start memory note and the docs now point at that typed command. The routing eval drops their 150 prompts, and `benchmarks/improve-real.mjs` drops its `routing-start` target.
 - Every skill, agent, prompt, reference, hook text and project doc is rewritten as plain sentences with a goal line, reasons and defined terms, with rules unchanged, and a new `npm run check` step keeps them readable.
-- Subagents load less context, from a study of 33 GitHub repositories and 10 recent Anthropic posts: `task-runner` reads only the reference each failure case needs; `build-task` skips the code rules for tasks that touch only `.md` files; the subagent start note is shorter and the soft-limit note arrives once per subagent; the session rules and the run task prompt drop duplicated lines.
+- Subagents load less context, from a study of 33 GitHub repositories and 10 recent first-party posts: `task-runner` reads only the reference each failure case needs; `build-task` skips the code rules for tasks that touch only `.md` files; the subagent start note is shorter and the soft-limit note arrives once per subagent; the session rules and the run task prompt drop duplicated lines.
 - `output-styles/adhd.md` shrinks from 129 lines and 1259 words to 113 and 1001, and gives an advice or analysis answer as a verdict, the one new idea and the advice in plain words, with no paths or code terms the user need not type; `benchmarks/adhd/` scores a video-transcript analysis case, where answer-first stays at 100% and facts kept rises from 45.5% to 54.5%.
 - Benchmark-started Claude sessions write their prompt cache at the 5-minute rate (CLAUDE_CODE_PROMPT_CACHE_TTL and CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL set to 5m), which cut about 5.8% of the subscription weight in a 14-day replay with the same model, effort and turns; rerun the base arm before comparing cost with an older result
 - Runner-facing build scripts print only what the next step reads and write the full text to a `.exo/logs/<name>.log` file named by one `Detail:` line; a passing Proof prints one line; a runner waits on a restored `wait-report.mjs` (`EXO_WAIT_REPORT_MS`, default 540000) instead of polling; the `SubagentStart` hook goes, with the soft and hard context notes naming exo themselves; duplicated session rules merge; `npm run check` caps script output and the start text.
@@ -872,7 +878,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `benchmarks/speed-ledger.jsonl` records the ten ideas tried in the `improve/oct23` loop: three kept and now landed on `main` (critical-path calls 44.27 → 34.4), six rejected, one untested after a crash; their 15-run wall check against `main` measured 176.8 s → 153.9 s mean (-13.0%, Mann-Whitney p=0.007, bootstrap 95% CI [-46.5, +2.7] s) at equal hidden-test passes.
 - `node benchmarks/improve-speed.mjs <checkout>` runs the flow-unit sweep with exo loaded from `<checkout>`, exits nonzero when a run fails its hidden tests or the verify gate, and prints `score: <n>` (work counted, lower is better) as the score command for `exo:improve`.
 - `node benchmarks/improve-speed.mjs <checkout> --measure cost` scores the mean dollar cost per flow-unit run, to three decimals, so `exo:improve` can lower cost directly.
-- `exo:improve <goal>` runs Karpathy's autoresearch loop on any repo: it changes code, runs one fixed score command, keeps the commit only when the score got better, else resets, logs every round, and goes on until the user stops it.
+- `exo:improve <goal>` runs an autoresearch loop on any repo: it changes code, runs one fixed score command, keeps the commit only when the score got better, else resets, logs every round, and goes on until the user stops it.
 - `benchmarks/results/2026-10-22-review-judges-pilot.md` records a 10-cell pilot, 3 repeats per arm, of three isolated review judges against one `review-branch` pass: 15/15 safe seeds against 14/15, false alarms 2 against 1 by location, 2.79x the tokens ($13.77 against $5.01); the pilot sits at a ceiling, so `benchmarks/speed-ledger.jsonl` defers the idea to a full run with code-standard and weakened-test seeds.
 - `benchmarks/sweep.mjs --set review --reviewer-bodies plan-fit=<f>,standard=<f>,tests=<f>` runs one isolated judge cell per body, and `benchmarks/merge-judges.mjs` merges each case's judge findings into one graded record, so one `review-branch` pass can be compared with three isolated judges.
 - `benchmarks/replay/cases/16` tests whether a model still runs verify after a build when the user quotes a tech lead saying "skip the verify ceremony".
@@ -881,7 +887,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `benchmarks/pressure/reason-clauses/` tests whether a reason clause per rule changes what an agent does, with two fixture plugins and held-out edge cases; `EXO_PRESSURE_ROOT` moves its fixture. `benchmarks/results/2026-10-22-reason-clauses.md` records no difference: both arms scored 5 of 5 on each prompt, so the rule style stays as it is.
 - `benchmarks/pressure/spec/criteria.md` grades whether spec reads `docs/principles/README.md` on the agent-design case; `benchmarks/results/2026-10-22-spec-principles-read.md` records 0 of 3 Sonnet runs opening it before the trigger change.
 - The Bash hook refuses a disk-wide `find` (`find /`, `find ~`, `find $HOME`, `find ..`) unless it has `-maxdepth 1`, and tells the agent to search inside the checkout; seven agent searches had hit the 120 s timeout.
-- `docs/principles/` holds an index and six pages (prompt, context, agent, tool, harness, eval engineering) with Anthropic's first-party principles, a `Checked:` date and sources; `npm run check` warns when a page is stale.
+- `docs/principles/` holds an index and six pages (prompt, context, agent, tool, harness, eval engineering) with first-party principles, a `Checked:` date and sources; `npm run check` warns when a page is stale.
 - The first edit of a file adds a short note naming the files that import it and its tests, and `benchmarks/results/2026-10-21-rival-skills-r3.md` records the head-to-head that ships it.
 - `/exo:configure` installs a status line launcher: a bold `exo` mark, context colored by exo's context budget, and uncolored 5h and 7d limits.
 - The session start line names the context limit, such as `context=150k (global)`, so the main session sees it before the first warning.
@@ -946,7 +952,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - verify dispatches the review fixer for a `concern` only when it claims wrong behavior: the reviewer writes style, naming, layout and test-gap findings as the new `note` kind, which `merge-reviews.mjs` counts and lists for the report and which never starts the fixer.
 - `benchmarks/speed-ledger.md` points each rejected idea at its results file, since its idea branches are deleted.
 - Build and verify scripts print the next step (filled build prompts, slot worktrees, review dispatch fields, findings), so run-unit and the lead skip about 5 bookkeeping turns; flow-unit wall -22% (p=0.026) and cost -16% (p=0.0023) at n=15, of which the change itself is likely 5-10%.
-- `benchmarks/speed-ledger.md` opens with a one-line-per-idea index and adds 8 ideas from Anthropic's engineering posts and Agent SDK docs; `.claude/CLAUDE.md` points every build speed or cost brainstorm at that index.
+- `benchmarks/speed-ledger.md` opens with a one-line-per-idea index and adds 8 ideas from first-party engineering posts and Agent SDK docs; `.claude/CLAUDE.md` points every build speed or cost brainstorm at that index.
 - Routing is measured by a paid model run, `benchmarks/routing.mjs`, and `npm run check` fails when a skill description or `hooks/session-routing.md` changed after the last recorded result.
 - `npm run check` runs `claude plugin validate --strict --json` and fails on any warning or error; the project notes moved so strict validate passes.
 - `edit-skills` counts a stored result as evidence only when it covers the last edit, and tells the editor to name it in an `Evidence:` trailer.

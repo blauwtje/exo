@@ -15,7 +15,7 @@ Read it when: you write or change a tool, an MCP server or a tool description an
 
 ## Sources
 
-1. [Writing effective tools for agents](https://www.anthropic.com/engineering/writing-tools-for-agents), 2025-09-11
-2. [Code execution with MCP](https://www.anthropic.com/engineering/code-execution-with-mcp), 2025-11-04
-3. [Introducing advanced tool use](https://www.anthropic.com/engineering/advanced-tool-use), 2025-11-24
-4. [The think tool](https://www.anthropic.com/engineering/claude-think-tool), updated 2025-12-15
+1. Writing effective tools for agents, 2025-09-11
+2. Code execution with MCP, 2025-11-04
+3. Introducing advanced tool use, 2025-11-24
+4. The think tool, updated 2025-12-15

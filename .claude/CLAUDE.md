@@ -5,8 +5,8 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 ## Workflow
 
 - Keep the main checkout on `main` and run every edit in a worktree under `.claude/worktrees/`, because exo loads in place from this checkout.
-- The lead (main session) only orchestrates: it runs `exo:spec`, writes the brief, builds with `exo:build <brief>` and sends code reading to `exo:researcher`.
-- Send every edit, fix and failed-check repair to a worktree subagent, one concern each, and run independent parts in parallel.
+- The lead (main session) only orchestrates: it runs `exo:spec`, writes the brief, builds with `exo:build <brief>`, sends a bounded question to `exo:researcher` and reads a named file itself.
+- Send every edit, fix and failed-check repair to a worktree subagent, one concern each, and after the throughput checkpoint of `exo:spec` run independent parts in parallel.
 - Before the start-of-run cleanup, a squash, a worktree removal, a branch delete or a session push, read `.claude/landing.md`.
 - Outside a run, only the lead writes `CHANGELOG.md`.
 - Ask nothing about where to commit, because this workflow outranks step 1 of `exo:build` and the pull-request route in `exo:ship`.
@@ -17,16 +17,19 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 - `npm run check` gates every commit, and a clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
 - The lead runs `npm run check` once, in the background, to a log, and a delegate runs only its proof.
 - Plan tasks use `Land gate: npm run validate:static`, and `npm run check` runs once as the Success criterion.
-- When a mistake recurs, fix or delete its code path; add a check only by replacing one, because every check is upkeep.
-- Change a skill, agent, hook or check only for a user request or a failure seen in a real session, and add that failure to `docs/failures.md` first, after you grep the session transcripts for it and record the count.
+- When a mistake recurs, make it a check and delete the sentence it replaces; add no check for a mistake not seen.
+- Change a skill, agent, hook or check only for a user request or a failure seen in a real session, and add that failure to `evals/failures.md` first, after you grep the session transcripts for it and record the count.
 
 ## Editing
 
-- Before designing a prompt, context, agent, tool, harness or eval, read `docs/principles/README.md` and open only the page it names.
+- Before you design or change a prompt, context, agent, skill, hook, script, test, tool, harness, eval, benchmark or code, read `principles/README.md` and open only the page it names.
 - Hooks and scripts do mechanical work only: count, match, parse, store, run. Code that judges meaning, like a word list per language, breaks on other languages.
 - Skills and agents give that mechanical part to a script and keep the judgment, because the model reads every language and phrasing.
 - Run `claude plugin eval` only before a release, always with `--max-cost-usd`.
 - A bare skill name in a skill or prompt body means `exo:<name>`.
+- Ship only the two hooks in `hooks/hooks.json` and add none.
+- Keep skills model-invoked, and make one manual only when its route eval shows it fires at the wrong time.
+- Write a mechanical rule without its reason, and give a rule that needs judgment in a new case one short reason.
 - Derive a new value from the repo, or use one overridable default or an `EXO_*_MS` var via `environmentMs`.
 
 ## Release

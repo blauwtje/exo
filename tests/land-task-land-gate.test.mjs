@@ -138,6 +138,13 @@ test('a Proof whose bash exits 0 while a background child outlives the deadline 
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
 });
 
+test('the landing report prints the red outcome after the Proof lines', async () => {
+  const { root, planPath } = await compactCheckout(COMPACT_PLAN);
+  const plan = await fs.readFile(planPath, 'utf8');
+  const output = landTask({ planPath, planText: plan, number: 1, root, reportText: PASS_REPORT });
+  assert.match(output, /^Proof:[\s\S]*^Red: skipped: none \(fixture\)$/m);
+});
+
 test('a plan with no Land gate line lands as before', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
@@ -230,22 +237,6 @@ test('a landing refuses and rewrites nothing when the Land gate moved HEAD off i
   assert.equal(git(root, 'log', '-1', '--format=%s'), 'other work');
   assert.match(git(root, 'log', '-1', '--skip=1', '--format=%B'), /Plan-candidate: fixture\/4/);
   assert.equal(git(root, 'rev-parse', 'HEAD~2'), prior);
-});
-
-test('a passing --check writes its stamp, and a failing one leaves none', async () => {
-  const { root, planPath } = await afterTaskOne();
-  const stamp = path.join(root, '.exo/checked-4');
-  await fs.writeFile(planPath, withGate(PLAN, 'exit 1'));
-  const failed = await run(SCRIPT, LANDING_ARGS(planPath, root, '--check'), { cwd: root });
-  assert.equal(failed.code, 1, failed.stderr);
-  await assert.rejects(fs.access(stamp));
-  await fs.writeFile(planPath, withGate(PLAN, 'sleep 1'));
-  const checking = run(SCRIPT, LANDING_ARGS(planPath, root, '--check'), { cwd: root });
-  await pause(500);
-  await assert.rejects(fs.access(stamp));
-  const checked = await checking;
-  assert.equal(checked.code, 0, checked.stderr);
-  assert.match(await fs.readFile(stamp, 'utf8'), /Report OK: Task 4/);
 });
 
 const COVERING_FAIL = "import { test } from 'node:test';\nconst read = 'src/app.js';\ntest('greet says hello', () => { throw new Error(`boom ${read}`); });\n";

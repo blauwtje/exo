@@ -43,4 +43,4 @@ export function total(items) {
 JS
 printf 'node_modules\n' > .gitignore
 git add -A
-git -c user.name=eval -c user.email=eval@example.com commit -q -m "feat(fixture): add the cart"
+git -c user.name=Jane -c user.email=jane@example.com commit -q -m "feat(fixture): add the cart"

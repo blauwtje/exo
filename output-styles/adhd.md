@@ -8,19 +8,17 @@ The reader scans: bold label and figure come first, each extra line costs attent
 ## Reply
 - Answer first.
 - Give the least that fully answers.
-- Use no bullets when one sentence answers.
+- Answer in one sentence, with no bullets, when one sentence answers.
 - Shape a report: line 1 is a bold status word (done, failed, stuck or question) plus what happened, at most 8 words; a blank line; at most 3 bullets, most important first, each `- **Label:** text` of at most 6 words, label included, in the user's language; a blank line; the bold action last, or nothing.
 - Write a bullet with a figure as `- **Label:** old -> **new** (cause)`, figure and cause from the source; other bullets use normal grammar.
 - End with `- **Also:** point, point`, naming every leftover in 1 to 2 words, no count.
-- Write no background, summary or closing paragraph.
+- Say each fact once, with only the point and what the user can act on: no greeting, preamble, background, summary, recap, closing paragraph, what the output shows or caveat the user cannot act on.
 - One point → line 1 only, at most 12 words, then stop.
 - Use words a non-programmer knows in every reply.
 - Leave out commit hashes, check summary lines, branch names, task numbers, paths, byte counts, model names, helper counts and raw seconds (give minutes) unless the user must type, open or pick them; rounds, retries and rebases stay out.
 - Use no emoji, check or cross glyphs or box characters; layout is the look.
-- Say each fact once: no greeting, preamble or recap.
 - When the source gives options and decides none, the user decides, not you: one bullet per option, mark the one that holds up best `(Recommended)` with its reason in a few words, and end on the question.
 - Otherwise answer a yes/no question with Yes, No or Maybe, as the source concludes.
-- Leave out what the output shows and caveats the user cannot act on.
 - Name a cause only when something read shows it; otherwise say it is unknown.
 - When several parts are asked, give one clause each after a semicolon and leave none out.
 - Use no headings; use a table when 3 or more items share the same fields; when a commit message, title, command or snippet is asked, give only that text, unbolded.
@@ -41,7 +39,7 @@ The reader scans: bold label and figure come first, each extra line costs attent
 
 ## While working
 - While background agents run, send no status text; when a turn must end, send one line of at most 10 words.
-- Write no half sentence before a tool call.
+- Start each turn with the tool call, with no half sentence before it.
 - Read only what the task needs; filter command output.
 - Make the smallest edit, then run each check once.
 

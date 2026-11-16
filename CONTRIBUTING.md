@@ -35,11 +35,11 @@ Load the `author` skill before any skill or delegate-prompt edit; it holds the s
 
 A skill whose work leaves the machine (a push, pull request, merge or issue) runs only on the authorization its body names: the user's pick of a finish route or a plain request. The one exception is `ship` under `ship=ask`, which pushes a non-default branch to origin without asking; merge, default-branch push, pull request and issue still ask. It leaves every branch in place and cuts no release.
 
-`author` carries `disable-model-invocation: true`: it holds rules that fit only the exo repository, and user-only also removes a description from the fixed context. Every other skill stays model-invocable, and its description names the words the user says, because a trigger on a fact nobody knows when the request arrives leaves the model to guess.
+Every skill stays model-invocable, and its description names the words the user says, because a trigger on a fact nobody knows when the request arrives leaves the model to guess.
 
 `ABOUT.md` says what exo is and lists exo's domain words with the synonym each replaces. Skill bodies, replies and commits use the left column.
 
-A new skill needs the folder `skills/<name>/` and a page under `docs/skills/`. Write a skill from a discipline you have read, not from a one-line description.
+A new skill needs the folder `skills/<name>/` and a page under `guide/`. Write a skill from a discipline you have read, not from a one-line description.
 
 A skill body stays under 500 lines, because a body is paid for on every run; bulk lives in `references/` and the body names the step that opens it. No reference links to another. Split a skill in two only when the halves fire at different moments, because each skill adds its trigger to every session's listing.
 
@@ -47,23 +47,23 @@ A skill body stays under 500 lines, because a body is paid for on every run; bul
 
 A new setting is one `userConfig` entry in `.claude-plugin/plugin.json`.
 
-`.gitignore` un-ignores `docs/principles/`, `docs/skills/` and `docs/settings.md`, and `docs/specs/` is tracked too.
+`docs/` is gitignored and holds only plans and research.
 
-`docs/principles/README.md` indexes Anthropic's engineering principles; each page cites exo files after `exo:`. The index states the value rule: a check, agent, review, model tier or retry stays only when its value is at least its cost in tokens, time and false blocks.
+`principles/README.md` indexes first-party and community engineering principles; each page cites exo files after `exo:`. The index states the value rule.
 
 ## Evals
 
-`claude plugin eval` runs the suite under `evals/` (a case is `evals/<case>/case.yaml` with its graders inline, or `evals/<case>/prompt.md` with `graders/`; a scaffolded case adds a one-line `scaffold.sh` that calls `evals/scaffold.sh`); `evals/results/` is gitignored. Run it only before a release: `EXO_ROOT="$PWD" claude plugin eval --scaffold --allow-tools Bash Edit Write --json --judge-model sonnet --max-cost-usd 38`, then once more with `--model <other model>` and record both settings in the scorecard's model and effort columns.
+`claude plugin eval` runs the suite under `evals/` (a case is `evals/<case>/case.yaml` with its graders inline, or `evals/<case>/prompt.md` with `graders/`; a scaffolded case adds a one-line `scaffold.sh` that calls `evals/scaffold.sh`); `evals/results/` is gitignored. Run it only before a release: print the case count with `ls -d evals/*/ | grep -vc results`, run one case first with `EXO_ROOT="$PWD" claude plugin eval --case <case> --scaffold --allow-tools Bash Edit Write --json --judge-model sonnet --max-cost-usd 2`, then the suite with the same flags without `--case` and `--max-cost-usd` set to `BUDGET_USD` in `evals/value.mjs`, then once more with `--model <other model>` and record both settings in the scorecard's model and effort columns.
 
-`docs/scorecard.md` lists the commands for each column and holds one table. Each release appends one row and no row is rewritten. `docs/failures.md` lists the failures seen in real sessions.
+`evals/scorecard.md` lists the commands for each column and holds one table. Each release appends one row and no row is rewritten. `evals/failures.md` lists the failures seen in real sessions.
 
 ## How a skill dispatches work
 
 - Two roles are plugin agents under `agents/`, `builder` and `researcher`, because an agent file fixes a tool list, a model, an effort and a turn limit, and its body is the system prompt rather than text pasted into every dispatch. The lead sends one fresh agent per separate job with file paths in the prompt, and runs jobs in parallel only when they share no file.
 - An agent that takes everything from its dispatch sets `omitClaudeMd: true` (Claude Code 2.1.271 or later) and carries the rule against deleting past a blocked state in its own body, because it loads no `CLAUDE.md`.
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251. `CLAUDE_CODE_EFFORT_LEVEL` overrides an agent's effort.
-- A subagent takes the model and effort in its agent file's frontmatter: `builder` runs `sonnet` at medium effort, and `build` passes `model: opus` and high effort to the second attempt of a failed task, because escalating after a failure costs less than running every task at high effort.
-- `spec`, `build`, `save` and `learn` pin no model and run on the session's model. `diagnose`, `ship` and `author` pin `opus` at medium effort, and `document` and `watch` pin `sonnet` at medium effort. A pinned model overrides the session's model and rebuilds the prompt cache mid-session, so set `model` or `effort` in a skill only where its work always needs that tier.
+- A subagent takes its model and effort from its agent file's frontmatter; see each agent's and skill's frontmatter for the values.
+- A skill pins a model or effort only where its work always needs that tier, because a pinned model overrides the session's model and rebuilds the prompt cache mid-session; see each skill's frontmatter.
 
 ## Hook
 
@@ -112,7 +112,7 @@ A plan whose tasks all landed passes the end-of-run review in one round, because
 
 Each variable is read through `environmentMs`: `EXO_PROOF_TIMEOUT_MS` and `EXO_LAND_GATE_TIMEOUT_MS` bound a proof and the Land gate; `EXO_RED_BASE_MARGIN_MS` (`lib/red-green.mjs`, 60000) is the margin added to the base run time of a red proof.
 
-- **Delegate limits**: each agent sets `maxTurns` in its frontmatter (`builder` 60, `researcher` 30). The harness ends a delegate at that turn.
+- **Delegate limits**: each agent sets `maxTurns` in its frontmatter, and the harness ends a delegate at that turn.
 
 The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration.
 

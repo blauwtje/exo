@@ -22,8 +22,8 @@ Prove the cause before changing code, because a fix for a guessed cause hides th
 
 ## Delegating
 
-When reading alone does not prove the cause, send a fresh `exo:builder` `investigator-prompt.md` (Steps 1 to 3). Once its handoff says `Status: proven`, ask where the fix commits unless the request or caller already says, then send a fresh `exo:builder` `fixer-prompt.md` (Steps 4 and 5); resume a `failed` one once with SendMessage. Commit the new test alone, then the fix. Read only their status lines and handoff fields.
+When reading alone does not prove the cause, send a fresh `exo:builder` `investigator-prompt.md` (Steps 1 to 3). Once its handoff says `Status: proven`, settle where the fix commits as step 1 of `exo:build` does, say where, then send a fresh `exo:builder` `fixer-prompt.md` (Steps 4 and 5). On `failed`, send one more fresh `exo:builder` the same prompt with the failed handoff path, once. After `status=fixed`, run the handoff's Repro command yourself as the verdict. Commit the new test alone, then the fix. Read only their status lines and handoff fields.
 
 ## Report
 
-Invoked by another stage: return without asking. Else state the cause in plain words, whether the fix is proven, and the user's next step, usually `exo:ship`. Unproven: `Repro`, `Expected`, `Actual` and `Hypotheses`. Proof lines and commit hashes stay in the handoff.
+Invoked by another stage: return without asking. Else state the cause in plain words, whether the fix is proven, and the user's next step, usually `exo:ship`; label each claim measured, inferred or guess. Unproven: `Repro`, `Expected`, `Actual` and `Hypotheses`. Proof lines and commit hashes stay in the handoff.

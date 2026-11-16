@@ -197,7 +197,7 @@ function loadOrReset(cwd) {
 }
 
 function indexed(rows) {
-  return rows.map((row) => ({ ...row, words: new Set(row.words ?? words(row.text)) }));
+  return rows.map((row) => ({ ...row, words: new Set(row.words) }));
 }
 
 function compacted(ledger) {
@@ -375,7 +375,7 @@ function react(ledger, { session, prompt, date }, textOf) {
   const newest = ledger.verdicts.findLastIndex((row) => related.some((entry) => rowMatches(row, entry, counted)));
   if (newest !== -1 && ledger.verdicts[newest].verdict === VERDICTS.reject) return flaggable;
   const repeated = newest === -1 ? null : keptRepeat(ledger.verdicts, newest, related, counted);
-  if (repeated !== null) return { ...flaggable, line: `exo: this repeats a lesson you kept, so that lesson did not stop the mistake; exo:learn makes it stronger (id ${repeated}).\n`, repeated };
+  if (repeated !== null) return { ...flaggable, line: `exo: this prompt shares words with a lesson you kept (id ${repeated}); exo:learn can strengthen it\n`, repeated };
   if (newest !== -1 || !earlier || ledger.flagged.some((row) => similar(current.words, row.flagged, counted))) return flaggable;
   const earlierText = textOf(earlier);
   if (earlierText === undefined) return flaggable;

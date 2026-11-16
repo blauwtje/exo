@@ -11,7 +11,7 @@ Turn a lesson into the cheapest form that stops the mistake, and keep CLAUDE.md 
 ## Start
 
 - The hook line `exo: you asked something like this on <date>: "<text>". exo:learn turns a repeated correction or wish into a check or lesson (id <id>).` flags a prompt that repeats an earlier one. Judge whether it is a correction or wish; when it is neither, say nothing and go on. Otherwise run Capture on it.
-- The hook line `exo: this repeats a lesson you kept, so that lesson did not stop the mistake; exo:learn makes it stronger (id <id>).` means a kept lesson failed. Run Strengthen on it.
+- The hook line `exo: this prompt shares words with a lesson you kept (id <id>); exo:learn can strengthen it` means the prompt may show a kept lesson failed. Judge whether it does; when it does not, say nothing and go on. Otherwise run Strengthen on it.
 - The hook line `Exo found <n> new memories; /exo:learn lists them.` means the candidates wait; finish the current task, then run Mine.
 - The user says they have corrected this before, or asks you to remember something, in any language: run Capture.
 - A request to mine past sessions runs Mine; a request to prune runs Prune.
@@ -62,7 +62,7 @@ How to apply: <where and when>
 ```
 
 - The file name is the kebab-case name. The index holds one line per note: `- [<name>](<link>) — <description>`. The link is the path the Read tool opens: from the project root for a project note, absolute for a personal one.
-- Write every rule, note and check message as Anthropic's prompting guide does: one idea, short, its reason in the Why: line, no CAPS or MUST.
+- Write every rule, note and check message as a prompting guide does: one idea, short, its reason in the Why: line, no CAPS or MUST.
 - Keep the store to 15 notes, path rules included. At 15, merge the new lesson into an old note or replace one, because a store that only grows is read less.
 - Run `node "${CLAUDE_SKILL_DIR}/scripts/lessons.mjs" paths` for the five places: project store, project index, personal store, personal index and auto memory. Store a project lesson in the project store and a personal one in the personal store, and add its line to the matching index. Claude Code loads the index from the rules folder, so it needs no line in CLAUDE.md.
 - Before each write run `node "${CLAUDE_SKILL_DIR}/scripts/lessons.mjs" migrate`. It moves an old CLAUDE.md lessons index, the line starting `Lessons, open a note when`, to the new index. Quote each `removed: <file>: <line>` it prints and say how to undo it: put that line back in that file.

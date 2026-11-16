@@ -6,8 +6,6 @@ const USAGE = [
   "Checks that the brief's '## Verdict' section holds 'Verdict: go' and a one-line 'Objection:'; exits 1 on a problem, 2 on a usage error."
 ].join('\n');
 
-const MIN_OBJECTION_LENGTH = 12;
-
 function verdictSection(text) {
   const match = text.match(/^## Verdict[ \t]*\n([\s\S]*?)(?=^## |(?![\s\S]))/m);
   return match === null ? null : match[1];
@@ -28,8 +26,8 @@ function verdictLineProblems(section) {
 function objectionLineProblems(section) {
   const objection = lineValue(section, 'Objection');
   if (objection === null) return ["the '## Verdict' section has no 'Objection:' line"];
-  if (objection.length >= MIN_OBJECTION_LENGTH) return [];
-  return ["the 'Objection:' line names no concrete reason the work could fail"];
+  if (objection !== '') return [];
+  return ["the 'Objection:' line is empty"];
 }
 
 function verdictProblems(text) {

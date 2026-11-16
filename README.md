@@ -51,8 +51,6 @@ Say what you want in your own words and Claude starts the skill that fits. A typ
 | "do not leave `console.log` in `src/`, remember this" | `learn` turns the correction into a lint rule or check that fails when it recurs, else a small lesson note, and starts by itself when you repeat a request. |
 | "write a README for this" | `document` writes prose that is read later. |
 
-One skill runs only when typed: `/exo:author` edits exo's own skills and agents.
-
 The agents run behind the skills; you do not call them.
 
 | Agent | What it does |
@@ -60,7 +58,7 @@ The agents run behind the skills; you do not call them.
 | `builder` | Builds one plan task, repair or fix. |
 | `researcher` | Answers one bounded question from named sources. |
 
-[docs/skills/](docs/skills/) has a page for every skill. [docs/settings.md](docs/settings.md) covers the settings, including shorter replies and the status line.
+[guide/](guide/) has a page for every skill. [guide/settings.md](guide/settings.md) covers the settings, including shorter replies and the status line.
 
 ## Before and after
 

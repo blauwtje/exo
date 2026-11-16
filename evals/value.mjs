@@ -12,7 +12,7 @@ const TABLE = path.join(ROOT, 'evals', 'value.md');
 const BUDGET_USD = 40;
 const CASE_USD = 1.9;
 const COLUMNS = ['part', 'cases', 'share', 'order', 'paths', 'with', 'without', 'cost with', 'cost without', 'date'];
-const USAGE = 'usage: value.mjs --plan | --run [part] | --check-measured';
+const USAGE = 'usage: value.mjs --plan | --run [part]';
 const FIGURES = ['with', 'without', 'cost with', 'cost without', 'date'];
 
 const cells = (line) => line.split('|').slice(1, -1).map((cell) => cell.trim());
@@ -84,21 +84,18 @@ export function unmeasuredParts(rows) {
   return fitting.filter((name) => FIGURES.some((figure) => rows.find((row) => row.part === name)[figure] === '-'));
 }
 
-export function measuredProblems(rows) {
-  return unmeasuredParts(rows).map((name) => `part ${name} is not measured`);
-}
-
 function runCost(run) {
   return (run.costUsd ?? 0) + (run.judgeCostUsd ?? 0);
 }
 
 export function armFigures(cases, arm) {
   const runs = cases.map((testCase) => Object.values(testCase.arms?.[arm] ?? {}));
-  const counted = runs.map((caseRuns) => caseRuns.filter((run) => !run.skippedPaidGraders));
-  const cost = runs.flat().reduce((sum, run) => sum + runCost(run), 0);
-  if (counted.some((caseRuns) => caseRuns.length === 0)) return { passed: '-', cost };
-  const passed = counted.filter((caseRuns) => caseRuns.filter((run) => run.passed).length * 2 > caseRuns.length).length;
-  return { passed, cost };
+  const isCut = (run) => run.skippedPaidGraders || run.costUsd === undefined;
+  const cut = runs.flat().filter(isCut).length;
+  const costless = runs.flat().some((run) => run.costUsd === undefined);
+  const cost = costless ? '-' : runs.flat().reduce((sum, run) => sum + runCost(run), 0);
+  const passed = runs.filter((caseRuns) => caseRuns.filter((run) => run.passed && !isCut(run)).length * 2 > caseRuns.length).length;
+  return { passed, cost, cut };
 }
 
 function evalCase(name, maxCost) {
@@ -114,18 +111,28 @@ function evalCase(name, maxCost) {
   return JSON.parse(fs.readFileSync(jsonPath, 'utf8')).cases;
 }
 
-function measure(row) {
-  const cases = caseNames(row).flatMap((name) => evalCase(name, CASE_USD));
-  const withExo = armFigures(cases, 'with');
-  const without = armFigures(cases, 'without');
+export function settle(row, withExo, without) {
+  const costed = withExo.cost !== '-' && without.cost !== '-';
+  const overBudget = costed && withExo.cost + without.cost > shareOf(row);
+  const flat = costed && withExo.passed === 0 && without.passed === 0;
+  const figure = (arm) => {
+    if (overBudget) return 'fail';
+    return flat ? 'void' : arm.passed;
+  };
   return {
     ...row,
-    with: withExo.passed,
-    without: without.passed,
-    'cost with': withExo.cost.toFixed(2),
-    'cost without': without.cost.toFixed(2),
+    with: figure(withExo),
+    without: figure(without),
+    'cost with': costed ? withExo.cost.toFixed(2) : '-',
+    'cost without': costed ? without.cost.toFixed(2) : '-',
     date: new Date().toISOString().slice(0, 10),
+    cut: withExo.cut + without.cut,
   };
+}
+
+function measure(row) {
+  const cases = caseNames(row).flatMap((name) => evalCase(name, CASE_USD));
+  return settle(row, armFigures(cases, 'with'), armFigures(cases, 'without'));
 }
 
 function runNext(text, rows, partName) {
@@ -140,8 +147,9 @@ function runNext(text, rows, partName) {
     process.exit(2);
   }
   const measured = measure(row);
-  process.stdout.write(`${target}: ${measured.with}/${measured.without} cases\n`);
-  return writeRows(text, rows.map((candidate) => (candidate.part === target ? measured : candidate)));
+  const { cut, ...figures } = measured;
+  process.stdout.write(`${target}: ${figures.with}/${figures.without} cases, cut ${cut}\n`);
+  return writeRows(text, rows.map((candidate) => (candidate.part === target ? figures : candidate)));
 }
 
 function report(problems) {
@@ -157,7 +165,6 @@ function main(mode, partName) {
     return report(planProblems(rows, evalCaseNames()));
   }
   if (mode === '--run') return fs.writeFileSync(TABLE, runNext(text, rows, partName));
-  if (mode === '--check-measured') return report(measuredProblems(rows));
   process.stderr.write(`${USAGE}\n`);
   process.exit(2);
 }

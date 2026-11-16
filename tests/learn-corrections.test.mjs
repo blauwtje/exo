@@ -100,7 +100,7 @@ test('a prompt typed in a subfolder is keyed by the project root', () => {
   assert.match(output, /you asked something like this on /);
 });
 
-const KEPT_LINE = `exo: this repeats a lesson you kept, so that lesson did not stop the mistake; exo:learn makes it stronger (id ${entryOf(EARLIER).id}).\n`;
+const KEPT_LINE = `exo: this prompt shares words with a lesson you kept (id ${entryOf(EARLIER).id}); exo:learn can strengthen it\n`;
 const keptRow = { verdict: 'kept', ids: [entryOf(EARLIER).id], words: entryOf(EARLIER).words };
 
 test('a kept lesson is flagged once per keep, and a new keep re-arms it', () => {
@@ -149,7 +149,7 @@ test('a prompt similar only to an earlier entry of a kept cluster prints the kep
   const middle = { date: '2026-01-03', session: 's2', text: 'charlie delta echo foxtrot golf hotel' };
   const row = { verdict: 'kept', ids: [entryOf(kept).id], words: entryOf(kept).words };
   writeLedger(env, [...fillers(100), kept, middle, { seen: 's3' }, row]);
-  assert.equal(hook(env, 's3', 'echo foxtrot golf hotel india juliet'), `exo: this repeats a lesson you kept, so that lesson did not stop the mistake; exo:learn makes it stronger (id ${entryOf(kept).id}).\n`);
+  assert.equal(hook(env, 's3', 'echo foxtrot golf hotel india juliet'), `exo: this prompt shares words with a lesson you kept (id ${entryOf(kept).id}); exo:learn can strengthen it\n`);
 });
 
 test('a same-session repeat prints nothing', () => {
@@ -278,7 +278,7 @@ test('keep and reject exit 2 without ids or on an unknown id, and reject takes b
 test('keep from a subfolder reads the ledger of CLAUDE_PROJECT_DIR', () => {
   const env = fixture();
   const subfolder = path.join(env.project, 'sub');
-  fs.mkdirSync(subfolder);
+  fs.mkdirSync(subfolder, { recursive: true });
   const entries = pair('alpha bravo charlie delta echo', '2026-03-01');
   writeLedger(env, [...fillers(60), ...entries]);
   const result = spawnSync('node', [script, 'keep', idOf(entries[0])], { encoding: 'utf8', cwd: subfolder, env: { ...process.env, CLAUDE_CONFIG_DIR: env.config, CLAUDE_PROJECT_DIR: env.project } });

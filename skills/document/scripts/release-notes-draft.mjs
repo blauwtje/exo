@@ -27,8 +27,7 @@ function entryOf({ subject, body }) {
   const [, type, bang, description] = match;
   const footer = BREAKING_FOOTER.exec(body);
   const breaking = bang === '!' || footer !== null;
-  const removal = type === 'feat' && /^(remove|drop|delete)\b/i.test(description);
-  const section = removal ? 'Removed' : SECTION_OF_TYPE[type];
+  const section = SECTION_OF_TYPE[type];
   if (!section && !breaking) return null;
   return { text: sentence(description), section: section ?? 'Changed', breaking, upgrade: footer ? sentence(footer[1]) : 'not stated in the commit.' };
 }

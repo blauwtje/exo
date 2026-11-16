@@ -3,8 +3,12 @@ import { planTaskTrailer } from '#plan-landed';
 import { shellQuote } from '#basics';
 import { LandingError } from './land-errors.mjs';
 
+export function candidatePrefix(planId) {
+  return `Plan-candidate: ${planId}/`;
+}
+
 export function candidateTrailer(planId, number) {
-  return `Plan-candidate: ${planId}/${number}`;
+  return `${candidatePrefix(planId)}${number}`;
 }
 
 function addLineOf(command, paths) {

@@ -1,8 +1,8 @@
 import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';
 import { isFile } from '../repository.mjs';
 
-const DOC_FILES = ['README.md', 'CONTRIBUTING.md', 'docs/settings.md'];
-const DOC_FOLDERS = ['docs/principles', 'docs/skills'];
+const DOC_FILES = ['README.md', 'CONTRIBUTING.md', 'guide/settings.md'];
+const DOC_FOLDERS = ['principles', 'guide'];
 
 function unresolvedTargets(file, repository, bases) {
   return markdownTargets(repository.text(file))

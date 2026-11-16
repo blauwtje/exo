@@ -4,7 +4,7 @@ Turns a correction you give again into a check that fails when the mistake retur
 
 ## When it runs
 
-A hook runs on every prompt you send and calls no model. When your prompt repeats one from an earlier session, it adds one `exo:` line, once per cluster, in any language. `learn` then judges whether the prompt is a correction or wish; when it is neither, it says nothing. When your prompt repeats a lesson you kept, the line says the lesson did not stop the mistake and to run `exo:learn` to make it stronger, once per keep. At session start (startup, resume and clear) it adds a line when 2 or more past sessions hold the same correction. The hook flags nothing until a project holds about 40 recorded prompts, because a counted word must sit in 2 or more entries and in at most 5% of them.
+A hook runs on every prompt you send and calls no model. When your prompt repeats one from an earlier session, it adds one `exo:` line, once per cluster, in any language. `learn` then judges whether the prompt is a correction or wish; when it is neither, it says nothing. When your prompt repeats a lesson you kept, the line says the prompt shares words with that lesson, once per keep, and `learn` judges whether the lesson failed before it makes it stronger. At session start (startup, resume and clear) it adds a line when 2 or more past sessions hold the same correction. The hook flags nothing until a project holds about 40 recorded prompts, because a counted word must sit in 2 or more entries and in at most 5% of them.
 
 On 626 past sessions the hook raised 90 flags. Two judges called 38 and 37 of them a lesson and agreed on 85 of the 88 flags both labelled (kappa 0.945). How many repeats the hook misses is not measured.
 
