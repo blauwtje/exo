@@ -28,6 +28,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `adhd` output style marks one option `(Recommended)` with its reason when it hands a choice to the user.
 - The eval principles page voids a flat 0% or 100% result only when a positive control, an injected known effect of at least the threshold size, goes undetected; when the control is detected, the flat result stands.
 - Skills, agents, scripts and evals follow the principle pages, and each settled conflict carries a `decided:` mark.
+- Skill, agent and output style prose that changes no decision is cut.
 
 ### Fixed
 
@@ -38,6 +39,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `learn` skips turns Claude Code starts itself, such as `<task-notification>` messages, when it records prompts.
 - `lessons.mjs paths` finds auto memory where Claude Code keeps it and prints `auto memory: none` when it is off.
 - `spec` plan check reports a task whose `Files:` path git ignores, so a plan can no longer pass and then fail to land.
+- `ship` names a missing `gh` and finds the default branch the way the other scripts do.
 
 ### Removed
 

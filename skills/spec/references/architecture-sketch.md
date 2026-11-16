@@ -1,6 +1,6 @@
 # Options
 
-Use this when the user asks for options or ideas. One context drafting every option tends to draft near its first idea, so the steps below force distance; building each option in full before choosing is the opposite mistake.
+Use this when the user asks for options or ideas. One context drafting every option drafts near its first idea, so the steps below force distance.
 
 ## Draw the pairs
 

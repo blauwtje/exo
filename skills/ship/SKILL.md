@@ -8,7 +8,7 @@ effort: medium
 
 # Ship
 
-Take finished commits only as far as the user said, because a push or merge cannot be taken back. `gh` does the pushing, pull requests, checks and merges; this skill holds exo's decisions.
+Take finished commits only as far as the user said, because a push or merge cannot be taken back.
 
 ## Process
 

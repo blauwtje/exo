@@ -19,7 +19,7 @@ Run `node "${CLAUDE_SKILL_DIR}/scripts/list.mjs" --url <url> [--limit <n>]`. It 
 1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]`, or `--from <file>` for a `list.mjs` output. It prints one line per video and writes the transcript under `.exo/watch/<id>/`.
    - Pass all videos in one call, in the background when there are two or more. It runs them one by one and skips finished ones (`--force` redoes them), so use no parallel agents or Bash calls.
    - Add `--lang <code>` or `--model <whisper model>` only when the user names one.
-2. The script reads captions, and with none it transcribes the audio itself. When a line says `missing tool` for yt-dlp, relay its install command and ask before installing anything. Relay any other failure line as printed.
+2. When a line says `missing tool` for yt-dlp, relay its install command and ask before installing anything. Relay any other failure line as printed.
 3. Exit 75 means a rate limit (HTTP 429) stopped the batch: report the open videos and the restart command from the last line. Exit 1 means every video failed.
    - `no transcript`: tell the user why, as the line says, and offer no other route.
    - `available:` lists languages: ask which, then rerun with `--lang`.

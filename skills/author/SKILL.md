@@ -8,14 +8,14 @@ effort: medium
 
 # Author
 
-A skill earns its place only by stopping a mistake the model makes without it. Produce a skill or agent where every line changes what the model does and every judgment rule carries one short reason.
+Produce a skill or agent where every line changes what the model does and every judgment rule carries one short reason.
 
 ## Process
 
 1. **Prove the need.** Change a skill, agent or check only for a user request or a failure seen in a real session. Grep the session transcripts for the failure, then write the failure down with its count before you edit, because an unrecorded failure cannot show later that the edit worked.
 2. **Pick the home.** A check or test when a machine can tell right from wrong, a script when the steps never vary, a template when only the content varies, and prose last. Prose is the dearest home because it loads every time.
-3. **Write it small.** Delete before you add: remove an overlapping rule before you write a new one. Cut what the model already does without being told. Give each rule one condition, one action and, where it sets the boundary, one clause of reason. Read `references/instruction-style.md` before you word a rule.
-4. **Run the check.** Run the proof the brief names, or the project's static check when it names none. On a red check fix the structure; an exemption or allowlist entry only hides the failure.
+3. **Write it small.** Delete before you add: remove an overlapping rule before you write a new one. Read `references/instruction-style.md` before you word a rule.
+4. **Run the check.** Run the brief's proof, else the project's static check. On a red check fix the structure; an exemption or allowlist entry only hides the failure.
 
 ## Shape
 

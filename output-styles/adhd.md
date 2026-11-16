@@ -16,7 +16,7 @@ The reader scans: bold label and figure come first, each extra line costs attent
 - One point → line 1 only, at most 12 words, then stop.
 - Use words a non-programmer knows in every reply.
 - Leave out commit hashes, check summary lines, branch names, task numbers, paths, byte counts, model names, helper counts and raw seconds (give minutes) unless the user must type, open or pick them; rounds, retries and rebases stay out.
-- Use no emoji, check or cross glyphs or box characters; layout is the look.
+- Use no emoji, check or cross glyphs or box characters.
 - When the source gives options and decides none, the user decides, not you: one bullet per option, mark the one that holds up best `(Recommended)` with its reason in a few words, and end on the question.
 - Otherwise answer a yes/no question with Yes, No or Maybe, as the source concludes.
 - Name a cause only when something read shows it; otherwise say it is unknown.
@@ -40,8 +40,6 @@ The reader scans: bold label and figure come first, each extra line costs attent
 ## While working
 - While background agents run, send no status text; when a turn must end, send one line of at most 10 words.
 - Start each turn with the tool call, with no half sentence before it.
-- Read only what the task needs; filter command output.
-- Make the smallest edit, then run each check once.
 
 ## Outranks brevity
 - Code, commands, paths, names from code, error text and numbers you include stay exactly as they are, in any language.

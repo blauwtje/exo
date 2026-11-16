@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import process from 'node:process';
 import { parseFlags, UsageError, isMain, USAGE_EXIT } from '#script-flags';
+import { defaultBranch } from '#git';
 import { settingValue } from '#settings-store';
 
 const USAGE = 'usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>] | --merge <n...> | --routes';
@@ -10,6 +11,7 @@ const ROUTES = ['push', 'open-pr', 'pr-merge'];
 const METHODS = ['squash', 'merge', 'rebase'];
 const WAIT_MS = 20 * 60 * 1000;
 const TIMEOUT_EXIT = 124;
+const MISSING_GH = 'missing tool: gh on PATH; install it from https://cli.github.com';
 
 class StepError extends Error {
   constructor(step, message, code = 1) {
@@ -21,17 +23,16 @@ class StepError extends Error {
 
 function cli(command, args, timeout) {
   const result = spawnSync(command, args, { encoding: 'utf8', timeout });
+  if (command === 'gh' && result.error?.code === 'ENOENT') {
+    console.error(MISSING_GH);
+    process.exit(1);
+  }
   const text = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim();
   return { ok: result.status === 0, timedOut: result.error?.code === 'ETIMEDOUT', stdout: (result.stdout ?? '').trim(), error: text.split('\n').pop() || result.error?.message || '' };
 }
 
 const git = (...args) => cli('git', args);
 const gh = (...args) => cli('gh', args);
-
-function defaultBranch() {
-  const head = git('symbolic-ref', '--short', 'refs/remotes/origin/HEAD');
-  return head.ok ? head.stdout.replace(/^origin\//, '') : null;
-}
 
 function currentBranch() {
   return git('branch', '--show-current').stdout;
@@ -41,7 +42,8 @@ function printRoutes() {
   const setting = settingValue('ship');
   if (setting !== 'ask') return console.log(`route: ${setting} (set)`);
   if (!git('remote', 'get-url', 'origin').ok) return console.log('no origin remote; no route can run');
-  const onBranch = defaultBranch() !== null && currentBranch() !== defaultBranch() && gh('auth', 'status').ok;
+  const base = defaultBranch(process.cwd());
+  const onBranch = base !== null && currentBranch() !== base && spawnSync('gh', ['auth', 'status']).status === 0;
   const menu = onBranch
     ? ['- **(A) Push and merge**: merge on GitHub once tests pass.', '- **(B) Open PR**: GitHub review; you merge.', '- **(C) Keep local**: nothing leaves this computer.', '', 'Recommended: (A), because it merges only after tests pass.']
     : ['- **(A) Push**: send the commits to GitHub.', '- **(B) Keep local**: nothing leaves this computer.', '', 'Recommended: (A), because it backs the commits up.'];
@@ -88,7 +90,8 @@ function route(flags, branch, base) {
   if (flags.issue !== undefined && !new RegExp(`\\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\\s+#${flags.issue}\\b`, 'i').test(fs.readFileSync(flags.body, 'utf8'))) {
     throw new StepError('create', `body-missing-closes-${flags.issue}`);
   }
-  const push = git(...(branch === base ? ['push', '--follow-tags'] : ['push', '-u', 'origin', branch]));
+  const tracked = git('rev-parse', '--abbrev-ref', '@{upstream}').ok;
+  const push = git(...(branch === base && tracked ? ['push', '--follow-tags'] : ['push', '-u', 'origin', branch]));
   if (!push.ok) throw new StepError('push', push.error);
   if (flags.route === 'push') return `${branch} pushed`;
   const pullRequest = openPullRequest(branch, base, flags);
@@ -136,7 +139,7 @@ function main() {
     return;
   }
   const branch = currentBranch();
-  const base = defaultBranch();
+  const base = defaultBranch(process.cwd());
   if (flags.route !== 'push' && (base === null || branch === base)) {
     console.error(`usage: ship.mjs: route '${flags.route}' needs a branch other than the default branch`);
     process.exitCode = USAGE_EXIT;

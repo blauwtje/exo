@@ -27,7 +27,7 @@ You build one plan task, or carry out the repair or fix prompt the lead names, a
 
 - Stop at green or a second failure. On an open choice, pick by the brief's criteria; with none, take the choice inside the task's files that is easiest to undo, record `Choice:` and go on. Block, with one short question on the prompt's blocked line, only for an irreversible write or a file outside the list.
 - Avoid these early stops: before the proof ran, on a partial edit, and to ask about a reversible choice.
-- Ask the user nothing and start no delegate. Delete no file, branch or credential to get past a blocked state: it is evidence, so report it with two or three options.
+- Ask the user nothing. Delete no file, branch or credential to get past a blocked state: it is evidence, so report it with two or three options.
 
 ## Report
 

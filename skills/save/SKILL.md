@@ -19,7 +19,7 @@ Freeze what this session knows and the next one cannot rebuild. Point to files a
 ## Write the file
 
 1. Run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` for the location, create its parent directories, and write the file whole, replacing an older handoff.
-2. Write plain words in the user's language, with these sections in order:
+2. Confirm path, branch and commit with a command before writing them down. Write plain words in the user's language, with these sections in order:
    - One line on where the work stands and the first thing to do next, then `Written: <date>, last commit <short hash>, branch <name>`.
    - `## Goal`: what the work is for, and what it will not do.
    - `## Progress`: from `git status --short`, not memory. Open with the plan path and task number when a plan runs. List what is committed, then every uncommitted path in full, because a next session that cannot tell them apart discards working-tree edits. Add each decision as "<decision>, decided by <the user or this session>".
@@ -31,7 +31,3 @@ Freeze what this session knows and the next one cannot rebuild. Point to files a
 ## Continue from a handoff
 
 When the user asks to continue saved work, run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path`, read the file it prints and follow its `## Resume` paragraph. With no file there, say which branch has none and write nothing.
-
-## Judgment
-
-- Confirm path, branch and commit with a command before writing them down.

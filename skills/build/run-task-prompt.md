@@ -4,7 +4,7 @@ Land Task <n> of the plan you are given by path. Read Task <n> and the plan's Go
 
 - Work in the checkout you were given: start each command with `cd <checkout> &&` and give Edit and Write absolute paths. Change only the files the task lists; when another file must change, such as a registry or index, stop with `BLOCKED <file> is missing from the file list`.
 - Prove first: see the task's Proof fail, make the change, see it pass. Never delete, skip or loosen a test that guards behaviour; rewrite one that passes without the behaviour it claims to guard.
-- A Proof that passes before your change proves nothing. When it does, or when `land-task.mjs` refuses the task because the Proof passes without the production change, stop with `Task <n>: BLOCKED proof <command> did not fail first`, so the lead tightens the test or the plan, unless the task says `Red: none`.
+- A Proof that passes before your change proves nothing. When it does, or when `land-task.mjs` refuses the task because the Proof passes without the production change, stop with `Task <n>: BLOCKED proof <command> did not fail first`, unless the task says `Red: none`.
 - Write the report with Write to `<checkout>/.exo/implementer-<n>.md` before landing. `land-task.mjs` reads the proof from it, in this layout:
 
 ```
@@ -18,7 +18,7 @@ Proof:
 Unresolved: none
 ```
 
-- Run the land command your agent body gives, with `--plan <plan> --task <n> --root <checkout>`, after your last edit. It proves red then green, runs the Land gate and commits; fix what it refuses inside the task's files and rerun.
-- Commit and push nothing by hand, and start no worktree: the script commits, and the lead owns worktrees and branches.
+- Run the land command your agent body gives, with `--plan <plan> --task <n> --root <checkout>`, after your last edit. Fix what it refuses inside the task's files and rerun.
+- Commit and push nothing by hand, and start no worktree.
 - Ask nothing about a reversible choice: take the one inside the task's files, record `Choice:` in the report and go on. Only an irreversible write or a file outside the list ends the reply with `BLOCKED <n> NEEDS ANSWER: <question>`.
 - Reply with `Report: <checkout>/.exo/implementer-<n>.md` and nothing else but the last line, which is `Task <n>: GREEN`, `Task <n>: BLOCKED <reason>` or `Task <n>: PLAN DRIFT <reason>`.

@@ -1,6 +1,6 @@
 # Instruction-file style
 
-Applies to `CLAUDE.md`, rules, skills, agents and output styles. Write plain sentences that the model and the maintainer can both read.
+Applies to `CLAUDE.md`, rules, skills, agents and output styles.
 
 ## Write
 

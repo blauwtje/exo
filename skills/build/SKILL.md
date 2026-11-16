@@ -6,7 +6,7 @@ argument-hint: "[plan path] [--land]"
 
 # Build
 
-Build lands a plan one task at a time. A task lands when its proof passes after the change and the plan's Land gate passes; `land-task.mjs` checks both and commits. It runs the proof on the code before the change too and refuses the task when it passes there; the builder stops on that refusal with `BLOCKED`, so tighten that test or write `Red: none (<reason>)` in the task. A task that changes structure but not behaviour proves itself by the same command giving the same output at the base and at the head; a type check or lint alone shows nothing about behaviour.
+Build lands a plan one task at a time. A task lands when its proof passes after the change and the plan's Land gate passes; `land-task.mjs` checks both and commits. It runs the proof on the code before the change too and refuses the task when it passes there. A task that changes structure but not behaviour proves itself by the same command giving the same output at the base and at the head; a type check or lint alone shows nothing about behaviour.
 
 ## The loop
 
@@ -31,17 +31,14 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
 |---|---|---|
 | Build a task | `exo:builder` | Sonnet, medium |
 | Second attempt after a failure | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
-| Branch review | `code-review` | medium |
 | A design choice the plan leaves open | this session | its own model, high |
 | Research | `exo:researcher` | Sonnet, medium |
-
-The stronger model comes only after a failure, because that costs less than running every task on it.
 
 ## End of the run
 
 1. Review the branch diff first, so the last code written is the code checked: call the built-in `code-review` skill once through the Skill tool with args `medium <branch>`, name the plan path and ask it to check the diff against the plan's Decisions and Acceptance. Send each finding to one fresh `exo:builder`, all in one message, briefed "write the failing test or repro for this finding; with no repro, drop it", because a finding nobody reproduced may be wrong. Fix only the reproduced findings, in one builder fix round that commits with the land command's `--fix <subject>`, and list the dropped ones as unproven for the user. With no `code-review` skill listed, say no review ran.
 2. Run the plan's `Success criterion` command once, in the background, to a log, and read only the failing lines. Then run the plan's `Land gate:` command once the same way unless it is `none`: `land-task.mjs` skips a gate whose last pass took 60 s or more, so this is the one run of a slow gate. A failure goes to one builder fix and one rerun; a second failure ends with what still fails.
-3. Build the report from `git diff --stat <base>..HEAD` and the `Plan-task:` commits, not from the builders' summaries, which drop small changes. Say in plain words whether the branch is ready, the findings and what the user does next, and label each claim measured, inferred or guess. Keep `Proof:` lines and `## Manual checks` out of the message; the task reports in `.exo/` hold them.
+3. Build the report from `git diff --stat <base>..HEAD` and the `Plan-task:` commits, not from the builders' summaries. Say in plain words whether the branch is ready, the findings and what the user does next, and label each claim measured, inferred or guess. Keep `Proof:` lines and `## Manual checks` out of the message; the task reports in `.exo/` hold them.
 4. End on `exo:ship`, unless the request rules out a push; then say nothing left the machine. `--land` passes `--land` to `ship`.
 
 ## No plan
@@ -51,7 +48,7 @@ A decided change with no plan file runs these steps, so a small change gets the 
 1. **Orient.** Read only the ranges the request names. Otherwise dispatch `exo:researcher` with `Sources: repo` and read only its `Read next` ranges. Upstream decisions are settled.
 2. **Decide the route.** An open product decision goes to `exo:spec` first. Count these facts: over two source, test or config files change, a dependency is added, a public signature changes, a persisted format or security boundary is crossed. With none, read `references/code-rules.md`, which every builder reads too, then edit directly, run the check and end on `exo:ship` as in the end of the run, so the edit does not sit uncommitted. A test-first request continues at any count.
 3. **Workspace.** Settle where the change commits, as in step 1 above. For a multi-file change, confirm a clean working tree or name its changed paths.
-4. **Build.** Over 2 files, send each independent part to `exo:builder` in dependency order; otherwise read the same code rules and edit in dependency order. Keep each edit idempotent, so a retry lands the same state.
+4. **Build.** Over 2 files, send each independent part to `exo:builder` in dependency order; otherwise read the same code rules and edit in dependency order.
 5. **Prove.** Done needs a `Proof: <command> -> <output>` line from a real call on input this session did not write; otherwise write `Unverified: <reason>`. A test runner is no proof unless `package.json` names no `bin` and no `scripts.start`. For a test-first bug, commit the failing test alone, because a test committed with its fix does not show it failed. Run runners unpiped, so the failing command shows.
 6. **Review and commit.** Run `code-review` as in the end of the run, commit where step 3 placed it, leaving out paths that were already changed, then end on `exo:ship` unless the request rules out a push.
 
