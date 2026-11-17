@@ -18,6 +18,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Commits need a Conventional Commits subject only in a repository whose recent history uses them, and the pull request title follows the repository's commit style.
 - `spec` no longer assumes `docs/specs/` is gitignored, and `document` follows the project's own changelog format for a breaking change.
 - `author` fires for any Claude Code skill, agent or skill script, in any repository or plugin, and its body holds no rules for working on exo itself.
+- The `adhd` style drops the catch-all `Also` bullet, the question label and the English `Maybe`, answers yes or no in the user's language and bolds the key words of a closing question.
+- The `adhd` style follows the instruction-style guide: an opener saying what it produces, the language rule first, one rule per bullet and a one-line yes or no example.
 - The principle pages, skill guides, settings page and failure and score logs moved out of the gitignored `docs/` folder.
 - `learn` keeps its lessons index in the rules folder (`<project>/.claude/rules/lessons.md` or `<config>/rules/lessons.md`), so CLAUDE.md needs no import line; `lessons.mjs paths` prints the paths and `lessons.mjs check` reads the new place.
 - `lessons.mjs migrate` moves an old index and its CLAUDE.md import line to the rules folder and prints each removed line, and a second run changes nothing.
