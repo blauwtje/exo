@@ -16,7 +16,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `validate:static` fails a shipped file that holds an invisible or bidi Unicode character.
 - `validate:static` fails a shipped file that holds a personal absolute path such as `/Users/<name>` or `/home/<name>`.
 - A test runs every eval fixture script in an empty folder and fails when one exits non-zero.
-- The scorecard holds a pending row for the release eval of the two model rows: `diagnose-repatch` on two plugin copies that differ only in the cause search's model or effort.
+- The scorecard records the eval of the two model rows as void: `diagnose-repatch` never called the skill in 12 of 12 runs, so the cause search's model line never ran.
 
 ### Changed
 
