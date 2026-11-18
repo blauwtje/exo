@@ -9,7 +9,7 @@ Symptom: <one line>
 First bad: <the bisect.mjs First bad and Diff lines, or none>
 Ruled out: <the approaches the failed build already tried, or none>; keep these out of your hypotheses.
 
-Write <root>/.exo/debug/<slug>.md, slug being the symptom in kebab-case of at most 40 characters: at most 25 lines, one line per field in this order, `none` for one not reached, a log path for longer output:
+Write the report path the dispatch gives: at most 25 lines, one line per field in this order, `none` for one not reached, a log path for longer output:
 Symptom; Repro (one bare command); Expected; Actual; Log; First bad; Hypotheses (one line each: claim, deciding observation, kept or dropped); Cause (path:line symbol); Mechanism (at most 3 lines); Prediction (the output the fix changes); Ranges (path:a-b the fix reads); Status (proven, unproven or no-repro).
 
 Return one line: status=<proven|unproven|no-repro> handoff=<path>

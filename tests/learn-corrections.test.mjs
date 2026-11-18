@@ -65,6 +65,7 @@ function hook(env, session, prompt, cwd = env.project, extra = {}) {
 
 const REPEAT = 'rename variable totalcount everywhere please';
 const EARLIER = { date: '2026-01-02', session: 'earlier', text: 'please rename variable totalcount everywhere quickly' };
+const OLDER = { ...EARLIER, date: '2026-01-01', session: 'older' };
 
 test('a turn Claude Code starts itself leaves no ledger row and prints nothing', () => {
   const env = fixture();
@@ -75,7 +76,7 @@ test('a turn Claude Code starts itself leaves no ledger row and prints nothing',
 
 test('a repeat from another session prints the line once; a second repeat of that cluster prints nothing', () => {
   const env = fixture();
-  writeLedger(env, [...fillers(60), EARLIER, { seen: 'now' }, { seen: 'later' }]);
+  writeLedger(env, [...fillers(60), EARLIER, OLDER, { seen: 'now' }, { seen: 'later' }]);
   assert.equal(hook(env, 'now', REPEAT), `exo: you asked something like this on 2026-01-02: "${EARLIER.text}". exo:learn turns a repeated correction or wish into a check or lesson (id ${entryOf(EARLIER).id}).\n`);
   assert.equal(hook(env, 'later', REPEAT), '');
 });
@@ -83,7 +84,7 @@ test('a repeat from another session prints the line once; a second repeat of tha
 test('a flag hides only prompts similar to the flagged prompt, not to the entry it matched', () => {
   const env = fixture();
   const held = { date: '2026-01-02', session: 'earlier', text: 'alpha bravo charlie delta echo foxtrot golf hotel' };
-  writeLedger(env, [...fillers(60), held, { seen: 'a' }, { seen: 'b' }]);
+  writeLedger(env, [...fillers(60), held, { ...held, date: '2026-01-01', session: 'older' }, { seen: 'a' }, { seen: 'b' }]);
   assert.equal(hook(env, 'a', 'alpha bravo charlie delta zuluxx').includes('on 2026-01-02'), true);
   assert.equal(hook(env, 'b', 'echo foxtrot golf hotel yankee').includes('on 2026-01-02'), true);
 });
@@ -92,7 +93,7 @@ test('a prompt typed in a subfolder is keyed by the project root', () => {
   const env = fixture();
   const subfolder = path.join(env.project, 'packages', 'web');
   fs.mkdirSync(subfolder, { recursive: true });
-  writeLedger(env, [...fillers(60), { seen: 'first' }, { seen: 'second' }]);
+  writeLedger(env, [...fillers(60), OLDER, { seen: 'first' }, { seen: 'second' }]);
   assert.equal(hook(env, 'first', REPEAT), '');
   const line = JSON.stringify({ type: 'user', timestamp: new Date().toISOString(), message: { content: REPEAT } });
   fs.writeFileSync(path.join(env.folder, 'first.jsonl'), `${line}\n`);
@@ -158,6 +159,14 @@ test('a same-session repeat prints nothing', () => {
   assert.equal(hook(env, 'earlier', REPEAT), '');
 });
 
+test('three similar entries in one session are no candidate and raise no hook line', () => {
+  const env = fixture();
+  const same = { ...EARLIER, session: 'solo' };
+  writeLedger(env, [...fillers(60), same, { ...same }, { ...same }, { seen: 'now' }]);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  assert.equal(hook(env, 'now', REPEAT), '');
+});
+
 test('a first prompt is recorded but never flagged', () => {
   const env = fixture();
   writeLedger(env, [...fillers(60), EARLIER]);
@@ -179,7 +188,7 @@ test('a repeat in a non-Latin script is found the same way', () => {
     ['μετονόμασε τη μεταβλητή παντού παρακαλώ', 'παρακαλώ μετονόμασε τη μεταβλητή παντού']
   ]) {
     const env = fixture();
-    writeLedger(env, [...fillers(60), { date: '2026-02-03', session: 'earlier', text }, { seen: 'now' }]);
+    writeLedger(env, [...fillers(60), { date: '2026-02-03', session: 'earlier', text }, { date: '2026-02-02', session: 'older', text }, { seen: 'now' }]);
     assert.equal(hook(env, 'now', again).includes('on 2026-02-03'), true, text);
   }
 });
@@ -214,28 +223,42 @@ test('a hook that fails reports on stderr and still exits 0', () => {
   assert.notEqual(result.stderr, '');
 });
 
-test('candidates needs 2 or more sessions', () => {
+test('candidates and the new-memories count need 3 sessions, and a third session makes the cluster one', () => {
   const env = fixture();
-  writeLedger(env, [...fillers(60), EARLIER, { ...EARLIER, text: 'please rename variable totalcount everywhere soon' }]);
+  writeLedger(env, [...fillers(60), EARLIER, { ...EARLIER, session: 'other' }]);
   const result = run(env, ['candidates', '--cwd', env.project]);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, '');
-  assert.equal(hook(env, 'now', 'hello'), '');
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(countOf(env), 0);
+  writeLedger(env, [...fillers(60), EARLIER, { ...EARLIER, session: 'other' }, OLDER]);
+  assert.match(run(env, ['candidates', '--cwd', env.project]).stdout, /\(3 sessions, 2026-01-01 to 2026-01-02\)/);
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(countOf(env), 1);
 });
 
-const pair = (text, date) => [{ date: '2026-01-01', session: 'a', text }, { date, session: 'b', text }];
+test('a repeat matching one other session prints no line; matching two prints it', () => {
+  const env = fixture();
+  writeLedger(env, [...fillers(60), EARLIER, { seen: 'now' }]);
+  assert.equal(hook(env, 'now', REPEAT), '');
+  writeLedger(env, [...fillers(60), EARLIER, OLDER, { seen: 'again' }]);
+  assert.match(hook(env, 'again', REPEAT), /you asked something like this on 2026-01-02/);
+});
+
+const pair = (text, date) => [{ date: '2026-01-01', session: 'a', text }, { date: '2026-01-02', session: 'b', text }, { date, session: 'c', text }];
 const idOf = (row) => entryOf(row).id;
 const countOf = (env) => JSON.parse(fs.readFileSync(`${env.ledger}.count`, 'utf8')).count;
 
 test('candidates ranks by session count then newest date and shows the medoid text', () => {
   const env = fixture();
   const triple = [
-    { date: '2026-01-01', session: 'a', text: 'alpha bravo charlie delta echo' },
-    { date: '2026-02-01', session: 'b', text: 'alpha bravo charlie xray yankee' },
-    { date: '2026-03-01', session: 'c', text: 'delta echo charlie zulu whiskey' }
+    { date: '2026-01-01', session: 't1', text: 'alpha bravo charlie delta echo' },
+    { date: '2026-02-01', session: 't2', text: 'alpha bravo charlie xray yankee' },
+    { date: '2026-03-01', session: 't3', text: 'delta echo charlie zulu whiskey' },
+    { date: '2026-03-02', session: 't4', text: 'alpha bravo charlie delta echo' }
   ];
-  writeLedger(env, [...fillers(60), ...pair('foxtrot golf hotel india juliet', '2026-06-01'), ...triple]);
-  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(triple[0])} "alpha bravo charlie delta echo" (3 sessions, 2026-01-01 to 2026-03-01)\n${idOf(pair('foxtrot golf hotel india juliet', '')[0])} "foxtrot golf hotel india juliet" (2 sessions, 2026-01-01 to 2026-06-01)\n`);
+  writeLedger(env, [...fillers(100), ...pair('foxtrot golf hotel india juliet', '2026-06-01'), ...triple]);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(triple[0])} "alpha bravo charlie delta echo" (4 sessions, 2026-01-01 to 2026-03-02)\n${idOf(pair('foxtrot golf hotel india juliet', '')[0])} "foxtrot golf hotel india juliet" (3 sessions, 2026-01-01 to 2026-06-01)\n`);
 });
 
 test('keep and reject record every member id and hide the cluster', () => {
@@ -297,16 +320,18 @@ test('keep accepts any member id and decides the whole cluster', () => {
 test('an entry similar to a rejected cluster and an open one leaves the open one offered', () => {
   const env = fixture();
   const [rejected, open] = [pair('aa1 aa2 aa3 aa4', '2026-02-01'), pair('bb1 bb2 bb3 bb4', '2026-02-01')];
-  writeLedger(env, [...fillers(60), ...rejected, ...open]);
+  writeLedger(env, [...fillers(100), ...rejected, ...open]);
   assert.equal(run(env, ['reject', idOf(rejected[0]), '--cwd', env.project]).status, 0);
   fs.appendFileSync(env.ledger, `${JSON.stringify(entryOf({ date: '2026-02-02', session: 'bridge', text: 'aa1 aa2 aa3 bb1 bb2 bb3' }))}\n`);
-  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(open[0])} "bb1 bb2 bb3 bb4" (2 sessions, 2026-01-01 to 2026-02-01)\n`);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(open[0])} "bb1 bb2 bb3 bb4" (3 sessions, 2026-01-01 to 2026-02-01)\n`);
 });
 
 test('a flagged cluster is still offered by candidates', () => {
   const env = fixture();
-  writeLedger(env, [...fillers(60), EARLIER, { ...EARLIER, session: 'other' }, { flagged: entryOf(EARLIER).words }]);
-  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${[idOf(EARLIER), idOf({ ...EARLIER, session: 'other' })].sort()[0]} "${EARLIER.text}" (2 sessions, 2026-01-02 to 2026-01-02)\n`);
+  writeLedger(env, [...fillers(60), EARLIER, OLDER, { flagged: entryOf(EARLIER).words }]);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  writeLedger(env, [...fillers(60), EARLIER, OLDER, { ...EARLIER, session: 'other' }, { flagged: entryOf(EARLIER).words }]);
+  assert.match(run(env, ['candidates', '--cwd', env.project]).stdout, /\(3 sessions, 2026-01-01 to 2026-01-02\)/);
 });
 
 test('path-like tokens do not make a cluster', () => {
@@ -378,7 +403,7 @@ test('a half-written last row is an append in progress and keeps the cache', () 
 
 test('a hook that cannot get the lock in time writes and prints nothing, and a stale lock is taken over', () => {
   const env = fixture();
-  writeLedger(env, [...fillers(60), EARLIER, { seen: 'now' }]);
+  writeLedger(env, [...fillers(60), EARLIER, OLDER, { seen: 'now' }]);
   const lock = `${env.ledger}.lock`;
   const before = fs.readFileSync(env.ledger, 'utf8');
   fs.writeFileSync(lock, '');
@@ -509,6 +534,6 @@ test('candidates ends with a total line when more clusters wait than it lists', 
   writeLedger(env, [...fillers(60), ...clusters.flat()]);
   const lines = run(env, ['candidates', '--cwd', env.project]).stdout.trimEnd().split('\n');
   assert.equal(lines.length, 16);
-  assert.match(lines[14], /\(2 sessions, /);
+  assert.match(lines[14], /\(3 sessions, /);
   assert.equal(lines[15], '15 of 16 shown; keep or reject these to see more.');
 });

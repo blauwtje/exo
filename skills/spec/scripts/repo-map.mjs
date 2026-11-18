@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { scratchPath } from '#scratch-path';
 
 const SOURCE = /\.(?:[cm]?[jt]sx?|py|rs|go)$/;
 const EXPORT = /^export\s+(?:default\s+)?(?:async\s+)?(?:function\*?|class|const|let|var|interface|type|enum)\s+([A-Za-z_$][\w$]*)/gm;
@@ -26,8 +27,7 @@ function main() {
     const names = exportsOf(path.join(root, file));
     return names.length === 0 ? file : `${file}: ${names.join(', ')}`;
   });
-  const file = path.join(root, '.exo', 'map.md');
-  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const file = scratchPath(root, 'map.md');
   fs.writeFileSync(file, `# Repository map\n${lines.join('\n')}\n`);
   console.log(file);
   console.log(`grep -n '<term>' ${file}   # search the map, never read it whole`);

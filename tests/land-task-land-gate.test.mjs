@@ -5,6 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { workingTreeKey } from '#check-cache';
+import { scratchPath } from '#scratch-path';
 import { git, run, tempDir } from './harness.mjs';
 import {
   SCRIPT, cacheFile, PLAN, withGate, landingCheckout, editApp, COMPACT_PLAN, PASS_REPORT, compactCheckout, writeReport
@@ -27,7 +28,16 @@ test('a passing Land gate and Proof are recorded with their time, and no land-ga
   assert.equal(typeof cache.true.ms, 'number');
   assert.equal(cache.true.tree, workingTreeKey(root));
   assert.equal(cache['node tests/app.test.mjs'].tree, cache.true.tree);
-  await assert.rejects(fs.access(path.join(root, '.exo/land-gate-compact.json')));
+  await assert.rejects(fs.access(scratchPath(root, 'land-gate-compact.json')));
+});
+
+test('an untracked legacy .exo folder does not block a landing', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
+  await fs.writeFile(path.join(root, '.exo', 'old.md'), 'old report\n');
+  const output = landTask({ planPath, planText: withGate(PLAN, 'true'), number: 1, root });
+  assert.match(output, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
 test('a Land gate that edits a tracked file is not recorded as a pass', async () => {
@@ -224,7 +234,7 @@ test('a --check and a landing running at once leave one task commit with only it
   assert.equal(landed.code, 0, landed.stderr);
   assert.equal(git(root, 'rev-parse', 'HEAD~1'), prior);
   assert.match(git(root, 'log', '-1', '--format=%B'), /^Plan-task: fixture\/4$/m);
-  const committed = git(root, 'show', '--name-only', '--format=', 'HEAD').split('\n').filter((file) => !file.startsWith('.exo/') && !file.startsWith('docs/plans/'));
+  const committed = git(root, 'show', '--name-only', '--format=', 'HEAD').split('\n').filter((file) => !file.startsWith('docs/plans/'));
   assert.deepEqual(committed.sort(), ['src/app.js', 'src/note.md']);
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '3');
 });
@@ -315,8 +325,7 @@ test('a Land gate that passes only on a nested worktree outside the commit is re
 test('the setup of the detached candidate sees the slot variables', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
-  await fs.writeFile(path.join(root, '.exo/slot.env'), 'export EXO_SLOT="3"\n');
+  await fs.writeFile(scratchPath(root, 'slot.env'), 'export EXO_SLOT="3"\n');
   git(root, 'worktree', 'add', '-q', '-b', 'feat/nested', path.join(root, 'nested'));
   const planText = withGate(PLAN, 'test "$(cat slot-seen.txt)" = 3')
     .replace('Branch: feat/fixture', 'Branch: feat/fixture\nWorktree setup: printf %s "$EXO_SLOT" > slot-seen.txt')

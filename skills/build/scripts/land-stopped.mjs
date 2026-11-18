@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { SCRATCH_FOLDER } from '#scratch-path';
+import { scratchPath } from '#scratch-path';
 
 const STDIN_REPORT = 'stdin';
 
-export const implementerReportPath = (root, number) => path.join(root, SCRATCH_FOLDER, `implementer-${number}.md`);
+export const implementerReportPath = (root, number) => scratchPath(root, `implementer-${number}.md`);
 
 function fileReportOf(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;

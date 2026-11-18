@@ -5,10 +5,11 @@ import process from 'node:process';
 import { parseFlags, UsageError, isMain, environmentMs } from '#script-flags';
 import { RATE_LIMITED_EXIT, INSTALL, formatDuration, isRateLimited, reason, run, ytdlp, ytdlpMissing } from './ytdlp.mjs';
 import { onPath } from '#basics';
+import { scratchPath } from '#scratch-path';
 
 const USAGE = [
   'usage: node transcript.mjs --url <url> [--url <url> ...] [--from <file|->] [--lang <code>] [--model <whisper model>] [--force]',
-  'Reads captions, or transcribes the audio locally when there are none, and writes .exo/watch/<id>/transcript.txt; prints one line per video.',
+  'Reads captions, or transcribes the audio locally when there are none, and writes <temp folder>/exo-<user>/<checkout>/watch/<id>/transcript.txt; prints one line per video.',
   'Exit codes: 0 done; 75 rate limited; 1 every video failed; 2 bad usage.'
 ].join('\n');
 
@@ -141,7 +142,7 @@ async function main(argv) {
     console.error(`missing tool: yt-dlp on PATH; install it with ${INSTALL}, then rerun`);
     return 1;
   }
-  const options = { out: path.resolve('.exo', 'watch'), lang: flags.lang, model: flags.model, force: flags.force };
+  const options = { out: scratchPath(process.cwd(), 'watch'), lang: flags.lang, model: flags.model, force: flags.force };
   let failed = 0;
   for (const [index, url] of urls.entries()) {
     const result = await one(url, options);

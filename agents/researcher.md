@@ -22,4 +22,5 @@ You answer the one question in your prompt and return a short list or an index. 
 - Ask the user nothing. Stay inside the call budget the prompt names and return by your 20th turn, because the run is cut off at the 30th.
 - Delete no file, branch or credential to get past a blocked state: report it.
 - Label each claim measured, inferred or guess, in the same sentence; call a path, line or quote measured only when a tool result showed it in this run.
+- Write the result file in the temp folder, at the path the prompt gives or that `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" research/<topic>.md` prints; write `docs/research/<topic>.md` only when the prompt asks to keep the result.
 - Return at most 10 lines ending on `Result: <path>`, with no page text; findings stay in the result file.

@@ -64,12 +64,12 @@ A new setting is one `userConfig` entry in `.claude-plugin/plugin.json`.
 - Two roles are plugin agents under `agents/`, `builder` and `researcher`, because an agent file fixes a tool list, a model, an effort and a turn limit, and its body is the system prompt rather than text pasted into every dispatch. The lead sends one fresh agent per separate job with file paths in the prompt, and runs jobs in parallel only when they share no file.
 - An agent that takes everything from its dispatch sets `omitClaudeMd: true` (Claude Code 2.1.271 or later) and carries the rule against deleting past a blocked state in its own body, because it loads no `CLAUDE.md`.
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251. `CLAUDE_CODE_EFFORT_LEVEL` overrides an agent's effort.
-- A subagent takes its model and effort from its agent file's frontmatter; see each agent's and skill's frontmatter for the values.
+- A subagent takes its model and effort from its agent file's frontmatter; see each agent's and skill's frontmatter for the values, and a dispatch passes the Agent tool's `model` or `effort` only for a job in the Models table of `skills/build/SKILL.md`.
 - A skill pins a model or effort only where its work always needs that tier, because a pinned model overrides the session's model and rebuilds the prompt cache mid-session; see each skill's frontmatter.
 
 ## Hook
 
-- exo ships a `SessionStart` and a `UserPromptSubmit` hook in `hooks/hooks.json`. `corrections.mjs session-start` prints the `Exo found <n> new memories` line under the banner once per count and starts a recount; `corrections.mjs hook` runs on each prompt: it records each typed prompt, not one Claude Code starts itself, in a ledger keyed by `CLAUDE_PROJECT_DIR` (else the hook's `cwd`) by word overlap, with no phrase list of any language, and prints one `exo:` line, once per cluster, when a prompt repeats one from an earlier session; the model judges whether it is a correction or wish. `corrections.mjs candidates` ranks clusters by sessions and the model lists at most 5; `keep` and `reject` record the user's answer by candidate id or by the id of an earlier verdict, and only a no rejects; the hook flags a kept lesson that repeats once per keep. Lesson notes take Claude Code's auto-memory shape (frontmatter name, description, type; rule; Why; How to apply). It calls no model and no network.
+- exo ships a `SessionStart` and a `UserPromptSubmit` hook in `hooks/hooks.json`. `corrections.mjs session-start` prints the `Exo found <n> new memories` line under the banner once per count and starts a recount; `corrections.mjs hook` runs on each prompt: it records each typed prompt, not one Claude Code starts itself, in a ledger keyed by `CLAUDE_PROJECT_DIR` (else the hook's `cwd`) by word overlap, with no phrase list of any language, and prints one `exo:` line, once per cluster, when a prompt repeats ones from at least 2 other sessions; the model judges whether it is a correction or wish. `corrections.mjs candidates` ranks clusters by sessions and a cluster needs 3 sessions and the model lists every one it judges a lesson; `keep` and `reject` record the user's answer by candidate id or by the id of an earlier verdict, and one reply settles the whole list; the hook flags a kept lesson that repeats once per keep. Lesson notes take Claude Code's auto-memory shape (frontmatter name, description, type; rule; Why; How to apply). It calls no model and no network.
 
 ## Verifying in one round
 
@@ -103,7 +103,7 @@ A plan whose tasks all landed passes the end-of-run review in one round, because
 - The end-of-run review is the built-in `code-review` at effort `medium` on the branch diff; a finding gets a fix round only when a command shows it.
 - Cleanup drops a stash made on a run branch once its content is on `main`, and every other stash stays untouched.
 - Every plan ends with a task that writes its `## Unreleased` line, so the line lands in the run's squash commit.
-- Phases hand over through the brief and `.exo/` files.
+- Phases hand over through the brief and files in the temp folder.
 
 ## Run contract
 

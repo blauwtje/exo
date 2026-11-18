@@ -8,6 +8,7 @@ import { LandingError } from './land-errors.mjs';
 import { withoutRunVariables } from '#process-tree';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES } from './land-report.mjs';
 import { changedPaths } from './land-paths.mjs';
+import { LEGACY_EXO_FOLDER } from '#scratch-path';
 
 function proofAttempt(command, { root }) {
   const deadlineMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
@@ -78,7 +79,7 @@ export function runCoveringTests(task, proofCommands, { root, changed }) {
   throw new LandingError([`Task ${task.number}: ${failures.length} covering test(s) of the changed files failed:`, ...failures].join('\n'));
 }
 
-const SKIPPED_DIRECTORIES = new Set(['node_modules', '.git', '.exo']);
+const SKIPPED_DIRECTORIES = new Set(['node_modules', '.git', LEGACY_EXO_FOLDER]);
 const LITERAL = /(['"`])([^'"`\n]*)\1/g;
 
 const clean = (entry) => entry.split(path.sep).join('/').replace(/^\.\//, '');

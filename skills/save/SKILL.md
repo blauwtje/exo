@@ -12,7 +12,7 @@ Freeze what this session knows and the next one cannot rebuild. Point to files a
 
 - Push nothing and open no pull request.
 - Finish or undo the step in progress and start no new work.
-- On a plan's run branch, commit nothing: save the partial work of the task in progress with `git diff > .exo/carry/task<n>-partial.patch` and list it under Progress.
+- On a plan's run branch, commit nothing: run `handoff.mjs path` first, create its parent folder, save the partial work of the task in progress with `git diff > <handoff path with .md replaced by -task<n>.patch>` and list the patch under Progress.
 - On any other non-default branch, commit every uncommitted edit as one `chore: wip <topic>` commit, and say in its body if the tree is broken.
 - On the default branch, leave edits uncommitted and list them under Progress.
 

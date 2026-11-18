@@ -16,7 +16,7 @@ Run `node "${CLAUDE_SKILL_DIR}/scripts/list.mjs" --url <url> [--limit <n>]`. It 
 
 ## The loop
 
-1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]`, or `--from <file>` for a `list.mjs` output. It prints one line per video and writes the transcript under `.exo/watch/<id>/`.
+1. **Run** `node "${CLAUDE_SKILL_DIR}/scripts/transcript.mjs" --url <url> [--url <url> ...]`, or `--from <file>` for a `list.mjs` output. It prints one line per video and writes the transcript under `<id>/` of the folder `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" watch` prints.
    - Pass all videos in one call, in the background when there are two or more. It runs them one by one and skips finished ones (`--force` redoes them), so use no parallel agents or Bash calls.
    - Add `--lang <code>` or `--model <whisper model>` only when the user names one.
 2. When a line says `missing tool` for yt-dlp, relay its install command and ask before installing anything. Relay any other failure line as printed.

@@ -11,7 +11,7 @@ Not for web pages, or questions about pictures alone.
 ## What you get
 
 - YouTube needs nothing installed: the script asks YouTube's player endpoint for the caption tracks and reads the chosen one with Node's own `fetch`. Title and duration come from the same answer, chapters from the watch page. A manual track wins over an automatic one, whatever its language; within a kind, the video's default audio language wins unless you name another.
-- The raw captions and a clean transcript land in `.exo/watch/<id>/`: no timing tags, no rolling duplicate lines, a `[mm:ss]` stamp about every 45 seconds and a heading per chapter.
+- The raw captions and a clean transcript land in the temp folder, in `exo-<user>/<checkout>/watch/<id>/`: no timing tags, no rolling duplicate lines, a `[mm:ss]` stamp about every 45 seconds and a heading per chapter.
 - A video longer than an hour also gets `chunks/NN.txt` files of about 30 minutes (`--chunk-minutes`), cut at chapter edges when the video has chapters; each file names the chapters it holds.
 - On YouTube and Vimeo each `[mm:ss]` stamp in the transcript and the chunk files is a link that opens the video at that second (`https://www.youtube.com/watch?v=<id>&t=<s>s`), and every claim in an answer cites one. A site with no time link keeps the plain stamp.
 - Speaker names appear, marked `(guessed)`, only when the captions already carry speaker turns (WebVTT `<v Name>` tags or `[SPEAKER_00]:` prefixes). Otherwise you get none; a diarization model is a separate download that the skill suggests but never fetches unasked.

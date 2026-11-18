@@ -11,6 +11,7 @@ import { projectFolder, sessionFiles, promptMessages, typedPrompt } from './sess
 
 const MAX_PROMPT_CHARS = 600;
 const MAX_ENTRY_CHARS = 300;
+export const MIN_SESSIONS = 3;
 const MAX_FLAG_CHARS = 80;
 const MAX_ENTRIES = 2000;
 const MAX_SEEN_MARKS = 50;
@@ -286,7 +287,7 @@ function clusters(ledger) {
   entries.forEach((entry, index) => groups.set(root(index), [...(groups.get(root(index)) ?? []), entry]));
   return [...groups.values()]
     .map((group) => ({ group: group.sort(byAge), sessions: new Set(group.map(({ session }) => session)).size }))
-    .filter(({ sessions }) => sessions >= 2)
+    .filter(({ sessions }) => sessions >= MIN_SESSIONS)
     .sort((a, b) => b.sessions - a.sessions || byAge(b.group.at(-1), a.group.at(-1)))
     .map(({ group, sessions }) => ({ id: group[0].id, group, counted, sessions, first: group[0].date, last: group.at(-1).date }));
 }
@@ -371,19 +372,20 @@ function react(ledger, { session, prompt, date }, textOf) {
   const flaggable = { ...quiet, flaggable: true };
   const matches = entries.filter((other) => other.session !== session && similar(current.words, other.words, counted)).sort(byAge);
   const earlier = matches.at(-1);
+  const matchedSessions = new Set(matches.map(({ session: other }) => other)).size;
   const related = [...matches, current];
   const newest = ledger.verdicts.findLastIndex((row) => related.some((entry) => rowMatches(row, entry, counted)));
   if (newest !== -1 && ledger.verdicts[newest].verdict === VERDICTS.reject) return flaggable;
   const repeated = newest === -1 ? null : keptRepeat(ledger.verdicts, newest, related, counted);
   if (repeated !== null) return { ...flaggable, line: `exo: this prompt shares words with a lesson you kept (id ${repeated}); exo:learn can strengthen it\n`, repeated };
-  if (newest !== -1 || !earlier || ledger.flagged.some((row) => similar(current.words, row.flagged, counted))) return flaggable;
+  if (newest !== -1 || matchedSessions < MIN_SESSIONS - 1 || ledger.flagged.some((row) => similar(current.words, row.flagged, counted))) return flaggable;
   const earlierText = textOf(earlier);
   if (earlierText === undefined) return flaggable;
   return {
     ...flaggable,
     rows: [...rows, { flagged: recorded[0].words }],
     line: `exo: you asked something like this on ${earlier.date}: "${earlierText.slice(0, MAX_FLAG_CHARS)}". exo:learn turns a repeated correction or wish into a check or lesson (id ${earlier.id}).\n`,
-    flag: { text: cutText(text), earlier: { ...earlier, text: earlierText }, sessions: new Set(matches.map(({ session: other }) => other)).size }
+    flag: { text: cutText(text), earlier: { ...earlier, text: earlierText }, sessions: matchedSessions }
   };
 }
 

@@ -1,7 +1,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { realpathSync } from 'node:fs';
-import { SCRATCH_FOLDER } from '#scratch-path';
+import { LEGACY_EXO_FOLDER } from '#scratch-path';
 
 export function nestedWorktrees(root) {
   const listed = spawnSync('git', ['-C', root, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' });
@@ -20,10 +20,10 @@ function untrackedPaths(root) {
 
 export function changedPaths(root, planPath) {
   const tracked = execFileSync('git', ['-C', root, 'diff', '--name-only', 'HEAD'], { encoding: 'utf8' });
-  const scratchPrefix = `${SCRATCH_FOLDER}/`;
+  const legacyPrefix = `${LEGACY_EXO_FOLDER}/`;
   const exempt = planPath === undefined ? [] : [path.relative(path.resolve(root), path.resolve(planPath))];
   return [...new Set([...tracked.split('\n'), ...untrackedPaths(root)])]
-    .filter((line) => line !== '' && !line.startsWith(scratchPrefix) && !exempt.includes(line));
+    .filter((line) => line !== '' && !line.startsWith(legacyPrefix) && !exempt.includes(line));
 }
 
 const ABSENT_CODES = ['ENOENT', 'ENOTDIR'];

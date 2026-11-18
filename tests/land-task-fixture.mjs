@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { memoryDirectory } from '#config-directory';
+import { scratchPath } from '#scratch-path';
 import { compactPlanFixture, compactTask as plainCompactTask, git, gitRepository } from './harness.mjs';
 
 export const compactTask = (options) => `${plainCompactTask(options)} | Red: none (fixture)`;
@@ -25,10 +26,8 @@ export async function landingCheckout() {
   git(root, 'config', 'user.name', 'exo-test');
   git(root, 'config', 'user.email', 'exo-test@example.com');
   git(root, 'config', 'commit.gpgsign', 'false');
-  await fs.appendFile(path.join(root, '.git/info/exclude'), '.exo/\n');
-  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
-  await fs.writeFile(path.join(root, '.exo/implementer-1.md'), LANDED_REPORT);
-  await fs.writeFile(path.join(root, '.exo/implementer-4.md'), LANDED_REPORT);
+  await fs.writeFile(scratchPath(root, 'implementer-1.md'), LANDED_REPORT);
+  await fs.writeFile(scratchPath(root, 'implementer-4.md'), LANDED_REPORT);
   return { root, planPath: path.join(root, 'docs/plans/fixture.md') };
 }
 
@@ -75,12 +74,10 @@ export async function compactCheckout(plan = COMPACT_PLAN) {
   git(root, 'config', 'user.name', 'exo-test');
   git(root, 'config', 'user.email', 'exo-test@example.com');
   git(root, 'config', 'commit.gpgsign', 'false');
-  await fs.appendFile(path.join(root, '.git/info/exclude'), '.exo/\n');
   await editApp(root);
   return { root, planPath: path.join(root, 'docs/plans/compact.md') };
 }
 
 export async function writeReport(root, text) {
-  await fs.mkdir(path.join(root, '.exo'), { recursive: true });
-  await fs.writeFile(path.join(root, '.exo/implementer-1.md'), text);
+  await fs.writeFile(scratchPath(root, 'implementer-1.md'), text);
 }

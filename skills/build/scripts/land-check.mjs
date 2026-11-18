@@ -4,7 +4,7 @@ import { git, gitLine, shortSha, gitText } from '#git';
 import { frameOf } from '#plan-frame';
 import { parsePlan } from '#plan-tasks';
 import { planIdOf, landedTasks, planTaskTrailer, taskCommits } from '#plan-landed';
-import { SCRATCH_FOLDER } from '#scratch-path';
+import { LEGACY_EXO_FOLDER, scratchPath } from '#scratch-path';
 import { LandingError, RefusedError, AlreadyLandedError, UnfinishedMergeError } from './land-errors.mjs';
 import { reportSourceOf } from './land-stopped.mjs';
 import { locked, headMessage, headSha, moveHead } from './land-git.mjs';
@@ -179,7 +179,7 @@ function promoteCandidate({ root, task, planId, candidate: { base, candidate } }
 
 function slotDiffersFromCandidate(root) {
   const status = gitText(root, ['status', '--porcelain', '--untracked-files=all'], { trim: false });
-  return status.split('\n').some((line) => line !== '' && !line.slice(3).startsWith(`${SCRATCH_FOLDER}/`));
+  return status.split('\n').some((line) => line !== '' && !line.slice(3).startsWith(`${LEGACY_EXO_FOLDER}/`));
 }
 
 function gateOnDetachedCandidate({ frame, root, candidate }) {
@@ -292,7 +292,7 @@ function discard(toplevel, slots) {
 }
 
 function slotEnvOf(slot) {
-  const file = path.join(slot, '.exo/slot.env');
+  const file = scratchPath(slot, 'slot.env');
   if (!fs.existsSync(file)) return {};
   const lines = fs.readFileSync(file, 'utf8').split('\n').filter((line) => line.startsWith('export '));
   return Object.fromEntries(lines.map((line) => {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
+import { scratchPath } from '../lib/scratch-path.mjs';
 import { parseVtt } from '../skills/watch/scripts/transcript.mjs';
 import { run, tempDir } from './harness.mjs';
 
@@ -22,10 +23,15 @@ case "$*" in
   *) while [ $# -gt 0 ]; do [ "$1" = "-P" ] && dir="$2"; shift; done; printf '%b' '${VTT.replaceAll('\n', '\\n')}' > "$dir/captions.en.vtt";;
 esac
 `, { mode: 0o755 });
-  const cwd = tempDir('watch-cwd-');
-  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub } });
+  const cwd = fs.realpathSync(tempDir('watch-cwd-'));
+  const temp = fs.realpathSync(tempDir('watch-tmp-'));
+  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp } });
   assert.equal(result.code ?? 0, 0, result.stderr);
   assert.match(result.stdout, /id=abcdefghijk .*captions=manual/);
-  const text = fs.readFileSync(path.join(cwd, '.exo', 'watch', 'abcdefghijk', 'transcript.txt'), 'utf8');
+  const outerTmpdir = process.env.TMPDIR;
+  process.env.TMPDIR = temp;
+  const folder = scratchPath(cwd, 'watch/abcdefghijk');
+  process.env.TMPDIR = outerTmpdir;
+  const text = fs.readFileSync(path.join(folder, 'transcript.txt'), 'utf8');
   assert.match(text, /^\[0:01\]\(https:\/\/youtu\.be\/abcdefghijk\?t=1\) hello there/);
 });
