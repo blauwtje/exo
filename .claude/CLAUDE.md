@@ -15,7 +15,7 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 ## Checks
 
 - `npm run check` gates every commit, and a clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
-- The lead runs `npm run check` once, in the background, to a log, and a delegate runs only its proof.
+- The lead runs `node lib/run-check.mjs npm run check` once, in the background, to a log, and a delegate runs only its proof.
 - Plan tasks use `Land gate: npm run validate:static`, and `npm run check` runs once as the Success criterion.
 - When a mistake recurs, make it a check and delete the sentence it replaces; add no check for a mistake not seen.
 - Change a skill, agent, hook or check only for a user request or a failure seen in a real session, and add that failure to `evals/failures.md` first, after you grep the session transcripts for it and record the count.

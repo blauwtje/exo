@@ -37,3 +37,27 @@ test('an absolute sub or one with .. is refused', async () => {
   assert.throws(() => scratchPath(root, '/etc/passwd'), ScratchPathError);
   assert.throws(() => scratchPath(root, '../x'), ScratchPathError);
 });
+
+test('a scratch call removes sibling folders older than the keep limit', async (t) => {
+  const previous = process.env.TMPDIR;
+  const isolated = await tempDir();
+  process.env.TMPDIR = isolated;
+  t.after(() => {
+    if (previous === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previous;
+  });
+  const userRoot = path.join(os.tmpdir(), `exo-${os.userInfo().username}`);
+  const old = path.join(userRoot, 'old-folder');
+  const fresh = path.join(userRoot, 'fresh-folder');
+  fs.mkdirSync(old, { recursive: true });
+  fs.mkdirSync(fresh, { recursive: true });
+  const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+  fs.utimesSync(old, eightDaysAgo, eightDaysAgo);
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  const current = scratchPath(root, '');
+  fs.utimesSync(current, eightDaysAgo, eightDaysAgo);
+  scratchPath(root, '');
+  assert.equal(fs.existsSync(old), false);
+  assert.equal(fs.existsSync(fresh), true);
+  assert.equal(fs.existsSync(current), true);
+});

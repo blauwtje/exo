@@ -37,6 +37,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Skills, agents, scripts and evals follow the principle pages, and each settled conflict carries a `decided:` mark.
 - Skill, agent and output style prose that changes no decision is cut.
 - Run files (builder reports, logs, the repo map, transcripts, debug notes) go to the system temp folder instead of `.exo/` in the checkout, and `scratch-path.mjs` prints a path there.
+- `scratch-path.mjs` deletes scratch folders of other checkouts once they are older than `EXO_SCRATCH_KEEP_MS` (7 days), because the Windows temp folder is not emptied by the system.
 - A research result is kept in `docs/research/` only when the prompt asks, and `save` puts a partial patch beside the handoff.
 - The `learn` hook line and the new-memories count need 3 or more sessions (`MIN_SESSIONS`), so a repeat is flagged the third time at the earliest.
 - `learn` shows every mined lesson in one list and one reply settles it: numbers keep, the rest is dropped, with `all`, `none` and `later`.

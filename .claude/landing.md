@@ -9,7 +9,7 @@ This file covers the start-of-run cleanup and how a finished branch lands on `ma
 
 ## Land
 
-- Squash: run `node lib/check-cache.mjs --query "npm run check"` first, where `pass` skips the check and `miss` runs `npm run check` once to a log.
+- Squash: run `node lib/check-cache.mjs --query "npm run check"` first, where `pass` skips the check and `miss` runs `node lib/run-check.mjs npm run check` once to a log.
 - Then run `git merge --squash <branch>` and commit one Conventional Commit that copies every branch `Evidence:` and `Proof:` line into the body, with no push or pull request.
 - Delete a branch with `git branch -D <name>`, in its own command.
 - Session push, at session end or when the user asks: run `git reset --soft origin/main` and commit one Conventional Commit named after the main change, with the batch's highest type (`feat` over `fix` over the rest).

@@ -162,7 +162,7 @@ test('a same-session repeat prints nothing', () => {
 test('three similar entries in one session are no candidate and raise no hook line', () => {
   const env = fixture();
   const same = { ...EARLIER, session: 'solo' };
-  writeLedger(env, [...fillers(60), same, { ...same }, { ...same }, { seen: 'now' }]);
+  writeLedger(env, [...fillers(100), same, { ...same }, { ...same }, { seen: 'now' }]);
   assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
   assert.equal(hook(env, 'now', REPEAT), '');
 });
