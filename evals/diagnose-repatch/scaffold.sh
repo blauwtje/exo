@@ -1,1 +1,1 @@
-exec bash "$(dirname "$0")/../scaffold.sh" pressure diagnose setup.sh setup-promos.sh
+exec bash "$(dirname "$0")/../scaffold.sh" pressure find-cause setup.sh setup-promos.sh

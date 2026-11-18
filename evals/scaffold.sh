@@ -38,7 +38,7 @@ pressure_case() {
     return 0
   fi
   [ -d "$fixtures/$skill/bin" ] && cp -R "$fixtures/$skill/bin" "$workdir/bin"
-  sed 's/`npm test` passes\./`node --test` passes./' "$fixtures/$skill/$script" > "$source_dir/$script"
+  sed -e "s#/tmp/exo-pressure#$fixtures#g" -e 's/`npm test` passes\./`node --test` passes./' "$fixtures/$skill/$script" > "$source_dir/$script"
   bash "$source_dir/$script" "$@"
 }
 

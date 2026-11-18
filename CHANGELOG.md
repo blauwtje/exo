@@ -15,7 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `validate:static` fails a script whose count of bindingless `catch {` blocks goes above its baseline.
 - `validate:static` fails a shipped file that holds an invisible or bidi Unicode character.
 - `validate:static` fails a shipped file that holds a personal absolute path such as `/Users/<name>` or `/home/<name>`.
-- The eval case `learn-mine-list` grades the `learn` Mine list: one numbered list with dates, one line that unpicked items are dropped and one question, with nothing written before the reply.
+- A test runs every eval fixture script in an empty folder and fails when one exits non-zero.
 - The scorecard holds a pending row for the release eval of the two model rows: `diagnose-repatch` on two plugin copies that differ only in the cause search's model or effort.
 
 ### Changed
@@ -47,6 +47,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The fixture scripts of the eval cases `diagnose-repatch` and `build-red-suite` run again: one named a folder the pinned commit does not hold, the other wrote to an unrewritten `/tmp` path.
 - `learn candidates` ends with `<shown> of <total> shown` when more than 15 memories wait, so the hook's count and the list agree.
 - `learn` keeps the project lesson store and index at the project's top folder (`git rev-parse --show-toplevel`, else the working folder), so a lesson written from a subfolder lands where the session loads it.
 - The `learn` new-memories count leaves out prompts Claude Code started itself, so it matches the list.
