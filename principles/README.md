@@ -12,7 +12,7 @@ Principles from public sources and pinned repositories, page per area; every pag
 | [eval](./eval.md) | you design, grade or change an eval, benchmark, regression check or keep/discard rule |
 | [code](./code.md) | you write or change code, a proof or a debugging step |
 
-Add or keep a hook, check, agent, review, model tier or retry only if its value is at least its cost in tokens, time and false blocks; unsure → speed-ledger line.
+Add or keep a hook, check, agent, review, model tier or retry only if its value is at least its cost in tokens, time and false blocks; unsure → a row in evals/scorecard.md at the next release eval.
 
 ## Refresh
 
