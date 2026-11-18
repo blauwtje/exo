@@ -13,6 +13,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `validate:static` fails a `hooks.json` that holds more than the two shipped hooks.
 - `validate:static` fails a principle page that cites an exo path that no longer exists.
 - `validate:static` fails a script whose count of bindingless `catch {` blocks goes above its baseline.
+- `validate:static` fails a shipped file that holds an invisible or bidi Unicode character.
+- `validate:static` fails a shipped file that holds a personal absolute path such as `/Users/<name>` or `/home/<name>`.
 
 ### Changed
 

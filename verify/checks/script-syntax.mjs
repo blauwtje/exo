@@ -26,19 +26,21 @@ function failureOf(file) {
   }
 }
 
-export function moduleFiles(repository) {
+export function listedFiles(repository, keep) {
   const listing = spawnSync('git', ['-C', repository.root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024
   });
   if (listing.status !== 0) {
-    return repository.walk(repository.root, (file) => file.endsWith('.mjs') && undotted(file), undotted);
+    return repository.walk(repository.root, (file) => keep(repository.relative(file)) && undotted(file), undotted);
   }
   return listing.stdout.split('\0')
-    .filter((entry) => entry.endsWith('.mjs') && entry.split('/').every((part) => !part.startsWith('.')))
+    .filter((entry) => keep(entry) && entry.split('/').every((part) => !part.startsWith('.')))
     .map((entry) => repository.join(entry))
     .filter(isFile);
 }
+
+export const moduleFiles = (repository) => listedFiles(repository, (entry) => entry.endsWith('.mjs'));
 
 export function checkScriptSyntax(report, repository) {
   const files = moduleFiles(repository);

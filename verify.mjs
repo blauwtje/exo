@@ -13,6 +13,8 @@ import { checkScriptSyntax } from './verify/checks/script-syntax.mjs';
 import { checkHookSet } from './verify/checks/hook-set.mjs';
 import { checkPrincipleCitations } from './verify/checks/principle-citations.mjs';
 import { checkSilentCatch } from './verify/checks/silent-catch.mjs';
+import { checkInvisibleUnicode } from './verify/checks/invisible-unicode.mjs';
+import { checkPersonalPaths } from './verify/checks/personal-paths.mjs';
 import { startSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 
@@ -49,6 +51,8 @@ checkScriptSyntax(report, repository);
 checkHookSet(report, repository);
 checkPrincipleCitations(report, repository);
 checkSilentCatch(report, repository);
+checkInvisibleUnicode(report, repository);
+checkPersonalPaths(report, repository);
 if (behavior) {
   const outcome = await behavior;
   report.result(outcome.status, outcome.name, outcome.detail);
