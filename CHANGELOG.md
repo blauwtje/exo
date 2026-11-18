@@ -10,6 +10,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Added
 
 - The principle pages carry community rules beside first-party ones, with a new code page, a refresh by pinned commit, and project rules that read them before any change.
+- `validate:static` fails a `hooks.json` that holds more than the two shipped hooks.
+- `validate:static` fails a principle page that cites an exo path that no longer exists.
+- `validate:static` fails a script whose count of bindingless `catch {` blocks goes above its baseline.
 
 ### Changed
 

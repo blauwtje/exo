@@ -26,7 +26,7 @@ function failureOf(file) {
   }
 }
 
-function moduleFiles(repository) {
+export function moduleFiles(repository) {
   const listing = spawnSync('git', ['-C', repository.root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024

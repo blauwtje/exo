@@ -10,6 +10,9 @@ import { checkMarkdownReferences } from './verify/checks/markdown-references.mjs
 import { checkPluginValidate } from './verify/checks/plugin-validate.mjs';
 import { checkReferenceSplit } from './verify/checks/reference-split.mjs';
 import { checkScriptSyntax } from './verify/checks/script-syntax.mjs';
+import { checkHookSet } from './verify/checks/hook-set.mjs';
+import { checkPrincipleCitations } from './verify/checks/principle-citations.mjs';
+import { checkSilentCatch } from './verify/checks/silent-catch.mjs';
 import { startSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 
@@ -43,6 +46,9 @@ checkMarkdownReferences(report, repository);
 checkPluginValidate(report, repository);
 checkReferenceSplit(report, repository);
 checkScriptSyntax(report, repository);
+checkHookSet(report, repository);
+checkPrincipleCitations(report, repository);
+checkSilentCatch(report, repository);
 if (behavior) {
   const outcome = await behavior;
   report.result(outcome.status, outcome.name, outcome.detail);

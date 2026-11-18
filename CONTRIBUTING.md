@@ -13,10 +13,10 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 | Command | What it runs |
 |---|---|
 | `npm run check` | The gate before any commit: `node verify.mjs`, the static checks, the script tests and the plugin version check. It ends with `SUMMARY PASS=n FAIL=n WARN=n UNRUN=n`. |
-| `npm run validate:static` | The static checks only: `claude plugin validate --strict`, skill frontmatter, local Markdown links, skill layout and JavaScript syntax. |
+| `npm run validate:static` | The static checks only: `claude plugin validate --strict`, skill frontmatter, local Markdown links, skill layout, JavaScript syntax, the hook set, principle page citations and silent catch blocks. |
 | `npm run validate` | `npm run validate:static` and then `npm test`. |
 
-The skill layout check fails a skill body over 500 lines, a reference its skill body does not name, a reference that points to another reference, and a skill file that paths into another skill's folder. The plugin version check fails manifests that disagree on the version, and a branch that changes the tree with nothing under `## Unreleased` in `CHANGELOG.md`.
+The skill layout check fails a skill body over 500 lines, a reference its skill body does not name, a reference that points to another reference, and a skill file that paths into another skill's folder. The hook set check fails a `hooks.json` beyond `SessionStart` and `UserPromptSubmit`, each with one command hook. The principle citations check fails a path after `exo:` in a principle page that does not exist. The silent catch check fails a script with more `catch {` blocks than its baseline. The plugin version check fails manifests that disagree on the version, and a branch that changes the tree with nothing under `## Unreleased` in `CHANGELOG.md`.
 
 ### Tests
 
