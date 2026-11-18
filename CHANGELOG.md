@@ -16,6 +16,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `validate:static` fails a shipped file that holds an invisible or bidi Unicode character.
 - `validate:static` fails a shipped file that holds a personal absolute path such as `/Users/<name>` or `/home/<name>`.
 - The eval case `learn-mine-list` grades the `learn` Mine list: one numbered list with dates, one line that unpicked items are dropped and one question, with nothing written before the reply.
+- The scorecard holds a pending row for the release eval of the two model rows: `diagnose-repatch` on two plugin copies that differ only in the cause search's model or effort.
 
 ### Changed
 
