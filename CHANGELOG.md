@@ -17,6 +17,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `validate:static` fails a shipped file that holds a personal absolute path such as `/Users/<name>` or `/home/<name>`.
 - A test runs every eval fixture script in an empty folder and fails when one exits non-zero.
 - The scorecard records the eval of the two model rows as void: `diagnose-repatch` never called the skill in 12 of 12 runs, so the cause search's model line never ran.
+- The eval case `diagnose-stale-rate` reports a plain bug whose first suspect is the wrong one; the skill fired in 9 of 9 runs.
+- The eval case `spec-late-fees` carries a plan request with every decision given, so `spec` reaches its open-points pass; the researcher ran on high effort in 4 of 4 runs.
+- The scorecard records the learn list, the diagnose route and the two model rows as measured or as unmeasured with the reason.
 
 ### Changed
 
@@ -44,6 +47,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `learn` hook line and the new-memories count need 3 or more sessions (`MIN_SESSIONS`), so a repeat is flagged the third time at the earliest.
 - `learn` shows every mined lesson in one list and one reply settles it: numbers keep, the rest is dropped, with `all`, `none` and `later`.
 - The diagnose investigator runs on Opus at high effort and the open-points reader of `spec` at high effort.
+- The value table measures `diagnose` on `diagnose-stale-rate` and lists `spec-late-fees` under `spec`.
 
 ### Fixed
 
@@ -56,12 +60,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `lessons.mjs paths` finds auto memory where Claude Code keeps it and prints `auto memory: none` when it is off.
 - `spec` plan check reports a task whose `Files:` path git ignores, so a plan can no longer pass and then fail to land.
 - `ship` names a missing `gh` and finds the default branch the way the other scripts do.
+- `learn` works in a session with the sandbox on: `corrections.mjs` keeps its store in the scratch folder when the Claude config folder cannot be written, and skips a store file it cannot read.
 
 ### Removed
 
 - The commit check no longer refuses an AI attribution trailer, and the cache no longer skips `*-decisions.md` and `CHANGELOG.md`.
 - The `corrections.mjs replay` command added in 1.1.0, its helpers, the old `{verdict, text}` verdict rows and the copy of verdicts out of an old ledger in `reset`.
 - The `sessions.mjs` command line.
+- The eval case `diagnose-repatch`, which asked to commit a ready patch and never called the skill in 12 of 12 runs.
 
 ## 1.1.0 - 2026-11-16
 

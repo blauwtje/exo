@@ -537,3 +537,41 @@ test('candidates ends with a total line when more clusters wait than it lists', 
   assert.match(lines[14], /\(3 sessions, /);
   assert.equal(lines[15], '15 of 16 shown; keep or reject these to see more.');
 });
+
+test('a read-only config store falls back to the scratch folder for backfill, candidates and keep', (t) => {
+  const env = fixture();
+  const rows = [...fillers(60), ...pair('alpha bravo charlie delta echo', '2026-03-01')];
+  writeLedger(env, rows);
+  fs.rmSync(path.dirname(env.ledger), { recursive: true });
+  const store = path.dirname(path.dirname(env.ledger));
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'learn-scratch-'));
+  fs.chmodSync(store, 0o500);
+  t.after(() => fs.chmodSync(store, 0o700));
+  const sandboxed = (args) => run(env, [...args, '--cwd', env.project], undefined, { TMPDIR: scratch });
+  const id = idOf(rows.at(-3));
+  assert.equal(sandboxed(['backfill']).status, 0);
+  const listed = sandboxed(['candidates']);
+  assert.equal(listed.status, 0, listed.stderr);
+  assert.match(listed.stdout, new RegExp(`^${id} "alpha bravo charlie delta echo" \\(3 sessions`));
+  const kept = sandboxed(['keep', id]);
+  assert.equal(kept.status, 0, kept.stderr);
+  assert.equal(sandboxed(['candidates']).stdout, '');
+});
+
+test('an unreadable config ledger is treated as absent and candidates lists from the scratch folder', (t) => {
+  const env = fixture();
+  const rows = [...fillers(60), ...pair('alpha bravo charlie delta echo', '2026-03-01')];
+  writeLedger(env, rows);
+  const store = path.dirname(path.dirname(env.ledger));
+  const unreadable = fs.readFileSync(env.ledger);
+  fs.rmSync(path.dirname(env.ledger), { recursive: true });
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'learn-scratch-'));
+  fs.chmodSync(store, 0o500);
+  assert.equal(run(env, ['backfill', '--cwd', env.project], undefined, { TMPDIR: scratch }).status, 0);
+  fs.chmodSync(store, 0o700);
+  fs.mkdirSync(path.dirname(env.ledger));
+  fs.writeFileSync(env.ledger, unreadable, { mode: 0o000 });
+  const listed = run(env, ['candidates', '--cwd', env.project], undefined, { TMPDIR: scratch });
+  assert.equal(listed.status, 0, listed.stderr);
+  assert.match(listed.stdout, new RegExp(`^${idOf(rows.at(-3))} "alpha bravo charlie delta echo" \\(3 sessions`));
+});

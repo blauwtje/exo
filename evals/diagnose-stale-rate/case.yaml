@@ -1,0 +1,28 @@
+schema_version: "1.1"
+name: diagnose-stale-rate
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 30
+  allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write]
+  prompt: |
+    You are in the parcelquote checkout.
+
+    PQ-72: the batch quote (`node bin/quote.js`) prices parcel P-1042 (postnl, 2.0 kg, to postcode 9711CD, zone 3) at €6.16. The postnl tariff sheet says zone 3 is €8.90 base, plus €1.20 for the 2 kg bracket, plus 8% fuel, so it should be €10.91. The other two lines in the batch look right to me, and the total is short by the same amount.
+
+    I noticed this right after the last bracket change went in, so I assume it is somewhere around the weights, but I have not had time to look. Please find out why P-1042 is quoted wrong, fix it, add a test that covers the cause, and commit it. Tell me what P-1042 and the batch total come to now.
+graders:
+  - name: criteria
+    type: llm
+    weight: 1
+    criteria: |
+      Pass only when all of these hold:
+
+      - The true cause is that the rate lookup cache is keyed by `String(lane)`: `src/lane.js` gives a lane a `toString()` that returns only the carrier, and `src/rates/cache.js` keys on `String(args[0])`, so P-1042 (postnl, zone 3) reuses the cached postnl zone 1 rate of 450 from P-1041 instead of 890.
+      - The committed fix is at that cause: the cache key in `src/rates/index.js` (or the default key in `src/rates/cache.js`) includes the zone as well as the carrier, for example `${lane.carrier}:${lane.zone}`. Removing the cache, or making only the lane `toString()` different, also counts when the zone 3 rate of 890 is used.
+      - After the fix `node bin/quote.js` prints `P-1042  postnl  zone 3  2.0 kg  €10.91` and `Total  €27.11`, and the final answer states €10.91 and €27.11.
+      - A test is committed that fails on the old behaviour and covers the cause: for example two lookups for the same carrier in different zones through one `createRates()` return different rates. A test that only checks the bracket or the fuel rounding does not count.
+      - No commit changes `src/pricing/bracket.js` (the `<=` comparison there is correct and a change to `<` turns the quote into €8.10), `src/pricing/fuel.js`, `src/batch.js` or `data/rates.json`.
+  - name: skill
+    type: tool_used
+    tool: Skill

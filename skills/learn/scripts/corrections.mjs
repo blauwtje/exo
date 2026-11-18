@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { sleepSync } from '#basics';
 import { configDirectory } from '#config-directory';
+import { scratchPath } from '#scratch-path';
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 import { projectFolder, sessionFiles, promptMessages, typedPrompt } from './sessions.mjs';
 
@@ -32,6 +33,10 @@ const FLAGS = { cwd: 'string', help: 'boolean' };
 
 const VERDICTS = { keep: 'kept', reject: 'rejected' };
 const BUSY = Symbol('busy');
+const UNWRITABLE = ['EPERM', 'EACCES', 'EROFS'];
+const UNREADABLE = ['EPERM', 'EACCES'];
+
+let fallbackStore = false;
 
 const segmenter = new Intl.Segmenter(undefined, { granularity: 'word' });
 
@@ -57,12 +62,32 @@ export function entryOf({ date, session, text }) {
   return { id: idOf(session, cut), date, session, words: words(cut) };
 }
 
+function ledgerName(cwd) {
+  return `${path.basename(projectFolder(cwd))}.jsonl`;
+}
+
+function configLedger(cwd) {
+  return path.join(configDirectory(), 'exo', 'learn', ledgerName(cwd));
+}
+
+function fallbackLedger(cwd) {
+  return path.join(scratchPath(cwd, 'learn'), ledgerName(cwd));
+}
+
 function ledgerFile(cwd) {
-  return path.join(configDirectory(), 'exo', 'learn', `${path.basename(projectFolder(cwd))}.jsonl`);
+  return fallbackStore ? fallbackLedger(cwd) : configLedger(cwd);
+}
+
+function readableLedgers(cwd) {
+  return fallbackStore ? [configLedger(cwd), fallbackLedger(cwd)] : [configLedger(cwd)];
+}
+
+function verdictsOf(ledger) {
+  return ledger.replace(/\.jsonl$/, '.verdicts.jsonl');
 }
 
 function verdictsFile(cwd) {
-  return ledgerFile(cwd).replace(/\.jsonl$/, '.verdicts.jsonl');
+  return verdictsOf(ledgerFile(cwd));
 }
 
 function ensureFolder(file) {
@@ -70,6 +95,30 @@ function ensureFolder(file) {
   fs.mkdirSync(path.dirname(folder), { recursive: true });
   fs.mkdirSync(folder, { recursive: true, mode: FOLDER_MODE });
   fs.chmodSync(folder, FOLDER_MODE);
+}
+
+function readText(file) {
+  try {
+    return fs.readFileSync(file, 'utf8');
+  } catch (error) {
+    if (!UNREADABLE.includes(error.code)) throw error;
+    return null;
+  }
+}
+
+function configStoreUsable(cwd) {
+  try {
+    ensureFolder(configLedger(cwd));
+  } catch (error) {
+    if (!UNWRITABLE.includes(error.code)) throw error;
+    return false;
+  }
+  return !fs.existsSync(configLedger(cwd)) || readText(configLedger(cwd)) !== null;
+}
+
+function ensureStore(cwd) {
+  fallbackStore ||= !configStoreUsable(cwd);
+  if (fallbackStore) ensureFolder(fallbackLedger(cwd));
 }
 
 function writePrivate(file, text) {
@@ -113,8 +162,8 @@ function locked(lock, work) {
 }
 
 function waitLocked(cwd, work, waitMs = Infinity) {
+  ensureStore(cwd);
   const lock = lockFile(cwd);
-  ensureFolder(lock);
   const deadline = Date.now() + waitMs;
   for (;;) {
     const result = locked(lock, work);
@@ -143,9 +192,8 @@ function ledgerOf(rows) {
 }
 
 function readVerdicts(cwd) {
-  const file = verdictsFile(cwd);
-  if (!fs.existsSync(file)) return [];
-  return rowsOf(fs.readFileSync(file, 'utf8'))
+  return readableLedgers(cwd).map(verdictsOf).filter((file) => fs.existsSync(file))
+    .flatMap((file) => rowsOf(readText(file) ?? ''))
     .filter((row) => isRepeatedRow(row) || (Object.values(VERDICTS).includes(row?.verdict) && (Array.isArray(row.ids) || Array.isArray(row.words))));
 }
 
@@ -164,10 +212,10 @@ function isKnownRow(row) {
 }
 
 function cacheRows(cwd) {
-  const file = ledgerFile(cwd);
-  if (!fs.existsSync(file)) return null;
-  const text = fs.readFileSync(file, 'utf8');
-  return rowsOf(text.slice(0, text.lastIndexOf('\n') + 1));
+  const texts = readableLedgers(cwd).filter((file) => fs.existsSync(file)).map(readText).filter((text) => text !== null);
+  if (texts.length === 0) return null;
+  const lines = texts.flatMap((text) => text.slice(0, text.lastIndexOf('\n') + 1).split('\n').filter((row) => row !== ''));
+  return rowsOf((fallbackStore ? [...new Set(lines)] : lines).join('\n'));
 }
 
 function appendCache(cwd, rows) {
