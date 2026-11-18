@@ -33,8 +33,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
 | Second attempt after a failure | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
 | A design choice the plan leaves open | this session | its own model, high |
 | Find a cause (diagnose investigator) | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
-| Research that looks up | `exo:researcher` | Sonnet, medium |
-| Research that judges (open points of a brief, a comparison of designs) | `exo:researcher` with the Agent tool's `effort: high` | Sonnet, high |
+| Research | `exo:researcher` | Sonnet, medium |
 
 ## End of the run
 

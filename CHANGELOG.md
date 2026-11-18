@@ -48,6 +48,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `learn` shows every mined lesson in one list and one reply settles it: numbers keep, the rest is dropped, with `all`, `none` and `later`.
 - The diagnose investigator runs on Opus at high effort and the open-points reader of `spec` at high effort.
 - The value table measures `diagnose` on `diagnose-stale-rate` and lists `spec-late-fees` under `spec`.
+- `spec` sends its open-points researcher at the agent's own effort: low, medium and high effort each found 33 of 36 planted points in 6 runs, and high took 36 s per run against 20 s at medium.
+- The eval case `spec-late-fees` no longer grades the effort setting or a task count in the final message, which the skill does not ask for.
 
 ### Fixed
 
@@ -61,6 +63,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `spec` plan check reports a task whose `Files:` path git ignores, so a plan can no longer pass and then fail to land.
 - `ship` names a missing `gh` and finds the default branch the way the other scripts do.
 - `learn` works in a session with the sandbox on: `corrections.mjs` keeps its store in the scratch folder when the Claude config folder cannot be written, and skips a store file it cannot read.
+- `learn` writes lesson notes, index lines and memory edits with the Write and Edit tools, so a kept personal lesson reaches the personal store in a session with the sandbox on.
 
 ### Removed
 

@@ -21,10 +21,6 @@ graders:
   - name: skill
     type: tool_used
     tool: Skill
-  - name: research-high
-    type: regex
-    target: trace
-    pattern: '\\?"subagent_type\\?"\s*:\s*\\?"exo:researcher\\?"[\s\S]{0,20000}?\\?"effort\\?"\s*:\s*\\?"high\\?"|\\?"effort\\?"\s*:\s*\\?"high\\?"[\s\S]{0,20000}?\\?"subagent_type\\?"\s*:\s*\\?"exo:researcher\\?"'
   - name: brief-written
     type: file_exists
     path: 'docs/specs/*.md'
@@ -35,7 +31,6 @@ graders:
       Read the final message. Pass only when all of these hold:
 
       - It names the path of the brief written under `docs/specs/`.
-      - It says the plan has more than 3 steps or tasks.
       - It says nothing was built or committed as code.
       - It asks the user no open product question.
       - It says what runs next: the build.
