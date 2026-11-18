@@ -15,6 +15,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `validate:static` fails a script whose count of bindingless `catch {` blocks goes above its baseline.
 - `validate:static` fails a shipped file that holds an invisible or bidi Unicode character.
 - `validate:static` fails a shipped file that holds a personal absolute path such as `/Users/<name>` or `/home/<name>`.
+- The eval case `learn-mine-list` grades the `learn` Mine list: one numbered list with dates, one line that unpicked items are dropped and one question, with nothing written before the reply.
 
 ### Changed
 
