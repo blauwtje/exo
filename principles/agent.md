@@ -9,8 +9,6 @@ Read it when: you design or change an agent loop, a workflow of several agents, 
 - **Give each subagent an objective, an output format, tool guidance and explicit boundaries.** [2] exo: `agents/builder.md`
 - **Have subagents write results to external storage and return lightweight references.** [2] exo: `skills/build/run-task-prompt.md`
 - **Use multi-agent setups only for high-value, breadth-first work.** The post cites about 15x the tokens of a chat. [2] exo: gap, skips subagents for small plans, but no cost test for breadth-first work
-- **Keep a progress file and git history.** A fresh session then orients quickly. [3] exo: `skills/build/SKILL.md`
-- **Separate the agent doing the work from the one judging it.** Tune the evaluator to be skeptical. [4] exo: `skills/build/SKILL.md` ends a run with the built-in `code-review`
 - **Lower effort to cut thinking, not prompt text.** Opus 5.5 defaults to medium and cannot disable thinking. [5] exo: `agents/builder.md`, `agents/researcher.md` set `effort:` in frontmatter
 - **Name the kinds of early stop to avoid in unattended runs.** [5] exo: `agents/builder.md`
 - **Give delegation criteria or a cap.** Opus 5.5 delegates readily; Fable 5.2 only when the prompt invites it. [5] exo: `skills/build/SKILL.md` sends a change over 2 files to `exo:build`

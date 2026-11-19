@@ -6,19 +6,14 @@ Read it when: you write or change a prompt, skill, agent brief or delegation tex
 
 - **Start minimal, then refine against observed failures.** A short prompt shows what the model gets wrong before you add rules. [1] exo: `skills/author/SKILL.md`
 - **Say exactly what output you want.** The model infers no unstated format. [2] exo: `agents/researcher.md`
-- **Say what to do, not what to avoid.** Add a short reason only to a judgment rule, because it covers unlisted cases. [2] exo: `skills/author/references/instruction-style.md`
+- **Say what to do, not what to avoid.** Add a short reason only to a judgment rule, because it covers unlisted cases. [2][11] exo: `skills/author/references/instruction-style.md`
 - **Use a few canonical examples, not lists of edge-case rules.** [1] exo: `skills/author/references/instruction-style.md`
 - **Turn subjective judgments into concrete grading criteria.** [3] exo: gap
 - **Write names and descriptions for the trigger decision.** A distinct description routes correctly. [4][7] exo: `skills/author/SKILL.md`
-- **State needed context in the delegation prompt.** A subagent starts blank. [5] exo: `skills/build/run-task-prompt.md`, decided: pass file pointers, see context.md
 - **Ask for every finding, then filter in a second pass.** Opus 5.5 reads "only high-severity" literally. [6] exo: `skills/build/SKILL.md`
 - **Explain why instead of CAPS, MUST or "if in doubt, use X".** Opus 5.5 overtriggers. [6][8] exo: `skills/author/references/instruction-style.md`
 - **Drop "double-check" and "final verification" steps.** Opus 5.5 over-verifies. [6] exo: `agents/researcher.md`
 - **Think before coding: settle open decisions.** [9] exo: `skills/spec/SKILL.md`
-- **Simplicity first: the least code that works.** [9][10] exo: gap
-- **Surgical changes: touch only what is asked.** [9] exo: gap
-- **Goal-driven execution: work toward a check.** [9] exo: `skills/build/SKILL.md`
-- **Skip the reason; explain only when a rule is confusing without one.** [11] exo: conflict with [2], decided: mechanical rule without reason, judgment rule with one short reason
 - **Mark a skill manual-only.** The pinned sources mark their mode skill manual-only. [12] exo: conflict with [4], decided: stay model-invoked, manual only when its route eval shows misfires
 - **Cut a prompt line that changes no decision, and delete a reference with no new content instead of leaving a stub.** [11][13] exo: `skills/author/references/instruction-style.md`
 - **Point at the structural source (types, README, config) instead of restating it.** [11] exo: `CONTRIBUTING.md`

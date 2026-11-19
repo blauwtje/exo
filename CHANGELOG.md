@@ -23,6 +23,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- Each rule has one home: the project rules drop the check-over-note and rule-reason bullets, and the principle pages drop eight bullets and two sentences that repeated another bullet.
 - A gate passes on its exit status in any project; a `SUMMARY` line is judged only when the log has one.
 - Covering tests run only when the project's test script is `node --test` or absent; otherwise the gate decides.
 - Commits need a Conventional Commits subject only in a repository whose recent history uses them, and the pull request title follows the repository's commit style.

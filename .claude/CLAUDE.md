@@ -17,7 +17,6 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 - `npm run check` gates every commit, and a clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
 - The lead runs `node lib/run-check.mjs npm run check` once, in the background, to a log, and a delegate runs only its proof.
 - Plan tasks use `Land gate: npm run validate:static`, and `npm run check` runs once as the Success criterion.
-- When a mistake recurs, make it a check and delete the sentence it replaces; add no check for a mistake not seen.
 - Change a skill, agent, hook or check only for a user request or a failure seen in a real session, and add that failure to `evals/failures.md` first, after you grep the session transcripts for it and record the count.
 
 ## Editing
@@ -29,7 +28,6 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 - A bare skill name in a skill or prompt body means `exo:<name>`.
 - Ship only the two hooks in `hooks/hooks.json` and add none.
 - Keep skills model-invoked, and make one manual only when its route eval shows it fires at the wrong time.
-- Write a mechanical rule without its reason, and give a rule that needs judgment in a new case one short reason.
 - Derive a new value from the repo, or use one overridable default or an `EXO_*_MS` var via `environmentMs`.
 
 ## Release

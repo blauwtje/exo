@@ -15,7 +15,7 @@ Read it when: you write, refactor or debug code, or you write or judge a test or
 - **After two fixes fail the same gate, write down the premise they share and test it before the next fix.** [11] exo: `agents/builder.md`
 - **Judge a test by two edits: break the behavior and it fails, rewrite the internals and it passes; take the expected value from the requirement.** [12] exo: `skills/build/references/code-rules.md`
 - **Pin behavior with a characterization test before a refactor, because a type check or lint is no pin; revert a reshape that cuts no reader load.** [15] exo: `skills/build/SKILL.md` proves a structure change by the same output at base and head
-- **Land the failing test first, then the fix, and verify each small unit before the next.** [13][14] exo: `skills/diagnose/SKILL.md` commits the new test alone, then the fix
+- **Land the failing test first, then the fix.** [13][14] exo: `skills/diagnose/SKILL.md` commits the new test alone, then the fix
 - **Keep a comment only for a reason an outside dependency forces; a workaround that needs a paragraph means the code is wrong.** [16][17][10] exo: `skills/build/references/code-rules.md`
 
 ## Sources
