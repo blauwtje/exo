@@ -261,6 +261,20 @@ test('candidates ranks by session count then newest date and shows the medoid te
   assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(triple[0])} "alpha bravo charlie delta echo" (4 sessions, 2026-01-01 to 2026-03-02)\n${idOf(pair('foxtrot golf hotel india juliet', '')[0])} "foxtrot golf hotel india juliet" (3 sessions, 2026-01-01 to 2026-06-01)\n`);
 });
 
+test('candidates --texts shows a second session text beside the medoid', () => {
+  const env = fixture();
+  const rows = [
+    { date: '2026-01-01', session: 'q1', text: 'alpha bravo charlie delta echo' },
+    { date: '2026-01-02', session: 'q2', text: 'alpha bravo charlie delta echo' },
+    { date: '2026-01-03', session: 'q3', text: 'never alpha bravo charlie delta' }
+  ];
+  writeLedger(env, [...fillers(100), ...rows]);
+  const result = run(env, ['candidates', '--texts', '--cwd', env.project]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, `${idOf(rows[0])} "alpha bravo charlie delta echo" (3 sessions, 2026-01-01 to 2026-01-03)\n  other session: "never alpha bravo charlie delta"\n`);
+  assert.doesNotMatch(run(env, ['candidates', '--cwd', env.project]).stdout, /other session/);
+});
+
 test('keep and reject record every member id and hide the cluster', () => {
   const env = fixture();
   const [first, second] = [pair('alpha bravo charlie delta echo', '2026-03-01'), pair('foxtrot golf hotel india juliet', '2026-02-01')];

@@ -20,6 +20,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The eval case `diagnose-stale-rate` reports a plain bug whose first suspect is the wrong one; the skill fired in 9 of 9 runs.
 - The eval case `spec-late-fees` carries a plan request with every decision given, so `spec` reaches its open-points pass; the researcher ran on high effort in 4 of 4 runs.
 - The scorecard records the learn list, the diagnose route and the two model rows as measured or as unmeasured with the reason.
+- `land-task.mjs` refuses a task whose diff adds an AWS key, a private key block, a GitHub token or a Slack token.
+- `validate:static` fails a shipped hook whose command names a missing script or whose timeout is not a number.
+- `evals/value.mjs` prints `regressed: <part> was <n>, now <m>` and exits non-zero when a case's with-skill count drops from the last row.
+- The eval case `route-author` checks that `author` fires for a skill-writing request, with its own row in the value table.
+- The eval case `build-red-suite` grades each clause with its own grader, and `CONTRIBUTING.md` says when a case gets one `criteria` grader and when one per clause.
+- `evals/failures.md` records the failures behind the eight blog points, and each line links to the case or commit that covers it.
 
 ### Changed
 
@@ -54,6 +60,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `learn` shows a second session's text for each mined cluster and drops a cluster whose texts ask different things.
+- `build` tells each parallel repro builder to write its finding's test in its own new file, so builders never share one.
 - The fixture scripts of the eval cases `diagnose-repatch` and `build-red-suite` run again: one named a folder the pinned commit does not hold, the other wrote to an unrewritten `/tmp` path.
 - `learn candidates` ends with `<shown> of <total> shown` when more than 15 memories wait, so the hook's count and the list agree.
 - `learn` keeps the project lesson store and index at the project's top folder (`git rev-parse --show-toplevel`, else the working folder), so a lesson written from a subfolder lands where the session loads it.

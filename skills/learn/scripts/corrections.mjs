@@ -27,8 +27,8 @@ const LOCK_RETRY_MS = 50;
 const LOCK_WAIT_MS = environmentMs('EXO_LEARN_LOCK_MS', 2000);
 const FOLDER_MODE = 0o700;
 const FILE_MODE = 0o600;
-const USAGE = 'usage: node corrections.mjs hook | session-start | backfill [--cwd <dir>] | candidates [--cwd <dir>] | keep <id...> [--cwd <dir>] | reject <id...> [--cwd <dir>] | recount [--cwd <dir>]';
-const FLAGS = { cwd: 'string', help: 'boolean' };
+const USAGE = 'usage: node corrections.mjs hook | session-start | backfill [--cwd <dir>] | candidates [--texts] [--cwd <dir>] | keep <id...> [--cwd <dir>] | reject <id...> [--cwd <dir>] | recount [--cwd <dir>]';
+const FLAGS = { cwd: 'string', texts: 'boolean', help: 'boolean' };
 
 
 const VERDICTS = { keep: 'kept', reject: 'rejected' };
@@ -316,7 +316,12 @@ function neighbourCount(group, counted) {
 function medoid(group, counted, texts) {
   const neighbours = neighbourCount(group, counted);
   const best = group.filter(({ id }) => texts.has(id)).map((entry) => ({ entry, neighbours: neighbours(entry) })).sort((a, b) => b.neighbours - a.neighbours || texts.get(a.entry.id).length - texts.get(b.entry.id).length)[0];
-  return best && texts.get(best.entry.id);
+  return best && best.entry;
+}
+
+function otherText(group, centre, texts) {
+  const other = group.findLast(({ id, session }) => session !== centre.session && texts.has(id));
+  return other && texts.get(other.id);
 }
 
 function clusters(ledger) {
@@ -344,8 +349,9 @@ function listed(cwd, ledger) {
   const top = clusters(ledger);
   const texts = transcriptTexts(cwd, new Set(top.flatMap(({ group }) => group.map(({ session }) => session))));
   return top
-    .map((cluster) => ({ ...cluster, text: medoid(cluster.group, cluster.counted, texts) }))
-    .filter(({ text }) => text !== undefined);
+    .map((cluster) => ({ cluster, centre: medoid(cluster.group, cluster.counted, texts) }))
+    .filter(({ centre }) => centre !== undefined)
+    .map(({ cluster, centre }) => ({ ...cluster, text: texts.get(centre.id), other: otherText(cluster.group, centre, texts) }));
 }
 
 function describe({ id, text, sessions, first, last }) {
@@ -510,12 +516,12 @@ function backfill(cwd) {
   recount(cwd);
 }
 
-function candidates(cwd) {
+function candidates(cwd, withTexts) {
   const ledger = snapshot(cwd);
   if (ledger === null) return;
   const all = listed(cwd, ledger);
   const shown = all.slice(0, MAX_CANDIDATES);
-  process.stdout.write(shown.map((cluster) => `${describe(cluster)}\n`).join(''));
+  process.stdout.write(shown.map((cluster) => `${describe(cluster)}\n${withTexts && cluster.other !== undefined ? `  other session: "${cluster.other}"\n` : ''}`).join(''));
   if (all.length > shown.length) process.stdout.write(`${shown.length} of ${all.length} shown; keep or reject these to see more.\n`);
 }
 
@@ -581,7 +587,7 @@ async function main() {
   const values = parseFlags(split === -1 ? [] : rest.slice(split), FLAGS, { usage: USAGE });
   const cwd = values.cwd ?? projectRoot(process.cwd());
   if (command === 'backfill') backfill(cwd);
-  else if (command === 'candidates') candidates(cwd);
+  else if (command === 'candidates') candidates(cwd, values.texts === true);
   else if (command === 'recount') recount(cwd);
   else if (command === 'keep' || command === 'reject') decide(command, ids, cwd);
   else throw new UsageError(USAGE);

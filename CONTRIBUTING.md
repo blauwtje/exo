@@ -57,6 +57,8 @@ A new setting is one `userConfig` entry in `.claude-plugin/plugin.json`.
 
 `claude plugin eval` runs the suite under `evals/` (a case is `evals/<case>/case.yaml` with its graders inline, or `evals/<case>/prompt.md` with `graders/`; a scaffolded case adds a one-line `scaffold.sh` that calls `evals/scaffold.sh`); `evals/results/` is gitignored. Run it only before a release: print the case count with `ls -d evals/*/ | grep -vc results`, run one case first with `EXO_ROOT="$PWD" claude plugin eval --case <case> --scaffold --allow-tools Bash Edit Write --json --judge-model sonnet --max-cost-usd 2`, then the suite with the same flags without `--case` and `--max-cost-usd` set to `BUDGET_USD` in `evals/value.mjs`, then once more with `--model <other model>` and record both settings in the scorecard's model and effort columns.
 
+A case that passes gets one `criteria` grader; only a case that fails, is void or splits votes gets one grader per clause, as `evals/build-red-suite/case.yaml` does.
+
 `evals/scorecard.md` lists the commands for each column and holds one table. Each release appends one row and no row is rewritten. `evals/failures.md` lists the failures seen in real sessions.
 
 ## How a skill dispatches work

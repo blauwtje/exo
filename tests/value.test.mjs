@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { armFigures, planBudget, readRows, settle, unmeasuredParts } from '../evals/value.mjs';
+import { armFigures, planBudget, readRows, regressions, settle, unmeasuredParts } from '../evals/value.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const table = fs.readFileSync(path.join(root, 'evals', 'value.md'), 'utf8');
@@ -47,4 +47,11 @@ test('a 0 and 0 part with no recorded cost is not void', () => {
   const row = readRows(table)[0];
   const arm = { passed: 0, cost: '-', cut: 1 };
   assert.notEqual(settle(row, arm, arm).with, 'void');
+});
+
+test('a with figure that dropped between numbers is a regression, a void is not', () => {
+  assert.deepEqual(regressions({ part: 'p', with: '1' }, { part: 'p', with: 0 }), ['regressed: p was 1, now 0']);
+  assert.deepEqual(regressions({ part: 'p', with: 'void' }, { part: 'p', with: 0 }), []);
+  assert.deepEqual(regressions({ part: 'p', with: '1' }, { part: 'p', with: 'void' }), []);
+  assert.deepEqual(regressions({ part: 'p', with: '1' }, { part: 'p', with: 1 }), []);
 });

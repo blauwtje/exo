@@ -130,6 +130,13 @@ export function settle(row, withExo, without) {
   };
 }
 
+const isCount = (value) => /^\d+$/.test(String(value));
+
+export function regressions(oldRow, newRow) {
+  const dropped = isCount(oldRow.with) && isCount(newRow.with) && Number(newRow.with) < Number(oldRow.with);
+  return dropped ? [`regressed: ${newRow.part} was ${oldRow.with}, now ${newRow.with}`] : [];
+}
+
 function measure(row) {
   const cases = caseNames(row).flatMap((name) => evalCase(name, CASE_USD));
   return settle(row, armFigures(cases, 'with'), armFigures(cases, 'without'));
@@ -149,6 +156,9 @@ function runNext(text, rows, partName) {
   const measured = measure(row);
   const { cut, ...figures } = measured;
   process.stdout.write(`${target}: ${figures.with}/${figures.without} cases, cut ${cut}\n`);
+  const lines = regressions(row, figures);
+  for (const line of lines) process.stdout.write(`${line}\n`);
+  if (lines.length > 0) process.exitCode = 1;
   return writeRows(text, rows.map((candidate) => (candidate.part === target ? figures : candidate)));
 }
 

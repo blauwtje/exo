@@ -77,6 +77,7 @@ export function refuseBeforeProof(task, { root, planPath, planId, reportText, re
   checkReport(task, reportText, reportPath);
   const outside = changedPaths(root, planPath);
   refuseUnlisted(task, outside);
+  refuseSecrets(task, root);
   const block = commitBlockOf({ task, planId, root });
   refuseBadCommitText(task.title, root);
   return { block, outside };
@@ -85,6 +86,41 @@ export function refuseBeforeProof(task, { root, planPath, planId, reportText, re
 function refuseUnlisted(task, changed) {
   const unlisted = changed.filter((file) => !task.files.some(({ path: listed }) => file === listed || (listed.endsWith('/') && file.startsWith(listed))));
   if (unlisted.length > 0) throw new LandingError(`Task ${task.number} changes paths outside its Files: ${unlisted.join(', ')}; list them in the plan or revert them`);
+}
+
+const SECRET_PATTERNS = [
+  ['AWS access key', /AKIA[0-9A-Z]{16}/],
+  ['private key block', /-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----/],
+  ['GitHub token', /gh[pousr]_[A-Za-z0-9]{36,}/],
+  ['Slack token', /xox[baprs]-[A-Za-z0-9-]{10,}/]
+];
+
+function addedLinesOf(root) {
+  const added = [];
+  let file = null;
+  let inHeader = false;
+  const diff = execFileSync('git', ['-C', root, 'diff', 'HEAD', '-U0', '--no-color'], { encoding: 'utf8', maxBuffer: 1 << 28 });
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('diff --git ')) inHeader = true;
+    else if (line.startsWith('@@')) inHeader = false;
+    else if (inHeader && line.startsWith('+++ ')) file = line.slice(4).replace(/^b\//, '');
+    else if (inHeader) continue;
+    else if (line.startsWith('+')) added.push({ file, text: line.slice(1) });
+  }
+  const untracked = gitText(root, ['ls-files', '--others', '--exclude-standard', '-z'], { trim: false }).split('\0').filter((name) => name !== '' && !name.startsWith(`${LEGACY_EXO_FOLDER}/`));
+  for (const name of untracked) {
+    const full = path.join(root, name);
+    if (!fs.lstatSync(full).isFile()) continue;
+    for (const text of fs.readFileSync(full, 'utf8').split('\n')) added.push({ file: name, text });
+  }
+  return added;
+}
+
+function refuseSecrets(task, root) {
+  for (const { file, text } of addedLinesOf(root)) {
+    const [name] = SECRET_PATTERNS.find(([, pattern]) => pattern.test(text)) ?? [];
+    if (name !== undefined) throw new LandingError(`Task ${task.number} adds ${file} matching the pattern "${name}"; remove it and use an environment variable or a secret store`);
+  }
 }
 
 export function proveTask(task, { root, planPath, reportText, reportPath }) {
