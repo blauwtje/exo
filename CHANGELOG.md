@@ -31,6 +31,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:build` end-of-run code review reads test-file diffs first, names every changed assertion, looks for what a passing Proof hides and tags findings Important, Nit or Pre-existing; only Important ones go to repro builders and the rest are listed in the report.
 - build: `land-task` runs the green proof twice and refuses a flaky one with `BLOCKED proof flaky`.
 - `spec` keeps the field rules in `references/field-rules.md`, and the example plan and the rules prefer vertical slices.
 - `spec` skips the research step for a plan of at most 3 tasks.
