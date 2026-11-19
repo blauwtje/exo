@@ -17,7 +17,8 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
 3. **Build one task.** Send the task of the `Next:` line to a fresh `exo:builder` in the background, with the plan path, the task number, the checkout, the report path that `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` prints when run in the checkout, and `run-task-prompt.md` by path, and wait for its completion notification. The builder edits, then runs `land-task.mjs`, which proves red then green, runs the Land gate and commits.
 4. **Route the return.** `GREEN` goes back to step 2.
    - `BLOCKED <n> NEEDS ANSWER: <question>`: ask the user, then re-dispatch that task with the answer in its prompt.
-   - `PLAN DRIFT`: stop and hand the plan back to `exo:spec` with the builder's reason.
+   - `PLAN DRIFT`: append a `## Log` line to the plan, then stop and hand the plan back to `exo:spec` with the builder's reason.
+   - `BLOCKED <reason>`: append a `## Log` line to the plan before you report it.
    - A build that fails once goes back to a fresh `exo:builder` with the first builder's report path, `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` run in the checkout, in its prompt, on the second-attempt row of the table below.
    - `BLOCKED proof <command> did not fail first`: `land-task` refused the task: its proof passes without the change. Send a fresh `exo:builder` to tighten that test, or hand the plan to `exo:spec` for a `Red: none (<reason>)`, and name the task in the final report.
    - A build that fails twice, or a repair that must change a module outside the task's `Files:`: stop, report both and hand it to `exo:diagnose`.

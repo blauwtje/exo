@@ -9,6 +9,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `evals/failures.md` records the spec research findings as failure rows, and the scorecard records the layout A/B of brief task fields as inconclusive: all three arms scored 0.94 or higher on 10 runs each.
+- `plan-check.mjs` fails a task whose `Consumes` field names a task missing from its `Depends on`.
 - The principle pages carry community rules beside first-party ones, with a new code page, a refresh by pinned commit, and project rules that read them before any change.
 - `validate:static` fails a `hooks.json` that holds more than the two shipped hooks.
 - `validate:static` fails a principle page that cites an exo path that no longer exists.
@@ -29,6 +31,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `spec` keeps the field rules in `references/field-rules.md`, and the example plan and the rules prefer vertical slices.
+- `spec` skips the research step for a plan of at most 3 tasks.
+- `spec` replans on `PLAN DRIFT` or a Decision proven wrong, editing only the tasks not yet committed, and `build` appends a `## Log` line to the plan on `PLAN DRIFT` or `BLOCKED`.
 - Each rule has one home: the project rules drop the check-over-note and rule-reason bullets, and the principle pages drop eight bullets and two sentences that repeated another bullet.
 - A gate passes on its exit status in any project; a `SUMMARY` line is judged only when the log has one.
 - Covering tests run only when the project's test script is `node --test` or absent; otherwise the gate decides.

@@ -52,6 +52,13 @@ function readerProblems(tasks) {
     .map((reader) => `Task ${task.number} says 'read by Task ${reader}' but Task ${reader} does not depend on Task ${task.number}`));
 }
 
+function consumesProblems(tasks) {
+  const byNumber = new Map(tasks.map((task) => [task.number, task]));
+  return tasks.flatMap((task) => task.consumes
+    .filter(({ task: source }) => !byNumber.has(source) || !reaches(byNumber, task.number, source))
+    .map(({ task: source }) => `Task ${task.number} consumes Task ${source} but Task ${task.number} does not depend on Task ${source}`));
+}
+
 function cites(item, plan) {
   if (/\bTask \d+\b|\bData:|Success criterion|Manual check/i.test(item)) return true;
   return [...item.matchAll(/`([^`]+)`/g)].some((span) => plan.tasks.some((task) => task.data?.includes(span[1])));
@@ -102,7 +109,7 @@ function warnings(plan) {
 export function planCheckReport(planText) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
-  const problems = [...frameProblems(plan, planText), ...plan.tasks.flatMap(taskProblems), ...sharedFileProblems(plan.tasks), ...readerProblems(plan.tasks), ...acceptanceProblems(plan), ...ignoredFileProblems(plan)];
+  const problems = [...frameProblems(plan, planText), ...plan.tasks.flatMap(taskProblems), ...sharedFileProblems(plan.tasks), ...readerProblems(plan.tasks), ...consumesProblems(plan.tasks), ...acceptanceProblems(plan), ...ignoredFileProblems(plan)];
   if (problems.length > 0) return { ok: false, lines: problems };
   return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks`, ...warnings(plan)] };
 }

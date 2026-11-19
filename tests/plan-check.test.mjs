@@ -66,3 +66,12 @@ test('a Files path that git ignores is a problem', () => {
   assert.equal(report.ok, false);
   assert.match(report.lines.join('\n'), /Task 1: 'src\/tasks\/task.js' is ignored by git, so the task cannot land/);
 });
+
+test('a Consumes task must be on a Depends on path', () => {
+  const consuming = (dependsOn) => example.replace(
+    'Depends on: 1, 2 | Files: `src/tasks/task-row.jsx`',
+    `Depends on: ${dependsOn} | Files: \`src/tasks/task-row.jsx\``
+  ).replace('as one badge | Proof', 'as one badge | Consumes: Task 1: task.dueDate | Proof');
+  assert.equal(planCheckReport(consuming('1, 2')).ok, true);
+  assert.match(problemsOf(consuming('2')), /Task 3 consumes Task 1 but Task 3 does not depend on Task 1/);
+});
