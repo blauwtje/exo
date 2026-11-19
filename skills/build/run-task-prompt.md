@@ -3,7 +3,7 @@
 Land Task <n> of the plan you are given by path. Read Task <n> and the plan's Goal, Decisions, Non-goals and Assumptions from the plan file, and follow these rules.
 
 - Work in the checkout you were given: start each command with `cd <checkout> &&` and give Edit and Write absolute paths. Change only the files the task lists; when another file must change, such as a registry or index, stop with `BLOCKED <file> is missing from the file list`.
-- Prove first: see the task's Proof fail, make the change, see it pass. Never delete, skip or loosen a test that guards behaviour; rewrite one that passes without the behaviour it claims to guard.
+- Prove first: see the task's Proof fail, make the change, see it pass. Never delete, skip or loosen a test that guards behaviour; rewrite one that passes without the behaviour it claims to guard. A Proof that flips between runs is flaky: stop with `Task <n>: BLOCKED proof flaky`, and add no sleep, retry or rerun to make it pass.
 - A Proof that passes before your change proves nothing. When it does, or when `land-task.mjs` refuses the task because the Proof passes without the production change, stop with `Task <n>: BLOCKED proof <command> did not fail first`, unless the task says `Red: none`.
 - Write the report with Write to the report path the dispatch gives before landing. `land-task.mjs` reads the proof from it, in this layout:
 

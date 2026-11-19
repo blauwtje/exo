@@ -31,6 +31,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- build: `land-task` runs the green proof twice and refuses a flaky one with `BLOCKED proof flaky`.
 - `spec` keeps the field rules in `references/field-rules.md`, and the example plan and the rules prefer vertical slices.
 - `spec` skips the research step for a plan of at most 3 tasks.
 - `spec` replans on `PLAN DRIFT` or a Decision proven wrong, editing only the tasks not yet committed, and `build` appends a `## Log` line to the plan on `PLAN DRIFT` or `BLOCKED`.

@@ -21,6 +21,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
    - `BLOCKED <reason>`: append a `## Log` line to the plan before you report it.
    - A build that fails once goes back to a fresh `exo:builder` with the first builder's report path, `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` run in the checkout, in its prompt, on the second-attempt row of the table below.
    - `BLOCKED proof <command> did not fail first`: `land-task` refused the task: its proof passes without the change. Send a fresh `exo:builder` to tighten that test, or hand the plan to `exo:spec` for a `Red: none (<reason>)`, and name the task in the final report.
+   - `BLOCKED proof flaky`: the Proof passed once and failed on the second run. Send a fresh `exo:builder` to remove the cause of the flip (shared state, timing, order) without sleeps or retries, or hand the plan to `exo:spec`, and name the task in the final report.
    - A build that fails twice, or a repair that must change a module outside the task's `Files:`: stop, report both and hand it to `exo:diagnose`.
    - A repair names the rule the code broke and fixes the hits the finding names; one guard that fails on a new instance, at most one new test per cause.
    - Read `references/agent-cases.md` for a `Deferred:` proof or a missing `Proof:`.
