@@ -7,6 +7,7 @@ import { git } from './harness.mjs';
 import { PLAN, landingCheckout } from './land-task-fixture.mjs';
 
 const AWS_KEY = ['AKIA', 'ABCDEFGHIJKLMNOP'].join('');
+const ANTHROPIC_KEY = ['sk-', 'ant-', 'api03-abcdefghijklmnopqrstuvwxyz'].join('');
 
 async function writeApp(root, body) {
   await fs.writeFile(path.join(root, 'src/app.js'), `export function greet() {\n  return ${body};\n}\n`);
@@ -20,6 +21,15 @@ test('a task whose diff adds an AWS key is refused, naming the file and the patt
     (error) => error.message.includes('src/app.js') && error.message.includes('"AWS access key"') && !error.message.includes(AWS_KEY)
   );
   assert.equal(git(root, 'log', '--format=%s').trim().split('\n').length, 1);
+});
+
+test('a task whose diff adds an Anthropic key is refused, naming the pattern', async () => {
+  const { root, planPath } = await landingCheckout();
+  await writeApp(root, `"${ANTHROPIC_KEY}"`);
+  assert.throws(
+    () => landTask({ planPath, planText: PLAN, number: 1, root }),
+    (error) => error.message.includes('"Anthropic key"') && !error.message.includes(ANTHROPIC_KEY)
+  );
 });
 
 test('a task that adds a secret in an untracked file is refused', async () => {

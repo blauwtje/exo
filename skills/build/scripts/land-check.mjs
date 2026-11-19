@@ -92,7 +92,7 @@ const SECRET_PATTERNS = [
   ['AWS access key', /AKIA[0-9A-Z]{16}/],
   ['private key block', /-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----/],
   ['GitHub token', /gh[pousr]_[A-Za-z0-9]{36,}/],
-  ['Slack token', /xox[baprs]-[A-Za-z0-9-]{10,}/]
+  ['Anthropic key', /sk-ant-[A-Za-z0-9_-]{20,}/]
 ];
 
 function addedLinesOf(root) {
