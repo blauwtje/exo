@@ -4,8 +4,7 @@ Checked: 2026-11-16
 
 Read it when: you design a run loop, a hook, a subagent hand-off or a check that gates an agent's work.
 
-- **Separate the agent doing the work from the one judging it.** [1][4] exo: `skills/build/scripts/land-task.mjs`, `skills/build/SKILL.md`
-- **Give every task a runnable pass/fail check.** Require evidence, not claims. [4] exo: `skills/spec/scripts/plan-check.mjs`
+- **Give every task a runnable pass/fail check.** [4] exo: `skills/spec/scripts/plan-check.mjs`
 - **A context reset with a handoff is an option beside compaction.** Auto compaction still covers the context target. [1][2] exo: `skills/build/SKILL.md`, `skills/save/SKILL.md`
 - **Keep a progress file and git history.** [2] exo: `skills/build/SKILL.md`
 - **Never let an agent remove or edit tests.** Keep the scorer frozen in one place outside its scope, with one implementation of each rule. [2][10][11] exo: `agents/builder.md`, decided: an agent may rewrite a test that passes without the behaviour it claims to guard; it never loosens or deletes a test that guards behaviour
@@ -19,8 +18,8 @@ Read it when: you design a run loop, a hook, a subagent hand-off or a check that
 - **`/goal` is a prompt-based Stop hook judged by a fresh model.** [7] exo: gap, unused
 - **Plugin agents ignore `hooks`, `permissionMode` and `mcpServers`.** Declare them at plugin level. [8] exo: gap
 - **Give a subagent one task, with its context and must-keep rules in the prompt.** It starts blank. [5] exo: `skills/build/run-task-prompt.md`, decided: pass file pointers, see context.md
-- **Guard with a script, check or lint and ship no hook; the pinned sources declare only skills and agents.** Encode a rule that recurs as structure, not as more text. [12][13] exo: conflict with [3], decided: keep only the two hooks in `hooks/hooks.json`, add none
-- **Accept a verdict only from a verifier that did not write the code; green CI and a bot approval are not verdicts.** [14] exo: `skills/build/SKILL.md` ends with the built-in `code-review`, decided: only a verdict from an agent that did not write the code counts, at any size; for a fix under the review threshold, the lead rerunning the repro command itself is that verdict
+- **Guard with a script, check or lint and ship no hook; the pinned sources declare only skills and agents.** [12][13] exo: conflict with [3], decided: keep only the two hooks in `hooks/hooks.json`, add none
+- **Accept a verdict only from a verifier that did not write the code; green CI and a bot approval are not verdicts; tune it to be skeptical.** [1][4][14] exo: `skills/build/scripts/land-task.mjs`, `skills/build/SKILL.md` ends with the built-in `code-review`, decided: only a verdict from an agent that did not write the code counts, at any size; for a fix under the review threshold, the lead rerunning the repro command itself is that verdict
 - **Compare `git patch-id` at the verdict's commit with the current head before you trust an older verdict.** A rebase moves a commit without failing a check. [14] exo: gap
 - **Land only the contiguous verified run from the bottom, and touch no branch of the stack while it lands.** [14] exo: `skills/ship/SKILL.md`
 - **Check the real artifact, not a proxy such as a self-report, a timestamp or "it compiles"; when a check fails, doubt how you observed before the system.** [15] exo: `agents/builder.md` counts done only with proof on the real product
