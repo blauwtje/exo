@@ -1,7 +1,7 @@
 ---
 name: author
 description: "Creates, edits and shortens skills, agents and skill scripts. Use when the user asks to create, edit or shorten a skill, agent or skill script. Not for a rule or CLAUDE.md."
-argument-hint: <skill or agent to create, edit or size>
+argument-hint: "skill or agent to create, edit or size"
 model: opus
 effort: medium
 ---

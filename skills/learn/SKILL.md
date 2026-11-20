@@ -1,6 +1,6 @@
 ---
 name: learn
-description: "Turns a correction the user gives again into a check that fails when the mistake returns, else one small lesson note, and offers lessons mined from past sessions as a numbered list. Use when a hook line starting `exo:` says the user asked something like this before or repeats a lesson they kept, or a hook line says Exo found new memories, when the user repeats a correction or says something like 'remember this', or asks to mine past sessions or prune CLAUDE.md. Not for a first correction mid-task, unfinished work (save) or a bug (diagnose)."
+description: "Turns a repeated correction into a check that fails or one small lesson note, and offers lessons mined from past sessions. Use when a hook line starts with `exo:` or says Exo found new memories, when the user repeats a correction, says 'remember this', or asks to mine past sessions or prune CLAUDE.md. Not for a first correction mid-task, unfinished work (save) or a bug (diagnose)."
 argument-hint: "[capture | mine | prune]"
 ---
 

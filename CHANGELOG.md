@@ -9,6 +9,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- Builders write scratch and repro files to the temp folder and delete the ones they created before the report.
+- A builder's `NEEDS ANSWER` question carries 2 to 3 options and a recommendation, and the build lead asks the user with them.
+- A builder writes an unrelated issue as a `Noticed:` report line instead of fixing it, the end report lists them, and the build lead runs the Land gate once before the first task so a red already there goes to `diagnose`.
 - `evals/failures.md` records the spec research findings as failure rows, and the scorecard records the layout A/B of brief task fields as inconclusive: all three arms scored 0.94 or higher on 10 runs each.
 - `plan-check.mjs` fails a task whose `Consumes` field names a task missing from its `Depends on`.
 - The principle pages carry community rules beside first-party ones, with a new code page, a refresh by pinned commit, and project rules that read them before any change.
@@ -31,6 +34,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The `argument-hint` of author, diagnose, document, spec and watch has no angle brackets, and the description of learn is 383 characters instead of 546 and names each trigger in fewer words.
 - `exo:build` end-of-run code review reads test-file diffs first, names every changed assertion, looks for what a passing Proof hides and tags findings Important, Nit or Pre-existing; only Important ones go to repro builders and the rest are listed in the report.
 - build: `land-task` runs the green proof twice and refuses a flaky one with `BLOCKED proof flaky`.
 - `spec` keeps the field rules in `references/field-rules.md`, and the example plan and the rules prefer vertical slices.
@@ -67,6 +71,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The code rules name the scratch-path command without a plugin path variable, which stays unfilled in a file read by path, and a test fails when a markdown file under `skills/` other than `SKILL.md` holds one.
 - `learn` shows a second session's text for each mined cluster and drops a cluster whose texts ask different things.
 - `build` tells each parallel repro builder to write its finding's test in its own new file, so builders never share one.
 - The fixture scripts of the eval cases `diagnose-repatch` and `build-red-suite` run again: one named a folder the pinned commit does not hold, the other wrote to an unrewritten `/tmp` path.

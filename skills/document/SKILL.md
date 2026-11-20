@@ -1,7 +1,7 @@
 ---
 name: document
 description: "Writes and edits prose read later: README, doc page, PR body, changelog line, release notes. Use when the user asks for one. Not for chat replies or code comments."
-argument-hint: <the document or text to write or edit>
+argument-hint: "the document or text to write or edit"
 model: sonnet
 effort: medium
 ---

@@ -1,7 +1,7 @@
 ---
 name: diagnose
 description: "Finds the proven cause of wrong behavior from a reproduction, then fixes it with a test seen red before green. Use when the user reports a bug, error, crash, regression or slowdown ('why does X fail', 'this broke', 'debug this'). Not for a missing feature or a failing pull request check."
-argument-hint: <symptom, failing command or error>
+argument-hint: "symptom, failing command or error"
 model: opus
 effort: medium
 ---
