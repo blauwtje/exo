@@ -21,7 +21,7 @@ function problemsOf(repository) {
   const shapeBroken = new Set(shape.map((message) => message.split(' ')[1]));
   const scripts = SHIPPED_EVENTS.filter((event) => events.includes(event) && !shapeBroken.has(event)).flatMap((event) => {
     const hook = hooks[event][0].hooks[0];
-    const named = /"?\$\{CLAUDE_PLUGIN_ROOT\}([^"\s]*)/.exec(hook.command ?? '');
+    const named = /"?\$\{CLAUDE_PLUGIN_ROOT\}([^"\s]*)/.exec(hook.args?.[0] ?? hook.command ?? '');
     const missingFile = !named ? [`event ${event} command names no script under CLAUDE_PLUGIN_ROOT`]
       : isFile(repository.join(named[1])) ? [] : [`event ${event} command names missing file ${named[1].replace(/^\//, '')}`];
     const slowTimeout = typeof hook.timeout === 'number' ? [] : [`event ${event} timeout is not a number`];

@@ -37,7 +37,7 @@ When reading alone does not prove the cause, send a fresh `exo:builder` (Agent t
 
 ### Report
 
-Invoked by another stage: return without asking. Else state the cause in plain words, whether the fix is proven, and the user's next step, usually `exo:ship`; label each claim measured, inferred or guess. Unproven: `Repro`, `Expected`, `Actual` and `Hypotheses`. Proof lines and commit hashes stay in the handoff.
+Invoked by another stage: return without asking. Else state the cause, whether the fix is proven, and the user's next step, usually `exo:ship`; label each claim measured, inferred or guess. Unproven: `Repro`, `Expected`, `Actual` and `Hypotheses`. Proof lines and commit hashes stay in the handoff.
 
 ## Examples
 

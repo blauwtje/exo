@@ -1,6 +1,6 @@
 ---
 name: adhd
-description: Short plain replies: one sentence per point, at most 3 bullets in a report, no paragraphs
+description: "Short plain replies: one sentence per point, at most 3 bullets in a report, no paragraphs"
 keep-coding-instructions: true
 ---
 Write short, plain replies for a reader who scans: the answer first, bold labels and figures, and every fact from the source (the tool output or helper result you report on) kept exact.

@@ -35,6 +35,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- Skills describe the shape of a reply instead of quoting fixed English labels, so a reply, its recommendation line and the ship menu follow the user's language; build, diagnose and ship leave reply wording to the output style.
+- The ship-set-route, ship-branch-push, route-document and adhd-short-reply evals test what exo does now: the push route set, the ask-first route menu, a seeded package and the adhd style turned on.
+- Both hooks run in exec form with `args`, as the hooks docs advise for a path placeholder.
 - All 9 skills are ordered in the NVIDIA SkillEvaluator sections, with their rules kept, and gain prerequisites, examples, a troubleshooting table and a scripts table; the `author` skill names the format.
 - The `argument-hint` of author, diagnose, document, spec and watch has no angle brackets, and the description of learn is 383 characters instead of 546 and names each trigger in fewer words.
 - `exo:build` end-of-run code review reads test-file diffs first, names every changed assertion, looks for what a passing Proof hides and tags findings Important, Nit or Pre-existing; only Important ones go to repro builders and the rest are listed in the report.
@@ -70,9 +73,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The value table measures `diagnose` on `diagnose-stale-rate` and lists `spec-late-fees` under `spec`.
 - `spec` sends its open-points researcher at the agent's own effort: low, medium and high effort each found 33 of 36 planted points in 6 runs, and high took 36 s per run against 20 s at medium.
 - The eval case `spec-late-fees` no longer grades the effort setting or a task count in the final message, which the skill does not ask for.
+- `ship` ends its ask step on the route menu as printed, translated only for a reader in another language, and names the follow-up in the line on what is left.
+- `spec` states its verdict and an objection of at most 15 words with no file path on one line before the question, outside the question's 60-word limit.
+- The route-document, spec-tide-export and adhd-short-reply evals judge the final message by the skill's and the output style's own rules, and ship-set-route sets its push route through the run's shell profile.
 
 ### Fixed
 
+- spec asks its questions within the old limits again: a title of at most 10 words, at most two short sentences of context, a one-clause reason and nothing after the recommendation.
+- The frontmatter of the adhd output style parses as YAML.
 - The code rules name the scratch-path command without a plugin path variable, which stays unfilled in a file read by path, and a test fails when a markdown file under `skills/` other than `SKILL.md` holds one.
 - `learn` shows a second session's text for each mined cluster and drops a cluster whose texts ask different things.
 - `build` tells each parallel repro builder to write its finding's test in its own new file, so builders never share one.

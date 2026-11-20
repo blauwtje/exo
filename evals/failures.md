@@ -140,3 +140,19 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-20 argument hints: NVIDIA SkillEvaluator 1.0.1 fails the quality check of author and document on angle brackets in `argument-hint`; 0 session files show a failure from it (user request).
 - 2026-11-20 learn description: the description of learn is 546 characters, the longest of the 9 skills, and SkillEvaluator 1.0.1 flags it; 0 session files show a failure from it (user request).
 - 2026-11-20 NVIDIA skill format: skills follow the NVIDIA SkillEvaluator format (user request: skills follow the NVIDIA SkillEvaluator format, 0 session hits).
+- 2026-11-20 ship eval ship-set-route: the `ship` setting was dropped in the port, so the case never ran with the push route; `rg -l 'route: push \(set\)'` over real session transcripts -> files=30 matches=56 (`<tmp>/debug/eval-ship-set-route-asks-route.md`).
+- 2026-11-20 ship eval ship-branch-push: the case grades the Unasked push rule that 0326cb70d removed; `rg -l 'Keep local\*\*: nothing leaves this computer'` over real session transcripts -> files=49 matches=77 (`<tmp>/debug/eval-ship-branch-push-no-push.md`).
+- 2026-11-20 learn eval route-document: the case ran in an empty working folder with nothing to document; files=6 matches=16 (`<tmp>/debug/eval-route-document-empty-dir.md`).
+- 2026-11-20 spec eval spec-tide-export: the question limits were lost with `lib/references/question.md` in 0326cb70d, so the question shape is ungraded-fit; `rg -l 'Verdict: clarify'` over real session transcripts -> files=8 matches=25 (`<tmp>/debug/eval-spec-tide-export-question-format.md`).
+- 2026-11-20 adhd eval adhd-short-reply: the exo:adhd style was never on in the eval child; `rg -l 'adhd-short-reply'` over real session transcripts -> files=143 matches=455 (`<tmp>/debug/eval-adhd-short-reply-long.md`).
+- 2026-11-20 output style: the frontmatter of `output-styles/adhd.md` is not valid YAML, pyyaml says "mapping values are not allowed here"; `rg -l 'mapping values are not allowed'` -> files=2 matches=3 (user request).
+- 2026-11-20 hooks: both hooks in `hooks/hooks.json` use shell form with a path placeholder instead of `args`; `rg -l '"args":\s*\['` over `hooks/` -> files=0 matches=0 (user request).
+- 2026-11-20 skills repeat the style's word rules ("in plain words" in the report steps of build, diagnose and ship; 'Say the result in plain words' files=40 matches=88, user request).
+- 2026-11-20 English template labels in non-English replies ('Recommended: .A.' files=398 matches=943 while 'Aanbevolen: .A.' files=22 matches=33, user request).
+- 2026-11-20 skills quote fixed English labels that reach replies to a non-English user ('Recommended: .A.' files=398 matches=943, user request); examples that show an English request and reply stay.
+- 2026-11-20 ship eval ship-branch-push: the reply put text after the route menu and reworded the menu, 3 of 3 runs (user request).
+- 2026-11-20 learn eval route-document: the grader asks for a skill load that the judge cannot see, 3 of 3 runs (user request).
+- 2026-11-20 spec eval spec-tide-export: the Verdict and Objection sit outside the 2-sentence cap, text follows the recommendation and the question runs over 60 words, 3 of 3 runs (user request).
+- 2026-11-20 ship eval ship-set-route and adhd eval adhd-short-reply: the scaffold writes config/settings.json that the eval runner creates with flag wx, EEXIST in 6 of 6 runs (user request).
+- 2026-11-20 spec eval spec-tide-export: the Objection counted inside the 60-word question pushes it to 82 to 100 words, 3 of 3 runs (user request).
+- 2026-11-20 adhd eval adhd-short-reply: the grader asks for at most 3 short lines while the style asks for an example and keeps warnings, 3 of 3 runs (user request).

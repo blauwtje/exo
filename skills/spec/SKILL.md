@@ -19,11 +19,11 @@ Spec settles every decision the user would notice before any code is written, so
 
 ## Instructions
 
-1. **Verdict.** State `Verdict: go`, `clarify` or `stop`, and `Objection:`, the likeliest reason the work fails or is not worth doing, backed by code or an existing tool. `clarify` asks the one question that makes it `go`; `stop` writes no brief and names what already covers the request.
+1. **Verdict.** Give a verdict of go, clarify or stop, and an objection, the likeliest reason the work fails or is not worth doing, backed by code or an existing tool, in at most 15 words with no file path; before a question, state both on one line, outside the question's limits. `clarify` asks the one question that makes it `go`; `stop` writes no brief and names what already covers the request.
    - Fast route: under three files with a known proof, skip questions and plan; `exo:build` edits directly.
    - The user asked for options or ideas: follow `references/architecture-sketch.md` instead of the steps below; its draw command is `node "${CLAUDE_SKILL_DIR}/scripts/draw-seats.mjs"`.
 2. **Find the open decisions.** Run `node "${CLAUDE_SKILL_DIR}/scripts/repo-map.mjs"` and search its output with `grep -n`. Unless the change looks like at most 3 tasks, write a throughput checkpoint of one line each: blocking steps, independent workstreams, shared state and smallest split; write `n/a` and why for an item that does not apply. For ranges it omits, and unless the change looks like at most 3 tasks, send up to four `exo:researcher` agents (`Sources: repo`) and one (`Sources: docs`) for outside facts in one background message. Record what code answers; ask none of it.
-3. **Ask one at a time.** Ask only for a preference or product outcome only the user knows, where a wrong guess is costly to undo. Take a safe default silently, recorded in Decisions ending `(exo decided)`. Each question: a bold title ending in `?`, two or three lines `- **(A) Label**: what the user gets`, then `Recommended: (A), because <reason>`. `ok` or a second "I don't know" takes the recommendation. A decision the user left open stays open.
+3. **Ask one at a time.** Ask only for a preference or product outcome only the user knows, where a wrong guess is costly to undo. Take a safe default silently, recorded in Decisions ending `(exo decided)`. Each question: a bold title ending in `?` of at most 10 words, at most two short sentences of context, two or three lines `- **(A) Label**: what the user gets` in one short clause each, then a last line that names the recommended letter with a one-clause reason. Nothing follows the recommendation, and the defaults taken are not listed. `ok` or a second "I don't know" takes the recommendation. The question, from the title to the recommendation line, stays under about 60 words outside the option labels. A decision the user left open stays open.
 4. **Write the brief** in the shape of `references/example-plan.md`, with the fields as `references/field-rules.md` says. Read the `specs` setting with `node --input-type=module -e "import { settingValue } from '${CLAUDE_PLUGIN_ROOT}/lib/settings-store.mjs'; console.log(settingValue('specs'))"`, store the brief where it prints, and name the place:
    - `docs`: `docs/specs/<topic>.md`; never `git add` it. In plan mode, the harness plan file.
    - `issues`: one GitHub issue whose body opens `<!-- exo:spec -->`, with only labels and fields the repository already defines; build reads its copy at `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" specs/<n>.md`, and when that file is missing because the system emptied the temp folder, writes it again from `gh issue view <n> --json body --jq .body`. With no GitHub `origin` or a failing `gh auth status`, write the file and say so.
@@ -40,8 +40,8 @@ Spec settles every decision the user would notice before any code is written, so
 Request: "plan a dark mode toggle".
 
 ```
-Verdict: go
-Objection: the theme is hard-coded in three stylesheets.
+Verdict: go. Objection: the theme is hard-coded in three stylesheets.
+
 **Where is the choice stored?**
 - **(A) Browser only**: it resets on another device
 - **(B) Account**: it follows the user

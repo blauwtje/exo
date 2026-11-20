@@ -24,7 +24,7 @@ Take finished commits only as far as the user said, because a push or merge cann
 ### Process
 
 1. **Authorize.** A lettered answer, a `ship` setting other than `ask`, or a request to merge authorizes that route. Watching a pull request or answering comments authorizes only fix commits, push and replies, never a force push, `--no-verify` or a weaker check. Confirm the pull request is the one the request named before any push or reply.
-2. **Ask.** Give three lines (what changed, what was verified, what is left), then the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` as the menu. Nothing leaves the machine before the user's letter. A set `ship` setting skips the question; say so when it cannot apply. `--land` takes the menu's first route without asking. A named follow-up goes in as `Follow-up: <what>, no issue filed`, and no `gh issue create` runs before a yes.
+2. **Ask.** Give three lines (what changed, what was verified, what is left), then the stdout of `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --routes` exactly as printed, translated only for a reader in another language, and end the reply on its last line with nothing after it. Nothing leaves the machine before the user's letter. A set `ship` setting skips the question; say so when it cannot apply. `--land` takes the menu's first route without asking. A named follow-up goes in the "what is left" line with a note that no issue is filed, and no `gh issue create` runs before a yes.
 3. **Prepare.** For a dirty tree, commit the proposed ordered commits and show their subjects. Regroup only unpushed commits; a pushed commit changes by a new commit. Title the pull request in the style of the repository's recent commit subjects, and keep the body to 40 lines: why, scope, tradeoffs only if a real choice existed, verification with the proof lines, and `Closes #<n>` per issue it closes. Follow the repository's template when it has one.
 4. **Run the route.** For `pr-merge`, run the project check first and push nothing on a failure. Then run `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --route <push|open-pr|pr-merge> --title <subject> --body <file> [--issue <n>] [--method squash|merge|rebase]` with `run_in_background`. It pushes, opens, waits for checks (stops at 20 minutes with exit 124), merges and confirms. After a fix, rerun the check and not the merge.
 5. **Merge named pull requests.** Check each, drop a failing one, then run `node "${CLAUDE_SKILL_DIR}/scripts/ship.mjs" --merge <n...>` with `run_in_background`. Merge stacked pull requests bottom-up, one `--merge <n>` call each, and stop at the first failing one; unrelated pull requests halt no other.
@@ -41,7 +41,7 @@ The pull request is ready when checks are green, every comment is resolved and i
 
 ### Report
 
-Say the result in plain words (pushed, opened, merged, kept local on `<branch>`, or why it stopped) and the next step. Give fixes as a count and commit range, comments addressed or deferred with a reason, and what needs the user. If the pull request is a draft and ready, run `gh pr ready <n>`.
+State the result (pushed, opened, merged, kept local on `<branch>`, or why it stopped) and the next step. Give fixes as a count and commit range, comments addressed or deferred with a reason, and what needs the user. If the pull request is a draft and ready, run `gh pr ready <n>`.
 
 ## Examples
 

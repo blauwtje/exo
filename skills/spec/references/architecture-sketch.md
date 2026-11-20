@@ -10,7 +10,7 @@ Use this when the user asks for options or ideas. One context drafting every opt
 ## Draft one option per pair
 
 - Draft one option per pair, in printed order, from that seat; a design that uses the forbidden move fails.
-- Each option opens with `Core mechanism:` and `p=`, your estimate that a typical engineer proposes that mechanism first. No two options share a core mechanism.
+- Each option opens with its core mechanism and `p=`, your estimate that a typical engineer proposes that mechanism first. No two options share a core mechanism.
 - At most 10 lines: a title, the mechanism in two sentences about what the user sees, types, signatures and module boundaries (no bodies), and what it hides from callers.
 
 ## Replace the likely
@@ -23,7 +23,7 @@ Revise or drop an option with a large interface that hides little, a detail that
 
 ## Show and pick
 
-- Show the 2-3 most distinct survivors, each beside its seat; when one matches a project found above, add `Already exists: <url>`.
+- Show the 2-3 most distinct survivors, each beside its seat; when one matches a project found above, add a line saying it already exists, with its URL.
 - Score each per 3-5 criteria from the request, interface depth weighted highest. Prefer the option that hides more behind a smaller surface.
 - When parts of two options hold under one data model, graft them and name each source. Recommend one, with its reason.
 

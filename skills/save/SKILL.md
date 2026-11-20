@@ -33,7 +33,7 @@ Freeze what this session knows and the next one cannot rebuild. Point to files a
    - One line on where the work stands and the first thing to do next, then `Written: <date>, last commit <short hash>, branch <name>`.
    - `## Goal`: what the work is for, and what it will not do.
    - `## Progress`: from `git status --short`, not memory. Open with the plan path and task number when a plan runs. List what is committed, then every uncommitted path in full, because a next session that cannot tell them apart discards working-tree edits. Add each decision as "<decision>, decided by <the user or this session>".
-   - `## Evidence`: `Proven:` claim, command, result; `Unproven:` what is open and who can answer. Add each approach already ruled out.
+   - `## Evidence`: what is proven, as claim, command and result, and what is unproven, with what is open and who can answer. Add each approach already ruled out.
    - `## Next step`: the first action, then each later step with its full command. For a run, say how to wait, what to do on failure and where to stop.
    - `## Resume`: copy this paragraph exactly: "Diff the work this handoff records as done against the work it still lists as next or open, name the resume point, and repeat no step it records as proven. Verify an inherited claim against the real artifact before building on it: a prior session's report is not the proof. Compare the `Written` date and last commit with `git log -1` and `git status --short`, and name what changed since before relying on a claim."
 3. End the turn by naming the written path and telling the user to run `/clear`, then say "continue from the handoff". Continue no work.

@@ -4,7 +4,7 @@ import { checkHookSet } from '../verify/checks/hook-set.mjs';
 import { createRepository } from '../verify/repository.mjs';
 import { checkOutcome, tree } from './check-outcome.mjs';
 
-const command = { hooks: [{ type: 'command', command: 'node "${CLAUDE_PLUGIN_ROOT}/hook.mjs"', timeout: 5 }] };
+const command = { hooks: [{ type: 'command', command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/hook.mjs'], timeout: 5 }] };
 
 function run(hooks) {
   return checkOutcome(checkHookSet, createRepository(tree({ 'hooks/hooks.json': JSON.stringify({ hooks }), 'hook.mjs': '' })));
@@ -32,7 +32,7 @@ test('a null entry fails with a message instead of throwing', () => {
 });
 
 test('a command naming a misspelled script fails', () => {
-  const typo = { hooks: [{ ...command.hooks[0], command: 'node "${CLAUDE_PLUGIN_ROOT}/hok.mjs"' }] };
+  const typo = { hooks: [{ ...command.hooks[0], args: ['${CLAUDE_PLUGIN_ROOT}/hok.mjs'] }] };
   const result = run({ SessionStart: [typo], UserPromptSubmit: [command] });
   assert.match(result.detail, /event SessionStart command names missing file hok\.mjs/);
 });
