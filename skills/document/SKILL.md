@@ -4,13 +4,24 @@ description: "Writes and edits prose read later: README, doc page, PR body, chan
 argument-hint: "the document or text to write or edit"
 model: sonnet
 effort: medium
+metadata:
+  author: exo
+  tags: [documentation, writing, changelog]
 ---
 
 # Document
 
+## Purpose
+
 Prose for a reader who was not in the session says who does what, by which mechanism, in the plain word. Avoid text that sounds finished and says little, and avoid the opposite, telegraphic text without articles and verbs that the reader must decode.
 
-## Process
+## Prerequisites
+
+`node` and `git` for the release notes script, otherwise none.
+
+## Instructions
+
+### Process
 
 1. **Pick one mode per document.** A tutorial teaches by doing, a how-to gets a known task done, a reference lists what exists, an explanation says why. A how-to opens on the command, with no welcome or tour.
 2. **State the fact, not the benefit.** Give the number, behavior or error that changed. When asked to sell or impress, still write only what the input states, because an unmeasured effect is invented.
@@ -19,7 +30,7 @@ Prose for a reader who was not in the session says who does what, by which mecha
 5. **Change only what the request names.** Run the doc's link or reference check when one exists.
 6. **Scan the draft for the tics below and rewrite each hit.** When reviewing someone else's text, quote each hit.
 
-## Tics
+### Tics
 
 - Trailing "-ing" benefit phrase ("ensuring stable memory"), inflated significance, a vague source, a promise about the future. State the number or cut it.
 - Quality adjectives with no measurement (robust, seamless, significantly). Give the measured change.
@@ -29,7 +40,7 @@ Prose for a reader who was not in the session says who does what, by which mecha
 - Hedges stacked ("could potentially"), filler ("in order to", "it is worth noting"), aphorisms, abstract metaphors (backbone, guardrail), and "feels smoother" where a mechanism belongs.
 - A passive verb with no actor, a pronoun with two possible referents, a noun stack, a semicolon joining sentences.
 
-## Release notes
+### Release notes
 
 When the user asks for release notes or the changelog lines a range misses:
 
@@ -38,8 +49,34 @@ When the user asks for release notes or the changelog lines a range misses:
 3. Add `--uncovered` to list only commits that did not touch the changelog; in the changelog, follow its existing format for a breaking change.
 4. Name the range used in one line, so the user can rerun it. Edit the changelog only when the user names it, and never tag, bump or release.
 
-## Judgment
+### Judgment
 
 - The codebase's name outranks the plain word: `maxBytes` stays `maxBytes`.
 - A fact, number or term the reader needs outranks every tic fix, and a tic inside a quotation, command or code sample stays as written.
+
+## Examples
+
+A request to write release notes for the commits since the last tag:
+
+```
+node "${CLAUDE_SKILL_DIR}/scripts/release-notes-draft.mjs" --repo <checkout>
+```
+
+The skill rewrites each drafted line to say what the user sees, fills each `Upgrade:` line from the commit diff and names the range in one line.
+
+## Limitations
+
 - The pull request body layout of `exo:ship` and the brief sections of `exo:spec` outrank this skill's layout, and product interface strings follow the product's copy rules.
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+| --- | --- | --- |
+| `No user-facing commits in <range>.` | No commit in the range has a user-facing type. | Pass `--from <ref>` with an older ref. |
+| `Upgrade: not stated in the commit.` | The commit has no upgrade footer. | Fill the line from the commit diff. |
+
+## Available Scripts
+
+| Script | Purpose | Arguments |
+| --- | --- | --- |
+| `release-notes-draft.mjs` | Drafts release notes from the commits of a range. | `--repo <checkout>`, `--from <ref>`, `--to <ref>` |

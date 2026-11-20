@@ -67,3 +67,26 @@ test('rejects a non-boolean user-invocable', () => {
 test('rejects when_to_use', () => {
   assert.equal(frontmatterResult(null, ['when_to_use: Use when testing']).passed, false);
 });
+
+const METADATA = ['metadata:', '  author: exo', '  tags: [build, plan]'];
+
+test('accepts a metadata block with author and tags', () => {
+  const outcome = frontmatterResult(null, METADATA);
+  assert.equal(outcome.passed, true, outcome.detail);
+});
+
+test('rejects six tags', () => {
+  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: [a, b, c, d, e, f]']).passed, false);
+});
+
+test('rejects an uppercase tag', () => {
+  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: [Build]']).passed, false);
+});
+
+test('rejects an empty tag list', () => {
+  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: []']).passed, false);
+});
+
+test('rejects an unknown metadata key', () => {
+  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  version: 1']).passed, false);
+});

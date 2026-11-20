@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `validate:static` fails a skill whose `SKILL.md` leaves the NVIDIA SkillEvaluator format: the `##` sections Purpose, Prerequisites, Instructions, Examples, Limitations, Troubleshooting and Available Scripts in that order, `metadata.author` and `metadata.tags`, and a scripts table with a row for each script the skill runs.
 - Builders write scratch and repro files to the temp folder and delete the ones they created before the report.
 - A builder's `NEEDS ANSWER` question carries 2 to 3 options and a recommendation, and the build lead asks the user with them.
 - A builder writes an unrelated issue as a `Noticed:` report line instead of fixing it, the end report lists them, and the build lead runs the Land gate once before the first task so a red already there goes to `diagnose`.
@@ -34,6 +35,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- All 9 skills are ordered in the NVIDIA SkillEvaluator sections, with their rules kept, and gain prerequisites, examples, a troubleshooting table and a scripts table; the `author` skill names the format.
 - The `argument-hint` of author, diagnose, document, spec and watch has no angle brackets, and the description of learn is 383 characters instead of 546 and names each trigger in fewer words.
 - `exo:build` end-of-run code review reads test-file diffs first, names every changed assertion, looks for what a passing Proof hides and tags findings Important, Nit or Pre-existing; only Important ones go to repro builders and the rest are listed in the report.
 - build: `land-task` runs the green proof twice and refuses a flaky one with `BLOCKED proof flaky`.

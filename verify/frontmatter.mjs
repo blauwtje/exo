@@ -38,6 +38,46 @@ function parseLine(line, values) {
   return { key, ...parseValue(key, value) };
 }
 
+const METADATA_LINE = /^ {2}(?<key>author|tags): +(?<value>.+)$/;
+const TAG_LIST = /^\[(?<items>[^\]]*)\]$/;
+const TAG_WORD = /^[a-z]+$/;
+const TAG_LIMIT = 5;
+
+function parseTags(valueText) {
+  const match = TAG_LIST.exec(valueText);
+  const items = match ? match.groups.items.split(',').map((item) => item.trim()) : [];
+  const valid = items.length >= 1 && items.length <= TAG_LIMIT && items.every((item) => TAG_WORD.test(item));
+  return valid ? { value: items } : { error: `metadata tags must be [a, b] with 1 to ${TAG_LIMIT} lowercase words` };
+}
+
+function splitMetadata(head) {
+  const start = head.indexOf('metadata:');
+  if (start < 0) return { block: [], plain: head };
+  let end = start + 1;
+  while (end < head.length && head[end].startsWith(' ')) end++;
+  return { block: head.slice(start + 1, end), plain: [...head.slice(0, start), ...head.slice(end)] };
+}
+
+function readMetadata(block, values) {
+  const errors = [];
+  for (const line of block) {
+    const match = METADATA_LINE.exec(line);
+    if (!match) {
+      errors.push(`unsupported metadata line: ${line}`);
+      continue;
+    }
+    const { key, value } = match.groups;
+    if (values.has(`metadata.${key}`)) {
+      errors.push(`duplicate metadata key: ${key}`);
+      continue;
+    }
+    const parsed = key === 'tags' ? parseTags(value) : parseValue('metadata.author', value);
+    if (parsed.error) errors.push(parsed.error);
+    else values.set(`metadata.${key}`, parsed.value);
+  }
+  return errors;
+}
+
 function schemaErrors(values) {
   const errors = [];
   if (!values.has('name') || !values.has('description')) errors.push('frontmatter must contain name and description');
@@ -65,7 +105,10 @@ export function readFrontmatter(lines) {
     return { values, errors };
   }
 
-  for (const line of lines.slice(1, closing)) {
+  const head = lines.slice(1, closing);
+  const { block, plain } = splitMetadata(head);
+  errors.push(...readMetadata(block, values));
+  for (const line of plain) {
     const parsed = parseLine(line, values);
     if (parsed.error) errors.push(parsed.error);
     else values.set(parsed.key, parsed.value);

@@ -2,21 +2,31 @@
 name: save
 description: "Writes a handoff file for unfinished work and reads it back in a fresh session. Use when the user asks to save, pause or hand off this session, or to continue from a saved handoff ('continue where I left off'). Not for finished work."
 argument-hint: "[what the next session must not lose]"
+metadata:
+  author: exo
+  tags: [handoff, session, resume]
 ---
 
 # Save
 
+## Purpose
+
 Freeze what this session knows and the next one cannot rebuild. Point to files and commands, never paste the transcript, a diff or a log, because the fresh session would pay again for that context.
 
-## Before writing
+## Prerequisites
 
-- Push nothing and open no pull request.
+`node` and `git`.
+
+## Instructions
+
+### Before writing
+
 - Finish or undo the step in progress and start no new work.
-- On a plan's run branch, commit nothing: run `handoff.mjs path` first, create its parent folder, save the partial work of the task in progress with `git diff > <handoff path with .md replaced by -task<n>.patch>` and list the patch under Progress.
+- On a plan's run branch, commit nothing: run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` first, create its parent folder, save the partial work of the task in progress with `git diff > <handoff path with .md replaced by -task<n>.patch>` and list the patch under Progress.
 - On any other non-default branch, commit every uncommitted edit as one `chore: wip <topic>` commit, and say in its body if the tree is broken.
 - On the default branch, leave edits uncommitted and list them under Progress.
 
-## Write the file
+### Write the file
 
 1. Run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` for the location, create its parent directories, and write the file whole, replacing an older handoff.
 2. Confirm path, branch and commit with a command before writing them down. Write plain words in the user's language, with these sections in order:
@@ -28,6 +38,32 @@ Freeze what this session knows and the next one cannot rebuild. Point to files a
    - `## Resume`: copy this paragraph exactly: "Diff the work this handoff records as done against the work it still lists as next or open, name the resume point, and repeat no step it records as proven. Verify an inherited claim against the real artifact before building on it: a prior session's report is not the proof. Compare the `Written` date and last commit with `git log -1` and `git status --short`, and name what changed since before relying on a claim."
 3. End the turn by naming the written path and telling the user to run `/clear`, then say "continue from the handoff". Continue no work.
 
-## Continue from a handoff
+### Continue from a handoff
 
 When the user asks to continue saved work, run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path`, read the file it prints and follow its `## Resume` paragraph. With no file there, say which branch has none and write nothing.
+
+## Examples
+
+The user says "save this, I continue tomorrow" on branch `feature-x`. The skill commits the edits as `chore: wip <topic>`, writes the handoff and ends with:
+
+```
+Saved to <handoff path>. Run /clear, then say "continue from the handoff".
+```
+
+## Limitations
+
+- Push nothing and open no pull request.
+
+## Troubleshooting
+
+| Error | Cause | Solution |
+| --- | --- | --- |
+| No file at the printed handoff path | Nothing was saved on this branch | Say which branch has none and write nothing. |
+| `git diff > <patch>` fails | The parent folder of the handoff path does not exist | Create the parent folder, then rerun the command. |
+| The handoff names a commit that is not `git log -1` | Work continued after the `Written` date | Name what changed since before relying on a claim. |
+
+## Available Scripts
+
+| Script | Purpose | Arguments |
+| --- | --- | --- |
+| `handoff.mjs` | Prints where the handoff of the current branch sits | `path [--cwd <dir>]` |
