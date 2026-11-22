@@ -156,3 +156,14 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-20 ship eval ship-set-route and adhd eval adhd-short-reply: the scaffold writes config/settings.json that the eval runner creates with flag wx, EEXIST in 6 of 6 runs (user request).
 - 2026-11-20 spec eval spec-tide-export: the Objection counted inside the 60-word question pushes it to 82 to 100 words, 3 of 3 runs (user request).
 - 2026-11-20 adhd eval adhd-short-reply: the grader asks for at most 3 short lines while the style asks for an example and keeps warnings, 3 of 3 runs (user request).
+- 2026-11-22 build skill: the task brief is printed into the lead's context, the second attempt always runs on Opus, the review effort is fixed at medium, a drifted plan leaves no undo commands and a weakened test shows only in the end review; 9 of 15 session files hold "next-task.mjs" (user request).
+- 2026-11-22 spec skill: a task cannot name its model, a plan cannot tell the end review where to look and the repo map does not show which exports many files use; 8 of 15 session files hold "repo-map.mjs" (user request).
+- 2026-11-22 learn skill: failed tool calls are not mined, a lesson stays inside one project, stale notes are found by reading every note and the hook line shows an id with no name; 13 of 15 session files hold "corrections.mjs" (user request).
+- 2026-11-22 save skill: the git facts of a handoff and its staleness check are done by hand and a ruled-out approach hides inside Evidence; 9 of 15 session files hold "handoff.mjs" (user request).
+- 2026-11-22 diagnose skill: Isolate does not compare with a working case and a test that fails only after another test has no finder; 8 of 15 session files hold "bisect.mjs" (user request).
+- 2026-11-22 document skill: the release-notes steps name `--uncovered`, which `release-notes-draft.mjs` rejects with `ERR_PARSE_ARGS_UNKNOWN_OPTION` and exit 1 in 1 of 1 run on 2026-11-22, and a how-it-works answer has no fixed shape; 6 of 15 session files hold "--uncovered" (user request).
+- 2026-11-22 author skill: a description edit is accepted on the same prompts it was tuned on and a dropped edit leaves no record; 6 of 15 session files hold "should_trigger" (user request).
+- 2026-11-22 evals: every case runs three times even when two runs agree, the table shows counts with no verdict and nothing measures a prompt that must not trigger a skill; 9 of 15 session files hold "value.mjs" (user request).
+- 2026-11-22 checks: no check stops a script from gaining options or a `$1` literal from entering skill text; 12 of 15 session files hold "parseFlags" (user request).
+- 2026-11-22 builder agent: the builder has no rule for a context that fills up; 10 of 15 session files hold "exo:builder" (user request).
+- 2026-11-22 hooks: no line says why the two hooks only detect; 7 of 15 session files hold "UserPromptSubmit" (user request).
