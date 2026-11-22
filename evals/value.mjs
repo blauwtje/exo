@@ -11,7 +11,7 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const TABLE = path.join(ROOT, 'evals', 'value.md');
 const BUDGET_USD = 40;
 const CASE_USD = 1.9;
-const COLUMNS = ['part', 'cases', 'share', 'order', 'paths', 'with', 'without', 'cost with', 'cost without', 'date'];
+const COLUMNS = ['part', 'cases', 'share', 'order', 'paths', 'with', 'without', 'cost with', 'cost without', 'date', 'verdict'];
 const USAGE = 'usage: value.mjs --plan | --run [part]';
 const FIGURES = ['with', 'without', 'cost with', 'cost without', 'date'];
 
@@ -118,6 +118,18 @@ export function armFigures(cases, arm) {
   return { passed, cost, cut };
 }
 
+export function runTally(cases, arm) {
+  const runs = cases.flatMap((testCase) => Object.values(testCase.arms?.[arm] ?? {}));
+  return { passed: runs.filter((run) => run.passed && !isCut(run)).length, total: runs.length };
+}
+
+export function verdictOf(withExo, without) {
+  const unsure = withExo.cut > 0 || without.cut > 0 || withExo.cost === '-' || without.cost === '-' || (withExo.passed === 0 && without.passed === 0);
+  if (unsure) return 'not sure yet';
+  if (withExo.passed === without.passed) return 'same';
+  return withExo.passed > without.passed ? 'better' : 'worse';
+}
+
 function evalRuns(name, maxCost, runs) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'value-'));
   const jsonPath = path.join(directory, 'result.json');
@@ -154,6 +166,7 @@ export function settle(row, withExo, without) {
     'cost with': costed ? withExo.cost.toFixed(2) : '-',
     'cost without': costed ? without.cost.toFixed(2) : '-',
     date: new Date().toISOString().slice(0, 10),
+    verdict: overBudget || flat ? 'not sure yet' : verdictOf(withExo, without),
     cut: withExo.cut + without.cut,
   };
 }
@@ -167,7 +180,7 @@ export function regressions(oldRow, newRow) {
 
 function measure(row) {
   const cases = caseNames(row).flatMap((name) => evalCase(name, CASE_USD));
-  return settle(row, armFigures(cases, 'with'), armFigures(cases, 'without'));
+  return { ...settle(row, armFigures(cases, 'with'), armFigures(cases, 'without')), tally: { with: runTally(cases, 'with'), without: runTally(cases, 'without') } };
 }
 
 function runNext(text, rows, partName) {
@@ -182,8 +195,9 @@ function runNext(text, rows, partName) {
     process.exit(2);
   }
   const measured = measure(row);
-  const { cut, ...figures } = measured;
-  process.stdout.write(`${target}: ${figures.with}/${figures.without} cases, cut ${cut}\n`);
+  const { cut, tally, ...figures } = measured;
+  const counts = (arm) => `${tally[arm].passed}/${tally[arm].total} runs`;
+  process.stdout.write(`${target}: with ${counts('with')}, without ${counts('without')}, ${figures.verdict}, cut ${cut}\n`);
   const lines = regressions(row, figures);
   for (const line of lines) process.stdout.write(`${line}\n`);
   if (lines.length > 0) process.exitCode = 1;
