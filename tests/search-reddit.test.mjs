@@ -30,38 +30,35 @@ test("timeBucket maps days to Reddit's time filters", () => {
   assert.deepEqual([1, 7, 31, 366, 400].map(timeBucket), ["day", "week", "month", "year", "all"]);
 });
 
-test("find searches each first term site-wide, then each term in each subreddit on its own", async () => {
+test("find searches each first term site-wide, then each term once over all named subreddits", async () => {
   const urls = [];
   const { lists } = await find(plan, async (url) => {
     urls.push(new URL(url));
     return [{ url, title: "t", facts: "f" }];
   });
-  assert.equal(lists.length, 10);
+  assert.equal(lists.length, 6);
   assert.deepEqual(
     urls.map((url) => [url.searchParams.get("q"), url.pathname]),
     [
       ["alpha", "/search"],
       ["gamma", "/search"],
-      ["alpha", "/r/claudeai/search"],
-      ["alpha", "/r/cursor/search"],
-      ["gamma", "/r/claudeai/search"],
-      ["gamma", "/r/cursor/search"],
-      ["beta", "/r/claudeai/search"],
-      ["beta", "/r/cursor/search"],
-      ["delta", "/r/claudeai/search"],
-      ["delta", "/r/cursor/search"],
+      ["alpha", "/r/claudeai+cursor/search"],
+      ["beta", "/r/claudeai+cursor/search"],
+      ["gamma", "/r/claudeai+cursor/search"],
+      ["delta", "/r/claudeai+cursor/search"],
     ],
   );
-  assert.deepEqual(urls.map((url) => url.searchParams.get("restrict_sr")), [null, null, ...Array(8).fill("on")]);
+  assert.deepEqual(urls.map((url) => url.searchParams.get("restrict_sr")), [null, null, ...Array(4).fill("on")]);
   assert.ok(urls.every((url) => url.searchParams.get("sort") === "top" && url.searchParams.get("t") === "month"));
 });
 
 test("find keeps the first 40 searches and reports how many it dropped", async () => {
-  const many = { ...plan, subreddits: Array.from({ length: 10 }, (_, index) => `sub${index}`) };
+  const subQuestions = Array.from({ length: 20 }, (_, index) => ({ ask: `q${index}`, terms: [`a${index}`, `b${index}`] }));
   const urls = [];
-  const { failed } = await find(many, async (url) => urls.push(url) && [{ url, title: "t", facts: "f" }]);
+  const { failed } = await find({ ...plan, subQuestions }, async (url) => urls.push(url) && [{ url, title: "t", facts: "f" }]);
   assert.equal(urls.length, 40);
-  assert.deepEqual(failed, ['dropped 2 of 42 searches: limit is 40: "delta" in r/sub8, "delta" in r/sub9']);
+  assert.equal(failed.length, 1);
+  assert.match(failed[0], /^dropped 20 of 60 searches: limit is 40: "a10" in r\/claudeai\+cursor, "b10" in r\/claudeai\+cursor/);
 });
 
 test("find without subreddits only searches site-wide", async () => {
@@ -89,9 +86,9 @@ test("find keeps the searches that succeeded and reports each failed one", async
 
 test("find labels a search without hits with its term and where it searched", async () => {
   const { failed } = await find(plan, async () => []);
-  assert.equal(failed.length, 10);
+  assert.equal(failed.length, 6);
   assert.equal(failed[0], 'no hits: "alpha" on all of Reddit');
-  assert.equal(failed[2], 'no hits: "alpha" in r/claudeai');
+  assert.equal(failed[2], 'no hits: "alpha" in r/claudeai+cursor');
 });
 
 test("the results scraper skips a result that has no title link", async () => {
@@ -112,9 +109,9 @@ test("threadDoc turns a thread into a header and labelled passages without remov
 test("open loads the thread json url and returns its document", async () => {
   const comments = { data: { children: [comment("a", "first")] } };
   let requested;
-  const doc = await open({ url: "https://www.reddit.com/r/x/comments/p/t/" }, (url, read) => {
+  const doc = await open({ url: "https://www.reddit.com/r/x/comments/p/t/" }, async (url) => {
     requested = new URL(url);
-    return read({}, { text: async () => JSON.stringify([listing, comments]) });
+    return [listing, comments];
   });
   assert.equal(requested.hostname, "old.reddit.com");
   assert.equal(requested.pathname, "/r/x/comments/p/t.json");

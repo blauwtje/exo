@@ -129,7 +129,7 @@ export async function advance(plan, run, deadline = deadlineMs()) {
   const remaining = plan.reads === null ? Infinity : plan.reads - run.read;
   const shares = limits(remaining, pending.length);
   const turns = pending.map((source, index) => ({ source, limit: shares[index] })).filter(({ limit }) => limit > 0);
-  const settled = await Promise.allSettled(turns.map(({ source, limit }) => withDeadline(adapters[source].collect(plan, run.states[source] ?? null, limit), deadline)));
+  const settled = await Promise.allSettled(turns.map(({ source, limit }) => withDeadline(adapters[source].collect(plan, run.states[source] ?? null, limit, deadline), deadline)));
   const results = plan.sources.map(() => null);
   turns.forEach(({ source }, index) => {
     const result = settled[index];
@@ -194,6 +194,18 @@ export function record(plan, results, run, file) {
   return text;
 }
 
+export async function rounds(plan, run, file, deadline = deadlineMs()) {
+  const started = Date.now();
+  const texts = [];
+  let last;
+  do {
+    const begun = Date.now();
+    texts.push(record(plan, await advance(plan, run, deadline - (begun - started)), run, file));
+    last = Date.now() - begun;
+  } while (texts.at(-1).split("\n").at(-1).startsWith("More:") && deadline - (Date.now() - started) > 1.5 * last);
+  return texts;
+}
+
 function loadRun(file) {
   try {
     const run = JSON.parse(readFileSync(file, "utf8"));
@@ -232,9 +244,13 @@ async function main() {
     process.exit(1);
   }
   const { plan, run, file } = call;
-  const results = await advance(plan, run);
-  const text = record(plan, results, run, file);
-  killChildren();
+  let text;
+  try {
+    text = (await rounds(plan, run, file)).join("\n\n");
+  } finally {
+    await Promise.all(Object.values(adapters).map((adapter) => adapter.close?.()));
+    killChildren();
+  }
   process.stdout.write(`${text}\n`, () => process.exit(0));
 }
 

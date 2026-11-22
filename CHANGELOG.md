@@ -7,8 +7,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Fixed
+
+- `exo:search` searches each Reddit term once over all named subreddits joined as `r/A+B+C`, so a run with 8 sub-questions, 2 terms and 5 subreddits plans 24 searches instead of 48 and drops none.
+- `exo:search` waits out a Reddit 429 by its `Retry-After`, else `x-ratelimit-reset`, else `EXO_SEARCH_REDDIT_BACKOFF_MS`, retries twice, and fails a request whose wait would pass the call deadline, instead of losing the threads of the rest of the run.
+
 ### Changed
 
+- `exo:search` repeats rounds inside one call while time is left for another and sends one helper for the whole `Continue:` loop instead of one per call.
+- `exo:search` starts Chrome and takes its lock once per search process, loads Reddit threads with `fetch` in one shared page, and paces every Reddit request through one queue.
 - `exo:ideas` and `exo:search` are user-only with `disable-model-invocation: true`, so Claude no longer starts them; type `/exo:ideas` or `/exo:search` to run one, and the routing eval drops their prompts.
 
 ### Added

@@ -95,8 +95,7 @@ const listen = (lockPort) => new Promise((resolve, reject) => {
   server.listen(lockPort, "127.0.0.1", () => resolve(server));
 });
 
-async function takeLock(lockPort) {
-  const deadline = Date.now() + environmentMs("EXO_SEARCH_LOCK_MS", 60000);
+async function takeLock(lockPort, deadline) {
   for (let attempt = 0; ; attempt++) {
     try {
       return await listen(lockPort);
@@ -111,7 +110,7 @@ async function takeLock(lockPort) {
 }
 
 export async function withLock(lockPort, task) {
-  const server = await takeLock(lockPort);
+  const server = await takeLock(lockPort, Date.now() + environmentMs("EXO_SEARCH_LOCK_MS", 60000));
   try {
     return await task();
   } finally {
@@ -119,20 +118,74 @@ export async function withLock(lockPort, task) {
   }
 }
 
-const visit = (url, read) => withLock(chromeLockPort, () => visitLocked(url, read));
+const closeServer = (server) => new Promise((resolve) => server.close(resolve));
 
-async function visitLocked(url, read) {
-  const browser = await connect(false);
+async function startSession() {
+  const server = await takeLock(chromeLockPort, callDeadlineAt);
   try {
-    const page = await backgroundPage(browser);
-    const response = await page.goto(url);
-    if (new URL(page.url()).pathname.startsWith("/login")) throw new Error(`Not logged in: run \`reddit.mjs login\` first. (${page.url()})`);
-    if (!response.ok()) throw new Error(`Reddit answered ${response.status()} for ${url}`);
-    return await read(page, response);
-  } finally {
-    await quit(browser);
+    const browser = await connect(false);
+    try {
+      const page = await backgroundPage(browser);
+      await page.goto("https://old.reddit.com/");
+      return { server, browser, page };
+    } catch (error) {
+      await quit(browser);
+      throw error;
+    }
+  } catch (error) {
+    await closeServer(server);
+    throw error;
   }
 }
+
+let session = null;
+let closed = false;
+
+function openSession() {
+  if (closed) return Promise.reject(new Error("Reddit session is closed: close() ran, so Chrome is not reopened"));
+  session ??= startSession().catch((error) => {
+    session = null;
+    throw error;
+  });
+  return session;
+}
+
+export async function close() {
+  closed = true;
+  const current = session;
+  session = null;
+  const started = await current?.catch(() => null);
+  if (!started) return;
+  await quit(started.browser);
+  await closeServer(started.server);
+}
+
+const MAX_RETRIES = 2;
+let hold = 0;
+let callDeadlineAt = Infinity;
+
+const headerMs = (headers, name) => {
+  const seconds = parseFloat(headers[name]);
+  return Number.isNaN(seconds) ? null : seconds * 1000;
+};
+
+async function throttled(url, send) {
+  for (let retries = 0; ; retries++) {
+    const reply = await send();
+    if (reply.status !== 429) {
+      if (parseFloat(reply.headers["x-ratelimit-remaining"]) < 1) hold = headerMs(reply.headers, "x-ratelimit-reset") ?? 0;
+      return reply;
+    }
+    if (retries === MAX_RETRIES) throw new Error(`Reddit answered 429 for ${url} after ${MAX_RETRIES} retries`);
+    const wait = headerMs(reply.headers, "retry-after") ?? headerMs(reply.headers, "x-ratelimit-reset") ?? environmentMs("EXO_SEARCH_REDDIT_BACKOFF_MS", 60000);
+    if (Date.now() + wait > callDeadlineAt) throw new Error(`Reddit answered 429 for ${url} and the ${wait / 1000} s wait passes the call deadline`);
+    await new Promise((resolve) => setTimeout(resolve, wait));
+  }
+}
+
+const requireLoggedIn = (landed) => {
+  if (new URL(landed).pathname.startsWith("/login")) throw new Error(`Not logged in: run \`reddit.mjs login\` first. (${landed})`);
+};
 
 const moreBatch = 100;
 
@@ -156,17 +209,12 @@ function takeStubs(children) {
   return ids;
 }
 
-async function loadMore(page, postName, comments) {
+async function loadMore(request, postName, comments) {
   const lists = replyLists(comments.data.children, new Map([[postName, comments.data.children]]));
   const queue = takeStubs(comments.data.children);
   while (queue.length) {
     const body = new URLSearchParams({ api_type: "json", link_id: postName, children: queue.splice(0, moreBatch).join(","), raw_json: "1" }).toString();
-    const answer = await page.evaluate(async (form) => {
-      const reply = await fetch("/api/morechildren", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: form });
-      const text = await reply.text();
-      if (!reply.ok) throw new Error(reply.status + " " + text.slice(0, 300));
-      return JSON.parse(text);
-    }, body);
+    const answer = await request("https://old.reddit.com/api/morechildren", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body });
     const things = answer.json.data.things;
     for (const { kind, data } of things) {
       if (kind === "more") continue;
@@ -221,17 +269,53 @@ export function timeBucket(days) {
   return "all";
 }
 
-export function paced(gapMs) {
+export function paced(gap) {
   let tail = Promise.resolve();
   return (task) => {
     const run = tail.then(task);
-    tail = run.catch(() => {}).then(() => new Promise((resolve) => setTimeout(resolve, gapMs)));
+    tail = run.catch(() => {}).then(() => new Promise((resolve) => setTimeout(resolve, typeof gap === "function" ? gap() : gap)));
     return run;
   };
 }
 
-const queue = paced(environmentMs("EXO_SEARCH_REDDIT_GAP_MS", 2000));
-const load = (url, read) => queue(() => visit(url, read));
+const gapMs = environmentMs("EXO_SEARCH_REDDIT_GAP_MS", 2000);
+const queue = paced(() => {
+  const wait = Math.max(gapMs, hold);
+  hold = 0;
+  return wait;
+});
+
+const load = (url, read) =>
+  queue(async () => {
+    const { page } = await openSession();
+    const reply = await throttled(url, async () => {
+      const response = await page.goto(url).catch((error) => {
+        if (!error.message.includes("ERR_HTTP_RESPONSE_CODE_FAILURE")) throw error;
+      });
+      if (!response) return { status: 429, headers: {} };
+      return { status: response.status(), headers: response.headers(), response };
+    });
+    requireLoggedIn(page.url());
+    if (!reply.response.ok()) throw new Error(`Reddit answered ${reply.status} for ${url}`);
+    return read(page);
+  });
+
+const request = (url, init) =>
+  queue(async () => {
+    const { page } = await openSession();
+    const reply = await throttled(url, () =>
+      page.evaluate(
+        async ([target, options]) => {
+          const response = await fetch(target, options);
+          return { status: response.status, headers: Object.fromEntries(response.headers), landed: response.url, text: await response.text() };
+        },
+        [url, init],
+      ),
+    );
+    requireLoggedIn(reply.landed);
+    if (reply.status < 200 || reply.status > 299) throw new Error(`Reddit answered ${reply.status} for ${url}: ${reply.text.slice(0, 300)}`);
+    return JSON.parse(reply.text);
+  });
 
 function searchUrl(term, subreddits, days) {
   const url = new URL(subreddits.length ? `https://old.reddit.com/r/${subreddits.join("+")}/search` : "https://old.reddit.com/search");
@@ -257,11 +341,8 @@ const MAX_SEARCHES = 40;
 
 function plannedSearches({ subQuestions, subreddits }) {
   const siteWide = subQuestions.map(({ terms }) => [terms[0], []]);
-  const termCount = Math.max(...subQuestions.map(({ terms }) => terms.length));
-  const inSubreddit = Array.from({ length: termCount }, (_, position) =>
-    subQuestions.flatMap(({ terms }) => (terms[position] ? subreddits.map((subreddit) => [terms[position], [subreddit]]) : [])),
-  ).flat();
-  return [...siteWide, ...inSubreddit];
+  const inSubreddits = subreddits.length ? [...new Set(subQuestions.flatMap(({ terms }) => terms))].map((term) => [term, subreddits]) : [];
+  return [...siteWide, ...inSubreddits];
 }
 
 export async function find(plan, loadPage = load) {
@@ -279,15 +360,15 @@ export async function find(plan, loadPage = load) {
   return { lists, failed: dropped.length ? [...failed, `dropped ${dropped.length} of ${planned.length} searches: limit is ${MAX_SEARCHES}: ${dropped.map(({ label }) => label).join(", ")}`] : failed };
 }
 
-export async function open(card, loadPage = load) {
-  const [listing, comments] = await loadPage(threadUrl(card.url), async (page, response) => {
-    const [listing, comments] = JSON.parse(await response.text());
-    return [listing, await loadMore(page, listing.data.children[0].data.name, comments)];
-  });
-  return threadDoc(listing, comments);
+export async function open(card, requestJson = request) {
+  const [listing, comments] = await requestJson(threadUrl(card.url));
+  return threadDoc(listing, await loadMore(requestJson, listing.data.children[0].data.name, comments));
 }
 
-export const collect = (plan, state = null, limit = Infinity) => readBest(plan, { find, open }, undefined, state, limit);
+export function collect(plan, state = null, limit = Infinity, deadline = Infinity) {
+  callDeadlineAt = Date.now() + deadline;
+  return readBest(plan, { find, open }, undefined, state, limit);
+}
 
 if (isMain(import.meta.url)) {
   if (process.argv[2] !== "login") {
