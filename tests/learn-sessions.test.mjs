@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
-import { projectFolder, promptMessages, sessionFiles } from '../skills/learn/scripts/sessions.mjs';
+import { projectFolder, promptMessages, sessionFiles, toolCalls } from '../skills/learn/scripts/sessions.mjs';
 
 function line(entry) {
   return `${JSON.stringify(entry)}\n`;
@@ -110,4 +110,26 @@ test('from inside a worktree sessionFiles reads the project and its worktree fol
   assert.equal(files.includes(path.join(folder, 'new.jsonl')), true);
   assert.equal(files.includes(path.join(worktreeFolder, 's.jsonl')), true);
   assert.equal(files.includes(path.join(evalFolder, 's.jsonl')), false);
+});
+
+test('toolCalls gives one entry per tool_use with its failure, text and line', () => {
+  const { folder } = fixture();
+  const file = path.join(folder, 'tools.jsonl');
+  const use = (id, name, input) => ({ type: 'tool_use', id, name, input });
+  fs.writeFileSync(file, [
+    line({ type: 'user', timestamp: '2026-03-01T10:00:00Z', message: { content: 'go' } }),
+    line({ type: 'assistant', timestamp: '2026-03-01T10:00:01Z', message: { content: [use('a', 'Bash', { command: 'npm test' }), use('b', 'Bash', { command: 'ls' }), use('c', 'Skill', { skill: 'exo:build' })] } }),
+    line({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'a', is_error: true, content: 'boom' }, { type: 'tool_result', tool_use_id: 'b', content: 'ok' }] } })
+  ].join(''));
+  assert.deepEqual(toolCalls(file), [
+    { session: 'tools', date: '2026-03-01', line: 2, name: 'Bash', text: 'Bash npm test', failed: true },
+    { session: 'tools', date: '2026-03-01', line: 2, name: 'Bash', text: 'Bash ls', failed: false },
+    { session: 'tools', date: '2026-03-01', line: 2, name: 'Skill', text: 'Skill exo:build', failed: false }
+  ]);
+});
+
+test('promptMessages gives each entry its transcript line', () => {
+  const { folder } = fixture();
+  const messages = promptMessages(path.join(folder, 'new.jsonl'));
+  assert.deepEqual(messages.filter(({ kind }) => kind === 'stored').map(({ line: number }) => number), [1, 5, 11]);
 });

@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { configDirectory } from '#config-directory';
-import { isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
+import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 import { projectFolder } from './sessions.mjs';
 
 const MAX_NOTES = 15;
@@ -13,6 +13,8 @@ const STORE_INDEX = 'index.md';
 const INDEX = 'lessons.md';
 const DATE = /\d{4}-\d{2}-\d{2}/;
 const TYPES = ['feedback', 'project'];
+const DAY_MS = 86400000;
+const CODE_SPAN = /`([^`\s]+)`/g;
 const LINK = /\]\(([^)]*)\)/g;
 const OLD_INDEX_LINE = /Lessons, open a note when its description fits the task:.*@(\S+)/;
 const IMPORT_LINE = /^@(\S+)$/;
@@ -82,17 +84,62 @@ function indexProblems(rulesDir, root, notes) {
   ];
 }
 
-export function checkStore(dir, { required = false } = {}) {
+function storeNotes(dir) {
   const rulesDir = path.join(dir, '..', 'rules');
-  if (!fs.existsSync(dir) && listNotes(path.join(rulesDir, 'lessons')).length === 0) {
-    return { count: 0, problems: required ? [`${dir}: no such directory`] : [] };
-  }
-  const notes = [
+  return [
     ...listNotes(dir)
       .filter((file) => path.basename(file) !== STORE_INDEX)
       .map((file) => ({ file, name: path.basename(file), pathNote: false })),
     ...listNotes(path.join(rulesDir, 'lessons')).map((file) => ({ file, name: path.basename(file), pathNote: true }))
   ];
+}
+
+function frontmatterGlobs(lines) {
+  const start = lines.findIndex((line) => line.startsWith('paths:'));
+  if (start === -1) return [];
+  const items = lines.slice(start + 1);
+  const end = items.findIndex((line) => !/^\s*- /.test(line));
+  return items
+    .slice(0, end === -1 ? items.length : end)
+    .map((line) => line.replace(/^\s*- /, '').trim().replace(/^(["'])(.*)\1$/, '$2'));
+}
+
+function backtickedPaths(body) {
+  return [...body.join('\n').matchAll(CODE_SPAN)]
+    .map((match) => match[1])
+    .filter((span) => (span.includes('/') || /\.[A-Za-z0-9]+$/.test(span)) && !/^[/~$]/.test(span));
+}
+
+export function staleNotes(dir) {
+  const root = path.resolve(dir, '..', '..');
+  const git = (args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  const inRepo = fs.existsSync(root) && git(['rev-parse', '--show-toplevel']).status === 0;
+  const tracked = inRepo ? git(['ls-files']).stdout.split('\n').filter((line) => line !== '') : [];
+  const limit = Date.now() - environmentMs('EXO_LEARN_STALE_DAYS', 180) * DAY_MS;
+  return storeNotes(dir).flatMap(({ file, name }) => {
+    const lines = fs.readFileSync(file, 'utf8').split('\n');
+    const { fields, body } = parseNote(lines);
+    const reasons = [];
+    if (inRepo && fields !== null) {
+      const globs = frontmatterGlobs(lines.slice(1, lines.indexOf('---', 1)));
+      if (globs.length > 0 && !globs.some((glob) => tracked.some((entry) => path.matchesGlob(entry, glob)))) reasons.push('paths matches no tracked file');
+    }
+    if (inRepo) {
+      for (const missing of new Set(backtickedPaths(body).filter((span) => !fs.existsSync(path.join(root, span))))) reasons.push(`names a missing path ${missing}`);
+    }
+    const seen = fields === null ? [] : (fields.seen ?? '').match(new RegExp(DATE, 'g')) ?? [];
+    const newest = seen.sort().at(-1);
+    if (newest !== undefined && Date.parse(newest) < limit) reasons.push(`last seen ${newest}`);
+    return reasons.map((reason) => `stale: ${name}: ${reason}`);
+  });
+}
+
+export function checkStore(dir, { required = false } = {}) {
+  const rulesDir = path.join(dir, '..', 'rules');
+  if (!fs.existsSync(dir) && listNotes(path.join(rulesDir, 'lessons')).length === 0) {
+    return { count: 0, problems: required ? [`${dir}: no such directory`] : [] };
+  }
+  const notes = storeNotes(dir);
   const problems = [
     ...(notes.length > MAX_NOTES ? [`${dir}: ${notes.length} notes, at most ${MAX_NOTES}`] : []),
     ...notes.flatMap(({ file, name, pathNote }) => noteProblems(name, fs.readFileSync(file, 'utf8'), { pathNote })),
@@ -135,7 +182,7 @@ function projectRoot(cwd, { explicit }) {
   return topFolder(path.resolve(cwd));
 }
 
-function lessonPaths(root) {
+export function lessonPaths(root) {
   const rules = path.join(configDirectory(), 'rules');
   const personalRules = fs.existsSync(rules) ? fs.realpathSync(rules) : rules;
   return [
@@ -248,7 +295,9 @@ function main() {
     throw new UsageError(`unknown command '${command ?? ''}'\n${USAGE}`);
   }
   const values = parseFlags(process.argv.slice(3), { dir: 'string', help: 'boolean' }, { usage: USAGE });
-  const { count, problems } = checkStore(path.resolve(values.dir ?? path.join(projectRoot(process.cwd(), { explicit: false }), '.claude', 'lessons')), { required: values.dir !== undefined });
+  const store = path.resolve(values.dir ?? path.join(projectRoot(process.cwd(), { explicit: false }), '.claude', 'lessons'));
+  const { count, problems } = checkStore(store, { required: values.dir !== undefined });
+  for (const line of staleNotes(store)) console.log(line);
   if (problems.length > 0) {
     console.error(problems.join('\n'));
     process.exitCode = 1;
