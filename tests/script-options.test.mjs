@@ -79,6 +79,10 @@ test('a compared quoted literal counts as an option, help does not', () => {
   );
 });
 
+test('a front-matter dashes comparison is not an option', () => {
+  assert.deepEqual(optionNames("if (lines[0] === '---') {}"), []);
+});
+
 test('optionNames reads FLAGS and parseFlags specs, sorted and unique', () => {
   assert.deepEqual(optionNames("const FLAGS = { 'repository-root': 'value', b: 'boolean' };\nparseFlags(argv, { b: 'boolean', a: 'value' });"), ['a', 'b', 'repository-root']);
 });

@@ -5,7 +5,7 @@ import { moduleFiles } from './script-syntax.mjs';
 const NEW_SCRIPT_LIMIT = 5;
 const NAME = 'script options';
 const SPEC_OPENERS = [/parseFlags\(\s*[^,()]+,\s*\{/g, /\bFLAGS = \{/g, /parseArgs\(\{[\s\S]*?\boptions:\s*\{/g];
-const COMPARED_LITERAL = /(?:[!=]==|\bcase|\.includes\(|\.indexOf\()\s*['"]--([\w-]+)['"]/g;
+const COMPARED_LITERAL = /(?:[!=]==|\bcase|\.includes\(|\.indexOf\()\s*['"]--([a-zA-Z][\w-]*)['"]/g;
 const SPEC_KEY = /(?:^|,)\s*['"]?([\w-]+)['"]?\s*:/g;
 
 function topLevelBody(source, openIndex) {
