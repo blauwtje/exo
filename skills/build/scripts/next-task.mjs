@@ -4,6 +4,7 @@ import { resolvePlanPath } from '#checkout';
 import { landedTasks, planIdOf } from '#plan-landed';
 import { parsePlan } from '#plan-tasks';
 import { frameOf } from '#plan-frame';
+import { scratchPath } from '#scratch-path';
 
 const USAGE = 'usage: next-task.mjs --plan <plan> [--root <checkout>]';
 
@@ -30,5 +31,14 @@ export function nextTaskReport({ planText, planPath, root }) {
 if (isMain(import.meta.url)) {
   const flags = parseFlags(process.argv.slice(2), { plan: 'value', root: 'value' }, { usage: USAGE });
   const planPath = resolvePlanPath({ plan: flags.plan, root: flags.root });
-  process.stdout.write(nextTaskReport({ planText: fs.readFileSync(planPath, 'utf8'), planPath, root: flags.root ?? process.cwd() }));
+  const root = flags.root ?? process.cwd();
+  const report = nextTaskReport({ planText: fs.readFileSync(planPath, 'utf8'), planPath, root });
+  const [landedLine, nextLine] = report.split('\n');
+  if (nextLine === 'Next: none') {
+    process.stdout.write(report);
+  } else {
+    const brief = scratchPath(root, `brief-${nextLine.split(' ')[1]}.md`);
+    fs.writeFileSync(brief, report);
+    process.stdout.write(`${landedLine}\n${nextLine}\nBrief: ${brief}\n`);
+  }
 }

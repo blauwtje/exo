@@ -60,3 +60,19 @@ test('next-task prints the plan non-goals once with the next task', async () => 
   assert.equal(report.split('Non-goals:\n- `src/other.js` stays as it is.').length, 2);
   assert.match(report, /Next: 1 feat\(app\): greet/);
 });
+
+test('next-task prints three lines and writes the task text to the Brief file', async () => {
+  const { root } = await landingCheckout();
+  const result = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', root], { cwd: root });
+  assert.equal(result.code, 0, result.stderr);
+  const lines = result.stdout.trimEnd().split('\n');
+  assert.equal(lines.length, 3, result.stdout);
+  assert.match(lines[0], /^Landed: /);
+  assert.match(lines[1], /^Next: 1 feat\(app\): greet$/);
+  const briefPath = lines[2].replace(/^Brief: /, '');
+  assert.notEqual(briefPath, lines[2]);
+  assert.ok(path.isAbsolute(briefPath), briefPath);
+  const brief = await fs.readFile(briefPath, 'utf8');
+  assert.match(brief, /### Task 1: feat\(app\): greet/);
+  assert.match(brief, /Non-goals:\n- `src\/other.js` stays as it is\./);
+});
