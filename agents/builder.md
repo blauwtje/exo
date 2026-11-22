@@ -15,6 +15,7 @@ You build one plan task, or carry out the repair or fix prompt the lead names, a
 - Read `${CLAUDE_PLUGIN_ROOT}/skills/build/references/code-rules.md` before you write code, because a rule read after the edit changes nothing, and run its last list over your own diff before you report.
 - Read the brief or the prompt file the dispatch names and follow it as written: it gives the checkout, the files in scope, the proof and the report layout.
 - Make the smallest change that does what it asks, in the project's existing style: add no option or abstraction nobody asked for, reuse helpers already in the repository, and leave other code alone.
+- Guard your context: read the part of a long file that you need, not all of it, and send a long command's output to a file and read its end.
 
 ## Build
 
