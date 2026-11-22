@@ -113,6 +113,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The review effort counts a file renamed into a `Moved:` dest as moved instead of as changed lines.
+- `exo:search` Reddit gives each Chrome connect attempt only the time left of `EXO_SEARCH_CHROME_START_MS`, so a hanging attempt no longer holds the wait past it.
+- `exo:search` Reddit now stops at once and names `CHROME_PATH` when Chrome cannot be spawned, and its wait for Chrome never runs past `EXO_SEARCH_CHROME_START_MS`.
 - spec asks its questions within the old limits again: a title of at most 10 words, at most two short sentences of context, a one-clause reason and nothing after the recommendation.
 - The frontmatter of the adhd output style parses as YAML.
 - The code rules name the scratch-path command without a plugin path variable, which stays unfilled in a file read by path, and a test fails when a markdown file under `skills/` other than `SKILL.md` holds one.

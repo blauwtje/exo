@@ -35,6 +35,9 @@ function launch(visible) {
   const flags = [`--user-data-dir=${profile}`, `--remote-debugging-port=${port}`, "--no-first-run", "--no-default-browser-check", "--use-mock-keychain", "--password-store=basic", "--no-startup-window"];
   const [file, launchArgs] = process.platform === "darwin" ? ["open", [...(visible ? [] : ["-g"]), "-n", "-a", chrome, "--args", ...flags]] : [chrome, flags];
   const child = spawn(file, launchArgs, { detached: true, stdio: "ignore" });
+  child.once("error", (error) => {
+    child.spawnError = error;
+  });
   child.unref();
   return child;
 }
@@ -47,18 +50,18 @@ function stopChrome(child) {
 async function connect(visible) {
   const { chromium } = loadPlaywright();
   const child = launch(visible);
-  const attempts = Math.ceil(environmentMs("EXO_SEARCH_CHROME_START_MS", 10000) / 250);
+  const deadline = Date.now() + environmentMs("EXO_SEARCH_CHROME_START_MS", 10000);
   let lastError;
-  for (let attempt = 0; attempt < attempts; attempt++) {
+  while (!child.spawnError && Date.now() < deadline) {
     try {
-      return await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+      return await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: Math.max(1, deadline - Date.now()) });
     } catch (error) {
       lastError = error;
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
   }
   stopChrome(child);
-  throw new Error(`Chrome did not start from ${chrome}: set CHROME_PATH. (${lastError?.message})`);
+  throw new Error(`Chrome did not start from ${chrome}: set CHROME_PATH. (${(child.spawnError ?? lastError)?.message})`);
 }
 
 async function backgroundPage(browser) {

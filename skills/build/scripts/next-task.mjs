@@ -26,9 +26,14 @@ export function reviewEffort(changedLines, base) {
   return changedLines < 16 * base ? 'high' : 'xhigh';
 }
 
+const newPath = (file) => file.includes('{')
+  ? file.replace(/\{([^{}]*) => ([^{}]*)\}/, '$2').replace(/\/\//g, '/').replace(/^\//, '')
+  : file.replace(/^.* => /, '');
+
 const sumNumstat = (text, keep = () => true) => text.split('\n')
   .filter((line) => line !== '')
   .map((line) => line.split('\t'))
+  .map(([added, removed, file]) => [added, removed, newPath(file)])
   .filter(([, , file]) => keep(file))
   .reduce((sum, cells) => sum + (Number(cells[0]) || 0) + (Number(cells[1]) || 0), 0);
 
