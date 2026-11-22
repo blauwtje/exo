@@ -24,6 +24,7 @@ Prove the cause before changing code, because a fix for a guessed cause hides th
 
 1. **Reproduce.** Read an existing log or report in the temp folder, then find one command that shows the failure. Send long output to `<debug-dir>/repro.log`, where `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" debug` prints `<debug-dir>`, and read its `tail -n 40`. No repro: report the evidence and fix nothing. Ask the user only when the symptom itself is unclear.
    - It worked before: `node "${CLAUDE_SKILL_DIR}/scripts/bisect.mjs" --repro "<command>"` prints the first bad commit; its hunks are the first suspects.
+   - It fails only after another test: `node "${CLAUDE_SKILL_DIR}/scripts/bisect.mjs" --repro "<runner> __FILE__ <failing test>"` prints the test file that pollutes it.
    - Slowdown: time the reported path five times and record the median and spread first. A captured profile is fixed data: load it, do not re-run, and name the hot frame's file, symbol and line.
 2. **Instrument.** Keep two hypotheses and observe once where they diverge.
 3. **Isolate.** When a sibling input or code path works, list every difference from the failing one before removing anything. Then remove inputs or branches until one more clears the symptom; two rounds with no change end it. Proven means a causal line plus a mechanism that predicts the symptom.
@@ -67,4 +68,4 @@ Next: exo:ship
 
 | Script | Purpose | Arguments |
 | --- | --- | --- |
-| `bisect.mjs` | Prints the first bad commit of a repro | `--repro "<command>"` |
+| `bisect.mjs` | Prints the first bad commit of a repro | `--repro "<command>"`, or `--repro "<runner> __FILE__ <failing test>"` |
