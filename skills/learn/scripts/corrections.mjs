@@ -325,7 +325,7 @@ function otherText(group, centre, texts) {
   return other && texts.get(other.id);
 }
 
-function clusters(ledger) {
+export function clusters(ledger) {
   const indexedEntries = indexed(ledger.entries);
   const counted = countedWords(indexedEntries);
   const decided = decider(ledger.verdicts, counted);
@@ -386,6 +386,10 @@ function dropGone(cwd) {
   const live = new Set(sessionFiles(projectFolder(cwd)).map((file) => path.basename(file, '.jsonl')));
   const kept = { ...ledger, entries: ledger.entries.filter(({ session, date }) => live.has(session) || date >= today()) };
   if (kept.entries.length !== ledger.entries.length) rewrite(ledgerFile(cwd), kept);
+}
+
+export function readLedger(cwd) {
+  return { ...(currentLedger(cwd) ?? ledgerOf([])), verdicts: readVerdicts(cwd) };
 }
 
 function snapshot(cwd) {
