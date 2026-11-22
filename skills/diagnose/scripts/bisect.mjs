@@ -78,8 +78,11 @@ function pollutionSearch(command) {
     while (candidates.length > 1) {
       const half = candidates.length >> 1;
       const [first, second] = [candidates.slice(0, half), candidates.slice(half)];
-      candidates = passesWith(first) ? second : first;
+      if (!passesWith(first)) candidates = first;
+      else if (!passesWith(second)) candidates = second;
+      else return 'Polluter: none';
     }
+    if (passesWith(candidates)) return `Bisect: the polluter is unclear, ${candidates[0]} alone does not make the test fail`;
     return `Polluter: ${candidates[0]}`;
   } finally {
     git(top, 'worktree', 'remove', '--force', worktree);

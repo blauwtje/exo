@@ -5,6 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { configDirectory } from '#config-directory';
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
+import { looksLikeRepoPath } from '../../../lib/repo-path.mjs';
 import { projectFolder } from './sessions.mjs';
 
 const MAX_NOTES = 15;
@@ -104,10 +105,8 @@ function frontmatterGlobs(lines) {
     .map((line) => line.replace(/^\s*- /, '').trim().replace(/^(["'])(.*)\1$/, '$2'));
 }
 
-function backtickedPaths(body) {
-  return [...body.join('\n').matchAll(CODE_SPAN)]
-    .map((match) => match[1])
-    .filter((span) => (span.includes('/') || /\.[A-Za-z0-9]+$/.test(span)) && !/^[/~$]/.test(span));
+function backtickedPaths(body, root) {
+  return [...body.join('\n').matchAll(CODE_SPAN)].map((match) => match[1]).filter((span) => looksLikeRepoPath(span, root));
 }
 
 export function staleNotes(dir) {
@@ -125,7 +124,7 @@ export function staleNotes(dir) {
       if (globs.length > 0 && !globs.some((glob) => tracked.some((entry) => path.matchesGlob(entry, glob)))) reasons.push('paths matches no tracked file');
     }
     if (inRepo) {
-      for (const missing of new Set(backtickedPaths(body).filter((span) => !fs.existsSync(path.join(root, span))))) reasons.push(`names a missing path ${missing}`);
+      for (const missing of new Set(backtickedPaths(body, root).filter((span) => !fs.existsSync(path.join(root, span))))) reasons.push(`names a missing path ${missing}`);
     }
     const seen = fields === null ? [] : (fields.seen ?? '').match(new RegExp(DATE, 'g')) ?? [];
     const newest = seen.sort().at(-1);

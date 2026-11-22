@@ -4,7 +4,7 @@ import { moduleFiles } from './script-syntax.mjs';
 
 const NEW_SCRIPT_LIMIT = 5;
 const NAME = 'script options';
-const SPEC_OPENERS = [/parseFlags\(\s*[^,()]+,\s*\{/g, /\bFLAGS = \{/g, /parseArgs\(\{[\s\S]*?\boptions:\s*\{/g];
+const SPEC_OPENERS = [/\bFLAGS = \{/g, /parseArgs\(\{[\s\S]*?\boptions:\s*\{/g];
 const COMPARED_LITERAL = /(?:[!=]==|\bcase|\.includes\(|\.indexOf\()\s*['"]--([a-zA-Z][\w-]*)['"]/g;
 const SPEC_KEY = /(?:^|,)\s*['"]?([\w-]+)['"]?\s*:/g;
 
@@ -20,8 +20,30 @@ function topLevelBody(source, openIndex) {
   return body;
 }
 
+function parseFlagsBodies(source) {
+  const starts = [];
+  for (const match of source.matchAll(/parseFlags\(/g)) {
+    let depth = 0;
+    for (let index = match.index + match[0].length; index < source.length; index += 1) {
+      const character = source[index];
+      if (character === '(') depth += 1;
+      else if (character === ')') depth -= 1;
+      if (depth < 0) break;
+      if (character === ',' && depth === 0) {
+        const brace = /^\s*\{/.exec(source.slice(index + 1));
+        if (brace) starts.push(index + 1 + brace[0].length);
+        break;
+      }
+    }
+  }
+  return starts;
+}
+
 export function optionNames(source) {
   const names = new Set();
+  for (const start of parseFlagsBodies(source)) {
+    for (const key of topLevelBody(source, start).matchAll(SPEC_KEY)) names.add(key[1]);
+  }
   for (const opener of SPEC_OPENERS) {
     for (const match of source.matchAll(opener)) {
       for (const key of topLevelBody(source, match.index + match[0].length).matchAll(SPEC_KEY)) names.add(key[1]);

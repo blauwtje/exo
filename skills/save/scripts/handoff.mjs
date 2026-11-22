@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { configDirectory } from '#config-directory';
 import { defaultBase } from '#plan-landed';
+import { looksLikeRepoPath } from '../../../lib/repo-path.mjs';
 import { isMain, UsageError, USAGE_EXIT } from '#script-flags';
 
 export function handoffFile(cwd) {
@@ -22,7 +23,7 @@ const USAGE = 'usage: node handoff.mjs path|facts|stale [--cwd <dir>]\npath prin
 const RELATIVE_PATH = /^(?:[\w.-]+(?:\/[\w.-]+)+\/?|\w[\w-]*\.\w+)$/;
 
 function gitOutput(cwd, args) {
-  return spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' }).stdout.trim();
+  return spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' }).stdout.trimEnd();
 }
 
 function lines(text) {
@@ -50,10 +51,12 @@ function stale(cwd) {
   const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   const written = /^Written: .*last commit ([0-9a-f]+)/m.exec(text);
   if (written === null) throw new Error(`no handoff with a Written line at ${file}`);
-  const commits = lines(gitOutput(cwd, ['log', `${written[1]}..HEAD`, '--oneline']));
+  const log = spawnSync('git', ['-C', cwd, 'log', `${written[1]}..HEAD`, '--oneline'], { encoding: 'utf8' });
+  if (log.status !== 0) return [`Commits since: unknown, the handoff's commit ${written[1]} is not in this repository`];
+  const commits = lines(log.stdout.trimEnd());
   const changed = lines(gitOutput(cwd, ['diff', '--name-only', `${written[1]}..HEAD`]));
   const top = gitOutput(cwd, ['rev-parse', '--show-toplevel']);
-  const named = [...new Set([...text.matchAll(/`([^`\s]+)`/g)].map((match) => match[1]).filter((name) => RELATIVE_PATH.test(name)))];
+  const named = [...new Set([...text.matchAll(/`([^`\s]+)`/g)].map((match) => match[1]).filter((name) => RELATIVE_PATH.test(name) && looksLikeRepoPath(name, top)))];
   const missing = named.filter((name) => !fs.existsSync(path.join(top, name)));
   return [`Commits since: ${commits.length}`, ...commits, `Changed since: ${list(changed)}`, ...missing.map((name) => `Missing: ${name}`)];
 }

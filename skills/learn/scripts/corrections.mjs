@@ -369,8 +369,8 @@ function otherText(group, centre, texts) {
   return other && texts.get(other.id);
 }
 
-function groupsOf(rows, verdicts, counted) {
-  const decided = decider(verdicts, counted);
+function groupsOf(rows, verdicts, counted, ownCounted) {
+  const decided = decider(verdicts, ownCounted);
   const entries = rows.filter((entry) => !decided(entry));
   const parent = entries.map((_, index) => index);
   const root = (index) => (parent[index] === index ? index : (parent[index] = root(parent[index])));
@@ -394,13 +394,14 @@ function groupsOf(rows, verdicts, counted) {
 function counting(ledger) {
   const prompts = indexed(ledger.entries);
   const failures = indexed(ledger.failures);
-  return { prompts, failures, counted: countedWords([...prompts, ...failures]) };
+  const own = [...prompts, ...failures].filter(({ project }) => project === undefined);
+  return { prompts, failures, counted: countedWords([...prompts, ...failures]), ownCounted: countedWords(own) };
 }
 
 export function clusters(ledger) {
-  const { prompts, failures, counted } = counting(ledger);
-  const promptGroups = groupsOf(prompts, ledger.verdicts.filter((row) => !isFailedRow(row)), counted).map((group) => ({ group, failed: false }));
-  const failureGroups = groupsOf(failures, ledger.verdicts.filter(isFailedRow), counted).map((group) => ({ group, failed: true }));
+  const { prompts, failures, counted, ownCounted } = counting(ledger);
+  const promptGroups = groupsOf(prompts, ledger.verdicts.filter((row) => !isFailedRow(row)), counted, ownCounted).map((group) => ({ group, failed: false }));
+  const failureGroups = groupsOf(failures, ledger.verdicts.filter(isFailedRow), counted, ownCounted).map((group) => ({ group, failed: true }));
   return [...promptGroups, ...failureGroups]
     .map(({ group, failed }) => ({ group: group.sort(byAge), failed, sessions: new Set(group.map(({ session }) => session)).size }))
     .filter(({ group, sessions }) => sessions >= MIN_SESSIONS && group.some(({ project }) => project === undefined))
@@ -432,12 +433,12 @@ function laterCleanRuns(members, counted, calls) {
 }
 
 function keptFailures(ledger, calls) {
-  const { failures, counted } = counting(ledger);
+  const { failures, counted, ownCounted } = counting(ledger);
   const verdicts = ledger.verdicts.filter(isFailedRow);
   return verdicts.flatMap((row, index) => {
     if (row.verdict !== VERDICTS.keep || row.project !== undefined) return [];
-    const members = failures.filter((entry) => rowMatches(row, entry, counted));
-    if (members.length === 0 || verdicts.slice(index + 1).some((later) => members.some((entry) => rowMatches(later, entry, counted)))) return [];
+    const members = failures.filter((entry) => rowMatches(row, entry, ownCounted));
+    if (members.length === 0 || verdicts.slice(index + 1).some((later) => members.some((entry) => rowMatches(later, entry, ownCounted)))) return [];
     return [{ id: row.ids?.[0] ?? members[0].id, clean: laterCleanRuns(members, counted, calls) }];
   }).filter(({ clean }) => clean > 0);
 }
@@ -723,11 +724,11 @@ function decide(command, ids, cwd) {
   const ledger = snapshot(cwd);
   const open = ledger === null ? [] : clusters(ledger);
   const verdicts = waitLocked(cwd, () => readVerdicts(cwd));
-  const { prompts, failures, counted } = counting(ledger ?? { entries: [], failures: [] });
+  const { prompts, failures, ownCounted } = counting(ledger ?? { entries: [], failures: [] });
   const rows = ids.map((id) => {
     const row = openRow(command, id, open)
-      ?? decidedRow(command, id, verdicts.filter((verdict) => !isFailedRow(verdict)), prompts, counted)
-      ?? decidedRow(command, id, verdicts.filter(isFailedRow), failures, counted);
+      ?? decidedRow(command, id, verdicts.filter((verdict) => !isFailedRow(verdict)), prompts, ownCounted)
+      ?? decidedRow(command, id, verdicts.filter(isFailedRow), failures, ownCounted);
     if (row === null) throw new UsageError(`${command} id '${id}' is not in an open or decided candidate`);
     return row;
   });
