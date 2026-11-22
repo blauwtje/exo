@@ -46,4 +46,4 @@ Depends on: 1, 2 | Files: `src/tasks/task-row.jsx`, `src/tasks/task-row.css`, `s
 ### Task 4: feat(tasks): keep the due date from the saved file to the badge
 Depends on: 3 | Files: `src/tasks/task-store.js`, `src/tasks/task-list.jsx`, `src/tasks/task-store.test.js` | Data: `saveTask(task)` writes `dueDate`, a file without it loads as `dueDate: null`, and `<TaskList>` shows the saved date's badge | Consumes: Task 3: TaskRow | Risk: persisted format | Proof: npm test -- task-store
 ### Task 5: refactor(tasks): delete the unused formatDue helper
-Depends on: 2 | Files: `src/tasks/format-due.js` | Data: none (deletes dead code) | Red: none (a deleted helper has no test to fail first) | Proof: npm test -- due-tone
+Depends on: 2 | Files: `src/tasks/format-due.js` | Data: none (deletes dead code) | Red: none (a deleted helper has no test to fail first) | Model: haiku low | Proof: npm test -- due-tone
