@@ -13,7 +13,7 @@ metadata:
 
 ## Purpose
 
-Produce a skill or agent where every line changes what the model does and every judgment rule carries one short reason.
+Produce a skill or agent where every line changes what the model does.
 
 ## Prerequisites
 
@@ -26,15 +26,14 @@ Produce a skill or agent where every line changes what the model does and every 
 1. **Prove the need.** Change a skill, agent or check only for a user request or a failure seen in a real session. Grep the session transcripts for the failure, then write the failure down with its count before you edit, because an unrecorded failure cannot show later that the edit worked.
 2. **Pick the home.** A check or test when a machine can tell right from wrong, a script when the steps never vary, a template when only the content varies, and prose last. Prose is the dearest home because it loads every time.
 3. **Write it small.** Delete before you add: remove an overlapping rule before you write a new one. Read `references/instruction-style.md` before you word a rule.
-4. **Run the check.** Run the brief's proof, else the project's static check. On a red check fix the structure; an exemption or allowlist entry only hides the failure.
+4. **Run the check.** Run the brief's proof, else the project's static check. On a red check fix the structure; an exemption or allowlist entry only hides the failure. Then replay the recorded failure and show it no longer happens; skip the replay for a subjective change.
 
 ### Shape
 
-- Every skill's `SKILL.md` follows one format, and `npm run check` enforces it: frontmatter with `metadata:` holding `author: exo` and `tags: [word, word]`; then exactly the `##` headings `Purpose`, `Prerequisites`, `Instructions`, `Examples`, `Limitations`, `Troubleshooting`, in that order, and `Available Scripts` last when the skill has a `scripts/` folder with files. Troubleshooting is a table headed `| Error | Cause | Solution |` and Available Scripts a table headed `| Script | Purpose | Arguments |`. Put a skill's old sections under `###` headings inside Instructions.
-- `description` says what the skill does, then when to use it, in the third person and under 1,024 characters. The harness rejects angle brackets and line breaks. Add `Not for` only where two skills could both match. Leave process steps out, because the model acts on the summary instead of reading the body.
-- `SKILL.md` stays under 500 lines and about 2,000 tokens.
-- Material only some runs need goes to `references/<topic>.md`, named in the body with the condition for opening it. A reference sits one level deep and names no other `.md` file.
-- A skill never names a path into another skill, or `skills/<other>/`. Say the one sentence you need, or write "run `<plugin>:<name>`".
+- `npm run check` enforces the SKILL.md format; run it and fix what it names.
+- `description` says what the skill does, then when to use it, in the third person. Add `Not for` only where two skills could both match. Leave process steps out, because the model acts on the summary instead of reading the body.
+- Material only some runs need goes to `references/<topic>.md`, named in the body with the condition for opening it.
+- To use another skill, write "run `<plugin>:<name>`" and do not restate its rules.
 - Text handed to a delegate sits beside `SKILL.md` as `<role>-prompt.md`.
 
 ### Agents
@@ -51,7 +50,7 @@ Produce a skill or agent where every line changes what the model does and every 
 
 ### Judgment
 
-- A rule a real failure showed outranks a rule that only reads well.
+- A rule a real failure showed outranks a rule that only reads well. For a description, write prompts that must fire the skill and near misses that must not, tune the edit on one half and keep it only when the held-out half gets no worse; log a dropped edit as "rejected: <what>, <why>" where the project logs its failures.
 
 ## Examples
 
@@ -59,18 +58,18 @@ Request: "shorten the learn skill".
 
 ```
 1. Grep the transcripts for the failure and record its count.
-2. Delete the overlapping rules, keep each reason clause.
+2. Delete the overlapping rules.
 3. Run npm run check and fix the structure it names.
 ```
 
 ## Limitations
 
-- Cut a rule only when the request names it, and keep each judgment rule's reason clause.
+- Delete a rule that changes no decision.
 
 ## Troubleshooting
 
 | Error | Cause | Solution |
 | --- | --- | --- |
-| The static check is red | The skill's structure breaks a rule | Fix the structure; an exemption or allowlist entry only hides the failure. |
+| The static check is red | The skill's structure breaks a rule | Follow step 4. |
 | `## headings are ..., expected ...` | A `##` heading is extra, missing or out of order | Use the headings in Shape, in that order, and move the old sections under `###` in Instructions. |
 | An agent key has no effect | Plugin agents ignore an unknown key silently | Run `claude --debug` once on the new agent. |

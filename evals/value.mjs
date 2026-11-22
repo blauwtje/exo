@@ -11,7 +11,7 @@ const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const TABLE = path.join(ROOT, 'evals', 'value.md');
 const BUDGET_USD = 40;
 const CASE_USD = 1.9;
-const COLUMNS = ['part', 'cases', 'share', 'order', 'paths', 'with', 'without', 'cost with', 'cost without', 'date'];
+const COLUMNS = ['part', 'cases', 'share', 'order', 'paths', 'with', 'without', 'cost with', 'cost without', 'date', 'verdict'];
 const USAGE = 'usage: value.mjs --plan | --run [part]';
 const FIGURES = ['with', 'without', 'cost with', 'cost without', 'date'];
 
@@ -88,9 +88,29 @@ function runCost(run) {
   return (run.costUsd ?? 0) + (run.judgeCostUsd ?? 0);
 }
 
+const isCut = (run) => run.skippedPaidGraders || run.costUsd === undefined;
+
+export function needsThird(testCase) {
+  return ['with', 'without'].some((arm) => {
+    const runs = Object.values(testCase.arms?.[arm] ?? {});
+    return runs.length === 2 && !runs.some(isCut) && runs[0].passed !== runs[1].passed;
+  });
+}
+
+export function mergeRuns(first, extra) {
+  return first.map((testCase) => {
+    const added = extra.find((candidate) => candidate.name === testCase.name);
+    if (!added) return testCase;
+    const arms = Object.fromEntries(Object.entries(testCase.arms ?? {}).map(([arm, runs]) => [
+      arm,
+      { ...runs, ...Object.fromEntries(Object.entries(added.arms?.[arm] ?? {}).map(([key, run]) => [`third-${key}`, run])) },
+    ]));
+    return { ...testCase, arms };
+  });
+}
+
 export function armFigures(cases, arm) {
   const runs = cases.map((testCase) => Object.values(testCase.arms?.[arm] ?? {}));
-  const isCut = (run) => run.skippedPaidGraders || run.costUsd === undefined;
   const cut = runs.flat().filter(isCut).length;
   const costless = runs.flat().some((run) => run.costUsd === undefined);
   const cost = costless ? '-' : runs.flat().reduce((sum, run) => sum + runCost(run), 0);
@@ -98,17 +118,37 @@ export function armFigures(cases, arm) {
   return { passed, cost, cut };
 }
 
-function evalCase(name, maxCost) {
+export function runTally(cases, arm) {
+  const runs = cases.flatMap((testCase) => Object.values(testCase.arms?.[arm] ?? {}));
+  return { passed: runs.filter((run) => run.passed && !isCut(run)).length, total: runs.length };
+}
+
+export function verdictOf(withExo, without) {
+  const unsure = withExo.cut > 0 || without.cut > 0 || withExo.cost === '-' || without.cost === '-' || (withExo.passed === 0 && without.passed === 0);
+  if (unsure) return 'not sure yet';
+  if (withExo.passed === without.passed) return 'same';
+  return withExo.passed > without.passed ? 'better' : 'worse';
+}
+
+function evalRuns(name, maxCost, runs) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'value-'));
   const jsonPath = path.join(directory, 'result.json');
   const args = [
     'plugin', 'eval', '--case', name, '--scaffold', '--allow-tools', 'Bash', 'Edit', 'Write',
-    '--concurrency', '8', '--judge-model', 'sonnet', '--ablation', 'with-without',
+    '--runs', String(runs), '--concurrency', '8', '--judge-model', 'sonnet', '--ablation', 'with-without',
     '--json', jsonPath, '--output-dir', path.join(directory, 'out'), '--max-cost-usd', String(maxCost), '--no-publish', '--trust-plugin',
   ];
   const run = spawnSync('claude', args, { cwd: ROOT, stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, EXO_ROOT: ROOT } });
   if (!fs.existsSync(jsonPath)) throw new Error(`eval of ${name} did not finish`);
   return JSON.parse(fs.readFileSync(jsonPath, 'utf8')).cases;
+}
+
+function evalCase(name, maxCost) {
+  const first = evalRuns(name, maxCost, 2);
+  if (!first.some(needsThird)) return first;
+  const spent = first.flatMap((testCase) => Object.values(testCase.arms ?? {}).flatMap((runs) => Object.values(runs))).reduce((sum, run) => sum + runCost(run), 0);
+  if (maxCost - spent <= 0) return first;
+  return mergeRuns(first, evalRuns(name, maxCost - spent, 1));
 }
 
 export function settle(row, withExo, without) {
@@ -126,6 +166,7 @@ export function settle(row, withExo, without) {
     'cost with': costed ? withExo.cost.toFixed(2) : '-',
     'cost without': costed ? without.cost.toFixed(2) : '-',
     date: new Date().toISOString().slice(0, 10),
+    verdict: overBudget || flat ? 'not sure yet' : verdictOf(withExo, without),
     cut: withExo.cut + without.cut,
   };
 }
@@ -139,7 +180,7 @@ export function regressions(oldRow, newRow) {
 
 function measure(row) {
   const cases = caseNames(row).flatMap((name) => evalCase(name, CASE_USD));
-  return settle(row, armFigures(cases, 'with'), armFigures(cases, 'without'));
+  return { ...settle(row, armFigures(cases, 'with'), armFigures(cases, 'without')), tally: { with: runTally(cases, 'with'), without: runTally(cases, 'without') } };
 }
 
 function runNext(text, rows, partName) {
@@ -154,8 +195,9 @@ function runNext(text, rows, partName) {
     process.exit(2);
   }
   const measured = measure(row);
-  const { cut, ...figures } = measured;
-  process.stdout.write(`${target}: ${figures.with}/${figures.without} cases, cut ${cut}\n`);
+  const { cut, tally, ...figures } = measured;
+  const counts = (arm) => `${tally[arm].passed}/${tally[arm].total} runs`;
+  process.stdout.write(`${target}: with ${counts('with')}, without ${counts('without')}, ${figures.verdict}, cut ${cut}\n`);
   const lines = regressions(row, figures);
   for (const line of lines) process.stdout.write(`${line}\n`);
   if (lines.length > 0) process.exitCode = 1;

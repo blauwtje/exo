@@ -6,7 +6,7 @@ Applies to `CLAUDE.md`, rules, skills, agents and output styles.
 
 - Open with one sentence saying what the file produces. Put the rules the model breaks most near the top, because later rules get less weight.
 - One sentence with a verb per rule, as a bare imperative: "Run the tests before you commit." One condition and one action per bullet; two semicolons mean two rules.
-- Add one clause of reason when it sets the rule's boundary. Phrase the target behavior positively; keep a negative for a discrete prohibition such as "do not run `git stash`".
+- Add a reason only when the rule is confusing without one. Phrase the target behavior positively; keep a negative for a discrete prohibition such as "do not run `git stash`".
 - Write no CAPS, IMPORTANT or MUST; give the reason instead.
 - Keep the words that set a boundary: `not`, `only`, `except`, `unless`, `each`, `every`, `at most`, `before`, `after`, numbers, paths and commands. Use a number or exact command instead of an adjective.
 - Use one term per concept; define a coined term once where it first appears, or use the plain word.
@@ -14,6 +14,8 @@ Applies to `CLAUDE.md`, rules, skills, agents and output styles.
 
 ## Cut
 
+- When in doubt, delete.
+- Delete a sentence a check enforces.
 - Cut a line when the model errs without it no more than with it: default behavior, what the code shows, stale text, a rule another file owns.
 - Cut comments, change history, opinions and dates, except a date on a fact that will age.
 - Drop "double-check" lines and worked reasoning, because both make a reasoning model over-verify.

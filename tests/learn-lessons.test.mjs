@@ -372,3 +372,56 @@ test('migrate from a subfolder also scans that folder CLAUDE.md', () => {
   assert.equal(result.status, 0, result.stderr);
   assert.equal(fs.readFileSync(file, 'utf8'), '- keep\n');
 });
+
+function gitStore(files, notes) {
+  const dir = store(notes);
+  const root = path.join(dir, '..', '..');
+  for (const [name, text] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(root, name)), { recursive: true });
+    fs.writeFileSync(path.join(root, name), text);
+  }
+  spawnSync('git', ['init', '-q'], { cwd: root });
+  spawnSync('git', ['add', '-A', '.'], { cwd: root });
+  return dir;
+}
+
+const stale = (result) => result.stdout.split('\n').filter((line) => line.startsWith('stale:'));
+
+test('a paths glob that matches no tracked file prints a stale line', () => {
+  const note = GOOD_NOTE.replace('---\nRun', 'paths:\n  - nothing/**/*.zzz\n---\nRun');
+  const dir = gitStore({ 'src/a.mjs': 'x\n' }, { 'a.md': note, 'index.md': indexOf(['a']) });
+  assert.deepEqual(stale(check(dir)), ['stale: a.md: paths matches no tracked file']);
+});
+
+test('a paths glob that matches a tracked file prints no stale line', () => {
+  const note = GOOD_NOTE.replace('---\nRun', 'paths:\n  - src/**/*.mjs\n---\nRun');
+  const dir = gitStore({ 'src/a.mjs': 'x\n' }, { 'a.md': note, 'index.md': indexOf(['a']) });
+  assert.deepEqual(stale(check(dir)), []);
+});
+
+test('a backticked path that does not exist prints a stale line', () => {
+  const note = GOOD_NOTE.replace('Run the tests first.', 'Run `src/a.mjs` and `src/gone.mjs` and `npm test` and `$HOME/x/y` first.');
+  const dir = gitStore({ 'src/a.mjs': 'x\n' }, { 'a.md': note, 'index.md': indexOf(['a']) });
+  assert.deepEqual(stale(check(dir)), ['stale: a.md: names a missing path src/gone.mjs']);
+});
+
+test('a store outside a git repo skips the path reasons', () => {
+  const note = GOOD_NOTE.replace('Run the tests first.', 'Run `src/gone.mjs` first.');
+  assert.deepEqual(stale(check(store({ 'a.md': note, 'index.md': indexOf(['a']) }))), []);
+});
+
+test('a note last seen long ago prints a stale line and a fresh note none', () => {
+  const old = GOOD_NOTE.replace(/seen:.*\n/, 'seen: 2020-01-01, 2020-02-03\n');
+  const dir = store({ 'old.md': old, 'new.md': GOOD_NOTE, 'index.md': indexOf(['old', 'new']) });
+  assert.deepEqual(stale(check(dir)), ['stale: old.md: last seen 2020-02-03']);
+});
+
+test('stale lines leave the exit code as it is', () => {
+  const old = GOOD_NOTE.replace(/seen:.*\n/, 'seen: 2020-01-01\n');
+  const good = check(store({ 'a.md': old, 'index.md': indexOf(['a']) }));
+  const bad = check(store({ 'a.md': old.replace(/Why:.*\n/, ''), 'index.md': indexOf(['a']) }));
+  assert.equal(good.status, 0);
+  assert.equal(bad.status, 1);
+  assert.equal(stale(good).length, 1);
+  assert.equal(stale(bad).length, 1);
+});

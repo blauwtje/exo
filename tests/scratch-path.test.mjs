@@ -49,8 +49,9 @@ test('a scratch call removes sibling folders older than the keep limit', async (
   const userRoot = path.join(os.tmpdir(), `exo-${os.userInfo().username}`);
   const old = path.join(userRoot, 'old-folder');
   const fresh = path.join(userRoot, 'fresh-folder');
-  fs.mkdirSync(old, { recursive: true });
-  fs.mkdirSync(fresh, { recursive: true });
+  fs.mkdirSync(userRoot, { mode: 0o700 });
+  fs.mkdirSync(old);
+  fs.mkdirSync(fresh);
   const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
   fs.utimesSync(old, eightDaysAgo, eightDaysAgo);
   const root = await gitRepository({ 'a.txt': 'a\n' });
@@ -60,4 +61,18 @@ test('a scratch call removes sibling folders older than the keep limit', async (
   assert.equal(fs.existsSync(old), false);
   assert.equal(fs.existsSync(fresh), true);
   assert.equal(fs.existsSync(current), true);
+});
+
+test('a scratch root that is a symlink is refused', { skip: process.platform === 'win32' }, async (t) => {
+  const previous = process.env.TMPDIR;
+  const isolated = await tempDir();
+  process.env.TMPDIR = isolated;
+  t.after(() => {
+    if (previous === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previous;
+  });
+  const userRoot = path.join(os.tmpdir(), `exo-${os.userInfo().username}`);
+  fs.symlinkSync(await tempDir(), userRoot);
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  assert.throws(() => scratchPath(root, ''), (error) => error instanceof ScratchPathError && error.message.includes(userRoot));
 });

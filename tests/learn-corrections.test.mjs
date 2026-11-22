@@ -77,7 +77,7 @@ test('a turn Claude Code starts itself leaves no ledger row and prints nothing',
 test('a repeat from another session prints the line once; a second repeat of that cluster prints nothing', () => {
   const env = fixture();
   writeLedger(env, [...fillers(60), EARLIER, OLDER, { seen: 'now' }, { seen: 'later' }]);
-  assert.equal(hook(env, 'now', REPEAT), `exo: you asked something like this on 2026-01-02: "${EARLIER.text}". exo:learn turns a repeated correction or wish into a check or lesson (id ${entryOf(EARLIER).id}).\n`);
+  assert.equal(hook(env, 'now', REPEAT), `exo: you asked something like this on 2026-01-02: "${EARLIER.text}". If it repeats a correction or wish, run exo:learn on it (id ${entryOf(EARLIER).id}).\n`);
   assert.equal(hook(env, 'later', REPEAT), '');
 });
 
@@ -101,7 +101,7 @@ test('a prompt typed in a subfolder is keyed by the project root', () => {
   assert.match(output, /you asked something like this on /);
 });
 
-const KEPT_LINE = `exo: this prompt shares words with a lesson you kept (id ${entryOf(EARLIER).id}); exo:learn can strengthen it\n`;
+const KEPT_LINE = `exo: this prompt shares words with a lesson you kept (id ${entryOf(EARLIER).id}); if it shows the lesson failed, run exo:learn to strengthen it\n`;
 const keptRow = { verdict: 'kept', ids: [entryOf(EARLIER).id], words: entryOf(EARLIER).words };
 
 test('a kept lesson is flagged once per keep, and a new keep re-arms it', () => {
@@ -111,6 +111,19 @@ test('a kept lesson is flagged once per keep, and a new keep re-arms it', () => 
   assert.equal(hook(env, 'two', REPEAT), '');
   assert.equal(run(env, ['keep', entryOf(EARLIER).id, '--cwd', env.project]).status, 0);
   assert.equal(hook(env, 'three', REPEAT), KEPT_LINE);
+});
+
+test('a kept lesson with a matching note names it in the hook line, and one without keeps the old line', (t) => {
+  const env = fixture();
+  const store = path.join(env.project, '.claude', 'lessons');
+  t.after(() => fs.rmSync(store, { recursive: true, force: true }));
+  writeLedger(env, [...fillers(60), EARLIER, { seen: 'one' }, { seen: 'two' }, keptRow]);
+  fs.mkdirSync(store, { recursive: true });
+  fs.writeFileSync(path.join(store, 'other.md'), '---\nname: unrelated\ndescription: x\ntype: feedback\nseen: 2026-01-01\n---\nsomething else entirely\n');
+  assert.equal(hook(env, 'one', REPEAT), KEPT_LINE);
+  fs.writeFileSync(path.join(store, 'rename.md'), '---\nname: rename-everywhere\ndescription: x\ntype: feedback\nseen: 2026-01-01\n---\nrename variable totalcount everywhere\n');
+  assert.equal(run(env, ['keep', entryOf(EARLIER).id, '--cwd', env.project]).status, 0);
+  assert.equal(hook(env, 'two', REPEAT), `exo: this prompt shares words with the lesson "rename-everywhere" you kept (id ${entryOf(EARLIER).id}); if it shows the lesson failed, run exo:learn to strengthen it\n`);
 });
 
 test('a cluster kept and then rejected stays silent on a repeat', () => {
@@ -150,7 +163,7 @@ test('a prompt similar only to an earlier entry of a kept cluster prints the kep
   const middle = { date: '2026-01-03', session: 's2', text: 'charlie delta echo foxtrot golf hotel' };
   const row = { verdict: 'kept', ids: [entryOf(kept).id], words: entryOf(kept).words };
   writeLedger(env, [...fillers(100), kept, middle, { seen: 's3' }, row]);
-  assert.equal(hook(env, 's3', 'echo foxtrot golf hotel india juliet'), `exo: this prompt shares words with a lesson you kept (id ${entryOf(kept).id}); exo:learn can strengthen it\n`);
+  assert.equal(hook(env, 's3', 'echo foxtrot golf hotel india juliet'), `exo: this prompt shares words with a lesson you kept (id ${entryOf(kept).id}); if it shows the lesson failed, run exo:learn to strengthen it\n`);
 });
 
 test('a same-session repeat prints nothing', () => {
@@ -588,4 +601,179 @@ test('an unreadable config ledger is treated as absent and candidates lists from
   const listed = run(env, ['candidates', '--cwd', env.project], undefined, { TMPDIR: scratch });
   assert.equal(listed.status, 0, listed.stderr);
   assert.match(listed.stdout, new RegExp(`^${idOf(rows.at(-3))} "alpha bravo charlie delta echo" \\(3 sessions`));
+});
+
+function toolCall(env, session, date, name, input, { index = 0, failed = true } = {}) {
+  const id = `toolu-${session}-${index}`;
+  const timestamp = `${date}T11:00:00.000Z`;
+  const rows = [
+    { type: 'assistant', timestamp, message: { content: [{ type: 'tool_use', id, name, input }] } },
+    { type: 'user', timestamp, message: { content: [{ type: 'tool_result', tool_use_id: id, is_error: failed, content: failed ? 'failed' : 'ok' }] } }
+  ];
+  fs.appendFileSync(path.join(env.folder, `${session}.jsonl`), rows.map((row) => `${JSON.stringify(row)}\n`).join(''));
+}
+
+const failuresPath = ({ ledger }) => ledger.replace(/\.jsonl$/, '.failures.jsonl');
+const BUILD = 'npm run build --watch';
+const failedId = (session, date, text) => entryOf({ date, session, text }).id;
+
+test('a tool call that fails in 3 sessions is stored as hashes and listed and counted as a failed candidate', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) toolCall(env, session, date, 'Bash', { command: BUILD });
+  toolCall(env, 'f1', '2026-01-03', 'Bash', { command: BUILD }, { index: 1 });
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const stored = fs.readFileSync(failuresPath(env), 'utf8');
+  assert.equal(stored.trim().split('\n').length, 3);
+  assert.equal(/npm|build|watch/.test(stored), false);
+  assert.equal(modeOf(failuresPath(env)), 0o600);
+  assert.equal(countOf(env), 1);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${failedId('f1', '2026-01-03', `Bash ${BUILD}`)} failed: "Bash ${BUILD}" (3 sessions, 2026-01-03 to 2026-01-05)\n`);
+});
+
+test('a failed Read of one file path in 3 sessions is listed by the words of its path', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  const file = '/work/app/src/parser.ts';
+  for (const [session, date] of [['r1', '2026-02-01'], ['r2', '2026-02-02'], ['r3', '2026-02-03']]) toolCall(env, session, date, 'Read', { file_path: file });
+  assert.equal(run(env, ['backfill', '--cwd', env.project]).status, 0);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${failedId('r1', '2026-02-01', `Read ${file}`)} failed: "Read ${file}" (3 sessions, 2026-02-01 to 2026-02-03)\n`);
+});
+
+test('a tool call that fails in 2 sessions is no candidate', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04']]) toolCall(env, session, date, 'Bash', { command: BUILD });
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  assert.equal(countOf(env), 0);
+});
+
+test('a kept failure is recorded as a failed verdict and not listed again', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) toolCall(env, session, date, 'Bash', { command: BUILD });
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const id = failedId('f1', '2026-01-03', `Bash ${BUILD}`);
+  const kept = run(env, ['keep', id, '--cwd', env.project]);
+  assert.equal(kept.status, 0, kept.stderr);
+  assert.equal(kept.stdout, `${id} kept\n`);
+  const [verdict] = fs.readFileSync(verdictsPath(env), 'utf8').trim().split('\n').map((row) => JSON.parse(row));
+  assert.equal(verdict.failed, true);
+  assert.equal(verdict.ids.length, 3);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  assert.equal(countOf(env), 0);
+});
+
+test('recount reads only the transcripts changed since the failures file was written', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const past = new Date(Date.now() - 3_600_000);
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) {
+    toolCall(env, session, date, 'Bash', { command: BUILD });
+    fs.utimesSync(path.join(env.folder, `${session}.jsonl`), past, past);
+  }
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(countOf(env), 0);
+  const later = new Date(Date.now() + 60_000);
+  fs.utimesSync(path.join(env.folder, 'f3.jsonl'), later, later);
+  for (const session of ['f1', 'f2']) fs.utimesSync(path.join(env.folder, `${session}.jsonl`), later, later);
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(countOf(env), 1);
+});
+
+test('a store with no failures file lists the same candidates, and recount adds no field to the ledger', () => {
+  const env = fixture();
+  const rows = pair('alpha bravo charlie delta echo', '2026-03-01');
+  writeLedger(env, [...fillers(60), ...rows]);
+  const before = readLedger(env);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(rows[0])} "alpha bravo charlie delta echo" (3 sessions, 2026-01-01 to 2026-03-01)\n`);
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.deepEqual(readLedger(env), before);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(rows[0])} "alpha bravo charlie delta echo" (3 sessions, 2026-01-01 to 2026-03-01)\n`);
+});
+
+const cleanCall = (env, session, date, command) => toolCall(env, session, date, 'Bash', { command }, { index: 9, failed: false });
+
+test('a failure line counts the later sessions that ran a similar call cleanly', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) toolCall(env, session, date, 'Bash', { command: BUILD });
+  cleanCall(env, 'c0', '2026-01-02', BUILD);
+  cleanCall(env, 'f3', '2026-01-05', BUILD);
+  cleanCall(env, 'c3', '2026-01-08', 'ls -la');
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const id = failedId('f1', '2026-01-03', `Bash ${BUILD}`);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${id} failed: "Bash ${BUILD}" (3 sessions, 2026-01-03 to 2026-01-05)\n`);
+  cleanCall(env, 'c1', '2026-01-06', BUILD);
+  cleanCall(env, 'c2', '2026-01-07', `${BUILD} --verbose`);
+  toolCall(env, 'c2', '2026-01-07', 'Bash', { command: BUILD }, { index: 8, failed: false });
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${id} failed: "Bash ${BUILD}" (3 sessions, 2026-01-03 to 2026-01-05, 2 later clean runs)\n`);
+});
+
+test('a kept failure with later clean runs prints its kept line', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) toolCall(env, session, date, 'Bash', { command: BUILD });
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const id = failedId('f1', '2026-01-03', `Bash ${BUILD}`);
+  assert.equal(run(env, ['keep', id, '--cwd', env.project]).status, 0);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  cleanCall(env, 'c1', '2026-01-06', BUILD);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${id} kept, 1 later clean runs\n`);
+  assert.equal(countOf(env), 0);
+});
+
+function otherProject(env) {
+  const project = path.join(fs.realpathSync(os.tmpdir()), 'learn.corrections_x', 'other');
+  fs.mkdirSync(project, { recursive: true });
+  const name = fs.realpathSync(project).replace(/[^A-Za-z0-9]/g, '-');
+  const folder = path.join(env.config, 'projects', name);
+  fs.rmSync(folder, { recursive: true, force: true });
+  fs.mkdirSync(folder, { recursive: true });
+  return { config: env.config, project, folder, ledger: path.join(env.config, 'exo', 'learn', `${name}.jsonl`) };
+}
+
+const SPREAD = [
+  { date: '2026-01-01', session: 'g1', text: 'alpha bravo charlie delta echo' },
+  { date: '2026-01-02', session: 'g2', text: 'alpha bravo charlie delta echo' },
+  { date: '2026-01-03', session: 'g3', text: 'never alpha bravo charlie delta' }
+];
+
+test('a cluster with 2 sessions in one project and 1 in another is listed as global in both', () => {
+  const env = fixture();
+  const other = otherProject(env);
+  writeLedger(env, [...fillers(60), SPREAD[0], SPREAD[1]]);
+  writeLedger(other, [SPREAD[2]]);
+  const ending = '(3 sessions, 2026-01-01 to 2026-01-03) global (2 projects)';
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(SPREAD[0])} "alpha bravo charlie delta echo" ${ending}\n`);
+  assert.equal(run(other, ['candidates', '--cwd', other.project]).stdout, `${idOf(SPREAD[0])} "never alpha bravo charlie delta" ${ending}\n`);
+  assert.equal(run(other, ['candidates', '--texts', '--cwd', other.project]).stdout, `${idOf(SPREAD[0])} "never alpha bravo charlie delta" ${ending}\n  other session: "alpha bravo charlie delta echo"\n`);
+  assert.equal(run(other, ['recount', '--cwd', other.project]).status, 0);
+  assert.equal(countOf(other), 1);
+  fs.rmSync(env.folder, { recursive: true });
+  assert.equal(run(other, ['candidates', '--texts', '--cwd', other.project]).stdout, `${idOf(SPREAD[0])} "never alpha bravo charlie delta" ${ending}\n`);
+});
+
+test('a cluster with 3 sessions in another project only is not listed here', () => {
+  const env = fixture();
+  const other = otherProject(env);
+  writeLedger(env, fillers(60));
+  writeLedger(other, [...fillers(60), ...SPREAD]);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(countOf(env), 0);
+  assert.equal(run(other, ['candidates', '--cwd', other.project]).stdout, `${idOf(SPREAD[0])} "alpha bravo charlie delta echo" (3 sessions, 2026-01-01 to 2026-01-03)\n`);
+});
+
+test('a verdict in one project hides the cluster in the other', () => {
+  const env = fixture();
+  const other = otherProject(env);
+  writeLedger(env, [...fillers(60), SPREAD[0], SPREAD[1]]);
+  writeLedger(other, [SPREAD[2]]);
+  const kept = run(env, ['keep', idOf(SPREAD[0]), '--cwd', env.project]);
+  assert.equal(kept.status, 0, kept.stderr);
+  assert.equal(run(other, ['candidates', '--cwd', other.project]).stdout, '');
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
 });

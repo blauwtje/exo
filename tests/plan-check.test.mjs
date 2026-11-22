@@ -75,3 +75,10 @@ test('a Consumes task must be on a Depends on path', () => {
   assert.equal(planCheckReport(consuming('1, 2')).ok, true);
   assert.match(problemsOf(consuming('2')), /Task 3 consumes Task 1 but Task 3 does not depend on Task 1/);
 });
+
+test('a Review Focus section holds at most 5 bullets', () => {
+  const withFocus = (count) => example.replace('## Plan basis', `## Review Focus\n${Array.from({ length: count }, (_, i) => `- point ${i + 1}`).join('\n')}\n\n## Plan basis`);
+  assert.equal(planCheckReport(example).ok, true);
+  assert.equal(planCheckReport(withFocus(5)).ok, true);
+  assert.match(problemsOf(withFocus(6)), /Review Focus holds 6 bullets/);
+});

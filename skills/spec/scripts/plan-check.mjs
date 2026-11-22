@@ -4,7 +4,7 @@ import path from 'node:path';
 import { onPath } from '#basics';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { parsePlan, PlanError } from '#plan-tasks';
-import { openPoints } from '#plan-frame';
+import { frameOf, openPoints } from '#plan-frame';
 
 const REQUIRED_SECTIONS = ['Goal', 'Plan basis', 'Success criterion'];
 
@@ -71,6 +71,11 @@ function acceptanceProblems(plan) {
     .map((item) => `the Acceptance item '${item}' cites no task number, 'Data:' segment or the Success criterion; cite one or move it to Manual checks`);
 }
 
+function reviewFocusProblems(plan) {
+  const count = (frameOf(plan.frame).reviewFocus ?? '').split('\n').filter((line) => /^\s*(?:[-*]|\d+\.)\s+/.test(line)).length;
+  return count > 5 ? [`the Review Focus holds ${count} bullets; keep at most 5`] : [];
+}
+
 function repositoryRoot(plan) {
   const root = (plan.frame['Plan basis'] ?? '').match(/^Repository: (.+)$/m)?.[1].trim();
   return root !== undefined && fs.existsSync(root) ? root : undefined;
@@ -109,7 +114,7 @@ function warnings(plan) {
 export function planCheckReport(planText) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
-  const problems = [...frameProblems(plan, planText), ...plan.tasks.flatMap(taskProblems), ...sharedFileProblems(plan.tasks), ...readerProblems(plan.tasks), ...consumesProblems(plan.tasks), ...acceptanceProblems(plan), ...ignoredFileProblems(plan)];
+  const problems = [...frameProblems(plan, planText), ...plan.tasks.flatMap(taskProblems), ...sharedFileProblems(plan.tasks), ...readerProblems(plan.tasks), ...consumesProblems(plan.tasks), ...acceptanceProblems(plan), ...reviewFocusProblems(plan), ...ignoredFileProblems(plan)];
   if (problems.length > 0) return { ok: false, lines: problems };
   return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks`, ...warnings(plan)] };
 }

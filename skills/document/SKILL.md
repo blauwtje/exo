@@ -23,7 +23,7 @@ Prose for a reader who was not in the session says who does what, by which mecha
 
 ### Process
 
-1. **Pick one mode per document.** A tutorial teaches by doing, a how-to gets a known task done, a reference lists what exists, an explanation says why. A how-to opens on the command, with no welcome or tour.
+1. **Pick one mode per document.** A tutorial teaches by doing, a how-to gets a known task done, a reference lists what exists, an explanation says why. A how-to opens on the command, with no welcome or tour. For "how does X work" about code, give the flow from trigger to effect with file:function names, then where things live and what surprises a newcomer; state your reading of an ambiguous question and go on.
 2. **State the fact, not the benefit.** Give the number, behavior or error that changed. When asked to sell or impress, still write only what the input states, because an unmeasured effect is invented.
 3. **Name the actor and the mechanism.** Use the active voice with the real file, option, flag and command names, and one name per thing.
 4. **Write whole sentences.** One thought per sentence, under 25 words. Put the condition before the instruction and the warning before the step it guards. Put "only" and "not" next to the word they limit.
@@ -46,7 +46,7 @@ When the user asks for release notes or the changelog lines a range misses:
 
 1. Run `node "${CLAUDE_SKILL_DIR}/scripts/release-notes-draft.mjs" --repo <checkout> [--from <ref>] [--to <ref>]`. `--from` defaults to the last `v*` tag reachable from `--to`, `--to` to `HEAD`.
 2. Rewrite each line to say what the user sees. Fill each `Upgrade: not stated in the commit.` line from the commit diff, and keep the `Upgrade:` line under each breaking entry.
-3. Add `--uncovered` to list only commits that did not touch the changelog; in the changelog, follow its existing format for a breaking change.
+3. In the changelog, follow its existing format for a breaking change.
 4. Name the range used in one line, so the user can rerun it. Edit the changelog only when the user names it, and never tag, bump or release.
 
 ### Judgment

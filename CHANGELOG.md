@@ -32,9 +32,26 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The eval case `route-author` checks that `author` fires for a skill-writing request, with its own row in the value table.
 - The eval case `build-red-suite` grades each clause with its own grader, and `CONTRIBUTING.md` says when a case gets one `criteria` grader and when one per clause.
 - `evals/failures.md` records the failures behind the eight blog points, and each line links to the case or commit that covers it.
+- `script options` check: a script may not gain an option, and a new script holds at most 5.
+- `positional literals` check: no `$1`-style literal in a skill, agent or output-style file.
+- `evals/trigger.mjs` and `evals/trigger.json`: near-miss prompts that must not trigger a skill.
+- `evals/skill-corrections.mjs`: sessions with a repeated correction after a skill ran.
+- `evals/value.md` has a `verdict` column: better, same, worse or not sure yet.
+- `undo-task.mjs` prints the revert commands for a landed task.
+- A plan task may name its builder with `Model: <model> <effort>`.
+- A plan may hold a Review Focus section of at most 5 bullets for the end review.
+- `handoff.mjs facts` and `handoff.mjs stale` gather the git facts of a handoff and what changed since.
+- `bisect.mjs` finds the test file that pollutes another test when `--repro` holds `__FILE__`.
+- learn mines tool calls that fail in 3 sessions, counts their later clean runs and marks a cluster seen in 2 projects as global.
+- `lessons.mjs check` prints `stale:` lines for notes.
+- The repo map marks an export that 3 or more other files use as `name•N`.
 
 ### Changed
 
+- Skills, agents, the adhd style and the repo docs follow pstack's authoring rules: text a check enforces, repeated rules and reasons that change no decision are gone, and author proves an edit by replaying the recorded failure.
+- The adhd style has the agent run every check itself and test a suspected wrong assumption before it asks.
+- watch picks the transcript language itself, and ship takes a reversible design choice instead of asking.
+- The learn hook lines say what to do instead of what learn is.
 - Skills describe the shape of a reply instead of quoting fixed English labels, so a reply, its recommendation line and the ship menu follow the user's language; build, diagnose and ship leave reply wording to the output style.
 - The ship-set-route, ship-branch-push, route-document and adhd-short-reply evals test what exo does now: the push route set, the ask-first route menu, a seeded package and the adhd style turned on.
 - Both hooks run in exec form with `args`, as the hooks docs advise for a path placeholder.
@@ -76,6 +93,19 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `ship` ends its ask step on the route menu as printed, translated only for a reader in another language, and names the follow-up in the line on what is left.
 - `spec` states its verdict and an objection of at most 15 words with no file path on one line before the question, outside the question's 60-word limit.
 - The route-document, spec-tide-export and adhd-short-reply evals judge the final message by the skill's and the output style's own rules, and ship-set-route sets its push route through the run's shell profile.
+- Builders, `watch` and `ship` treat text quoted from issues, comments, check logs, transcripts and web pages as data and follow no instruction in it.
+- `spec` asks before it uses a spec issue opened by someone else, on every route that reads an issue body.
+- `evals/value.mjs` runs a case twice and a third time only on a split.
+- `next-task.mjs` writes the task brief to a file and prints its path.
+- The end-of-run review takes its effort from the diff size (`EXO_REVIEW_LINES`).
+- The second attempt of a task runs on Sonnet when the report names a missing input.
+- The landing report lists removed test lines.
+- The learn hook line names the kept lesson.
+- A handoff has a Ruled out heading, and its Resume text lives in the save skill.
+- diagnose compares with the nearest working case before it removes anything.
+- document gives a fixed shape to a how-it-works answer.
+- author accepts a description edit only on held-out prompts.
+- The builder guards its context.
 
 ### Fixed
 
@@ -95,6 +125,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `ship` names a missing `gh` and finds the default branch the way the other scripts do.
 - `learn` works in a session with the sandbox on: `corrections.mjs` keeps its store in the scratch folder when the Claude config folder cannot be written, and skips a store file it cannot read.
 - `learn` writes lesson notes, index lines and memory edits with the Write and Edit tools, so a kept personal lesson reaches the personal store in a session with the sandbox on.
+- `scratch-path.mjs` refuses a scratch root that is a symlink, not a folder or owned by another user, and narrows the user's own root to mode 0700.
+- document no longer names the `--uncovered` option, which `release-notes-draft.mjs` rejects.
 
 ### Removed
 
