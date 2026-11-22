@@ -603,12 +603,12 @@ test('an unreadable config ledger is treated as absent and candidates lists from
   assert.match(listed.stdout, new RegExp(`^${idOf(rows.at(-3))} "alpha bravo charlie delta echo" \\(3 sessions`));
 });
 
-function failingCall(env, session, date, name, input, index = 0) {
+function toolCall(env, session, date, name, input, { index = 0, failed = true } = {}) {
   const id = `toolu-${session}-${index}`;
   const timestamp = `${date}T11:00:00.000Z`;
   const rows = [
     { type: 'assistant', timestamp, message: { content: [{ type: 'tool_use', id, name, input }] } },
-    { type: 'user', timestamp, message: { content: [{ type: 'tool_result', tool_use_id: id, is_error: true, content: 'failed' }] } }
+    { type: 'user', timestamp, message: { content: [{ type: 'tool_result', tool_use_id: id, is_error: failed, content: failed ? 'failed' : 'ok' }] } }
   ];
   fs.appendFileSync(path.join(env.folder, `${session}.jsonl`), rows.map((row) => `${JSON.stringify(row)}\n`).join(''));
 }
@@ -620,8 +620,8 @@ const failedId = (session, date, text) => entryOf({ date, session, text }).id;
 test('a tool call that fails in 3 sessions is stored as hashes and listed and counted as a failed candidate', () => {
   const env = fixture();
   writeLedger(env, fillers(60));
-  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) failingCall(env, session, date, 'Bash', { command: BUILD });
-  failingCall(env, 'f1', '2026-01-03', 'Bash', { command: BUILD }, 1);
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) toolCall(env, session, date, 'Bash', { command: BUILD });
+  toolCall(env, 'f1', '2026-01-03', 'Bash', { command: BUILD }, { index: 1 });
   assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
   const stored = fs.readFileSync(failuresPath(env), 'utf8');
   assert.equal(stored.trim().split('\n').length, 3);
@@ -635,7 +635,7 @@ test('a failed Read of one file path in 3 sessions is listed by the words of its
   const env = fixture();
   writeLedger(env, fillers(60));
   const file = '/work/app/src/parser.ts';
-  for (const [session, date] of [['r1', '2026-02-01'], ['r2', '2026-02-02'], ['r3', '2026-02-03']]) failingCall(env, session, date, 'Read', { file_path: file });
+  for (const [session, date] of [['r1', '2026-02-01'], ['r2', '2026-02-02'], ['r3', '2026-02-03']]) toolCall(env, session, date, 'Read', { file_path: file });
   assert.equal(run(env, ['backfill', '--cwd', env.project]).status, 0);
   assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${failedId('r1', '2026-02-01', `Read ${file}`)} failed: "Read ${file}" (3 sessions, 2026-02-01 to 2026-02-03)\n`);
 });
@@ -643,7 +643,7 @@ test('a failed Read of one file path in 3 sessions is listed by the words of its
 test('a tool call that fails in 2 sessions is no candidate', () => {
   const env = fixture();
   writeLedger(env, fillers(60));
-  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04']]) failingCall(env, session, date, 'Bash', { command: BUILD });
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04']]) toolCall(env, session, date, 'Bash', { command: BUILD });
   assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
   assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
   assert.equal(countOf(env), 0);
@@ -652,7 +652,7 @@ test('a tool call that fails in 2 sessions is no candidate', () => {
 test('a kept failure is recorded as a failed verdict and not listed again', () => {
   const env = fixture();
   writeLedger(env, fillers(60));
-  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) failingCall(env, session, date, 'Bash', { command: BUILD });
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) toolCall(env, session, date, 'Bash', { command: BUILD });
   assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
   const id = failedId('f1', '2026-01-03', `Bash ${BUILD}`);
   const kept = run(env, ['keep', id, '--cwd', env.project]);
@@ -671,7 +671,7 @@ test('recount reads only the transcripts changed since the failures file was wri
   assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
   const past = new Date(Date.now() - 3_600_000);
   for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) {
-    failingCall(env, session, date, 'Bash', { command: BUILD });
+    toolCall(env, session, date, 'Bash', { command: BUILD });
     fs.utimesSync(path.join(env.folder, `${session}.jsonl`), past, past);
   }
   assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
@@ -692,4 +692,35 @@ test('a store with no failures file lists the same candidates, and recount adds 
   assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
   assert.deepEqual(readLedger(env), before);
   assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(rows[0])} "alpha bravo charlie delta echo" (3 sessions, 2026-01-01 to 2026-03-01)\n`);
+});
+
+const cleanCall = (env, session, date, command) => toolCall(env, session, date, 'Bash', { command }, { index: 9, failed: false });
+
+test('a failure line counts the later sessions that ran a similar call cleanly', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) toolCall(env, session, date, 'Bash', { command: BUILD });
+  cleanCall(env, 'c0', '2026-01-02', BUILD);
+  cleanCall(env, 'f3', '2026-01-05', BUILD);
+  cleanCall(env, 'c3', '2026-01-08', 'ls -la');
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const id = failedId('f1', '2026-01-03', `Bash ${BUILD}`);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${id} failed: "Bash ${BUILD}" (3 sessions, 2026-01-03 to 2026-01-05)\n`);
+  cleanCall(env, 'c1', '2026-01-06', BUILD);
+  cleanCall(env, 'c2', '2026-01-07', `${BUILD} --verbose`);
+  toolCall(env, 'c2', '2026-01-07', 'Bash', { command: BUILD }, { index: 8, failed: false });
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${id} failed: "Bash ${BUILD}" (3 sessions, 2026-01-03 to 2026-01-05, 2 later clean runs)\n`);
+});
+
+test('a kept failure with later clean runs prints its kept line', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) toolCall(env, session, date, 'Bash', { command: BUILD });
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const id = failedId('f1', '2026-01-03', `Bash ${BUILD}`);
+  assert.equal(run(env, ['keep', id, '--cwd', env.project]).status, 0);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  cleanCall(env, 'c1', '2026-01-06', BUILD);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${id} kept, 1 later clean runs\n`);
+  assert.equal(countOf(env), 0);
 });

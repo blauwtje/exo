@@ -374,10 +374,14 @@ function groupsOf(rows, verdicts, counted) {
   return [...groups.values()];
 }
 
-export function clusters(ledger) {
+function counting(ledger) {
   const prompts = indexed(ledger.entries);
   const failures = indexed(ledger.failures);
-  const counted = countedWords([...prompts, ...failures]);
+  return { prompts, failures, counted: countedWords([...prompts, ...failures]) };
+}
+
+export function clusters(ledger) {
+  const { prompts, failures, counted } = counting(ledger);
   const promptGroups = groupsOf(prompts, ledger.verdicts.filter((row) => !isFailedRow(row)), counted).map((group) => ({ group, failed: false }));
   const failureGroups = groupsOf(failures, ledger.verdicts.filter(isFailedRow), counted).map((group) => ({ group, failed: true }));
   return [...promptGroups, ...failureGroups]
@@ -396,8 +400,28 @@ function listed(cwd, ledger) {
     .map(({ cluster, centre }) => ({ ...cluster, text: texts.get(centre.id), other: otherText(cluster.group, centre, texts) }));
 }
 
-function describe({ id, failed, text, sessions, first, last }) {
-  return `${id} ${failed ? 'failed: ' : ''}"${text}" (${sessions} sessions, ${first} to ${last})`;
+function cleanCalls(cwd) {
+  return sessionFiles(projectFolder(cwd)).flatMap((file) => toolCalls(file).filter(({ failed }) => !failed).map(failureOf));
+}
+
+function laterCleanRuns(members, counted, calls) {
+  const last = members.reduce((latest, { date }) => (date > latest ? date : latest), '');
+  return new Set(calls.filter((call) => call.date > last && members.some((row) => similar(call.words, row.words, counted))).map(({ session }) => session)).size;
+}
+
+function keptFailures(ledger, calls) {
+  const { failures, counted } = counting(ledger);
+  const verdicts = ledger.verdicts.filter(isFailedRow);
+  return verdicts.flatMap((row, index) => {
+    if (row.verdict !== VERDICTS.keep) return [];
+    const members = failures.filter((entry) => rowMatches(row, entry, counted));
+    if (members.length === 0 || verdicts.slice(index + 1).some((later) => members.some((entry) => rowMatches(later, entry, counted)))) return [];
+    return [{ id: row.ids?.[0] ?? members[0].id, clean: laterCleanRuns(members, counted, calls) }];
+  }).filter(({ clean }) => clean > 0);
+}
+
+function describe({ id, failed, text, sessions, first, last, clean }) {
+  return `${id} ${failed ? 'failed: ' : ''}"${text}" (${sessions} sessions, ${first} to ${last}${clean > 0 ? `, ${clean} later clean runs` : ''})`;
 }
 
 function today() {
@@ -624,9 +648,11 @@ function candidates(cwd, withTexts) {
   const ledger = snapshot(cwd);
   if (ledger === null) return;
   const all = listed(cwd, ledger);
-  const shown = all.slice(0, MAX_CANDIDATES);
+  const calls = all.some(({ failed }) => failed) || ledger.verdicts.some(isFailedRow) ? cleanCalls(cwd) : [];
+  const shown = all.slice(0, MAX_CANDIDATES).map((cluster) => (cluster.failed ? { ...cluster, clean: laterCleanRuns(cluster.group, cluster.counted, calls) } : cluster));
   process.stdout.write(shown.map((cluster) => `${describe(cluster)}\n${withTexts && cluster.other !== undefined ? `  other session: "${cluster.other}"\n` : ''}`).join(''));
   if (all.length > shown.length) process.stdout.write(`${shown.length} of ${all.length} shown; keep or reject these to see more.\n`);
+  process.stdout.write(keptFailures(ledger, calls).map(({ id, clean }) => `${id} kept, ${clean} later clean runs\n`).join(''));
 }
 
 function marked(row, failed) {
@@ -653,9 +679,7 @@ function decide(command, ids, cwd) {
   const ledger = snapshot(cwd);
   const open = ledger === null ? [] : clusters(ledger);
   const verdicts = waitLocked(cwd, () => readVerdicts(cwd));
-  const prompts = ledger === null ? [] : indexed(ledger.entries);
-  const failures = ledger === null ? [] : indexed(ledger.failures);
-  const counted = countedWords([...prompts, ...failures]);
+  const { prompts, failures, counted } = counting(ledger ?? { entries: [], failures: [] });
   const rows = ids.map((id) => {
     const row = openRow(command, id, open)
       ?? decidedRow(command, id, verdicts.filter((verdict) => !isFailedRow(verdict)), prompts, counted)
