@@ -1,7 +1,8 @@
 import fs from 'node:fs';
-import { parseFlags, isMain } from '#script-flags';
+import { parseFlags, isMain, environmentMs } from '#script-flags';
 import { resolvePlanPath } from '#checkout';
-import { landedTasks, planIdOf } from '#plan-landed';
+import { landedTasks, planIdOf, defaultBase } from '#plan-landed';
+import { gitText } from '#git';
 import { parsePlan } from '#plan-tasks';
 import { frameOf } from '#plan-frame';
 import { scratchPath } from '#scratch-path';
@@ -15,6 +16,25 @@ function standingText(frame) {
   return STANDING.filter(([, key]) => found[key].length > 0)
     .map(([title, key]) => `${title}:\n${found[key].map((item) => (/^\d+\. /.test(item) ? item : `- ${item}`)).join('\n')}\n`)
     .join('\n');
+}
+
+export function reviewEffort(changedLines, base) {
+  if (changedLines < base) return 'low';
+  if (changedLines < 4 * base) return 'medium';
+  return changedLines < 16 * base ? 'high' : 'xhigh';
+}
+
+function changedLineCount(root, base) {
+  return gitText(root, ['diff', '--numstat', `${base}...HEAD`]).split('\n')
+    .filter((line) => line !== '')
+    .reduce((sum, line) => sum + line.split('\t').slice(0, 2).reduce((count, cell) => count + (Number(cell) || 0), 0), 0);
+}
+
+function reviewEffortLine(root) {
+  const base = defaultBase(root);
+  if (base === null) return 'Review effort: medium (base unknown)\n';
+  const changed = changedLineCount(root, base);
+  return `Review effort: ${reviewEffort(changed, environmentMs('EXO_REVIEW_LINES', 150))} (${changed} changed lines)\n`;
 }
 
 export function nextTaskReport({ planText, planPath, root }) {
@@ -35,7 +55,7 @@ if (isMain(import.meta.url)) {
   const report = nextTaskReport({ planText: fs.readFileSync(planPath, 'utf8'), planPath, root });
   const [landedLine, nextLine] = report.split('\n');
   if (nextLine === 'Next: none') {
-    process.stdout.write(report);
+    process.stdout.write(`${report}${reviewEffortLine(root)}`);
   } else {
     const brief = scratchPath(root, `brief-${nextLine.split(' ')[1]}.md`);
     fs.writeFileSync(brief, report);
