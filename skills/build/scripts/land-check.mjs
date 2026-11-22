@@ -49,7 +49,19 @@ export function stageCandidate({ task, frame, block, outside, root, planId }) {
   stageOutside(root, outside);
   const candidate = commitCandidate({ block, root, task, planId });
   const gateLine = gateCandidate({ frame, root, candidate });
-  return { changed, candidate, gateLine };
+  return { changed, candidate, gateLine, removedBlock: removedTestLinesBlock(root, candidate, testPaths(changed)) };
+}
+
+function removedTestLinesBlock(root, { base, candidate }, paths) {
+  if (paths.length === 0) return '';
+  const diff = gitText(root, ['diff', '--diff-filter=M', '--no-renames', '-U0', base, candidate, '--', ...paths], { trim: false });
+  const removed = [];
+  let file = '';
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('--- ')) file = line.slice(4).replace(/^a\//, '');
+    else if (line.startsWith('-') && line.slice(1).trim() !== '') removed.push(`- ${file}: ${line.slice(1).trim()}`);
+  }
+  return removed.length === 0 ? '' : `Removed test lines: ${removed.length}\n${removed.join('\n')}\n`;
 }
 
 export function coverOrDrop({ task, proofs, root, changed, candidate }) {

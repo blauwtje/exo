@@ -24,13 +24,13 @@ Build lands a plan one task at a time. A task lands when its proof passes after 
 A plan path runs this loop. With no path and no decided change, run step 2's script with `--plan` on each file in `docs/specs/`; when exactly one prints a `Next:` task, use that plan and say so, and ask for the path when several or none do. `--land` pushes at the end without asking.
 
 1. **Settle the workspace.** A branch or worktree the request names is the answer; otherwise build on the current branch; on `main`, create a branch named after the plan topic and say so, without asking. Invoking build authorizes commits there; a push waits for `exo:ship`, except with `--land`. Before the first task, run the plan's `Land gate:` once unless it is `none`; a failure already there is not any task's, so hand it to `exo:diagnose` before Task 1 and name it in the final report.
-2. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <path> --root <checkout>`. It prints the landed tasks, then the next task with its text and the plan's Decisions, Non-goals and Assumptions. Only a `Plan-task:` commit shows what landed, so on a restart rerun it. `Next: none` goes to End of the run.
-3. **Build one task.** Send the task of the `Next:` line to a fresh `exo:builder` in the background, with the plan path, the task number, the checkout, the report path that `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` prints when run in the checkout, and `run-task-prompt.md` by path, and wait for its completion notification. The builder edits, then runs `land-task.mjs`, which proves red then green, runs the Land gate and commits.
-4. **Route the return.** `GREEN` goes back to step 2.
+2. **Ask the branch what landed.** Run `node "${CLAUDE_SKILL_DIR}/scripts/next-task.mjs" --plan <path> --root <checkout>`. It prints the landed tasks, the `Next:` line and a `Brief:` path; the file holds the task text with the plan's Decisions, Non-goals and Assumptions. Only a `Plan-task:` commit shows what landed, so on a restart rerun it. `Next: none` goes to End of the run.
+3. **Build one task.** A task line with `Model: <model> <effort>` sets the Agent tool's `model` and `effort` for that builder; else the Models table decides. Send the task of the `Next:` line to a fresh `exo:builder` in the background, with the plan path, the task number, the checkout, the `Brief:` path as the text to read first, the report path that `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` prints when run in the checkout, and `run-task-prompt.md` by path, and wait for its completion notification. The builder edits, then runs `land-task.mjs`, which proves red then green, runs the Land gate and commits.
+4. **Route the return.** `GREEN` goes back to step 2. A `Removed test lines:` block in the landing report is a weakened test unless the task text asks for the removal; send it to a fix round.
    - `BLOCKED <n> NEEDS ANSWER: <question>`: ask the user with the builder's options and recommendation as the question, then re-dispatch that task with the answer in its prompt.
-   - `PLAN DRIFT`: append a `## Log` line to the plan, then stop and hand the plan back to `exo:spec` with the builder's reason.
+   - `PLAN DRIFT`: append a `## Log` line to the plan, then stop and hand the plan back to `exo:spec` with the builder's reason; when the reason makes a landed task wrong, add the lines that `node "${CLAUDE_SKILL_DIR}/scripts/undo-task.mjs" --plan <path> --root <checkout> <n>` prints.
    - `BLOCKED <reason>`: append a `## Log` line to the plan before you report it.
-   - A build that fails once goes back to a fresh `exo:builder` with the first builder's report path, `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` run in the checkout, in its prompt, on the second-attempt row of the Models table.
+   - A build that fails once goes back to a fresh `exo:builder` with the first builder's report path, `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` run in the checkout, in its prompt, on the second-attempt row of the Models table that fits its report.
    - `BLOCKED proof <command> did not fail first`: `land-task` refused the task: its proof passes without the change. Send a fresh `exo:builder` to tighten that test, or hand the plan to `exo:spec` for a `Red: none (<reason>)`, and name the task in the final report.
    - `BLOCKED proof flaky`: the Proof passed once and failed on the second run. Send a fresh `exo:builder` to remove the cause of the flip (shared state, timing, order) without sleeps or retries, or hand the plan to `exo:spec`, and name the task in the final report.
    - A build that fails twice, or a repair that must change a module outside the task's `Files:`: stop, report both and hand it to `exo:diagnose`.
@@ -42,14 +42,15 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
 | Job | Who | Model, effort |
 |---|---|---|
 | Build a task | `exo:builder` | Sonnet, medium |
-| Second attempt after a failure | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
+| Second attempt, the report names a missing input | `exo:builder` with the Agent tool's `model: sonnet` and `effort: medium`, with the missing answer in its prompt | Sonnet, medium |
+| Second attempt, any other failure | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
 | A design choice the plan leaves open | this session | its own model, high |
 | Find a cause (diagnose investigator) | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
 | Research | `exo:researcher` | Sonnet, medium |
 
 ### End of the run
 
-1. Review the branch diff first, so the last code written is the code checked: call the built-in `code-review` skill once through the Skill tool with args `medium <branch>`, name the plan path and ask it to check the diff against the plan's Decisions and Acceptance, read the test-file diffs first, name every assertion changed since the base, look for what a passing Proof hides (unseen inputs, unhandled parameters, needless complexity), and use each finding's severity field (important, nit or pre_existing), counting a finding with no severity as important. Send each important finding to one fresh `exo:builder`, all in one message, briefed "write the failing test or repro for this finding in a new test file named for its finding, so parallel builders never share a file; with no repro, drop it", because a finding nobody reproduced may be wrong. Fix only the reproduced findings, in one builder fix round that commits with the land command's `--fix <subject>`, and list the dropped ones as unproven, and the nit and pre_existing ones, in the report. With no `code-review` skill listed, say no review ran.
+1. Review the branch diff first, so the last code written is the code checked: call the built-in `code-review` skill once through the Skill tool with args `<effort> <branch>`, where `<effort>` is the word of the `Review effort:` line that `next-task.mjs` prints with `Next: none`; with no plan it is `medium`, name the plan path and ask it to check the diff against the plan's Decisions and Acceptance and against the bullets under `Review focus:`, when `next-task.mjs` printed them, read the test-file diffs first, check each line the landing reports listed under `Removed test lines:`, look for what a passing Proof hides (unseen inputs, unhandled parameters, needless complexity), and use each finding's severity field (important, nit or pre_existing), counting a finding with no severity as important. Send each important finding to one fresh `exo:builder`, all in one message, briefed "write the failing test or repro for this finding in a new test file named for its finding, so parallel builders never share a file; with no repro, drop it", because a finding nobody reproduced may be wrong. Fix only the reproduced findings, in one builder fix round that commits with the land command's `--fix <subject>`, and list the dropped ones as unproven, and the nit and pre_existing ones, in the report. With no `code-review` skill listed, say no review ran.
 2. Run the plan's `Success criterion` command once, in the background, to a log, and read only the failing lines. Then run the plan's `Land gate:` command once the same way unless it is `none`: `land-task.mjs` skips a gate whose last pass took 60 s or more, so this is the one run of a slow gate. A failure goes to one builder fix and one rerun; a second failure ends with what still fails.
 3. Build the report from `git diff --stat <base>..HEAD` and the `Plan-task:` commits, not from the builders' summaries. State whether the branch is ready, the findings and what the user does next, and label each claim measured, inferred or guess. Keep `Proof:` lines and `## Manual checks` out of the message; the task reports in the temp folder hold them. List every `Noticed:` line from the task reports, so no issue a builder left unfixed is lost.
 4. End on `exo:ship`, unless the request rules out a push; then say nothing left the machine. `--land` passes `--land` to `ship`.
@@ -74,6 +75,7 @@ Request: "run the plan docs/specs/login.md". Build runs the loop, one fresh `exo
 ```
 Landed: 1, 2
 Next: 3 feat(login): add the token check
+Brief: /tmp/exo-user/app-1a2b3c4d/brief-3.md
 ```
 
 ## Limitations
@@ -96,5 +98,6 @@ Next: 3 feat(login): add the token check
 
 | Script | Purpose | Arguments |
 |---|---|---|
-| `next-task.mjs` | Prints the landed tasks and the next task with the plan's Decisions, Non-goals and Assumptions | `--plan <path> --root <checkout>` |
+| `next-task.mjs` | Prints the landed tasks, the `Next:` line and a `Brief:` path to a file with the task text and the plan's Decisions, Non-goals and Assumptions | `--plan <path> --root <checkout>` |
+| `undo-task.mjs` | Prints the revert commands for one landed task and the landed tasks that depend on it | `--plan <plan> --root <checkout> <n>` |
 | `land-task.mjs` | Proves a task red then green, runs the Land gate and commits | `--plan <path> --task <n> --root <checkout>`, or `--fix <subject>` |
