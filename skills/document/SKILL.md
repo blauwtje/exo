@@ -46,7 +46,7 @@ When the user asks for release notes or the changelog lines a range misses:
 
 1. Run `node "${CLAUDE_SKILL_DIR}/scripts/release-notes-draft.mjs" --repo <checkout> [--from <ref>] [--to <ref>]`. `--from` defaults to the last `v*` tag reachable from `--to`, `--to` to `HEAD`.
 2. Rewrite each line to say what the user sees. Fill each `Upgrade: not stated in the commit.` line from the commit diff, and keep the `Upgrade:` line under each breaking entry.
-3. Add `--uncovered` to list only commits that did not touch the changelog; in the changelog, follow its existing format for a breaking change.
+3. In the changelog, follow its existing format for a breaking change.
 4. Name the range used in one line, so the user can rerun it. Edit the changelog only when the user names it, and never tag, bump or release.
 
 ### Judgment
