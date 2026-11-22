@@ -9,7 +9,7 @@ import { configDirectory } from '#config-directory';
 import { scratchPath } from '#scratch-path';
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 import { lessonPaths } from './lessons.mjs';
-import { projectFolder, sessionFiles, promptMessages, typedPrompt } from './sessions.mjs';
+import { projectFolder, sessionFiles, promptMessages, toolCalls, typedPrompt } from './sessions.mjs';
 
 const MAX_PROMPT_CHARS = 600;
 const MAX_ENTRY_CHARS = 300;
@@ -63,6 +63,11 @@ export function entryOf({ date, session, text }) {
   return { id: idOf(session, cut), date, session, words: words(cut) };
 }
 
+function failureOf({ date, session, text }) {
+  const cut = cutText(text);
+  return { id: idOf(session, cut), date, session, words: words(cut.replace(/[/.-]/g, ' ')) };
+}
+
 function ledgerName(cwd) {
   return `${path.basename(projectFolder(cwd))}.jsonl`;
 }
@@ -89,6 +94,14 @@ function verdictsOf(ledger) {
 
 function verdictsFile(cwd) {
   return verdictsOf(ledgerFile(cwd));
+}
+
+function failuresOf(ledger) {
+  return ledger.replace(/\.jsonl$/, '.failures.jsonl');
+}
+
+function failuresFile(cwd) {
+  return failuresOf(ledgerFile(cwd));
 }
 
 function ensureFolder(file) {
@@ -202,8 +215,16 @@ function isRepeatedRow(row) {
   return typeof row?.repeated === 'string';
 }
 
+function isFailedRow(row) {
+  return row.failed === true;
+}
+
+function isEntryRow(row) {
+  return typeof row.id === 'string' && typeof row.date === 'string' && typeof row.session === 'string' && Array.isArray(row.words);
+}
+
 const ROW_KINDS = [
-  (row) => typeof row.id === 'string' && typeof row.date === 'string' && typeof row.session === 'string' && Array.isArray(row.words),
+  isEntryRow,
   (row) => typeof row.seen === 'string',
   (row) => Array.isArray(row.flagged)
 ];
@@ -219,11 +240,16 @@ function cacheRows(cwd) {
   return rowsOf((fallbackStore ? [...new Set(lines)] : lines).join('\n'));
 }
 
-function appendCache(cwd, rows) {
-  const file = ledgerFile(cwd);
+function appendRows(file, rows) {
   const bytes = fs.existsSync(file) ? fs.readFileSync(file) : Buffer.alloc(0);
   if (bytes.length > 0 && bytes.at(-1) !== 0x0a) fs.truncateSync(file, bytes.lastIndexOf(0x0a) + 1);
   append(file, rows);
+}
+
+function readFailures(cwd) {
+  const rows = readableLedgers(cwd).map(failuresOf).filter((file) => fs.existsSync(file)).map(readText).filter((text) => text !== null)
+    .flatMap(rowsOf).filter((row) => row !== null && isEntryRow(row));
+  return [...new Map(rows.map((row) => [row.id, row])).values()];
 }
 
 function currentLedger(cwd) {
@@ -255,17 +281,21 @@ function compacted(ledger) {
   return { ...ledger, seen: ledger.seen.slice(-MAX_SEEN_MARKS), entries: ledger.entries.slice(-MAX_ENTRIES) };
 }
 
-function rewrite(file, ledger) {
+function rewrite(file, rows) {
   const temp = `${file}.${process.pid}.tmp`;
-  writePrivate(temp, [...ledger.seen, ...ledger.flagged, ...ledger.entries].map((row) => `${JSON.stringify(row)}\n`).join(''));
+  writePrivate(temp, rows.map((row) => `${JSON.stringify(row)}\n`).join(''));
   fs.renameSync(temp, file);
+}
+
+function ledgerRows(ledger) {
+  return [...ledger.seen, ...ledger.flagged, ...ledger.entries];
 }
 
 function compact(cwd) {
   const ledger = currentLedger(cwd);
   if (ledger === null) return;
   const kept = compacted(ledger);
-  if (kept !== ledger) rewrite(ledgerFile(cwd), kept);
+  if (kept !== ledger) rewrite(ledgerFile(cwd), ledgerRows(kept));
 }
 
 function transcriptTexts(cwd, sessions) {
@@ -275,6 +305,10 @@ function transcriptTexts(cwd, sessions) {
     if (!sessions.has(session)) continue;
     for (const { text, kind } of promptMessages(file)) {
       if (kind === 'skipped') continue;
+      const cut = cutText(text);
+      texts.set(idOf(session, cut), cut);
+    }
+    for (const { text } of toolCalls(file).filter(({ failed }) => failed)) {
       const cut = cutText(text);
       texts.set(idOf(session, cut), cut);
     }
@@ -325,11 +359,9 @@ function otherText(group, centre, texts) {
   return other && texts.get(other.id);
 }
 
-export function clusters(ledger) {
-  const indexedEntries = indexed(ledger.entries);
-  const counted = countedWords(indexedEntries);
-  const decided = decider(ledger.verdicts, counted);
-  const entries = indexedEntries.filter((entry) => !decided(entry));
+function groupsOf(rows, verdicts, counted) {
+  const decided = decider(verdicts, counted);
+  const entries = rows.filter((entry) => !decided(entry));
   const parent = entries.map((_, index) => index);
   const root = (index) => (parent[index] === index ? index : (parent[index] = root(parent[index])));
   for (let i = 0; i < entries.length; i += 1) {
@@ -339,11 +371,20 @@ export function clusters(ledger) {
   }
   const groups = new Map();
   entries.forEach((entry, index) => groups.set(root(index), [...(groups.get(root(index)) ?? []), entry]));
-  return [...groups.values()]
-    .map((group) => ({ group: group.sort(byAge), sessions: new Set(group.map(({ session }) => session)).size }))
+  return [...groups.values()];
+}
+
+export function clusters(ledger) {
+  const prompts = indexed(ledger.entries);
+  const failures = indexed(ledger.failures);
+  const counted = countedWords([...prompts, ...failures]);
+  const promptGroups = groupsOf(prompts, ledger.verdicts.filter((row) => !isFailedRow(row)), counted).map((group) => ({ group, failed: false }));
+  const failureGroups = groupsOf(failures, ledger.verdicts.filter(isFailedRow), counted).map((group) => ({ group, failed: true }));
+  return [...promptGroups, ...failureGroups]
+    .map(({ group, failed }) => ({ group: group.sort(byAge), failed, sessions: new Set(group.map(({ session }) => session)).size }))
     .filter(({ sessions }) => sessions >= MIN_SESSIONS)
     .sort((a, b) => b.sessions - a.sessions || byAge(b.group.at(-1), a.group.at(-1)))
-    .map(({ group, sessions }) => ({ id: group[0].id, group, counted, sessions, first: group[0].date, last: group.at(-1).date }));
+    .map(({ group, failed, sessions }) => ({ id: group[0].id, group, failed, counted, sessions, first: group[0].date, last: group.at(-1).date }));
 }
 
 function listed(cwd, ledger) {
@@ -355,8 +396,8 @@ function listed(cwd, ledger) {
     .map(({ cluster, centre }) => ({ ...cluster, text: texts.get(centre.id), other: otherText(cluster.group, centre, texts) }));
 }
 
-function describe({ id, text, sessions, first, last }) {
-  return `${id} "${text}" (${sessions} sessions, ${first} to ${last})`;
+function describe({ id, failed, text, sessions, first, last }) {
+  return `${id} ${failed ? 'failed: ' : ''}"${text}" (${sessions} sessions, ${first} to ${last})`;
 }
 
 function today() {
@@ -381,25 +422,54 @@ function readCount(cwd) {
 }
 
 function dropGone(cwd) {
+  const live = new Set(sessionFiles(projectFolder(cwd)).map((file) => path.basename(file, '.jsonl')));
+  const alive = ({ session, date }) => live.has(session) || date >= today();
+  const failures = readFailures(cwd);
+  if (!failures.every(alive)) rewrite(failuresFile(cwd), failures.filter(alive));
   const ledger = currentLedger(cwd);
   if (ledger === null) return;
-  const live = new Set(sessionFiles(projectFolder(cwd)).map((file) => path.basename(file, '.jsonl')));
-  const kept = { ...ledger, entries: ledger.entries.filter(({ session, date }) => live.has(session) || date >= today()) };
-  if (kept.entries.length !== ledger.entries.length) rewrite(ledgerFile(cwd), kept);
+  const kept = { ...ledger, entries: ledger.entries.filter(alive) };
+  if (kept.entries.length !== ledger.entries.length) rewrite(ledgerFile(cwd), ledgerRows(kept));
+}
+
+function failedCalls(cwd, since) {
+  const scannedAt = new Date();
+  const files = sessionFiles(projectFolder(cwd)).filter((file) => fs.statSync(file).mtimeMs >= since);
+  return { scannedAt, rows: files.flatMap((file) => toolCalls(file).filter(({ failed }) => failed).map(failureOf)) };
+}
+
+function storeFailures(cwd, { scannedAt, rows }) {
+  const file = failuresFile(cwd);
+  const stored = readFailures(cwd);
+  const known = new Set(stored.map(({ id }) => id));
+  const fresh = [...new Map(rows.filter(({ id }) => !known.has(id)).map((row) => [row.id, row])).values()];
+  if (stored.length + fresh.length > MAX_ENTRIES) rewrite(file, [...stored, ...fresh].slice(-MAX_ENTRIES));
+  else appendRows(file, fresh);
+  fs.utimesSync(file, scannedAt, scannedAt);
+}
+
+function failuresWrittenAt(cwd) {
+  return fs.statSync(failuresFile(cwd), { throwIfNoEntry: false })?.mtimeMs ?? -Infinity;
 }
 
 export function readLedger(cwd) {
-  return { ...(currentLedger(cwd) ?? ledgerOf([])), verdicts: readVerdicts(cwd) };
+  return { ...(currentLedger(cwd) ?? ledgerOf([])), verdicts: readVerdicts(cwd), failures: readFailures(cwd) };
+}
+
+function withFailures(cwd, ledger) {
+  return ledger === null ? null : { ...ledger, failures: readFailures(cwd) };
 }
 
 function snapshot(cwd) {
-  return waitLocked(cwd, () => loadOrReset(cwd));
+  return waitLocked(cwd, () => withFailures(cwd, loadOrReset(cwd)));
 }
 
 function recount(cwd) {
+  const found = failedCalls(cwd, waitLocked(cwd, () => failuresWrittenAt(cwd)));
   const ledger = waitLocked(cwd, () => {
+    storeFailures(cwd, found);
     dropGone(cwd);
-    return loadOrReset(cwd);
+    return withFailures(cwd, loadOrReset(cwd));
   });
   if (ledger === null) return;
   const count = listed(cwd, ledger).length;
@@ -498,8 +568,8 @@ function recordPrompt(cwd, session, prompt, date) {
     ledger = loadOrReset(cwd);
   }
   const textOf = (entry) => transcriptTexts(cwd, new Set([entry.session])).get(entry.id);
-  const result = react(ledger, { session, prompt, date }, textOf, (keptWords) => lessonNameFor(cwd, keptWords));
-  appendCache(cwd, result.rows);
+  const result = react({ ...ledger, verdicts: ledger.verdicts.filter((row) => !isFailedRow(row)) }, { session, prompt, date }, textOf, (keptWords) => lessonNameFor(cwd, keptWords));
+  appendRows(ledgerFile(cwd), result.rows);
   if (result.repeated !== null) append(verdictsFile(cwd), [{ repeated: result.repeated }]);
   compact(cwd);
   return { line: result.line, detached: null };
@@ -538,11 +608,13 @@ function backfill(cwd) {
       .filter(({ text, kind }) => kind !== 'skipped' && recordable(text.trim()))
       .map(({ text, timestamp }) => entryOf({ date: timestamp.slice(0, 10), session, text }));
   });
+  const found = failedCalls(cwd, -Infinity);
   waitLocked(cwd, () => {
+    storeFailures(cwd, found);
     const rows = cacheRows(cwd) ?? [];
     if (!rows.every(isKnownRow)) return;
     const known = new Set(ledgerOf(rows).entries.map(({ id }) => id));
-    appendCache(cwd, entries.filter(({ id }) => !known.has(id)));
+    appendRows(ledgerFile(cwd), entries.filter(({ id }) => !known.has(id)));
     compact(cwd);
   });
   recount(cwd);
@@ -557,20 +629,23 @@ function candidates(cwd, withTexts) {
   if (all.length > shown.length) process.stdout.write(`${shown.length} of ${all.length} shown; keep or reject these to see more.\n`);
 }
 
+function marked(row, failed) {
+  return failed ? { ...row, failed: true } : row;
+}
+
 function openRow(command, id, open) {
   const cluster = open.find(({ group }) => group.some((entry) => entry.id === id));
   if (cluster === undefined) return null;
-  const { group, counted } = cluster;
+  const { group, counted, failed } = cluster;
   const neighbours = neighbourCount(group, counted);
   const centre = group.reduce((best, entry) => (neighbours(entry) > neighbours(best) ? entry : best));
-  return { verdict: VERDICTS[command], ids: group.map((entry) => entry.id), words: [...centre.words] };
+  return marked({ verdict: VERDICTS[command], ids: group.map((entry) => entry.id), words: [...centre.words] }, failed);
 }
 
-function decidedRow(command, id, verdicts, entries) {
+function decidedRow(command, id, verdicts, entries, counted) {
   const entry = entries.find((candidate) => candidate.id === id) ?? { id, words: new Set() };
-  const counted = countedWords(entries);
   const row = verdicts.findLast((candidate) => rowMatches(candidate, entry, counted));
-  return row === undefined ? null : { verdict: VERDICTS[command], ids: row.ids ?? [id], words: row.words };
+  return row === undefined ? null : marked({ verdict: VERDICTS[command], ids: row.ids ?? [id], words: row.words }, isFailedRow(row));
 }
 
 function decide(command, ids, cwd) {
@@ -578,9 +653,13 @@ function decide(command, ids, cwd) {
   const ledger = snapshot(cwd);
   const open = ledger === null ? [] : clusters(ledger);
   const verdicts = waitLocked(cwd, () => readVerdicts(cwd));
-  const entries = ledger === null ? [] : indexed(ledger.entries);
+  const prompts = ledger === null ? [] : indexed(ledger.entries);
+  const failures = ledger === null ? [] : indexed(ledger.failures);
+  const counted = countedWords([...prompts, ...failures]);
   const rows = ids.map((id) => {
-    const row = openRow(command, id, open) ?? decidedRow(command, id, verdicts, entries);
+    const row = openRow(command, id, open)
+      ?? decidedRow(command, id, verdicts.filter((verdict) => !isFailedRow(verdict)), prompts, counted)
+      ?? decidedRow(command, id, verdicts.filter(isFailedRow), failures, counted);
     if (row === null) throw new UsageError(`${command} id '${id}' is not in an open or decided candidate`);
     return row;
   });

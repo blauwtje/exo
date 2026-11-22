@@ -602,3 +602,94 @@ test('an unreadable config ledger is treated as absent and candidates lists from
   assert.equal(listed.status, 0, listed.stderr);
   assert.match(listed.stdout, new RegExp(`^${idOf(rows.at(-3))} "alpha bravo charlie delta echo" \\(3 sessions`));
 });
+
+function failingCall(env, session, date, name, input, index = 0) {
+  const id = `toolu-${session}-${index}`;
+  const timestamp = `${date}T11:00:00.000Z`;
+  const rows = [
+    { type: 'assistant', timestamp, message: { content: [{ type: 'tool_use', id, name, input }] } },
+    { type: 'user', timestamp, message: { content: [{ type: 'tool_result', tool_use_id: id, is_error: true, content: 'failed' }] } }
+  ];
+  fs.appendFileSync(path.join(env.folder, `${session}.jsonl`), rows.map((row) => `${JSON.stringify(row)}\n`).join(''));
+}
+
+const failuresPath = ({ ledger }) => ledger.replace(/\.jsonl$/, '.failures.jsonl');
+const BUILD = 'npm run build --watch';
+const failedId = (session, date, text) => entryOf({ date, session, text }).id;
+
+test('a tool call that fails in 3 sessions is stored as hashes and listed and counted as a failed candidate', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) failingCall(env, session, date, 'Bash', { command: BUILD });
+  failingCall(env, 'f1', '2026-01-03', 'Bash', { command: BUILD }, 1);
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const stored = fs.readFileSync(failuresPath(env), 'utf8');
+  assert.equal(stored.trim().split('\n').length, 3);
+  assert.equal(/npm|build|watch/.test(stored), false);
+  assert.equal(modeOf(failuresPath(env)), 0o600);
+  assert.equal(countOf(env), 1);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${failedId('f1', '2026-01-03', `Bash ${BUILD}`)} failed: "Bash ${BUILD}" (3 sessions, 2026-01-03 to 2026-01-05)\n`);
+});
+
+test('a failed Read of one file path in 3 sessions is listed by the words of its path', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  const file = '/work/app/src/parser.ts';
+  for (const [session, date] of [['r1', '2026-02-01'], ['r2', '2026-02-02'], ['r3', '2026-02-03']]) failingCall(env, session, date, 'Read', { file_path: file });
+  assert.equal(run(env, ['backfill', '--cwd', env.project]).status, 0);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${failedId('r1', '2026-02-01', `Read ${file}`)} failed: "Read ${file}" (3 sessions, 2026-02-01 to 2026-02-03)\n`);
+});
+
+test('a tool call that fails in 2 sessions is no candidate', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04']]) failingCall(env, session, date, 'Bash', { command: BUILD });
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  assert.equal(countOf(env), 0);
+});
+
+test('a kept failure is recorded as a failed verdict and not listed again', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) failingCall(env, session, date, 'Bash', { command: BUILD });
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const id = failedId('f1', '2026-01-03', `Bash ${BUILD}`);
+  const kept = run(env, ['keep', id, '--cwd', env.project]);
+  assert.equal(kept.status, 0, kept.stderr);
+  assert.equal(kept.stdout, `${id} kept\n`);
+  const [verdict] = fs.readFileSync(verdictsPath(env), 'utf8').trim().split('\n').map((row) => JSON.parse(row));
+  assert.equal(verdict.failed, true);
+  assert.equal(verdict.ids.length, 3);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  assert.equal(countOf(env), 0);
+});
+
+test('recount reads only the transcripts changed since the failures file was written', () => {
+  const env = fixture();
+  writeLedger(env, fillers(60));
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  const past = new Date(Date.now() - 3_600_000);
+  for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) {
+    failingCall(env, session, date, 'Bash', { command: BUILD });
+    fs.utimesSync(path.join(env.folder, `${session}.jsonl`), past, past);
+  }
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(countOf(env), 0);
+  const later = new Date(Date.now() + 60_000);
+  fs.utimesSync(path.join(env.folder, 'f3.jsonl'), later, later);
+  for (const session of ['f1', 'f2']) fs.utimesSync(path.join(env.folder, `${session}.jsonl`), later, later);
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(countOf(env), 1);
+});
+
+test('a store with no failures file lists the same candidates, and recount adds no field to the ledger', () => {
+  const env = fixture();
+  const rows = pair('alpha bravo charlie delta echo', '2026-03-01');
+  writeLedger(env, [...fillers(60), ...rows]);
+  const before = readLedger(env);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(rows[0])} "alpha bravo charlie delta echo" (3 sessions, 2026-01-01 to 2026-03-01)\n`);
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.deepEqual(readLedger(env), before);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(rows[0])} "alpha bravo charlie delta echo" (3 sessions, 2026-01-01 to 2026-03-01)\n`);
+});
