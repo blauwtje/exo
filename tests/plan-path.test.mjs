@@ -122,3 +122,25 @@ test('next-task names the base unknown on the default branch', async () => {
   const result = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', root], { cwd: root });
   assert.match(result.stdout, /^Review effort: medium \(base unknown\)$/m);
 });
+
+async function finishedPlanRun(plan) {
+  const { root } = await landingCheckout();
+  await fs.writeFile(path.join(root, RELATIVE_PLAN), plan.replace(/### Task 4[\s\S]*$/, ''));
+  git(root, 'commit', '-q', '-am', 'feat(app): greet\n\nPlan-task: fixture/1');
+  return run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', root], { cwd: root });
+}
+
+test('next-task prints the Review Focus bullets after the review effort with Next: none', async () => {
+  const withFocus = PLAN.replace('## Tasks', '## Review Focus\n- A list saved before this change must still load.\n- The empty input is handled.\n\n## Tasks');
+  const result = await finishedPlanRun(withFocus);
+  assert.equal(result.code, 0, result.stderr);
+  const lines = result.stdout.trimEnd().split('\n');
+  assert.match(lines[2], /^Review effort: /);
+  assert.deepEqual(lines.slice(3), ['Review focus:', '- A list saved before this change must still load.', '- The empty input is handled.']);
+});
+
+test('next-task prints no Review focus line for a plan without the section', async () => {
+  const result = await finishedPlanRun(PLAN);
+  assert.equal(result.code, 0, result.stderr);
+  assert.doesNotMatch(result.stdout, /Review focus/);
+});

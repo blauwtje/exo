@@ -37,6 +37,11 @@ function reviewEffortLine(root) {
   return `Review effort: ${reviewEffort(changed, environmentMs('EXO_REVIEW_LINES', 150))} (${changed} changed lines)\n`;
 }
 
+function reviewFocusLines(planText) {
+  const bullets = frameOf(parsePlan(planText).frame).reviewFocus?.split('\n').filter((line) => line.startsWith('- ')) ?? [];
+  return bullets.length === 0 ? '' : `Review focus:\n${bullets.join('\n')}\n`;
+}
+
 export function nextTaskReport({ planText, planPath, root }) {
   const { tasks, frame } = parsePlan(planText);
   const landed = landedTasks(tasks, root, planIdOf(planPath));
@@ -55,7 +60,7 @@ if (isMain(import.meta.url)) {
   const report = nextTaskReport({ planText: fs.readFileSync(planPath, 'utf8'), planPath, root });
   const [landedLine, nextLine] = report.split('\n');
   if (nextLine === 'Next: none') {
-    process.stdout.write(`${report}${reviewEffortLine(root)}`);
+    process.stdout.write(`${report}${reviewEffortLine(root)}${reviewFocusLines(fs.readFileSync(planPath, 'utf8'))}`);
   } else {
     const brief = scratchPath(root, `brief-${nextLine.split(' ')[1]}.md`);
     fs.writeFileSync(brief, report);
