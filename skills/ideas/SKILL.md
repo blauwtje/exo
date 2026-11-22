@@ -1,6 +1,7 @@
 ---
 name: ideas
 description: "Turns one question on any subject into a short list of novel, useful and well-reasoned ideas by running a fixed ideation playbook as fresh helpers. Use when the user says 'give me ideas', 'what are my options' or 'how could I approach' a problem. Not for design options for a code change (exo:spec) or sourced research (exo:search)."
+disable-model-invocation: true
 argument-hint: "<question>"
 metadata:
   author: exo
@@ -69,7 +70,7 @@ Report: ~/.ideas/<YYYY-MM-DD>-<slug>/report.md
 ## Limitations
 
 - The run is fully automatic: it asks nothing after the question.
-- Ideas rest on the helpers' knowledge and a prior-art check, not on a sourced search; use exo:search for sources.
+- Ideas rest on the helpers' knowledge and a prior-art check, not on a sourced search; use /exo:search for sources.
 - Run files are append-only, and a run folder is never reused: a second run of the same question gets `-2`.
 
 ## Troubleshooting

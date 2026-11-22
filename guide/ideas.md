@@ -6,7 +6,7 @@ Warning: a run starts about 14 helpers (about 9 more on a second round) and uses
 
 ## When it runs
 
-On request: ask for ideas, options or approaches for a problem. The model starts it in your current session. It asks for the question once when you give none, then nothing more.
+On request: type `/exo:ideas` with your question. Claude does not start it by itself. It asks for the question once when you give none, then nothing more.
 
 Not for design options for a code change (`exo:spec`) or sourced research (`exo:search`).
 

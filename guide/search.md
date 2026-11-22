@@ -6,7 +6,7 @@ Claude's WebFetch and WebSearch cannot reach reddit.com, and Reddit blocks logge
 
 ## When it runs
 
-On request: ask to search for something, what people say about it, sources on it or research on it. The model starts it in your current session. Add `--only` with a comma-separated list of `github`, `reddit`, `hn` and `web` to search only some sources, for example `hooks tips --only reddit,github`.
+On request: type `/exo:search` with your question. Claude does not start it by itself. Add `--only` with a comma-separated list of `github`, `reddit`, `hn` and `web` to search only some sources, for example `hooks tips --only reddit,github`.
 
 Not for this repo's code, a video url (`exo:watch`) or ideas (`exo:ideas`).
 

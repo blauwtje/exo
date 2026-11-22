@@ -14,7 +14,7 @@ Read it when: you write or change a prompt, skill, agent brief or delegation tex
 - **Explain why instead of CAPS, MUST or "if in doubt, use X".** Opus 5.5 overtriggers. [6][8] exo: `skills/author/references/instruction-style.md`
 - **Drop "double-check" and "final verification" steps.** Opus 5.5 over-verifies. [6] exo: `agents/researcher.md`
 - **Think before coding: settle open decisions.** [9] exo: `skills/spec/SKILL.md`
-- **Mark a skill manual-only.** The pinned sources mark their mode skill manual-only. [12] exo: conflict with [4], decided: stay model-invoked, manual only when its route eval shows misfires
+- **Mark a skill manual-only.** The pinned sources mark their mode skill manual-only. [12] exo: conflict with [4], decided: stay model-invoked, manual only when its route eval shows misfires or the user asks
 - **Cut a prompt line that changes no decision, and delete a reference with no new content instead of leaving a stub.** [11][13] exo: `skills/author/references/instruction-style.md`
 - **Point at the structural source (types, README, config) instead of restating it.** [11] exo: `CONTRIBUTING.md`
 - **Encode a rule that keeps coming back as a lint, flag or script and drop the sentence; when only judgment fits, make the instruction prominent and add an example of the failure.** [14] exo: `skills/learn/SKILL.md` looks for an existing check first, decided: a mistake that recurs becomes a check and the sentence it replaces is deleted in the same change; no check for a mistake not seen

@@ -7,6 +7,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Changed
+
+- `exo:ideas` and `exo:search` are user-only with `disable-model-invocation: true`, so Claude no longer starts them; type `/exo:ideas` or `/exo:search` to run one, and the routing eval drops their prompts.
+
 ### Added
 
 - `exo:search` answers a question with links and word-for-word quotes checked against saved evidence from GitHub, Reddit, Hacker News and the web; it moved in from the separate `/search` skill.

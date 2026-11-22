@@ -1,6 +1,7 @@
 ---
 name: search
 description: "Searches GitHub, Reddit, Hacker News and the web and answers with links and word-for-word quotes checked against the saved evidence. Use when the user says 'search for', 'what do people say about', 'find sources on' or 'research X'. Not for this repo's code, a video url (exo:watch) or ideas (exo:ideas)."
+disable-model-invocation: true
 argument-hint: "<question> [--only github,reddit,hn,web]"
 metadata:
   author: exo

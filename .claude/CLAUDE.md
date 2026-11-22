@@ -26,7 +26,7 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 - Skills and agents give that mechanical part to a script and keep the judgment, because the model reads every language and phrasing.
 - Run `claude plugin eval` only before a release, always with `--max-cost-usd`.
 - A bare skill name in a skill or prompt body means `exo:<name>`.
-- Keep skills model-invoked, and make one manual only when its route eval shows it fires at the wrong time.
+- Keep skills model-invoked, and make one manual only when its route eval shows it fires at the wrong time or when the user asks.
 - Derive a new value from the repo, or use one overridable default or an `EXO_*_MS` var via `environmentMs`.
 
 ## Release
