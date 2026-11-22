@@ -22,7 +22,7 @@ Turn a lesson into the cheapest form that stops the mistake, and keep CLAUDE.md 
 ### Start
 
 - The hook line `exo: you asked something like this on <date>: "<text>". exo:learn turns a repeated correction or wish into a check or lesson (id <id>).` flags a prompt that repeats ones from at least 2 other sessions. Judge whether it is a correction or wish; when it is neither, say nothing and go on. Otherwise run Capture on it.
-- The hook line `exo: this prompt shares words with a lesson you kept (id <id>); exo:learn can strengthen it` means the prompt may show a kept lesson failed. Judge whether it does; when it does not, say nothing and go on. Otherwise run Strengthen on it.
+- The hook line `exo: this prompt shares words with the lesson "<name>" you kept (id <id>); exo:learn can strengthen it` (without `the lesson "<name>"`, reading `a lesson`, when no note matches) means the prompt may show a kept lesson failed. Judge whether it does; when it does not, say nothing and go on. Otherwise run Strengthen on it.
 - The hook line `Exo found <n> new memories; /exo:learn lists them.` means the candidates wait; finish the current task, then run Mine.
 - The user says they have corrected this before, or asks you to remember something, in any language: run Capture.
 - A request to mine past sessions runs Mine; a request to prune runs Prune.

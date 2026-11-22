@@ -113,6 +113,19 @@ test('a kept lesson is flagged once per keep, and a new keep re-arms it', () => 
   assert.equal(hook(env, 'three', REPEAT), KEPT_LINE);
 });
 
+test('a kept lesson with a matching note names it in the hook line, and one without keeps the old line', (t) => {
+  const env = fixture();
+  const store = path.join(env.project, '.claude', 'lessons');
+  t.after(() => fs.rmSync(store, { recursive: true, force: true }));
+  writeLedger(env, [...fillers(60), EARLIER, { seen: 'one' }, { seen: 'two' }, keptRow]);
+  fs.mkdirSync(store, { recursive: true });
+  fs.writeFileSync(path.join(store, 'other.md'), '---\nname: unrelated\ndescription: x\ntype: feedback\nseen: 2026-01-01\n---\nsomething else entirely\n');
+  assert.equal(hook(env, 'one', REPEAT), KEPT_LINE);
+  fs.writeFileSync(path.join(store, 'rename.md'), '---\nname: rename-everywhere\ndescription: x\ntype: feedback\nseen: 2026-01-01\n---\nrename variable totalcount everywhere\n');
+  assert.equal(run(env, ['keep', entryOf(EARLIER).id, '--cwd', env.project]).status, 0);
+  assert.equal(hook(env, 'two', REPEAT), `exo: this prompt shares words with the lesson "rename-everywhere" you kept (id ${entryOf(EARLIER).id}); exo:learn can strengthen it\n`);
+});
+
 test('a cluster kept and then rejected stays silent on a repeat', () => {
   const env = fixture();
   writeLedger(env, [...fillers(60), EARLIER, { seen: 'one' }, keptRow]);

@@ -8,6 +8,7 @@ import { sleepSync } from '#basics';
 import { configDirectory } from '#config-directory';
 import { scratchPath } from '#scratch-path';
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
+import { lessonPaths } from './lessons.mjs';
 import { projectFolder, sessionFiles, promptMessages, typedPrompt } from './sessions.mjs';
 
 const MAX_PROMPT_CHARS = 600;
@@ -406,13 +407,35 @@ function announcement(counts) {
   return { counts: { ...counts, printed: counts.count }, line: `Exo found ${counts.count} new memories; /exo:learn lists them.` };
 }
 
+function noteName(text) {
+  const lines = text.split('\n');
+  const close = lines[0] === '---' ? lines.indexOf('---', 1) : -1;
+  const line = lines.slice(1, close === -1 ? 1 : close).find((candidate) => candidate.startsWith('name:'));
+  return line?.slice('name:'.length).trim() || undefined;
+}
+
+function lessonNameFor(cwd, keptWords) {
+  const kept = new Set(keptWords);
+  const stores = new Set(['project store', 'personal store']);
+  const best = lessonPaths(cwd)
+    .filter(([label]) => stores.has(label))
+    .flatMap(([, dir]) => (fs.existsSync(dir) ? fs.readdirSync(dir).filter((file) => file.endsWith('.md') && file !== 'index.md').sort().map((file) => path.join(dir, file)) : []))
+    .map((file) => {
+      const text = fs.readFileSync(file, 'utf8');
+      return { name: noteName(text), shared: words(text).filter((word) => kept.has(word)).length };
+    })
+    .filter(({ name, shared }) => name !== undefined && shared >= MIN_SHARED_WORDS)
+    .sort((left, right) => right.shared - left.shared)[0];
+  return best?.name;
+}
+
 function keptRepeat(verdicts, kept, entries, counted) {
   const row = verdicts[kept];
   const id = row.ids?.[0] ?? entries.find((entry) => rowMatches(row, entry, counted)).id;
   return verdicts.slice(kept + 1).some((later) => later.repeated === id) ? null : id;
 }
 
-function react(ledger, { session, prompt, date }, textOf) {
+function react(ledger, { session, prompt, date }, textOf, nameOf) {
   const text = prompt.trim();
   const recorded = recordable(text) ? [entryOf({ date, session, text })] : [];
   const first = !ledger.seen.some(({ seen }) => seen === session) && !ledger.entries.some((entry) => entry.session === session);
@@ -431,7 +454,12 @@ function react(ledger, { session, prompt, date }, textOf) {
   const newest = ledger.verdicts.findLastIndex((row) => related.some((entry) => rowMatches(row, entry, counted)));
   if (newest !== -1 && ledger.verdicts[newest].verdict === VERDICTS.reject) return flaggable;
   const repeated = newest === -1 ? null : keptRepeat(ledger.verdicts, newest, related, counted);
-  if (repeated !== null) return { ...flaggable, line: `exo: this prompt shares words with a lesson you kept (id ${repeated}); exo:learn can strengthen it\n`, repeated };
+  if (repeated !== null) {
+    const keptWords = ledger.verdicts[newest].words;
+    const name = Array.isArray(keptWords) ? nameOf(keptWords) : undefined;
+    const lesson = name === undefined ? 'a lesson' : `the lesson "${name}"`;
+    return { ...flaggable, line: `exo: this prompt shares words with ${lesson} you kept (id ${repeated}); exo:learn can strengthen it\n`, repeated };
+  }
   if (newest !== -1 || matchedSessions < MIN_SESSIONS - 1 || ledger.flagged.some((row) => similar(current.words, row.flagged, counted))) return flaggable;
   const earlierText = textOf(earlier);
   if (earlierText === undefined) return flaggable;
@@ -466,7 +494,7 @@ function recordPrompt(cwd, session, prompt, date) {
     ledger = loadOrReset(cwd);
   }
   const textOf = (entry) => transcriptTexts(cwd, new Set([entry.session])).get(entry.id);
-  const result = react(ledger, { session, prompt, date }, textOf);
+  const result = react(ledger, { session, prompt, date }, textOf, (keptWords) => lessonNameFor(cwd, keptWords));
   appendCache(cwd, result.rows);
   if (result.repeated !== null) append(verdictsFile(cwd), [{ repeated: result.repeated }]);
   compact(cwd);

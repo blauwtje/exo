@@ -135,7 +135,7 @@ function projectRoot(cwd, { explicit }) {
   return topFolder(path.resolve(cwd));
 }
 
-function lessonPaths(root) {
+export function lessonPaths(root) {
   const rules = path.join(configDirectory(), 'rules');
   const personalRules = fs.existsSync(rules) ? fs.realpathSync(rules) : rules;
   return [
