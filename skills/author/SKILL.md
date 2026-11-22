@@ -51,7 +51,7 @@ Produce a skill or agent where every line changes what the model does and every 
 
 ### Judgment
 
-- A rule a real failure showed outranks a rule that only reads well.
+- A rule a real failure showed outranks a rule that only reads well. For a description, write prompts that must fire the skill and near misses that must not, tune the edit on one half and keep it only when the held-out half gets no worse; log a dropped edit as "rejected: <what>, <why>" where the project logs its failures.
 
 ## Examples
 

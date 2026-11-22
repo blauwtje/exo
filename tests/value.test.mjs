@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { armFigures, planBudget, readRows, regressions, settle, unmeasuredParts } from '../evals/value.mjs';
+import { armFigures, mergeRuns, needsThird, planBudget, readRows, regressions, runTally, settle, unmeasuredParts, verdictOf } from '../evals/value.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const table = fs.readFileSync(path.join(root, 'evals', 'value.md'), 'utf8');
@@ -54,4 +54,51 @@ test('a with figure that dropped between numbers is a regression, a void is not'
   assert.deepEqual(regressions({ part: 'p', with: 'void' }, { part: 'p', with: 0 }), []);
   assert.deepEqual(regressions({ part: 'p', with: '1' }, { part: 'p', with: 'void' }), []);
   assert.deepEqual(regressions({ part: 'p', with: '1' }, { part: 'p', with: 1 }), []);
+});
+
+const run = (passed, extra = {}) => ({ passed, costUsd: 1, ...extra });
+
+test('two agreeing runs need no third, a split needs one, a cut run needs none', () => {
+  assert.equal(needsThird({ arms: { with: { a: run(true), b: run(true) }, without: { a: run(false), b: run(false) } } }), false);
+  assert.equal(needsThird({ arms: { with: { a: run(true), b: run(true) }, without: { a: run(true), b: run(false) } } }), true);
+  assert.equal(needsThird({ arms: { with: { a: run(true), b: run(false, { skippedPaidGraders: true }) } } }), false);
+});
+
+test('a merged case holds three runs per arm and the majority decides', () => {
+  const first = [{ name: 'adhd', arms: { with: { a: run(true), b: run(false) }, without: { a: run(false), b: run(false) } } }];
+  const extra = [{ name: 'adhd', arms: { with: { a: run(true) }, without: { a: run(false) } } }];
+  const merged = mergeRuns(first, extra);
+  assert.equal(Object.keys(merged[0].arms.with).length, 3);
+  assert.equal(Object.keys(merged[0].arms.without).length, 3);
+  assert.equal(armFigures(merged, 'with').passed, 1);
+});
+
+test('the verdict is better, same, worse or not sure yet', () => {
+  const arm = (passed, extra = {}) => ({ passed, cost: 1, cut: 0, ...extra });
+  assert.equal(verdictOf(arm(2), arm(1)), 'better');
+  assert.equal(verdictOf(arm(1), arm(1)), 'same');
+  assert.equal(verdictOf(arm(0), arm(1)), 'worse');
+  assert.equal(verdictOf(arm(2), arm(1, { cut: 1 })), 'not sure yet');
+  assert.equal(verdictOf(arm(2, { cost: '-' }), arm(1)), 'not sure yet');
+  assert.equal(verdictOf(arm(0), arm(0)), 'not sure yet');
+});
+
+test('settle gives a failed or void row the verdict not sure yet and a measured row its verdict', () => {
+  const row = { ...readRows(table)[0], cases: 'one' };
+  const arm = (passed, cost) => ({ passed, cost, cut: 0 });
+  assert.equal(settle(row, arm(1, 0.5), arm(0, 0.5)).verdict, 'better');
+  assert.equal(settle(row, arm(1, 1), arm(0, 5)).verdict, 'not sure yet');
+  assert.equal(settle(row, arm(0, 1), arm(0, 1)).verdict, 'not sure yet');
+});
+
+test('the run tally counts passed runs that are not cut, and all runs', () => {
+  const cases = [{ arms: { with: { a: run(true), b: run(false), c: run(true, { skippedPaidGraders: true }) } } }, { arms: { with: { a: run(true) } } }];
+  assert.deepEqual(runTally(cases, 'with'), { passed: 2, total: 4 });
+  assert.deepEqual(runTally(cases, 'without'), { passed: 0, total: 0 });
+});
+
+test('the table has a verdict column as its last column and still reads', () => {
+  const header = table.split('\n').find((line) => line.startsWith('| part |'));
+  assert.match(header, /\| date \| verdict \|$/);
+  assert.ok(readRows(table).every((row) => row.verdict !== undefined));
 });

@@ -18,6 +18,7 @@ import { checkInvisibleUnicode } from './verify/checks/invisible-unicode.mjs';
 import { checkPersonalPaths } from './verify/checks/personal-paths.mjs';
 import { startSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
 import { checkScriptOptions } from './verify/checks/script-options.mjs';
+import { checkPositionalLiterals } from './verify/checks/positional-literals.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
@@ -57,6 +58,7 @@ checkSilentCatch(report, repository);
 checkInvisibleUnicode(report, repository);
 checkPersonalPaths(report, repository);
 checkScriptOptions(report, repository);
+checkPositionalLiterals(report, repository);
 if (behavior) {
   const outcome = await behavior;
   report.result(outcome.status, outcome.name, outcome.detail);
