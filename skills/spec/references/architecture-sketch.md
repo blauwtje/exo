@@ -1,6 +1,6 @@
 # Options
 
-Use this when the user asks for options or ideas. One context drafting every option drafts near its first idea, so the steps below force distance.
+Use this when the user asks for design options for a change; ideas on any other question go to exo:ideas. One context drafting every option drafts near its first idea, so the steps below force distance.
 
 ## Draw the pairs
 

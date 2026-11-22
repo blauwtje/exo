@@ -72,7 +72,7 @@
   "spec": [
     { "prompt": "Plan this change before we build it: invoices need late fees.", "should_trigger": true },
     { "prompt": "Write a spec for exporting reports to CSV.", "should_trigger": true },
-    { "prompt": "I want a better search, give me some options and ideas.", "should_trigger": true },
+    { "prompt": "Give me design options for adding caching to the API layer in our repo.", "should_trigger": true },
     { "prompt": "We need to rework how sessions are stored but I am not sure how, help me decide.", "should_trigger": true },
     { "prompt": "Rename the function parse to parseInput everywhere.", "should_trigger": false },
     { "prompt": "Make the button on the landing page look nicer.", "should_trigger": false },
@@ -88,5 +88,25 @@
     { "prompt": "Download the audio of a podcast and convert it to mp3.", "should_trigger": false },
     { "prompt": "Write a script that uploads a video to YouTube.", "should_trigger": false },
     { "prompt": "Read the docs page at https://example.com/docs and explain the setup.", "should_trigger": false }
+  ],
+  "search": [
+    { "prompt": "Search for what people say about Bun versus Node in production.", "should_trigger": true },
+    { "prompt": "Find sources on how teams handle zero-downtime Postgres migrations.", "should_trigger": true },
+    { "prompt": "What do people say about the new Zed editor on Reddit and Hacker News?", "should_trigger": true },
+    { "prompt": "Research X: are there open source tools that diff OpenAPI specs?", "should_trigger": true },
+    { "prompt": "Where in this repo do we parse the config file?", "should_trigger": false },
+    { "prompt": "Summarize this video: https://www.youtube.com/watch?v=dQw4w9WgXcQ", "should_trigger": false },
+    { "prompt": "Give me ideas for naming my side project.", "should_trigger": false },
+    { "prompt": "Rename the helper in src/utils.js to formatDate.", "should_trigger": false }
+  ],
+  "ideas": [
+    { "prompt": "Give me ideas for how to get my first 100 users.", "should_trigger": true },
+    { "prompt": "What are my options for making our team's onboarding week less boring for new hires?", "should_trigger": true },
+    { "prompt": "How could I approach teaching my team to write shorter meetings agendas?", "should_trigger": true },
+    { "prompt": "Give me ideas for a birthday present for a friend who likes climbing.", "should_trigger": true },
+    { "prompt": "Give me design options for how to add caching to the API layer.", "should_trigger": false },
+    { "prompt": "Search for what people say about Notion versus Obsidian, with sources.", "should_trigger": false },
+    { "prompt": "Implement the retry option in the upload client.", "should_trigger": false },
+    { "prompt": "Plan how we move the queue to a new provider.", "should_trigger": false }
   ]
 }

@@ -9,6 +9,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `exo:search` answers a question with links and word-for-word quotes checked against saved evidence from GitHub, Reddit, Hacker News and the web; it moved in from the separate `/search` skill.
+- `exo:ideas` turns one question on any subject into a short list of novel ideas by running a fixed playbook as fresh subagents; it moved in from the separate `/ideas` skill.
 - `validate:static` fails a skill whose `SKILL.md` leaves the NVIDIA SkillEvaluator format: the `##` sections Purpose, Prerequisites, Instructions, Examples, Limitations, Troubleshooting and Available Scripts in that order, `metadata.author` and `metadata.tags`, and a scripts table with a row for each script the skill runs.
 - Builders write scratch and repro files to the temp folder and delete the ones they created before the report.
 - A builder's `NEEDS ANSWER` question carries 2 to 3 options and a recommendation, and the build lead asks the user with them.
@@ -48,6 +50,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `spec` triggers on design options for a change only; ideas on any other question go to `exo:ideas`.
 - `build` lands a plan of at most 3 chained tasks itself on `Route: this session` instead of one builder per task (`EXO_SELF_BUILD_TASKS` sets the limit), and `ship` runs on Sonnet.
 - Skills, agents, the adhd style and the repo docs follow pstack's authoring rules: text a check enforces, repeated rules and reasons that change no decision are gone, and author proves an edit by replaying the recorded failure.
 - The adhd style has the agent run every check itself and test a suspected wrong assumption before it asks.

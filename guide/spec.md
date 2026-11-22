@@ -4,7 +4,7 @@ Decides what to build before any code is written, and writes it down as a brief.
 
 ## When it runs
 
-A request leaves a product decision open: what counts as done, which data, which architecture, or a trade-off. It also runs when you ask for options or ideas.
+A request leaves a product decision open: what counts as done, which data, which architecture, or a trade-off. It also runs when you ask for design options for a change; ideas on any other question go to `exo:ideas`.
 
 Not for a clear goal, a bug, or visual-only work.
 

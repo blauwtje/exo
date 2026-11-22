@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const prompts = JSON.parse(fs.readFileSync(path.join(root, 'evals', 'trigger.json'), 'utf8'));
-const SKILLS = ['author', 'build', 'diagnose', 'document', 'learn', 'save', 'ship', 'spec', 'watch'];
+const SKILLS = ['author', 'build', 'diagnose', 'document', 'ideas', 'learn', 'save', 'search', 'ship', 'spec', 'watch'];
 
 const toolLine = (name, input) => JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name, input }] } });
 const textLine = JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'hello' }] } });
@@ -28,7 +28,7 @@ function runTrigger(bin, ...args) {
   });
 }
 
-test('trigger.json holds 4 should-fire and 4 near-miss prompts for each of the nine skills', () => {
+test('trigger.json holds 4 should-fire and 4 near-miss prompts for each of the eleven skills', () => {
   assert.deepEqual(Object.keys(prompts).sort(), SKILLS);
   for (const skill of SKILLS) {
     assert.equal(prompts[skill].length, 8, skill);
