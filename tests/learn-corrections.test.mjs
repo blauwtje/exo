@@ -724,3 +724,56 @@ test('a kept failure with later clean runs prints its kept line', () => {
   assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${id} kept, 1 later clean runs\n`);
   assert.equal(countOf(env), 0);
 });
+
+function otherProject(env) {
+  const project = path.join(fs.realpathSync(os.tmpdir()), 'learn.corrections_x', 'other');
+  fs.mkdirSync(project, { recursive: true });
+  const name = fs.realpathSync(project).replace(/[^A-Za-z0-9]/g, '-');
+  const folder = path.join(env.config, 'projects', name);
+  fs.rmSync(folder, { recursive: true, force: true });
+  fs.mkdirSync(folder, { recursive: true });
+  return { config: env.config, project, folder, ledger: path.join(env.config, 'exo', 'learn', `${name}.jsonl`) };
+}
+
+const SPREAD = [
+  { date: '2026-01-01', session: 'g1', text: 'alpha bravo charlie delta echo' },
+  { date: '2026-01-02', session: 'g2', text: 'alpha bravo charlie delta echo' },
+  { date: '2026-01-03', session: 'g3', text: 'never alpha bravo charlie delta' }
+];
+
+test('a cluster with 2 sessions in one project and 1 in another is listed as global in both', () => {
+  const env = fixture();
+  const other = otherProject(env);
+  writeLedger(env, [...fillers(60), SPREAD[0], SPREAD[1]]);
+  writeLedger(other, [SPREAD[2]]);
+  const ending = '(3 sessions, 2026-01-01 to 2026-01-03) global (2 projects)';
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, `${idOf(SPREAD[0])} "alpha bravo charlie delta echo" ${ending}\n`);
+  assert.equal(run(other, ['candidates', '--cwd', other.project]).stdout, `${idOf(SPREAD[0])} "never alpha bravo charlie delta" ${ending}\n`);
+  assert.equal(run(other, ['candidates', '--texts', '--cwd', other.project]).stdout, `${idOf(SPREAD[0])} "never alpha bravo charlie delta" ${ending}\n  other session: "alpha bravo charlie delta echo"\n`);
+  assert.equal(run(other, ['recount', '--cwd', other.project]).status, 0);
+  assert.equal(countOf(other), 1);
+  fs.rmSync(env.folder, { recursive: true });
+  assert.equal(run(other, ['candidates', '--texts', '--cwd', other.project]).stdout, `${idOf(SPREAD[0])} "never alpha bravo charlie delta" ${ending}\n`);
+});
+
+test('a cluster with 3 sessions in another project only is not listed here', () => {
+  const env = fixture();
+  const other = otherProject(env);
+  writeLedger(env, fillers(60));
+  writeLedger(other, [...fillers(60), ...SPREAD]);
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+  assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
+  assert.equal(countOf(env), 0);
+  assert.equal(run(other, ['candidates', '--cwd', other.project]).stdout, `${idOf(SPREAD[0])} "alpha bravo charlie delta echo" (3 sessions, 2026-01-01 to 2026-01-03)\n`);
+});
+
+test('a verdict in one project hides the cluster in the other', () => {
+  const env = fixture();
+  const other = otherProject(env);
+  writeLedger(env, [...fillers(60), SPREAD[0], SPREAD[1]]);
+  writeLedger(other, [SPREAD[2]]);
+  const kept = run(env, ['keep', idOf(SPREAD[0]), '--cwd', env.project]);
+  assert.equal(kept.status, 0, kept.stderr);
+  assert.equal(run(other, ['candidates', '--cwd', other.project]).stdout, '');
+  assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+});

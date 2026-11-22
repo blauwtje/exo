@@ -28,6 +28,7 @@ const LOCK_RETRY_MS = 50;
 const LOCK_WAIT_MS = environmentMs('EXO_LEARN_LOCK_MS', 2000);
 const FOLDER_MODE = 0o700;
 const FILE_MODE = 0o600;
+const PROJECT_LEDGER = /^[A-Za-z0-9-]+\.jsonl$/;
 const USAGE = 'usage: node corrections.mjs hook | session-start | backfill [--cwd <dir>] | candidates [--texts] [--cwd <dir>] | keep <id...> [--cwd <dir>] | reject <id...> [--cwd <dir>] | recount [--cwd <dir>]';
 const FLAGS = { cwd: 'string', texts: 'boolean', help: 'boolean' };
 
@@ -205,10 +206,16 @@ function ledgerOf(rows) {
   };
 }
 
+function rowsIn(file) {
+  return fs.existsSync(file) ? rowsOf(readText(file) ?? '') : [];
+}
+
+function verdictRows(file) {
+  return rowsIn(file).filter((row) => isRepeatedRow(row) || (Object.values(VERDICTS).includes(row?.verdict) && (Array.isArray(row.ids) || Array.isArray(row.words))));
+}
+
 function readVerdicts(cwd) {
-  return readableLedgers(cwd).map(verdictsOf).filter((file) => fs.existsSync(file))
-    .flatMap((file) => rowsOf(readText(file) ?? ''))
-    .filter((row) => isRepeatedRow(row) || (Object.values(VERDICTS).includes(row?.verdict) && (Array.isArray(row.ids) || Array.isArray(row.words))));
+  return readableLedgers(cwd).map(verdictsOf).flatMap(verdictRows);
 }
 
 function isRepeatedRow(row) {
@@ -246,9 +253,12 @@ function appendRows(file, rows) {
   append(file, rows);
 }
 
+function entryRows(file) {
+  return rowsIn(file).filter((row) => row !== null && isEntryRow(row));
+}
+
 function readFailures(cwd) {
-  const rows = readableLedgers(cwd).map(failuresOf).filter((file) => fs.existsSync(file)).map(readText).filter((text) => text !== null)
-    .flatMap(rowsOf).filter((row) => row !== null && isEntryRow(row));
+  const rows = readableLedgers(cwd).map(failuresOf).flatMap(entryRows);
   return [...new Map(rows.map((row) => [row.id, row])).values()];
 }
 
@@ -298,9 +308,9 @@ function compact(cwd) {
   if (kept !== ledger) rewrite(ledgerFile(cwd), ledgerRows(kept));
 }
 
-function transcriptTexts(cwd, sessions) {
+function transcriptTexts(folder, sessions) {
   const texts = new Map();
-  for (const file of sessionFiles(projectFolder(cwd))) {
+  for (const file of sessionFiles(folder)) {
     const session = path.basename(file, '.jsonl');
     if (!sessions.has(session)) continue;
     for (const { text, kind } of promptMessages(file)) {
@@ -364,11 +374,18 @@ function groupsOf(rows, verdicts, counted) {
   const entries = rows.filter((entry) => !decided(entry));
   const parent = entries.map((_, index) => index);
   const root = (index) => (parent[index] === index ? index : (parent[index] = root(parent[index])));
-  for (let i = 0; i < entries.length; i += 1) {
-    for (let j = i + 1; j < entries.length; j += 1) {
-      if (similar(entries[i].words, entries[j].words, counted)) parent[root(j)] = root(i);
+  const postings = new Map();
+  entries.forEach(({ words: entryWords }, index) => {
+    for (const word of [...entryWords].filter((candidate) => counted.has(candidate))) {
+      if (!postings.has(word)) postings.set(word, []);
+      postings.get(word).push(index);
     }
-  }
+  });
+  entries.forEach((entry, i) => {
+    const shared = new Map();
+    for (const word of entry.words) for (const j of postings.get(word) ?? []) if (j > i) shared.set(j, (shared.get(j) ?? 0) + 1);
+    for (const [j, count] of shared) if (count >= MIN_SHARED_WORDS && similar(entry.words, entries[j].words, counted)) parent[root(j)] = root(i);
+  });
   const groups = new Map();
   entries.forEach((entry, index) => groups.set(root(index), [...(groups.get(root(index)) ?? []), entry]));
   return [...groups.values()];
@@ -386,18 +403,23 @@ export function clusters(ledger) {
   const failureGroups = groupsOf(failures, ledger.verdicts.filter(isFailedRow), counted).map((group) => ({ group, failed: true }));
   return [...promptGroups, ...failureGroups]
     .map(({ group, failed }) => ({ group: group.sort(byAge), failed, sessions: new Set(group.map(({ session }) => session)).size }))
-    .filter(({ sessions }) => sessions >= MIN_SESSIONS)
+    .filter(({ group, sessions }) => sessions >= MIN_SESSIONS && group.some(({ project }) => project === undefined))
     .sort((a, b) => b.sessions - a.sessions || byAge(b.group.at(-1), a.group.at(-1)))
-    .map(({ group, failed, sessions }) => ({ id: group[0].id, group, failed, counted, sessions, first: group[0].date, last: group.at(-1).date }));
+    .map(({ group, failed, sessions }) => ({ id: group[0].id, group, failed, counted, sessions, projects: new Set(group.map(({ project }) => project)).size, first: group[0].date, last: group.at(-1).date }));
 }
 
-function listed(cwd, ledger) {
+function listed(cwd, ledger, withTexts = false) {
   const top = clusters(ledger);
-  const texts = transcriptTexts(cwd, new Set(top.flatMap(({ group }) => group.map(({ session }) => session))));
+  const rows = top.flatMap(({ group }) => group);
+  const sessions = new Set(rows.map(({ session }) => session));
+  const here = projectFolder(cwd);
+  const texts = transcriptTexts(here, sessions);
+  const others = withTexts ? new Set(rows.flatMap(({ project }) => (project === undefined ? [] : [project]))) : new Set();
+  const allTexts = new Map([...texts, ...[...others].flatMap((project) => [...transcriptTexts(path.join(path.dirname(here), project), sessions)])]);
   return top
     .map((cluster) => ({ cluster, centre: medoid(cluster.group, cluster.counted, texts) }))
     .filter(({ centre }) => centre !== undefined)
-    .map(({ cluster, centre }) => ({ ...cluster, text: texts.get(centre.id), other: otherText(cluster.group, centre, texts) }));
+    .map(({ cluster, centre }) => ({ ...cluster, text: texts.get(centre.id), other: otherText(cluster.group, centre, allTexts) }));
 }
 
 function cleanCalls(cwd) {
@@ -413,15 +435,15 @@ function keptFailures(ledger, calls) {
   const { failures, counted } = counting(ledger);
   const verdicts = ledger.verdicts.filter(isFailedRow);
   return verdicts.flatMap((row, index) => {
-    if (row.verdict !== VERDICTS.keep) return [];
+    if (row.verdict !== VERDICTS.keep || row.project !== undefined) return [];
     const members = failures.filter((entry) => rowMatches(row, entry, counted));
     if (members.length === 0 || verdicts.slice(index + 1).some((later) => members.some((entry) => rowMatches(later, entry, counted)))) return [];
     return [{ id: row.ids?.[0] ?? members[0].id, clean: laterCleanRuns(members, counted, calls) }];
   }).filter(({ clean }) => clean > 0);
 }
 
-function describe({ id, failed, text, sessions, first, last, clean }) {
-  return `${id} ${failed ? 'failed: ' : ''}"${text}" (${sessions} sessions, ${first} to ${last}${clean > 0 ? `, ${clean} later clean runs` : ''})`;
+function describe({ id, failed, text, sessions, projects, first, last, clean }) {
+  return `${id} ${failed ? 'failed: ' : ''}"${text}" (${sessions} sessions, ${first} to ${last}${clean > 0 ? `, ${clean} later clean runs` : ''})${projects >= 2 ? ` global (${projects} projects)` : ''}`;
 }
 
 function today() {
@@ -484,8 +506,30 @@ function withFailures(cwd, ledger) {
   return ledger === null ? null : { ...ledger, failures: readFailures(cwd) };
 }
 
+function otherLedgers(cwd) {
+  if (fallbackStore) return [];
+  const folder = path.dirname(configLedger(cwd));
+  return fs.readdirSync(folder).filter((name) => PROJECT_LEDGER.test(name) && name !== ledgerName(cwd)).map((name) => path.join(folder, name));
+}
+
+function withOtherProjects(cwd, ledger) {
+  if (ledger === null) return null;
+  const others = otherLedgers(cwd);
+  const from = (read) => others.flatMap((file) => read(file).map((row) => ({ ...row, project: path.basename(file, '.jsonl') })));
+  return {
+    ...ledger,
+    entries: [...ledger.entries, ...from(entryRows)],
+    failures: [...ledger.failures, ...from((file) => entryRows(failuresOf(file)))],
+    verdicts: [...ledger.verdicts, ...from((file) => verdictRows(verdictsOf(file)))]
+  };
+}
+
+function allProjects(cwd) {
+  return withOtherProjects(cwd, withFailures(cwd, loadOrReset(cwd)));
+}
+
 function snapshot(cwd) {
-  return waitLocked(cwd, () => withFailures(cwd, loadOrReset(cwd)));
+  return waitLocked(cwd, () => allProjects(cwd));
 }
 
 function recount(cwd) {
@@ -493,7 +537,7 @@ function recount(cwd) {
   const ledger = waitLocked(cwd, () => {
     storeFailures(cwd, found);
     dropGone(cwd);
-    return withFailures(cwd, loadOrReset(cwd));
+    return allProjects(cwd);
   });
   if (ledger === null) return;
   const count = listed(cwd, ledger).length;
@@ -591,7 +635,7 @@ function recordPrompt(cwd, session, prompt, date) {
     if (create(cwd, session, prompt, date)) return { line: '', detached: 'backfill' };
     ledger = loadOrReset(cwd);
   }
-  const textOf = (entry) => transcriptTexts(cwd, new Set([entry.session])).get(entry.id);
+  const textOf = (entry) => transcriptTexts(projectFolder(cwd), new Set([entry.session])).get(entry.id);
   const result = react({ ...ledger, verdicts: ledger.verdicts.filter((row) => !isFailedRow(row)) }, { session, prompt, date }, textOf, (keptWords) => lessonNameFor(cwd, keptWords));
   appendRows(ledgerFile(cwd), result.rows);
   if (result.repeated !== null) append(verdictsFile(cwd), [{ repeated: result.repeated }]);
@@ -647,7 +691,7 @@ function backfill(cwd) {
 function candidates(cwd, withTexts) {
   const ledger = snapshot(cwd);
   if (ledger === null) return;
-  const all = listed(cwd, ledger);
+  const all = listed(cwd, ledger, withTexts);
   const calls = all.some(({ failed }) => failed) || ledger.verdicts.some(isFailedRow) ? cleanCalls(cwd) : [];
   const shown = all.slice(0, MAX_CANDIDATES).map((cluster) => (cluster.failed ? { ...cluster, clean: laterCleanRuns(cluster.group, cluster.counted, calls) } : cluster));
   process.stdout.write(shown.map((cluster) => `${describe(cluster)}\n${withTexts && cluster.other !== undefined ? `  other session: "${cluster.other}"\n` : ''}`).join(''));
