@@ -179,3 +179,4 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-22 builder agent: the builder has no rule for a context that fills up; 10 of 15 session files hold "exo:builder" (user request).
 - 2026-11-22 hooks: no line says why the two hooks only detect; 7 of 15 session files hold "UserPromptSubmit" (user request).
 - 2026-11-22 build: subagents re-read context for each chained task; 107 of 665 session files hold "Sonnet, medium" (user request).
+- 2026-11-22 build review: the search and ideas move counted 3055 changed lines and picked xhigh, though nearly all was code copied unchanged from another repo (1 session file, user request).

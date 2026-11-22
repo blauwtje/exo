@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-import { execFileSync, spawn } from "node:child_process";
-import { realpathSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:net";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { environmentMs, isMain } from "#script-flags";
 import { readBest, searchAll } from "./pick.mjs";
 
 const home = process.env.SEARCH_REDDIT_HOME ?? join(homedir(), ".search-reddit");
@@ -18,13 +17,16 @@ const chromePaths = {
 };
 const chrome = process.env.CHROME_PATH ?? chromePaths[process.platform];
 
+const playwrightVersion = "1.65.1";
+
 function loadPlaywright() {
   const require = createRequire(join(home, "package.json"));
   try {
     return require("playwright-core");
-  } catch {
+  } catch (error) {
+    if (error.code !== "MODULE_NOT_FOUND") throw error;
     console.error("Installing playwright-core once...");
-    execFileSync("npm", ["install", "--prefix", home, "--no-audit", "--no-fund", "--silent", "playwright-core@1"], { stdio: "inherit", shell: process.platform === "win32" });
+    execFileSync("npm", ["install", "--prefix", home, "--no-audit", "--no-fund", "--silent", "--ignore-scripts", `playwright-core@${playwrightVersion}`], { stdio: "inherit", shell: process.platform === "win32" });
     return require("playwright-core");
   }
 }
@@ -32,20 +34,31 @@ function loadPlaywright() {
 function launch(visible) {
   const flags = [`--user-data-dir=${profile}`, `--remote-debugging-port=${port}`, "--no-first-run", "--no-default-browser-check", "--use-mock-keychain", "--password-store=basic", "--no-startup-window"];
   const [file, launchArgs] = process.platform === "darwin" ? ["open", [...(visible ? [] : ["-g"]), "-n", "-a", chrome, "--args", ...flags]] : [chrome, flags];
-  spawn(file, launchArgs, { detached: true, stdio: "ignore" }).unref();
+  const child = spawn(file, launchArgs, { detached: true, stdio: "ignore" });
+  child.unref();
+  return child;
+}
+
+function stopChrome(child) {
+  if (process.platform === "darwin") spawnSync("pkill", ["-f", "--", `--user-data-dir=${profile.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}( |$)`]);
+  else child.kill();
 }
 
 async function connect(visible) {
   const { chromium } = loadPlaywright();
-  launch(visible);
-  for (let attempt = 0; attempt < 40; attempt++) {
+  const child = launch(visible);
+  const attempts = Math.ceil(environmentMs("EXO_SEARCH_CHROME_START_MS", 10000) / 250);
+  let lastError;
+  for (let attempt = 0; attempt < attempts; attempt++) {
     try {
       return await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
-    } catch {
+    } catch (error) {
+      lastError = error;
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
   }
-  throw new Error(`Chrome did not start from ${chrome}: set CHROME_PATH.`);
+  stopChrome(child);
+  throw new Error(`Chrome did not start from ${chrome}: set CHROME_PATH. (${lastError?.message})`);
 }
 
 async function backgroundPage(browser) {
@@ -80,12 +93,15 @@ const listen = (lockPort) => new Promise((resolve, reject) => {
 });
 
 async function takeLock(lockPort) {
+  const deadline = Date.now() + environmentMs("EXO_SEARCH_LOCK_MS", 60000);
   for (let attempt = 0; ; attempt++) {
     try {
       return await listen(lockPort);
     } catch (error) {
       if (error.code !== "EADDRINUSE") throw error;
-      if (attempt === 0) console.error(`Waiting for the Chrome lock on 127.0.0.1:${lockPort}: another run holds it, or another app uses that port.`);
+      const waiting = `Waiting for the Chrome lock on 127.0.0.1:${lockPort}: another run holds it, or another app uses that port.`;
+      if (Date.now() >= deadline) throw new Error(waiting);
+      if (attempt === 0) console.error(waiting);
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
   }
@@ -211,7 +227,7 @@ export function paced(gapMs) {
   };
 }
 
-const queue = paced(2000);
+const queue = paced(environmentMs("EXO_SEARCH_REDDIT_GAP_MS", 2000));
 const load = (url, read) => queue(() => visit(url, read));
 
 function searchUrl(term, subreddits, days) {
@@ -270,7 +286,7 @@ export async function open(card, loadPage = load) {
 
 export const collect = (plan, state = null, limit = Infinity) => readBest(plan, { find, open }, undefined, state, limit);
 
-if (realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   if (process.argv[2] !== "login") {
     console.error("Usage: reddit.mjs login");
     process.exit(1);

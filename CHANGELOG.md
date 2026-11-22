@@ -118,6 +118,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The code rules name the scratch-path command without a plugin path variable, which stays unfilled in a file read by path, and a test fails when a markdown file under `skills/` other than `SKILL.md` holds one.
 - `learn` shows a second session's text for each mined cluster and drops a cluster whose texts ask different things.
 - `build` tells each parallel repro builder to write its finding's test in its own new file, so builders never share one.
+- `exo:search` bounds the Reddit lock wait and the Chrome start, stops the Chrome it started when Chrome does not answer, pins `playwright-core`, reads its durations from `EXO_SEARCH_*` variables and `--continue` through `parseFlags`, and its docs name Node 22, the helper agent and those variables.
+- `exo:ideas` docs say its helpers write under `~/.ideas/`, outside the project, so the permission rule `Edit(~/.ideas/**)` saves the prompts, and its example slug is 40 characters.
+- The build review effort counts a moved folder or file by its changed lines only: renames count their changed lines, and a `Moved:` line in the plan's Plan basis replaces the lines added under its destination with the diff against its source.
 - The fixture scripts of the eval cases `diagnose-repatch` and `build-red-suite` run again: one named a folder the pinned commit does not hold, the other wrote to an unrewritten `/tmp` path.
 - `learn candidates` ends with `<shown> of <total> shown` when more than 15 memories wait, so the hook's count and the list agree.
 - `learn` keeps the project lesson store and index at the project's top folder (`git rev-parse --show-toplevel`, else the working folder), so a lesson written from a subfolder lands where the session loads it.

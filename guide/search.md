@@ -19,22 +19,22 @@ Not for this repo's code, a video url (`exo:watch`) or ideas (`exo:ideas`).
 
 ## Requirements
 
-Node.js 18 or newer, Google Chrome, a Reddit account and the GitHub CLI `gh`, logged in (`gh auth login`).
+Node.js 22 or newer, Google Chrome, a Reddit account and the GitHub CLI `gh`, logged in (`gh auth login`).
 
 ## Commands
 
-The scripts also work without Claude:
-
-```
-node skills/search/scripts/reddit.mjs login
-echo '{"question":"how do people use Claude Code hooks","sources":["hn","github"],"subQuestions":[{"ask":"how do people use Claude Code hooks","terms":["claude code hooks"]}]}' | node skills/search/scripts/search.mjs
-```
+Ask Claude, for example: "search for how people use Claude Code hooks, only hn and github". The first Reddit search asks you to log in to Reddit in a Chrome window; log in there and close that tab.
 
 ## Environment variables
 
 - `SEARCH_REDDIT_HOME`: keeps the Reddit login and `playwright-core` somewhere other than `~/.search-reddit`.
 - `CHROME_PATH`: the Chrome binary, when it is not in its default place.
 - `SEARCH_REDDIT_PORT`: the Chrome debugging port, when 9333 is taken. The port after it holds the lock that lets runs take turns on Chrome, so it must be free too.
+- `EXO_SEARCH_DEADLINE_MS`: the time one call may run, 240000 by default and at most 290000.
+- `EXO_SEARCH_FETCH_MS`: the time one fetch may take, 15000 by default.
+- `EXO_SEARCH_LOCK_MS`: the time a run waits for the Chrome lock, 60000 by default.
+- `EXO_SEARCH_CHROME_START_MS`: the time Chrome gets to answer after it starts, 10000 by default.
+- `EXO_SEARCH_REDDIT_GAP_MS`: the pause between Reddit requests, 2000 by default.
 
 ## Warning
 

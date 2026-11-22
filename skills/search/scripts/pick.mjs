@@ -1,8 +1,6 @@
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
 
-const promptPath = new URL("../references/pick.md", import.meta.url);
-
 function pickInput(prompt, plan, header, items) {
   const asks = plan.subQuestions.map(({ ask }, index) => `Q${index + 1} ${ask}`);
   const lines = items.map((item) =>

@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { adapters, advance, bundle, bundlePath, limits, newRun, parsePlan, record } from "../skills/search/scripts/search.mjs";
+import { adapters, advance, bundle, bundlePath, deadlineMs, limits, newRun, parsePlan, record } from "../skills/search/scripts/search.mjs";
 
 const script = fileURLToPath(new URL("../skills/search/scripts/search.mjs", import.meta.url));
 const planText = (extra = {}) =>
@@ -207,6 +207,29 @@ test("--continue on a missing file exits 1 without reading stdin", () => {
   const run = spawnSync("node", [script, "--continue", "/nonexistent/run.json"], { encoding: "utf8" });
   assert.equal(run.status, 1);
   assert.match(run.stderr, /^Cannot continue \/nonexistent\/run\.json: /);
+});
+
+test("--continue without a value exits 2 with a usage error", () => {
+  const run = spawnSync("node", [script, "--continue"], { encoding: "utf8" });
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /--continue/);
+});
+
+test("EXO_SEARCH_DEADLINE_MS shortens the per-source deadline and is capped at 290000", async () => {
+  const slow = { collect: () => new Promise(() => {}) };
+  const plan = { reads: 1, sources: ["web"], subQuestions: [] };
+  const saved = adapters.web;
+  adapters.web = slow;
+  process.env.EXO_SEARCH_DEADLINE_MS = "100";
+  try {
+    const results = await advance(plan, newRun({}));
+    assert.match(results[0].reason.message, /timed out after 0\.1 s/);
+    process.env.EXO_SEARCH_DEADLINE_MS = "999999";
+    assert.equal(deadlineMs(), 290000);
+  } finally {
+    adapters.web = saved;
+    delete process.env.EXO_SEARCH_DEADLINE_MS;
+  }
 });
 
 test("parsePlan rejects more than 2 terms and a term of fewer than 2 words", () => {

@@ -1,8 +1,10 @@
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { parseFlags, isMain, environmentMs } from '#script-flags';
 import { resolvePlanPath } from '#checkout';
 import { landedTasks, planIdOf, defaultBase } from '#plan-landed';
-import { gitText } from '#git';
+import { git, gitText } from '#git';
 import { parsePlan } from '#plan-tasks';
 import { frameOf } from '#plan-frame';
 import { scratchPath } from '#scratch-path';
@@ -24,17 +26,40 @@ export function reviewEffort(changedLines, base) {
   return changedLines < 16 * base ? 'high' : 'xhigh';
 }
 
-function changedLineCount(root, base) {
-  return gitText(root, ['diff', '--numstat', `${base}...HEAD`]).split('\n')
-    .filter((line) => line !== '')
-    .reduce((sum, line) => sum + line.split('\t').slice(0, 2).reduce((count, cell) => count + (Number(cell) || 0), 0), 0);
+const sumNumstat = (text, keep = () => true) => text.split('\n')
+  .filter((line) => line !== '')
+  .map((line) => line.split('\t'))
+  .filter(([, , file]) => keep(file))
+  .reduce((sum, cells) => sum + (Number(cells[0]) || 0) + (Number(cells[1]) || 0), 0);
+
+function movedCounts(root, numstat, moves) {
+  let changed = sumNumstat(numstat);
+  let moved = 0;
+  const missing = [];
+  for (const { source: written, dest } of moves) {
+    const source = written === '~' || written.startsWith('~/') ? path.join(os.homedir(), written.slice(1)) : written;
+    const diff = fs.existsSync(source) ? git(root, ['diff', '--no-index', '--numstat', '-M', source, path.join(root, dest)]) : null;
+    if (!diff || (diff.status !== 0 && diff.status !== 1) || diff.stderr) {
+      missing.push(written);
+      continue;
+    }
+    const prefix = `${dest.replace(/\/$/, '')}/`;
+    const added = sumNumstat(numstat, (file) => file === dest || file.startsWith(prefix));
+    const real = sumNumstat(diff.stdout);
+    changed += real - added;
+    moved += added - real;
+  }
+  return { changed, moved, missing };
 }
 
-function reviewEffortLine(root) {
+export function reviewEffortLine(root, planText) {
   const base = defaultBase(root);
   if (base === null) return 'Review effort: medium (base unknown)\n';
-  const changed = changedLineCount(root, base);
-  return `Review effort: ${reviewEffort(changed, environmentMs('EXO_REVIEW_LINES', 150))} (${changed} changed lines)\n`;
+  const numstat = gitText(root, ['diff', '--numstat', '-M', `${base}...HEAD`]);
+  const moves = frameOf(parsePlan(planText).frame).moves;
+  const { changed, moved, missing } = movedCounts(root, numstat, moves);
+  const movedText = moves.length === 0 ? '' : `, ${moved} moved${missing.map((source) => `, moved source missing: ${source}`).join('')}`;
+  return `Review effort: ${reviewEffort(changed, environmentMs('EXO_REVIEW_LINES', 150))} (${changed} changed lines${movedText})\n`;
 }
 
 function reviewFocusLines(planText) {
@@ -63,10 +88,11 @@ if (isMain(import.meta.url)) {
   const flags = parseFlags(process.argv.slice(2), { plan: 'value', root: 'value' }, { usage: USAGE });
   const planPath = resolvePlanPath({ plan: flags.plan, root: flags.root });
   const root = flags.root ?? process.cwd();
-  const report = nextTaskReport({ planText: fs.readFileSync(planPath, 'utf8'), planPath, root });
+  const planText = fs.readFileSync(planPath, 'utf8');
+  const report = nextTaskReport({ planText, planPath, root });
   const [landedLine, nextLine, routeText] = report.split('\n');
   if (nextLine === 'Next: none') {
-    process.stdout.write(`${report}${reviewEffortLine(root)}${reviewFocusLines(fs.readFileSync(planPath, 'utf8'))}`);
+    process.stdout.write(`${report}${reviewEffortLine(root, planText)}${reviewFocusLines(planText)}`);
   } else {
     const brief = scratchPath(root, `brief-${nextLine.split(' ')[1]}.md`);
     fs.writeFileSync(brief, report);

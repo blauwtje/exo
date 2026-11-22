@@ -1,5 +1,5 @@
-import { readFileSync, realpathSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
+import { isMain } from "#script-flags";
 
 const collapse = (text) => text.replace(/\s+/g, " ").trim();
 
@@ -43,4 +43,4 @@ async function main() {
   process.exit(found.length ? 1 : 0);
 }
 
-if (realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
+if (isMain(import.meta.url)) await main();

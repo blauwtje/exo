@@ -1,7 +1,8 @@
-import { appendFileSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from "#script-flags";
 import { killChildren } from "./pick.mjs";
 import * as github from "./github.mjs";
 import * as hn from "./hn.mjs";
@@ -17,9 +18,13 @@ const MIN_TERM_WORDS = 2;
 const MAX_TERM_WORDS = 4;
 const SUBREDDIT = /^[A-Za-z0-9_]{2,21}$/;
 const TOPIC = /^[a-z0-9][a-z0-9-]*$/;
-const DEADLINE_MS = 240000;
+const MAX_DEADLINE_MS = 290000;
 const SCRIPT = fileURLToPath(import.meta.url);
 const RUNS_DIR = join(tmpdir(), "search-runs");
+
+export function deadlineMs() {
+  return Math.min(environmentMs("EXO_SEARCH_DEADLINE_MS", 240000), MAX_DEADLINE_MS);
+}
 
 function requireReads(reads) {
   if (reads === undefined) return null;
@@ -119,7 +124,7 @@ function withDeadline(promise, deadline) {
   return Promise.race([promise, expiry]).finally(() => clearTimeout(timer));
 }
 
-export async function advance(plan, run, deadline = DEADLINE_MS) {
+export async function advance(plan, run, deadline = deadlineMs()) {
   const pending = plan.sources.filter((source) => !run.done.includes(source));
   const remaining = plan.reads === null ? Infinity : plan.reads - run.read;
   const shares = limits(remaining, pending.length);
@@ -211,10 +216,17 @@ async function start() {
 }
 
 async function main() {
-  const flag = process.argv.indexOf("--continue");
+  let flags;
+  try {
+    flags = parseFlags(process.argv.slice(2), { continue: "string" });
+  } catch (error) {
+    if (!(error instanceof UsageError)) throw error;
+    console.error(error.message);
+    process.exit(USAGE_EXIT);
+  }
   let call;
   try {
-    call = flag === -1 ? await start() : { ...loadRun(process.argv[flag + 1]), file: process.argv[flag + 1] };
+    call = flags.continue === undefined ? await start() : { ...loadRun(flags.continue), file: flags.continue };
   } catch (error) {
     console.error(error.message);
     process.exit(1);
@@ -226,4 +238,4 @@ async function main() {
   process.stdout.write(`${text}\n`, () => process.exit(0));
 }
 
-if (realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) await main();
+if (isMain(import.meta.url)) await main();

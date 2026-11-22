@@ -16,8 +16,7 @@ const BASELINE = {
   'lib/red-green.mjs': 1,
   'verify/frontmatter.mjs': 1,
   'verify/checks/plugin-validate.mjs': 1,
-  'skills/build/scripts/land-proof.mjs': 1,
-  'skills/search/scripts/reddit.mjs': 2
+  'skills/build/scripts/land-proof.mjs': 1
 };
 
 const BINDINGLESS_CATCH = /catch\s*\{/g;

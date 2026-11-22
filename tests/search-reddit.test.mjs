@@ -209,3 +209,14 @@ test("withLock never lets two of many waiters hold it at once", async () => {
   }));
   assert.equal(most, 1);
 });
+
+test("withLock gives up with the waiting message once EXO_SEARCH_LOCK_MS has passed", { timeout: 5000 }, async (t) => {
+  const lockPort = await freePort();
+  const other = createServer().listen(lockPort, "127.0.0.1");
+  await new Promise((resolve) => other.once("listening", resolve));
+  t.mock.method(console, "error", () => {});
+  t.after(() => other.close());
+  process.env.EXO_SEARCH_LOCK_MS = "300";
+  t.after(() => delete process.env.EXO_SEARCH_LOCK_MS);
+  await assert.rejects(withLock(lockPort, async () => "ran"), new RegExp(`Waiting for the Chrome lock on 127.0.0.1:${lockPort}`));
+});

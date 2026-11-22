@@ -1,6 +1,6 @@
 ---
 name: ideas
-description: "Turns one question on any subject into a short list of novel, useful and well-reasoned ideas by running a fixed ideation playbook as fresh subagents. Use when the user says 'give me ideas', 'what are my options' or 'how could I approach' a problem. Not for design options for a code change (exo:spec) or sourced research (exo:search)."
+description: "Turns one question on any subject into a short list of novel, useful and well-reasoned ideas by running a fixed ideation playbook as fresh helpers. Use when the user says 'give me ideas', 'what are my options' or 'how could I approach' a problem. Not for design options for a code change (exo:spec) or sourced research (exo:search)."
 argument-hint: "<question>"
 metadata:
   author: exo
@@ -15,7 +15,7 @@ Turn one question into a ranked top 3 of ideas with a score, a prior-art verdict
 
 ## Prerequisites
 
-The Agent tool, with the models opus and fable available (a rejected fable agent reruns on opus). A run starts about 14 helpers, about 9 more on a second round, and uses a noticeable part of the subscription limit. The prompts the helpers read are the eight files in `references/`, named in the steps below.
+The Agent tool, with the models opus and fable available (a rejected fable agent reruns on opus). A run starts about 14 helpers, about 9 more on a second round, and uses a noticeable part of the subscription limit. The helpers write under `~/.ideas/`, outside the project, so a permission rule `Edit(~/.ideas/**)` lets them save the prompts. The prompts the helpers read are the eight files in `references/`, named in the steps below.
 
 ## Instructions
 
@@ -57,7 +57,7 @@ Read the `Total:` lines. When round 1 is over and no idea has 14 or more out of 
 
 ## Examples
 
-Request: "ideas for getting more people to read our newsletter". The skill makes `~/.ideas/<YYYY-MM-DD>-ideas-for-getting-more-people-to-read-o/`, runs the playbook, and replies:
+Request: "ideas for getting more people to read our newsletter". The skill makes `~/.ideas/<YYYY-MM-DD>-ideas-for-getting-more-people-to-read-ou/`, runs the playbook, and replies:
 
 ```
 1. <title>, 16/20: <one line>

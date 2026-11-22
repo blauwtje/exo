@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
+import { environmentMs } from "#script-flags";
 import { ask, canonicalUrl } from "./pick.mjs";
 
 const MAX_TURNS = 20;
-const FETCH_TIMEOUT_MS = 15000;
 const ENTITIES = {
   lt: "<", gt: ">", quot: "\"", nbsp: " ", amp: "&",
   rsquo: "\u2019", lsquo: "\u2018", rdquo: "\u201d", ldquo: "\u201c", mdash: "\u2014", ndash: "\u2013", hellip: "\u2026",
@@ -73,7 +73,7 @@ const decodeEntity = (entity, decimal, hex, name) => {
 const pageText = (html) => collapse(html.replace(/<[^>]*>/g, " ").replace(/&(?:#(\d+)|#x([0-9a-f]+)|(\w+));/gi, decodeEntity));
 
 async function checkQuote(item, quote, fetchPage) {
-  const page = await fetchPage(item.url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+  const page = await fetchPage(item.url, { signal: AbortSignal.timeout(environmentMs("EXO_SEARCH_FETCH_MS", 15000)) })
     .then((response) => (response.ok ? response.text() : null))
     .catch(() => null);
   if (page === null) return { ...item, text: `${item.text}\n(page not fetched)` };

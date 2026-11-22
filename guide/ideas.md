@@ -12,7 +12,7 @@ Not for design options for a code change (`exo:spec`) or sourced research (`exo:
 
 ## What you get
 
-- A run folder `~/.ideas/<YYYY-MM-DD>-<slug>/` that keeps every helper's file; run files are never edited.
+- A run folder `~/.ideas/<YYYY-MM-DD>-<slug>/` that keeps every helper's file; run files are never edited. The helpers write under `~/.ideas/`, outside the project, so a permission rule `Edit(~/.ideas/**)` lets them save their files.
 - Round 1: one framing helper, three divergent helpers (over-generate, avoid the obvious, unrelated domain) and one revising helper, each giving 5 ideas. The session merges them into one pool of ideas.
 - A prior-art check and a score out of 20 for each idea, in batches of 5.
 - When no idea scores 14 or more, one more round with new ideas that avoid the 10 lowest-scored directions. There is never a third round.
