@@ -48,6 +48,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `build` lands a plan of at most 3 chained tasks itself on `Route: this session` instead of one builder per task (`EXO_SELF_BUILD_TASKS` sets the limit), and `ship` runs on Sonnet.
 - Skills, agents, the adhd style and the repo docs follow pstack's authoring rules: text a check enforces, repeated rules and reasons that change no decision are gone, and author proves an edit by replaying the recorded failure.
 - The adhd style has the agent run every check itself and test a suspected wrong assumption before it asks.
 - watch picks the transcript language itself, and ship takes a reversible design choice instead of asking.

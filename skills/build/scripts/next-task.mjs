@@ -42,6 +42,12 @@ function reviewFocusLines(planText) {
   return bullets.length === 0 ? '' : `Review focus:\n${bullets.join('\n')}\n`;
 }
 
+function routeLine(tasks) {
+  const chained = tasks.every((task, index) => index === 0 || (task.dependsOn.length === 1 && task.dependsOn[0] === tasks[index - 1].number));
+  const small = tasks.length <= environmentMs('EXO_SELF_BUILD_TASKS', 3);
+  return `Route: ${chained && small ? 'this session' : 'builder'}\n`;
+}
+
 export function nextTaskReport({ planText, planPath, root }) {
   const { tasks, frame } = parsePlan(planText);
   const landed = landedTasks(tasks, root, planIdOf(planPath));
@@ -49,7 +55,7 @@ export function nextTaskReport({ planText, planPath, root }) {
   const landedLine = `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}\n`;
   if (next === undefined) return `${landedLine}Next: none\n`;
   const standing = standingText(frame);
-  const task = `${landedLine}Next: ${next.number} ${next.title}\n\n${next.section.trim()}\n`;
+  const task = `${landedLine}Next: ${next.number} ${next.title}\n${routeLine(tasks)}\n${next.section.trim()}\n`;
   return standing === '' ? task : `${task}\n${standing}`;
 }
 
@@ -58,12 +64,12 @@ if (isMain(import.meta.url)) {
   const planPath = resolvePlanPath({ plan: flags.plan, root: flags.root });
   const root = flags.root ?? process.cwd();
   const report = nextTaskReport({ planText: fs.readFileSync(planPath, 'utf8'), planPath, root });
-  const [landedLine, nextLine] = report.split('\n');
+  const [landedLine, nextLine, routeText] = report.split('\n');
   if (nextLine === 'Next: none') {
     process.stdout.write(`${report}${reviewEffortLine(root)}${reviewFocusLines(fs.readFileSync(planPath, 'utf8'))}`);
   } else {
     const brief = scratchPath(root, `brief-${nextLine.split(' ')[1]}.md`);
     fs.writeFileSync(brief, report);
-    process.stdout.write(`${landedLine}\n${nextLine}\nBrief: ${brief}\n`);
+    process.stdout.write(`${landedLine}\n${nextLine}\n${routeText}\nBrief: ${brief}\n`);
   }
 }

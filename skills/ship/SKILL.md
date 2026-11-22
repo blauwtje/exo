@@ -2,7 +2,7 @@
 name: ship
 description: "Pushes commits, opens, watches and merges pull requests, and fixes their failing checks, conflicts and review comments. Use when the user asks to push, ship, open, watch, check on or merge a pull request ('ship it', 'open a PR'), or finished commits are ready to leave the machine. Not for reviewing code or cutting a release."
 argument-hint: "[pull request numbers] [--land]"
-model: opus
+model: sonnet
 effort: medium
 metadata:
   author: exo
