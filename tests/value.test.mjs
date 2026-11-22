@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { armFigures, planBudget, readRows, regressions, settle, unmeasuredParts } from '../evals/value.mjs';
+import { armFigures, mergeRuns, needsThird, planBudget, readRows, regressions, settle, unmeasuredParts } from '../evals/value.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const table = fs.readFileSync(path.join(root, 'evals', 'value.md'), 'utf8');
@@ -54,4 +54,21 @@ test('a with figure that dropped between numbers is a regression, a void is not'
   assert.deepEqual(regressions({ part: 'p', with: 'void' }, { part: 'p', with: 0 }), []);
   assert.deepEqual(regressions({ part: 'p', with: '1' }, { part: 'p', with: 'void' }), []);
   assert.deepEqual(regressions({ part: 'p', with: '1' }, { part: 'p', with: 1 }), []);
+});
+
+const run = (passed, extra = {}) => ({ passed, costUsd: 1, ...extra });
+
+test('two agreeing runs need no third, a split needs one, a cut run needs none', () => {
+  assert.equal(needsThird({ arms: { with: { a: run(true), b: run(true) }, without: { a: run(false), b: run(false) } } }), false);
+  assert.equal(needsThird({ arms: { with: { a: run(true), b: run(true) }, without: { a: run(true), b: run(false) } } }), true);
+  assert.equal(needsThird({ arms: { with: { a: run(true), b: run(false, { skippedPaidGraders: true }) } } }), false);
+});
+
+test('a merged case holds three runs per arm and the majority decides', () => {
+  const first = [{ name: 'adhd', arms: { with: { a: run(true), b: run(false) }, without: { a: run(false), b: run(false) } } }];
+  const extra = [{ name: 'adhd', arms: { with: { a: run(true) }, without: { a: run(false) } } }];
+  const merged = mergeRuns(first, extra);
+  assert.equal(Object.keys(merged[0].arms.with).length, 3);
+  assert.equal(Object.keys(merged[0].arms.without).length, 3);
+  assert.equal(armFigures(merged, 'with').passed, 1);
 });

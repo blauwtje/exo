@@ -88,9 +88,29 @@ function runCost(run) {
   return (run.costUsd ?? 0) + (run.judgeCostUsd ?? 0);
 }
 
+const isCut = (run) => run.skippedPaidGraders || run.costUsd === undefined;
+
+export function needsThird(testCase) {
+  return ['with', 'without'].some((arm) => {
+    const runs = Object.values(testCase.arms?.[arm] ?? {});
+    return runs.length === 2 && !runs.some(isCut) && runs[0].passed !== runs[1].passed;
+  });
+}
+
+export function mergeRuns(first, extra) {
+  return first.map((testCase) => {
+    const added = extra.find((candidate) => candidate.name === testCase.name);
+    if (!added) return testCase;
+    const arms = Object.fromEntries(Object.entries(testCase.arms ?? {}).map(([arm, runs]) => [
+      arm,
+      { ...runs, ...Object.fromEntries(Object.entries(added.arms?.[arm] ?? {}).map(([key, run]) => [`third-${key}`, run])) },
+    ]));
+    return { ...testCase, arms };
+  });
+}
+
 export function armFigures(cases, arm) {
   const runs = cases.map((testCase) => Object.values(testCase.arms?.[arm] ?? {}));
-  const isCut = (run) => run.skippedPaidGraders || run.costUsd === undefined;
   const cut = runs.flat().filter(isCut).length;
   const costless = runs.flat().some((run) => run.costUsd === undefined);
   const cost = costless ? '-' : runs.flat().reduce((sum, run) => sum + runCost(run), 0);
@@ -98,17 +118,25 @@ export function armFigures(cases, arm) {
   return { passed, cost, cut };
 }
 
-function evalCase(name, maxCost) {
+function evalRuns(name, maxCost, runs) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'value-'));
   const jsonPath = path.join(directory, 'result.json');
   const args = [
     'plugin', 'eval', '--case', name, '--scaffold', '--allow-tools', 'Bash', 'Edit', 'Write',
-    '--concurrency', '8', '--judge-model', 'sonnet', '--ablation', 'with-without',
+    '--runs', String(runs), '--concurrency', '8', '--judge-model', 'sonnet', '--ablation', 'with-without',
     '--json', jsonPath, '--output-dir', path.join(directory, 'out'), '--max-cost-usd', String(maxCost), '--no-publish', '--trust-plugin',
   ];
   const run = spawnSync('claude', args, { cwd: ROOT, stdio: ['ignore', 'ignore', 'inherit'], env: { ...process.env, EXO_ROOT: ROOT } });
   if (!fs.existsSync(jsonPath)) throw new Error(`eval of ${name} did not finish`);
   return JSON.parse(fs.readFileSync(jsonPath, 'utf8')).cases;
+}
+
+function evalCase(name, maxCost) {
+  const first = evalRuns(name, maxCost, 2);
+  if (!first.some(needsThird)) return first;
+  const spent = first.flatMap((testCase) => Object.values(testCase.arms ?? {}).flatMap((runs) => Object.values(runs))).reduce((sum, run) => sum + runCost(run), 0);
+  if (maxCost - spent <= 0) return first;
+  return mergeRuns(first, evalRuns(name, maxCost - spent, 1));
 }
 
 export function settle(row, withExo, without) {
