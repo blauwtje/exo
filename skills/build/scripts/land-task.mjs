@@ -18,10 +18,10 @@ function proofOutcomeOf(tail) {
   return `exit 0, ${lines.findLast((line) => PASS_SUMMARY_LINE.test(line)) ?? lines.at(-1) ?? 'no output'}`;
 }
 
-function landingReport({ number, sha, landed, proofs, pending, redLine, gateLine }) {
+function landingReport({ number, sha, landed, proofs, pending, redLine, gateLine, removedBlock }) {
   const proofLines = proofs.map(({ command, tail }) => `Proof: ${[`${command}: pass (${proofOutcomeOf(tail)})`, ...tail].join('\n')}\n`).join('');
   const pendingLine = pending === null ? '' : `Pending: ${pending}\n`;
-  return `Committed: ${sha} Task ${number}\n${proofLines}${redLine}\n${gateLine}${pendingLine}Landed: ${landed.join(', ')}\n`;
+  return `Committed: ${sha} Task ${number}\n${proofLines}${redLine}\n${gateLine}${removedBlock}${pendingLine}Landed: ${landed.join(', ')}\n`;
 }
 
 export function landingForCaller(text) {
@@ -42,11 +42,11 @@ function landLocked({ planText, number, root, reportText, reportPath, planPath }
   refuseAlreadyLanded(plan, task, { root, planId });
   const { block, outside } = refuseBeforeProof(task, { root, planPath, planId, reportText, reportPath });
   const { proofs, pending, redLine } = proveTask(task, { root, planPath, reportText, reportPath });
-  const { changed, candidate, gateLine } = stageCandidate({ task, frame: frameOf(plan.frame), block, outside, root, planId });
+  const { changed, candidate, gateLine, removedBlock } = stageCandidate({ task, frame: frameOf(plan.frame), block, outside, root, planId });
   coverOrDrop({ task, proofs, root, changed, candidate });
   const sha = promoteAndCommit({ task, root, planId, planPath, candidate });
   const landed = landedTasks(plan.tasks, root, planId);
-  return landingReport({ number, sha, landed, proofs, pending, redLine, gateLine });
+  return landingReport({ number, sha, landed, proofs, pending, redLine, gateLine, removedBlock });
 }
 
 const USAGE = [
