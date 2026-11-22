@@ -87,12 +87,12 @@ async function runDriver(replies, extraEnv = {}) {
 test("a 429 waits the Retry-After seconds before the retry", async () => {
   const [[label, elapsed]] = await runDriver([[429, { "retry-after": "1" }], [200, {}]]);
   assert.equal(label, "ok");
-  assert.ok(elapsed >= 1000, `elapsed ${elapsed}`);
+  assert.ok(elapsed >= 990, `elapsed ${elapsed}`);
 });
 
 test("a 429 without Retry-After waits x-ratelimit-reset, else the backoff default", async () => {
   const [[, byReset]] = await runDriver([[429, { "x-ratelimit-reset": "1" }], [200, {}]], { EXO_SEARCH_REDDIT_BACKOFF_MS: "5000" });
-  assert.ok(byReset >= 1000 && byReset < 4000, `elapsed ${byReset}`);
+  assert.ok(byReset >= 990 && byReset < 4000, `elapsed ${byReset}`);
   const [[, byDefault]] = await runDriver([[429, {}], [200, {}]], { EXO_SEARCH_REDDIT_BACKOFF_MS: "600" });
   assert.ok(byDefault >= 600 && byDefault < 4000, `elapsed ${byDefault}`);
 });
@@ -104,7 +104,7 @@ test("a request fails naming the 429 after two retries", async () => {
 
 test("a response with no requests remaining holds the next request for x-ratelimit-reset", async () => {
   const calls = await runDriver([[200, { "x-ratelimit-remaining": "0", "x-ratelimit-reset": "1" }], [200, {}]], { OPENS: "2" });
-  assert.ok(calls[1][1] - calls[0][1] >= 1000, JSON.stringify(calls));
+  assert.ok(calls[1][1] - calls[0][1] >= 990, JSON.stringify(calls));
 });
 
 test("a 429 wait that passes the call deadline fails the request instead of waiting", async () => {

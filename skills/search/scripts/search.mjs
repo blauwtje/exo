@@ -203,7 +203,7 @@ export async function rounds(plan, run, file, deadline = deadlineMs()) {
     texts.push(record(plan, await advance(plan, run, deadline - (begun - started)), run, file));
     last = Date.now() - begun;
   } while (texts.at(-1).split("\n").at(-1).startsWith("More:") && deadline - (Date.now() - started) > 1.5 * last);
-  return texts;
+  return texts.map((text, index) => (index < texts.length - 1 ? text.replace(/\nMore: [^\n]*$/, "") : text));
 }
 
 function loadRun(file) {

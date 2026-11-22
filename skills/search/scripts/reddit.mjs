@@ -280,7 +280,7 @@ export function paced(gap) {
 
 const gapMs = environmentMs("EXO_SEARCH_REDDIT_GAP_MS", 2000);
 const queue = paced(() => {
-  const wait = Math.max(gapMs, hold);
+  const wait = Math.max(gapMs, Math.min(hold, Math.max(0, callDeadlineAt - Date.now())));
   hold = 0;
   return wait;
 });

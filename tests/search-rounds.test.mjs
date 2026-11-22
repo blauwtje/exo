@@ -24,10 +24,10 @@ test("rounds repeat while the end line is More and the time left allows another 
     const file = join(mkdtempSync(join(tmpdir(), "search-rounds-")), "run.json");
     const texts = await rounds(plan, newRun({}), file, 100000);
     assert.equal(texts.length, 3);
-    assert.match(texts[0], /\nMore: read 1 of 3\./);
+    assert.doesNotMatch(texts[0], /More:/);
     assert.match(texts[2], /\nDone: read 3 of 3\.$/);
     assert.ok(deadlines[1] <= deadlines[0] && deadlines[0] <= 100000);
-    assert.equal(readFileSync(join(file, "..", "run.md"), "utf8"), texts.map((text) => `${text}\n`).join(""));
+    assert.match(readFileSync(join(file, "..", "run.md"), "utf8"), /\nMore: read 1 of 3\. Continue:[^\n]*\n[\s\S]*\nMore: read 2 of 3\. Continue:/);
   });
 });
 
