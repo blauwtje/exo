@@ -28,7 +28,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
 3. **Build one task.** A task line with `Model: <model> <effort>` sets the Agent tool's `model` and `effort` for that builder; else the Models table decides. Send the task of the `Next:` line to a fresh `exo:builder` in the background, with the plan path, the task number, the checkout, the `Brief:` path as the text to read first, the report path that `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` prints when run in the checkout, and `run-task-prompt.md` by path, and wait for its completion notification. The builder edits, then runs `land-task.mjs`, which proves red then green, runs the Land gate and commits.
 4. **Route the return.** `GREEN` goes back to step 2.
    - `BLOCKED <n> NEEDS ANSWER: <question>`: ask the user with the builder's options and recommendation as the question, then re-dispatch that task with the answer in its prompt.
-   - `PLAN DRIFT`: append a `## Log` line to the plan, then stop and hand the plan back to `exo:spec` with the builder's reason.
+   - `PLAN DRIFT`: append a `## Log` line to the plan, then stop and hand the plan back to `exo:spec` with the builder's reason; when the reason makes a landed task wrong, add the lines that `node "${CLAUDE_SKILL_DIR}/scripts/undo-task.mjs" --plan <path> --root <checkout> <n>` prints.
    - `BLOCKED <reason>`: append a `## Log` line to the plan before you report it.
    - A build that fails once goes back to a fresh `exo:builder` with the first builder's report path, `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` run in the checkout, in its prompt, on the second-attempt row of the Models table that fits its report.
    - `BLOCKED proof <command> did not fail first`: `land-task` refused the task: its proof passes without the change. Send a fresh `exo:builder` to tighten that test, or hand the plan to `exo:spec` for a `Red: none (<reason>)`, and name the task in the final report.
@@ -99,4 +99,5 @@ Brief: /tmp/exo-user/app-1a2b3c4d/brief-3.md
 | Script | Purpose | Arguments |
 |---|---|---|
 | `next-task.mjs` | Prints the landed tasks, the `Next:` line and a `Brief:` path to a file with the task text and the plan's Decisions, Non-goals and Assumptions | `--plan <path> --root <checkout>` |
+| `undo-task.mjs` | Prints the revert commands for one landed task and the landed tasks that depend on it | `--plan <plan> --root <checkout> <n>` |
 | `land-task.mjs` | Proves a task red then green, runs the Land gate and commits | `--plan <path> --task <n> --root <checkout>`, or `--fix <subject>` |
