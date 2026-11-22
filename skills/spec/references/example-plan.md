@@ -26,6 +26,9 @@ Objection: the list already truncates long rows, so the badge may be clipped on 
 ## Manual checks
 - Open the task list: a task due tomorrow shows its badge.
 
+## Review Focus
+- A task saved before this change has no due date: the list must still load.
+
 ## Plan basis
 Repository: /repo
 Branch: due-date-badge

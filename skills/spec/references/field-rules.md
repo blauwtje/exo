@@ -2,6 +2,7 @@
 
 - **Decisions:** each answer on its own numbered line; a choice exo made ends `(exo decided)`. When existing code is the user's to restructure, a Decision says so and names it, so the builder reshapes it instead of adding a copy beside it. **Non-goals:** what a reader would assume is included, with its paths; omit the section when empty. **Open points:** only an unanswered user question; build refuses the brief while one is listed.
 - **Acceptance:** each item cites a task number, a `Data:` segment or the Success criterion, else it is a Manual check. **Manual checks:** only what needs the user's eyes, hands or account: what to do, then what they should see.
+- **Review Focus** (optional): at most 5 one-line bullets that tell the end-of-run review where a passing Proof could hide a fault. Omit the section when empty.
 - **Plan basis:** `Repository:` is the absolute root. `Branch:` with no repo is `main`, and the run creates the repo.
   - `Land gate:` is `npm run <script>` for the first of `check`, `test` and `typecheck` in the root package.json, else `none`. When the project has a linter, the gate runs it too, as in `npm run lint && npm run typecheck`, because the project's own lint decides style.
 - **Success criterion:** one backticked command that proves every task landed, nothing only the user can check. A command that already passes before the work needs `Red: none (<reason>)` on the next line; a flaky one `Repeat: <2-5> (<reason>)`. When the project has a `bin` or `scripts.start`, the command runs it, else write `Product run: none (<reason>)`.
