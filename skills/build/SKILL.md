@@ -30,7 +30,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
    - `BLOCKED <n> NEEDS ANSWER: <question>`: ask the user with the builder's options and recommendation as the question, then re-dispatch that task with the answer in its prompt.
    - `PLAN DRIFT`: append a `## Log` line to the plan, then stop and hand the plan back to `exo:spec` with the builder's reason.
    - `BLOCKED <reason>`: append a `## Log` line to the plan before you report it.
-   - A build that fails once goes back to a fresh `exo:builder` with the first builder's report path, `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` run in the checkout, in its prompt, on the second-attempt row of the Models table.
+   - A build that fails once goes back to a fresh `exo:builder` with the first builder's report path, `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` run in the checkout, in its prompt, on the second-attempt row of the Models table that fits its report.
    - `BLOCKED proof <command> did not fail first`: `land-task` refused the task: its proof passes without the change. Send a fresh `exo:builder` to tighten that test, or hand the plan to `exo:spec` for a `Red: none (<reason>)`, and name the task in the final report.
    - `BLOCKED proof flaky`: the Proof passed once and failed on the second run. Send a fresh `exo:builder` to remove the cause of the flip (shared state, timing, order) without sleeps or retries, or hand the plan to `exo:spec`, and name the task in the final report.
    - A build that fails twice, or a repair that must change a module outside the task's `Files:`: stop, report both and hand it to `exo:diagnose`.
@@ -42,7 +42,8 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
 | Job | Who | Model, effort |
 |---|---|---|
 | Build a task | `exo:builder` | Sonnet, medium |
-| Second attempt after a failure | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
+| Second attempt, the report names a missing input | `exo:builder` with the Agent tool's `model: sonnet` and `effort: medium`, with the missing answer in its prompt | Sonnet, medium |
+| Second attempt, any other failure | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
 | A design choice the plan leaves open | this session | its own model, high |
 | Find a cause (diagnose investigator) | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
 | Research | `exo:researcher` | Sonnet, medium |
