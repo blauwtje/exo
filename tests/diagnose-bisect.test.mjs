@@ -21,3 +21,31 @@ test('a repro that passes at HEAD reports nothing to bisect', async () => {
   const result = await run(SCRIPT, ['--repro', REPRO], { cwd: root });
   assert.match(result.stdout, /^Bisect: /);
 });
+
+const VICTIM = 'victim.test.sh';
+const POLLUTION_REPRO = `for f in __FILE__; do sh "$f"; done; sh ${VICTIM}`;
+
+async function suiteRepository(polluter) {
+  const files = { [VICTIM]: 'test ! -f marker\n' };
+  for (const name of ['a', 'b', 'c', 'd']) files[`${name}.test.sh`] = name === polluter ? 'touch marker\n' : 'true\n';
+  return gitRepository(files);
+}
+
+test('the test file that makes the victim fail is named', async () => {
+  const root = await suiteRepository('c');
+  const result = await run(SCRIPT, ['--repro', POLLUTION_REPRO], { cwd: root });
+  assert.equal(result.stdout.trim(), 'Polluter: c.test.sh');
+});
+
+test('a victim that fails alone exits 1', async () => {
+  const root = await gitRepository({ [VICTIM]: 'false\n', 'a.test.sh': 'true\n' });
+  const result = await run(SCRIPT, ['--repro', POLLUTION_REPRO], { cwd: root });
+  assert.equal(result.stdout.trim(), 'Bisect: the test fails alone');
+  assert.equal(result.code, 1);
+});
+
+test('a clean set prints Polluter: none', async () => {
+  const root = await suiteRepository(null);
+  const result = await run(SCRIPT, ['--repro', POLLUTION_REPRO], { cwd: root });
+  assert.equal(result.stdout.trim(), 'Polluter: none');
+});

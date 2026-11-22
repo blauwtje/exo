@@ -4,12 +4,14 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { isTestPath } from '../../../lib/red-green.mjs';
 import { isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 
 const USAGE = [
   'Usage: node bisect.mjs --repro <command>',
   'Runs <command> in a temporary worktree, finds the newest good commit it passes at (merge-base with origin/HEAD, else HEAD~1, ~2, ~4, ... back to the root),',
-  'and bisects to the first bad commit. Prints First bad, Good and the changed files; a repro that passes at HEAD or cannot be bisected prints one Bisect: line and exits 1.'
+  'and bisects to the first bad commit. Prints First bad, Good and the changed files; a repro that passes at HEAD or cannot be bisected prints one Bisect: line and exits 1.',
+  'A <command> that holds the token __FILE__ searches test files instead: it prints Polluter: <file> or Polluter: none, and Bisect: the test fails alone (exit 1) when the command fails without the token.'
 ].join('\n');
 
 const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' });
@@ -54,10 +56,41 @@ function bisect(command) {
   }
 }
 
+const TOKEN = '__FILE__';
+const TEST_NAME = /[._](test|spec)\.|^test_/;
+const quoted = (file) => `'${file.replaceAll("'", "'\\''")}'`;
+
+function pollutionSearch(command) {
+  const top = text(git(process.cwd(), 'rev-parse', '--show-toplevel'));
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-polluter-'));
+  const worktree = path.join(folder, 'tree');
+  git(top, 'worktree', 'add', '--detach', worktree, 'HEAD');
+  const passesWith = (files) => {
+    git(worktree, 'reset', '--hard', '-q');
+    git(worktree, 'clean', '-fdq');
+    return passes(worktree, command.replaceAll(TOKEN, files.map(quoted).join(' ')));
+  };
+  try {
+    if (!passesWith([])) return 'Bisect: the test fails alone';
+    let candidates = text(git(worktree, 'ls-files')).split('\n')
+      .filter((file) => isTestPath(file) && TEST_NAME.test(path.basename(file)) && !command.includes(file));
+    if (passesWith(candidates)) return 'Polluter: none';
+    while (candidates.length > 1) {
+      const half = candidates.length >> 1;
+      const [first, second] = [candidates.slice(0, half), candidates.slice(half)];
+      candidates = passesWith(first) ? second : first;
+    }
+    return `Polluter: ${candidates[0]}`;
+  } finally {
+    git(top, 'worktree', 'remove', '--force', worktree);
+    fs.rmSync(folder, { recursive: true, force: true });
+  }
+}
+
 function main(argv) {
   const flags = parseFlags(argv, { repro: 'value' }, { usage: USAGE });
   if (!flags.repro) throw new UsageError('--repro <command> is required');
-  const report = bisect(flags.repro);
+  const report = flags.repro.includes(TOKEN) ? pollutionSearch(flags.repro) : bisect(flags.repro);
   console.log(report);
   if (report.startsWith('Bisect:')) process.exitCode = 1;
 }
