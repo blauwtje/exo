@@ -82,7 +82,7 @@ How to apply: <where and when>
 
 ### Prune
 
-Read the two CLAUDE.md files and mark each line keep, update or delete against the current tree. Delete a line a check now enforces, and one the tree contradicts. Move a lesson found there to a check or a note, because CLAUDE.md loads every session. Read the two lesson stores too and mark delete each note a check now enforces or the tree makes impossible. For stale references and contradictions in CLAUDE.md, rules and skills, point the user to `/doctor prompt-audit`. Propose the edits and wait for the user's yes.
+Read the two CLAUDE.md files and mark each line keep, update or delete against the current tree. Delete a line a check now enforces, and one the tree contradicts. Move a lesson found there to a check or a note, because CLAUDE.md loads every session. Run `node "${CLAUDE_SKILL_DIR}/scripts/lessons.mjs" check --dir <store>` on the two lesson stores and judge only the notes its `stale:` lines name: delete one a check now enforces or the tree makes impossible. For stale references and contradictions in CLAUDE.md, rules and skills, point the user to `/doctor prompt-audit`. Propose the edits and wait for the user's yes.
 
 ## Examples
 
