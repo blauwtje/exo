@@ -33,7 +33,8 @@ Freeze what this session knows and the next one cannot rebuild. Point to files a
    - One line on where the work stands and the first thing to do next, then the `Written:` line.
    - `## Goal`: what the work is for, and what it will not do.
    - `## Progress`: from `git status --short`, not memory. Open with the plan path and task number when a plan runs. List what is committed, then every uncommitted path in full, because a next session that cannot tell them apart discards working-tree edits. Add each decision as "<decision>, decided by <the user or this session>".
-   - `## Evidence`: what is proven, as claim, command and result, and what is unproven, with what is open and who can answer. Add each approach already ruled out.
+   - `## Evidence`: what is proven, as claim, command and result, and what is unproven, with what is open and who can answer.
+   - `## Ruled out`: each approach already tried and dropped, one line each with why it failed.
    - `## Next step`: the first action, then each later step with its full command. For a run, say how to wait, what to do on failure and where to stop.
 3. End the turn by naming the written path and telling the user to run `/clear`, then say "continue from the handoff". Continue no work.
 
