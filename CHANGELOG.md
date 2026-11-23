@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `exo:build` commits the plan file on its branch before the first task, moving it out of the main checkout when spec wrote it there and the build runs in another worktree, so no uncommitted copy of the plan stays on `main`.
 - `exo:search` limits the GitHub issue search to issues created inside the plan's date range, and lets the body of an issue or post be picked when it has comments, so an issue whose only comment is "Thanks" keeps its body.
 - `exo:spec` keeps a notes file while it plans a change of more than 3 tasks, reads only the researchers' short returns, and lets one builder write the brief, so the lead's window stays small and a compaction goes on from the notes without new fact checks.
 - `exo:build` commits the plan file in `docs/specs/` on its branch at the end of the run, and `exo:ship` puts it in the same pull request without asking, instead of leaving it uncommitted.
