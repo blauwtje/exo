@@ -9,6 +9,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `exo:watch` takes a YouTube video's original caption track (`en-orig`) instead of the auto-translated one (`en`) that YouTube answers with `HTTP Error 429`, and uses a translated track only when `--lang` names a language with no other track, so a batch no longer stops after the first auto-captioned video.
+- `exo:watch` says a ggml model file is missing, with `--model` or `EXO_WHISPER_MODEL`, when `whisper-cli` is installed, instead of asking to install whisper.cpp.
+- `exo:watch` tells the lead not to sleep or retry after a rate limit but to answer from the finished transcripts and give the restart command, and shows every url in single quotes so zsh does not glob the `?`.
 - `exo:ideas` lists open questions in its frame instead of stating its own assumptions.
 - `exo:spec` plan-check no longer reads a version or ratio like `1.5:1` in a Fact as a `path:line` citation.
 - `exo:build` commits the plan file on its branch before the first task, moving it out of the main checkout when spec wrote it there and the build runs in another worktree, so no uncommitted copy of the plan stays on `main`.
@@ -21,6 +24,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:watch` fetches up to 3 videos at once (`EXO_WATCH_JOBS`), and hands one researcher several short videos up to 40000 tokens together.
+- `exo:watch` `list.mjs` prints a date for each video of a channel, from yt-dlp's approximate date, so recent videos can be picked by date.
 - `evals/failures.md` lines name the model a failure was seen on (`model: <id>`), and the release eval reruns the cases of lines seen on an older model without their rule and drops the rule when the case still passes.
 - spec-late-fees grades that spec takes no default of its own and asks or lists each open choice.
 - `exo:spec` takes no default of its own: it asks each choice that code or web cannot prove, one at a time and at most 3 per round, writes proven facts under `## Facts` with their `path:line` or URL, and drops the `(exo decided)` mark and the code/assume/user sort.
