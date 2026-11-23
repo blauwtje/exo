@@ -44,7 +44,7 @@ function searchCalls(plan) {
   });
   return [
     ...plan.subQuestions.flatMap(({ terms }) => terms).map((term) => repos(term)),
-    ...firstTerms.map((term) => ({ label: `issues "${term}"`, cards: issueCards, args: ["search", "issues", term, "--limit", String(SEARCH_LIMIT), "--json", ISSUE_FIELDS] })),
+    ...firstTerms.map((term) => ({ label: `issues "${term}"`, cards: issueCards, args: ["search", "issues", `${term} created:>=${plan.since}`, "--limit", String(SEARCH_LIMIT), "--json", ISSUE_FIELDS] })),
     ...plan.topics.flatMap((topic) => firstTerms.map((term) => repos(term, topic))),
   ];
 }

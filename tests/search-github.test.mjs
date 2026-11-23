@@ -79,7 +79,8 @@ test("find runs repo searches per term, per topic and issue searches per sub-que
     assert.equal(calls.filter((args) => args[1] === "issues").length, 2);
     assert.ok(calls.some((args) => args[1] === "repos" && args[2] === "beta pushed:>=2026-01-01" && !args.includes("--topic")));
     assert.ok(calls.some((args) => args[1] === "repos" && args[2].startsWith("gamma ") && args.join(" ").includes("--topic hooks")));
-    assert.ok(calls.some((args) => args[1] === "issues" && args[2] === "gamma"));
+    assert.ok(calls.some((args) => args[1] === "issues" && args[2] === "gamma created:>=2026-01-01"));
+    assert.ok(calls.filter((args) => args[1] === "issues").every((args) => args[2].endsWith(" created:>=2026-01-01")));
     assert.equal(lists.length, 9);
     assert.equal(lists[0][0].title, "ann/hooks");
     assert.deepEqual(failed, ['no hits: issues "alpha"', 'no hits: issues "gamma"']);

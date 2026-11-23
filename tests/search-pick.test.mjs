@@ -218,6 +218,19 @@ test("readBest lets a document without passages be picked on its body and report
   assert.deepEqual(result.failed, ["search failed: boom"]);
 });
 
+test("readBest lets the header body be picked when the only passage is a thank-you", async () => {
+  const doc = { header: "Title\nmeta\nurl\nThe fix is to set retries to 3", passages: [{ id: "p1", parent: null, label: "u/a", score: 1, body: "Thanks", link: "l1" }] };
+  const result = await readBest(
+    plan(),
+    adapter([card("https://x.com/a")], { "https://x.com/a": doc }),
+    chooser((items) => items.map(({ id }) => ({ id, reason: "r" })), () => [{ id: "body", reason: "Q1 states the fix" }]),
+  );
+  assert.equal(result.read.length, 1);
+  assert.ok(result.read[0].text.includes("set retries to 3"));
+  assert.ok(result.read[0].text.includes("why: Q1 states the fix"));
+  assert.ok(!result.read[0].text.includes("Thanks"));
+});
+
 test("readBest drops a document with no pick", async () => {
   const cards = [card("https://x.com/a"), card("https://x.com/b")];
   const result = await readBest(

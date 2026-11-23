@@ -133,12 +133,15 @@ function subQuestionsOf(reason) {
 
 async function readCard(plan, { open }, choose, card, budget) {
   const { header, passages } = await open(card);
-  const items = passages.length ? passages : [{ id: "body", label: "body", parent: null, body: header }];
+  const items = [{ id: "body", label: "body", parent: null, body: header }, ...passages];
   const answered = await choose("pick", plan, header, items);
   const picks = answered.filter(({ reason }) => subQuestionsOf(reason).length > 0);
   if (!picks.length) return null;
   const subs = [...new Set(picks.flatMap(({ reason }) => subQuestionsOf(reason)))].sort((a, b) => a - b);
-  const text = passages.length ? render(header, passages, picks, budget) : `${render(header, [], [], budget)}\n\nwhy: ${picks[0].reason}`;
+  const bodyPick = picks.find(({ id }) => id === "body");
+  const passagePicks = picks.filter(({ id }) => id !== "body");
+  const rendered = render(header, passagePicks.length ? passages : [], passagePicks, budget);
+  const text = bodyPick ? `${rendered}\n\nwhy: ${bodyPick.reason}` : rendered;
   return { url: card.url, text, subs };
 }
 
