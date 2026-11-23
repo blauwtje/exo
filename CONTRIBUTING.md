@@ -66,7 +66,7 @@ A case that passes gets one `criteria` grader; only a case that fails, is void o
 - Two roles are plugin agents under `agents/`, `builder` and `researcher`, because an agent file fixes a tool list, a model, an effort and a turn limit, and its body is the system prompt rather than text pasted into every dispatch. The lead sends one fresh agent per separate job with file paths in the prompt, and runs jobs in parallel only when they share no file.
 - An agent that takes everything from its dispatch sets `omitClaudeMd: true` (Claude Code 2.1.271 or later) and carries the rule against deleting past a blocked state in its own body, because it loads no `CLAUDE.md`.
 - `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251. `CLAUDE_CODE_EFFORT_LEVEL` overrides an agent's effort.
-- A subagent takes its model and effort from its agent file's frontmatter; see each agent's and skill's frontmatter for the values, and a dispatch passes the Agent tool's `model` or `effort` only for a job in the Models table of `skills/build/SKILL.md`.
+- A subagent takes its model and effort from its agent file's frontmatter; see each agent's and skill's frontmatter for the values, and a dispatch passes the Agent tool's `model` or `effort` only for a job in the Models table of `skills/build/SKILL.md` or a dispatch a skill's steps name.
 - A skill pins a model or effort only where its work always needs that tier, because a pinned model overrides the session's model and rebuilds the prompt cache mid-session; see each skill's frontmatter.
 
 ## Hook
