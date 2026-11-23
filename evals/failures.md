@@ -1,6 +1,6 @@
 # Failures
 
-One line per failure seen in a real session: date, skill, what happened, session or commit, then optionally `covered: evals/<case>` when an eval case tests it or `fixed: <commit>` when a commit fixed it.
+One line per failure seen in a real session: date, skill, what happened, session or commit, then optionally `covered: evals/<case>` when an eval case tests it or `fixed: <commit>` when a commit fixed it, and `model: <id>` naming the model the failure was seen on, when known.
 - 2026-11-13 gate eval gate-red-check: the `criteria` grader judged tool calls from the final message only, so a run that handed back to build could score 0 (`.exo/eval-gate-small.json`).
 - 2026-11-13 gate eval gate-skip-review: run 1 followed the skill and still scored 0, because the grader asked about `verify.mjs` and the agent dispatch, which the final message does not show (`.exo/eval-gate-small.json`).
 - 2026-11-13 gate eval gate-no-plan: the `criteria` grader asked about tool calls and written files that the final message does not show (`.exo/eval-gate-small.json`).
@@ -190,3 +190,4 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-23 search github: a second-model review found the issue search has no date filter, so issues older than the plan's range came back, and that an issue body could not be picked once it had comments; 60 session files hold a `## github:` search section (review, user request).
 - 2026-11-23 spec, build: the brief stayed an untracked file on main while build ran in another worktree; the branch got a late copy and main kept a copy 7 lines apart (new-data-os linkedin-vacatures); 285 session files hold both `?? docs/specs/` and `worktree add`, 2523 hold `?? docs/specs/` (user request).
 - 2026-11-23 spec guessing: spec takes a safe default silently as (exo decided) and files a cheap-to-undo guess as assume under ## Assumptions, so a brief carries choices no code, web source or user backed (skills/spec/SKILL.md:29,39); 3725 session files match the regex '\(exo decided\)|\[(code|assume|assumption)\] ' (user request).
+- 2026-11-23 failures: a line does not name the model the failure was seen on, so a rule written for one model's behaviour (a Sonnet 4.5 early-stop mitigation that Opus 4.5 made obsolete, https://www.youtube.com/watch?v=1Y4ZE7JpbeU at 4:54) cannot be retested or dropped when the model changes; 29 session files match 'context anxiety' (user request). model: claude-opus-5-5

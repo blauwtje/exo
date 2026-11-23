@@ -21,6 +21,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `evals/failures.md` lines name the model a failure was seen on (`model: <id>`), and the release eval reruns the cases of lines seen on an older model without their rule and drops the rule when the case still passes.
 - spec-late-fees grades that spec takes no default of its own and asks or lists each open choice.
 - `exo:spec` takes no default of its own: it asks each choice that code or web cannot prove, one at a time and at most 3 per round, writes proven facts under `## Facts` with their `path:line` or URL, and drops the `(exo decided)` mark and the code/assume/user sort.
 - `exo:build` hands a plan's `## Facts` to each builder with its Decisions and Non-goals in place of `## Assumptions`.
