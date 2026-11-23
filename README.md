@@ -57,7 +57,7 @@ The agents run behind the skills; you do not call them.
 
 | Agent | What it does |
 |---|---|
-| `builder` | Builds one plan task, repair or fix. |
+| `builder` | Builds one plan task, repair or fix, and writes the brief of a plan over 3 tasks. |
 | `researcher` | Answers one bounded question from named sources. |
 
 [guide/](guide/) has a page for every skill. [guide/settings.md](guide/settings.md) covers the settings, including shorter replies and the status line.
