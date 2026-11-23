@@ -5,11 +5,11 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 ## Workflow
 
 - Keep the main checkout on `main` and run every edit in a worktree under `.claude/worktrees/`, because exo loads in place from this checkout.
-- The lead (main session) only orchestrates: it runs `exo:spec`, builds with `exo:build <brief>`, sends a bounded question to `exo:researcher` and reads a named file itself.
-- Send every edit, fix and failed-check repair to a worktree subagent, one concern each, and after the throughput checkpoint of `exo:spec` run independent parts in parallel.
+- The lead (main session) only orchestrates: it plans, sends each job and each bounded question to a fresh subagent, and reads a named file itself.
+- Send every edit, fix and failed-check repair to a worktree subagent, one concern each, and run independent parts in parallel.
 - Before the start-of-run cleanup, a squash, a worktree removal, a branch delete or a session push, read `.claude/landing.md`.
 - Outside a run, only the lead writes `CHANGELOG.md`.
-- Ask nothing about where to commit, because this workflow outranks step 1 of `exo:build` and the pull-request route in `exo:ship`.
+- Ask nothing about where to commit or whether to open a pull request: work lands on `main` as `.claude/landing.md` says.
 - When a report changed exo, tell the user that a new session runs it and that `/reload-plugins` updates only the open session.
 
 ## Checks
