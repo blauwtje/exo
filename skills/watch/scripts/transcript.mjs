@@ -15,6 +15,7 @@ const USAGE = [
 
 const CHUNK_SECONDS = 900;
 const TOKENS_PER_WORD = 1.3;
+const DEFAULT_JOBS = 3;
 const TIME = /(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3}) --> /;
 
 export function parseVtt(text) {
@@ -43,15 +44,28 @@ function idOf(url) {
   return url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{11})/)?.[1] ?? url.match(/[\w-]+(?=\/?(?:\?.*)?$)/)?.[0] ?? 'video';
 }
 
+const baseOf = (code) => code.replace('-orig', '').split('-')[0];
+
 function pickLanguage(info, wanted) {
   const manual = Object.keys(info.subtitles ?? {});
   const auto = Object.keys(info.automatic_captions ?? {});
-  const all = [...new Set([...manual, ...auto])];
-  if (all.length === 0) return { none: true };
-  const language = wanted ?? info.language ?? 'en';
-  const match = all.find((code) => code === language) ?? all.find((code) => code.split('-')[0] === language.split('-')[0] && !code.includes('orig'));
-  if (!match) return { available: all };
-  return { code: match, source: manual.includes(match) ? 'manual' : 'auto' };
+  const hasOriginal = auto.some((code) => code.endsWith('-orig'));
+  const original = hasOriginal ? auto.filter((code) => code.endsWith('-orig')) : auto;
+  const translated = hasOriginal ? auto.filter((code) => !code.endsWith('-orig')) : [];
+  const spoken = [...manual, ...original];
+  const language = wanted ?? info.language;
+  const base = language?.split('-')[0];
+  const pick = (code, source) => ({ code, source });
+  const exactManual = manual.find((code) => code === language) ?? manual.find((code) => baseOf(code) === base);
+  if (exactManual) return pick(exactManual, 'manual');
+  const sameOriginal = original.find((code) => baseOf(code) === base);
+  if (sameOriginal) return pick(sameOriginal, 'auto');
+  const sameTranslated = wanted && (translated.find((code) => code === wanted) ?? translated.find((code) => baseOf(code) === base));
+  if (sameTranslated) return pick(sameTranslated, 'auto');
+  if (wanted) return spoken.length === 0 && translated.length === 0 ? { none: true } : { available: spoken };
+  if (manual[0]) return pick(manual[0], 'manual');
+  if (original[0]) return pick(original[0], 'auto');
+  return { none: true };
 }
 
 function chunk(dir, cues, id, youtube) {
@@ -75,6 +89,7 @@ const AUDIO = 'bestaudio[ext=mp3]/bestaudio[ext=wav]/bestaudio[ext=flac]/bestaud
 async function transcribe(url, dir, { lang, model }) {
   const modelFile = model ?? process.env.EXO_WHISPER_MODEL;
   const engine = (modelFile && onPath('whisper-cli')) ? 'whisper-cli' : onPath('whisper') ? 'whisper' : null;
+  if (!engine && onPath('whisper-cli')) return { missing: 'a ggml model file for whisper-cli: pass --model <file> or set EXO_WHISPER_MODEL (for example ggml-base.en.bin from https://huggingface.co/ggerganov/whisper.cpp)' };
   if (!engine) return { missing: 'a local speech engine: install whisper.cpp (whisper-cli, with --model <ggml file>) or openai-whisper (whisper)' };
   const download = await ytdlp(['-f', AUDIO, '--no-playlist', '-P', dir, '-o', 'audio.%(ext)s', '--', url]);
   const audio = fs.readdirSync(dir).find((file) => file.startsWith('audio.'));
@@ -143,15 +158,24 @@ async function main(argv) {
     return 1;
   }
   const options = { out: scratchPath(process.cwd(), 'watch'), lang: flags.lang, model: flags.model, force: flags.force };
+  const jobs = environmentMs('EXO_WATCH_JOBS', DEFAULT_JOBS);
+  const pending = [...urls];
+  const limited = [];
   let failed = 0;
-  for (const [index, url] of urls.entries()) {
-    const result = await one(url, options);
-    if (result.line) console.log(result.line);
-    if (!result.failure) continue;
-    failed += 1;
-    console.error(result.failure);
-    if (!result.rateLimited) continue;
-    console.error(`rate-limited, retry later: ${urls.slice(index).join(' ')}`);
+  const worker = async () => {
+    while (limited.length === 0 && pending.length > 0) {
+      const url = pending.shift();
+      const result = await one(url, options);
+      if (result.line) console.log(result.line);
+      if (!result.failure) continue;
+      failed += 1;
+      console.error(result.failure);
+      if (result.rateLimited) limited.push(url);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(jobs, urls.length) }, worker));
+  if (limited.length > 0) {
+    console.error(`rate-limited, retry later: ${[...limited, ...pending].join(' ')}`);
     return RATE_LIMITED_EXIT;
   }
   return failed === urls.length ? 1 : 0;

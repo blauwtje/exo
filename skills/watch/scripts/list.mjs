@@ -14,7 +14,8 @@ function flatten(entries = []) {
 }
 
 function line(entry) {
-  const date = /^(\d{4})(\d{2})(\d{2})$/.exec(entry.upload_date ?? '')?.slice(1).join('-');
+  const date = /^(\d{4})(\d{2})(\d{2})$/.exec(entry.upload_date ?? '')?.slice(1).join('-')
+    ?? (Number.isFinite(entry.timestamp) ? new Date(entry.timestamp * 1000).toISOString().slice(0, 10) : '');
   const views = Number.isFinite(entry.view_count) ? `${entry.view_count} views` : '';
   const duration = Number.isFinite(entry.duration) ? formatDuration(entry.duration) : '';
   return [entry.webpage_url || entry.url || entry.id, entry.title, date, duration, views].filter(Boolean).join(' | ');
@@ -29,7 +30,7 @@ async function main(argv) {
     console.error(`${flags.url}: missing tool: listing needs yt-dlp on PATH; install it with ${INSTALL}, then rerun`);
     return 1;
   }
-  const result = await ytdlp(['--flat-playlist', '--dump-single-json', '--playlist-end', String(limit), '--', flags.url]);
+  const result = await ytdlp(['--flat-playlist', '--extractor-args', 'youtubetab:approximate_date', '--dump-single-json', '--playlist-end', String(limit), '--', flags.url]);
   if (result.error) {
     console.error(`${flags.url}: list failed: ${reason(result)}`);
     return isRateLimited(result) ? RATE_LIMITED_EXIT : 1;

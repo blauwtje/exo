@@ -35,3 +35,39 @@ esac
   const text = fs.readFileSync(path.join(folder, 'transcript.txt'), 'utf8');
   assert.match(text, /^\[0:01\]\(https:\/\/youtu\.be\/abcdefghijk\?t=1\) hello there/);
 });
+
+test('an auto caption track in the spoken language is read from its -orig track', async () => {
+  const bin = tempDir('watch-bin-');
+  const stub = path.join(bin, 'yt-dlp');
+  const asked = path.join(bin, 'asked.txt');
+  fs.writeFileSync(stub, `#!/bin/sh
+case "$*" in
+  *--version*) echo 1;;
+  *--dump-json*) echo '{"title":"T","duration":10,"language":"en-US","subtitles":{},"automatic_captions":{"en-orig":[{}],"en":[{}],"es-orig":[{}]},"extractor":"youtube"}';;
+  *) while [ $# -gt 0 ]; do [ "$1" = "-P" ] && dir="$2"; [ "$1" = "--sub-langs" ] && echo "$2" > '${asked}'; shift; done; printf '%b' '${VTT.replaceAll('\n', '\\n')}' > "$dir/captions.en-orig.vtt";;
+esac
+`, { mode: 0o755 });
+  const cwd = fs.realpathSync(tempDir('watch-cwd-'));
+  const temp = fs.realpathSync(tempDir('watch-tmp-'));
+  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp } });
+  assert.equal(result.code ?? 0, 0, result.stderr);
+  assert.match(result.stdout, /captions=auto/);
+  assert.equal(fs.readFileSync(asked, 'utf8').trim(), 'en-orig');
+});
+
+test('auto captions without any -orig track are spoken tracks', async () => {
+  const bin = tempDir('watch-bin-');
+  const stub = path.join(bin, 'yt-dlp');
+  fs.writeFileSync(stub, `#!/bin/sh
+case "$*" in
+  *--version*) echo 1;;
+  *--dump-json*) echo '{"title":"T","duration":10,"subtitles":{},"automatic_captions":{"en_US":[{}]},"extractor":"facebook"}';;
+  *) while [ $# -gt 0 ]; do [ "$1" = "-P" ] && dir="$2"; shift; done; printf '%b' '${VTT.replaceAll('\n', '\\n')}' > "$dir/captions.en_US.vtt";;
+esac
+`, { mode: 0o755 });
+  const cwd = fs.realpathSync(tempDir('watch-cwd-'));
+  const temp = fs.realpathSync(tempDir('watch-tmp-'));
+  const result = await run(SCRIPT, ['--url', 'https://www.facebook.com/watch/?v=123456'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp } });
+  assert.equal(result.code ?? 0, 0, result.stderr);
+  assert.match(result.stdout, /captions=auto/);
+});
