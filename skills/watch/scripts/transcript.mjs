@@ -128,7 +128,7 @@ async function one(url, options) {
   } else {
     const speech = await transcribe(url, dir, options);
     if (speech.missing) return { failure: `${url}: missing tool: the video has no captions, and transcribing its audio needs ${speech.missing}` };
-    if (speech.failure) return { failure: `${url}: no transcript: the video has no captions, and ${speech.failure}` };
+    if (speech.failure) return { failure: `${url}: no transcript: the video has no captions, and ${speech.failure}`, rateLimited: isRateLimited({ stderr: speech.failure }) };
     ({ vtt } = speech);
     source = `speech:${speech.engine}`;
   }

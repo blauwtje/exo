@@ -197,3 +197,4 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-23 watch: `list.mjs` printed no upload date for channel videos, so a request for videos that are not outdated was picked from titles alone (session c444acc7), model: claude-opus-5-5
 - 2026-11-23 watch: a 33-video batch fetched one video at a time, two yt-dlp calls each (user request)
 - 2026-11-23 watch: 6 of 33 caption-less videos failed with a line telling to install whisper.cpp while `whisper-cli` was installed and only the model file was missing (session f7048f05), model: claude-opus-5-5
+- 2026-11-23 watch: YouTube's bot check (`Sign in to confirm you’re not a bot`) failed all 6 videos of a batch, and `transcript.mjs` exited 1 as if every video had failed instead of 75 with the restart line (40 session files hold the bot check; session f7048f05), model: claude-opus-5-5

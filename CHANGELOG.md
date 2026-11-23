@@ -10,6 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Fixed
 
 - `exo:watch` takes a YouTube video's original caption track (`en-orig`) instead of the auto-translated one (`en`) that YouTube answers with `HTTP Error 429`, and uses a translated track only when `--lang` names a language with no other track, so a batch no longer stops after the first auto-captioned video.
+- `exo:watch` treats YouTube's bot check (`Sign in to confirm you’re not a bot`) like a rate limit: it exits 75 with the restart line instead of 1.
 - `exo:watch` says a ggml model file is missing, with `--model` or `EXO_WHISPER_MODEL`, when `whisper-cli` is installed, instead of asking to install whisper.cpp.
 - `exo:watch` tells the lead not to sleep or retry after a rate limit but to answer from the finished transcripts and give the restart command, and shows every url in single quotes so zsh does not glob the `?`.
 - `exo:ideas` lists open questions in its frame instead of stating its own assumptions.

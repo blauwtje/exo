@@ -4,7 +4,7 @@ import { environmentMs } from '#script-flags';
 
 export const RATE_LIMITED_EXIT = 75;
 export const INSTALL = "'brew install yt-dlp' or 'pipx install yt-dlp'";
-const RATE_LIMIT = /HTTP Error 429|Too Many Requests|rate.?limit/i;
+const RATE_LIMIT = /HTTP Error 429|Too Many Requests|rate.?limit|confirm you.{1,6}not a bot/i;
 const MAX_BUFFER = 256 * 1024 * 1024;
 export const YTDLP_MS = environmentMs('EXO_WATCH_YTDLP_MS', 120000);
 

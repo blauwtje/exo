@@ -71,3 +71,19 @@ esac
   assert.equal(result.code ?? 0, 0, result.stderr);
   assert.match(result.stdout, /captions=auto/);
 });
+
+test('the YouTube bot check counts as rate-limited', async () => {
+  const bin = tempDir('watch-bin-');
+  const stub = path.join(bin, 'yt-dlp');
+  fs.writeFileSync(stub, `#!/bin/sh
+case "$*" in
+  *--version*) echo 1;;
+  *) echo "ERROR: [youtube] abcdefghijk: Sign in to confirm you’re not a bot. Use --cookies-from-browser or --cookies for the authentication." >&2; exit 1;;
+esac
+`, { mode: 0o755 });
+  const cwd = fs.realpathSync(tempDir('watch-cwd-'));
+  const temp = fs.realpathSync(tempDir('watch-tmp-'));
+  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp } });
+  assert.equal(result.code, 75, result.stderr);
+  assert.match(result.stderr, /rate-limited, retry later: https:\/\/youtu\.be\/abcdefghijk/);
+});
