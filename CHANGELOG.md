@@ -17,7 +17,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
-- `exo:spec` runs its code-lookup researchers (`Sources: repo`, step 2) on Haiku at high effort instead of Sonnet medium.
+- `exo:spec` runs its code-lookup researchers (`Sources: repo`, step 2) on Haiku at high effort instead of Sonnet medium, and so does the orient lookup of `exo:build`.
 - `exo:search` repeats rounds inside one call while time is left for another and sends one helper for the whole `Continue:` loop instead of one per call.
 - `exo:search` starts Chrome and takes its lock once per search process, loads Reddit threads with `fetch` in one shared page, and paces every Reddit request through one queue.
 - `exo:ideas` and `exo:search` are user-only with `disable-model-invocation: true`, so Claude no longer starts them; type `/exo:ideas` or `/exo:search` to run one, and the routing eval drops their prompts.

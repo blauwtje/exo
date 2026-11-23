@@ -47,6 +47,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
 | Second attempt, any other failure | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
 | A design choice the plan leaves open | this session | its own model, high |
 | Find a cause (diagnose investigator) | `exo:builder` with the Agent tool's `model: opus` and `effort: high` | Opus, high |
+| Code lookup (`Sources: repo`) | `exo:researcher` with the Agent tool's `model: haiku` and `effort: high` | Haiku, high |
 | Research | `exo:researcher` | Sonnet, medium |
 
 ### End of the run
@@ -60,7 +61,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
 
 A decided change with no plan file runs these steps, so a small change gets the same proof.
 
-1. **Orient.** Read only the ranges the request names. Otherwise dispatch `exo:researcher` with `Sources: repo` and read only its `Read next` ranges. Upstream decisions are settled.
+1. **Orient.** Read only the ranges the request names. Otherwise dispatch `exo:researcher` with `Sources: repo`, with the Agent tool's `model: haiku` and `effort: high`, and read only its `Read next` ranges. Upstream decisions are settled.
 2. **Decide the route.** An open product decision goes to `exo:spec` first. Count these facts: over two source, test or config files change, a dependency is added, a public signature changes, a persisted format or security boundary is crossed. With none, read `references/code-rules.md`, which every builder reads too, then edit directly, run the check and end on `exo:ship` as in End of the run, so the edit does not sit uncommitted. A test-first request continues at any count.
 3. **Workspace.** Settle where the change commits, as in step 1 of The loop. For a multi-file change, confirm a clean working tree or name its changed paths.
 4. **Build.** Over 2 files, send each independent part to `exo:builder` in dependency order; otherwise read the same code rules and edit in dependency order.
