@@ -76,6 +76,18 @@ function reviewFocusProblems(plan) {
   return count > 5 ? [`the Review Focus holds ${count} bullets; keep at most 5`] : [];
 }
 
+const CITATION = /(?<![\w@./-])(?=[\w@./-]*(?:\/|\.[A-Za-z]))[\w@./-]*:(\d+(?:-\d+)?(?:,\d+(?:-\d+)?)*)/g;
+
+function factLines(plan) {
+  return (plan.frame.Facts ?? '').split('\n').flatMap((line) => line.match(/^\s*(?:[-*]|\d+\.)\s+(.+)$/)?.[1] ?? []);
+}
+
+function factProblems(plan) {
+  return factLines(plan)
+    .filter((fact) => !/https?:\/\//.test(fact) && !fact.match(CITATION))
+    .map((fact) => `the Facts line '${fact}' holds no 'path:line' or URL; cite where code or the web proves it`);
+}
+
 function repositoryRoot(plan) {
   const root = (plan.frame['Plan basis'] ?? '').match(/^Repository: (.+)$/m)?.[1].trim();
   return root !== undefined && fs.existsSync(root) ? root : undefined;
@@ -104,17 +116,29 @@ function folderWarnings(plan) {
   }));
 }
 
+function citationWarnings(plan) {
+  const root = repositoryRoot(plan);
+  if (root === undefined) return [];
+  return factLines(plan).flatMap((fact) => [...fact.matchAll(CITATION)].flatMap((match) => {
+    const file = path.resolve(root, match[0].slice(0, match[0].length - match[1].length - 1));
+    if (!fs.existsSync(file) || !fs.statSync(file).isFile()) return `[WARN] Facts: '${match[0]}' names no file`;
+    const length = fs.readFileSync(file, 'utf8').replace(/\n$/, '').split('\n').length;
+    const last = Math.max(...match[1].split(/[,-]/).map(Number));
+    return last > length ? `[WARN] Facts: '${match[0]}' is past the end of the file` : [];
+  }));
+}
+
 function warnings(plan) {
   const proofWarnings = plan.tasks
     .filter((task) => task.proof && !onPath(task.proof.trim().split(/\s+/)[0]))
     .map((task) => `[WARN] Task ${task.number}: proof binary '${task.proof.trim().split(/\s+/)[0]}' is not on this host's PATH`);
-  return [...proofWarnings, ...folderWarnings(plan)];
+  return [...proofWarnings, ...folderWarnings(plan), ...citationWarnings(plan)];
 }
 
 export function planCheckReport(planText) {
   const plan = parsePlan(planText);
   if (plan.tasks.length === 0) throw new UsageError("the plan holds no '### Task <n>:' heading");
-  const problems = [...frameProblems(plan, planText), ...plan.tasks.flatMap(taskProblems), ...sharedFileProblems(plan.tasks), ...readerProblems(plan.tasks), ...consumesProblems(plan.tasks), ...acceptanceProblems(plan), ...reviewFocusProblems(plan), ...ignoredFileProblems(plan)];
+  const problems = [...frameProblems(plan, planText), ...plan.tasks.flatMap(taskProblems), ...sharedFileProblems(plan.tasks), ...readerProblems(plan.tasks), ...consumesProblems(plan.tasks), ...acceptanceProblems(plan), ...factProblems(plan), ...reviewFocusProblems(plan), ...ignoredFileProblems(plan)];
   if (problems.length > 0) return { ok: false, lines: problems };
   return { ok: true, lines: [`plan-check: ok, ${plan.tasks.length} tasks`, ...warnings(plan)] };
 }

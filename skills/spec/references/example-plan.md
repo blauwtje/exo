@@ -11,13 +11,13 @@ Objection: the list already truncates long rows, so the badge may be clipped on 
 
 ## Decisions
 1. An overdue task shows a red badge.
-2. The badge shows the date in the user's locale (exo decided).
+2. The badge shows the date in the user's locale.
 
 ## Non-goals
 - Reminders for due tasks: `src/notify/`.
 
-## Assumptions
-- [code] Due dates are ISO-8601 strings -> keep that format (src/tasks/task.js)
+## Facts
+- Due dates are ISO-8601 strings, so keep that format: src/tasks/task.js:3
 
 ## Acceptance
 - Task 3 renders one badge per task row.

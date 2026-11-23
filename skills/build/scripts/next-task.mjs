@@ -11,7 +11,7 @@ import { scratchPath } from '#scratch-path';
 
 const USAGE = 'usage: next-task.mjs --plan <plan> [--root <checkout>]';
 
-const STANDING = [['Decisions', 'decisions'], ['Non-goals', 'nonGoals'], ['Assumptions', 'assumptions']];
+const STANDING = [['Decisions', 'decisions'], ['Non-goals', 'nonGoals'], ['Facts', 'facts']];
 
 function standingText(frame) {
   const found = frameOf(frame);

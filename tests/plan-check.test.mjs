@@ -82,3 +82,30 @@ test('a Review Focus section holds at most 5 bullets', () => {
   assert.equal(planCheckReport(withFocus(5)).ok, true);
   assert.match(problemsOf(withFocus(6)), /Review Focus holds 6 bullets/);
 });
+
+test('a Facts bullet needs a path:line or a URL', () => {
+  const withFact = (fact) => example.replace(/- Due dates are ISO-8601[^\n]*/, fact);
+  assert.match(problemsOf(withFact('- Due dates are ISO-8601 strings')), /Facts.*Due dates are ISO-8601 strings/);
+  assert.match(problemsOf(withFact('- Due dates are strings: src/tasks/task.js')), /Facts/);
+  for (const cited of ['a: lib/x.mjs:28', 'a: lib/x.mjs:202-222', 'a: agents/x.md:4,33', 'a: v/c.mjs:7-9,29-30', 'a: b/c.mjs:26,', 'a: https://example.com/page']) {
+    assert.equal(planCheckReport(withFact(`- ${cited}`)).ok, true, cited);
+  }
+});
+
+test('a Facts citation to a missing file or line warns', () => {
+  const report = planCheckReport(example.replace('Repository: /repo', `Repository: ${process.cwd()}`).replace('src/tasks/task.js:3', 'lib/plan-frame.mjs:99999'));
+  assert.equal(report.ok, true, report.lines.join('\n'));
+  assert.ok(report.lines.includes("[WARN] Facts: 'lib/plan-frame.mjs:99999' is past the end of the file"), report.lines.join('\n'));
+  const missing = planCheckReport(example.replace('Repository: /repo', `Repository: ${process.cwd()}`));
+  assert.ok(missing.lines.includes("[WARN] Facts: 'src/tasks/task.js:3' names no file"), missing.lines.join('\n'));
+});
+
+test('a version, ratio or time in a Facts bullet is not a citation', () => {
+  const withFacts = (facts) => example.replace('Repository: /repo', `Repository: ${process.cwd()}`).replace('src/tasks/task.js:3', `lib/plan-frame.mjs:28 ${facts}`);
+  for (const plain of ['1.5:1', 'v2.0:3', '10:30', 'Task 3:1']) {
+    assert.deepEqual(planCheckReport(withFacts(plain)).lines.filter((line) => line.includes('names no file')), [], plain);
+  }
+  for (const cited of ['NOPE.md:3', 'bin/nope:3', 'docs/specs/nope.md:21-24']) {
+    assert.ok(planCheckReport(withFacts(cited)).lines.some((line) => line === `[WARN] Facts: '${cited}' names no file`), cited);
+  }
+});

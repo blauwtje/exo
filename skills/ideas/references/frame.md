@@ -16,8 +16,8 @@ The hard limits on time, money, skills, tools, place and rules that any idea mus
 ## What makes an idea good here
 Three to five criteria that separate a good idea from a poor one for this goal.
 
-## Assumptions
-Where the question is silent, state your own assumption and go on. Ask the user nothing.
+## Open questions
+List each point the question leaves unsaid that changes which ideas are good, as a question. Do not fill it in or guess an answer. Ask the user nothing.
 
 ## What already exists
 Use WebSearch to find what people already do, sell or have tried for this goal. List each as one line with its link. Write only what you found in a source; if a search finds nothing, say so.

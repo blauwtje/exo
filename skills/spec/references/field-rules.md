@@ -1,6 +1,6 @@
 # Field rules
 
-- **Decisions:** each answer on its own numbered line; a choice exo made ends `(exo decided)`. When existing code is the user's to restructure, a Decision says so and names it, so the builder reshapes it instead of adding a copy beside it. **Non-goals:** what a reader would assume is included, with its paths; omit the section when empty. **Open points:** only an unanswered user question; build refuses the brief while one is listed.
+- **Decisions:** each user answer or request statement on its own numbered line. **Facts:** each bullet is one fact that code or the web proved, ending in its `path:line` or URL, with no label. When existing code is the user's to restructure, a Decision says so and names it, so the builder reshapes it instead of adding a copy beside it. **Non-goals:** what a reader would assume is included, with its paths; omit the section when empty. **Open points:** only an unanswered user question; build refuses the brief while one is listed.
 - **Acceptance:** each item cites a task number, a `Data:` segment or the Success criterion, else it is a Manual check. **Manual checks:** only what needs the user's eyes, hands or account: what to do, then what they should see.
 - **Review Focus** (optional): at most 5 one-line bullets that tell the end-of-run review where a passing Proof could hide a fault. Omit the section when empty.
 - **Plan basis:** `Repository:` is the absolute root. `Branch:` with no repo is `main`, and the run creates the repo.

@@ -9,6 +9,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `exo:ideas` lists open questions in its frame instead of stating its own assumptions.
+- `exo:spec` plan-check no longer reads a version or ratio like `1.5:1` in a Fact as a `path:line` citation.
 - `exo:build` commits the plan file on its branch before the first task, moving it out of the main checkout when spec wrote it there and the build runs in another worktree, so no uncommitted copy of the plan stays on `main`.
 - `exo:search` limits the GitHub issue search to issues created inside the plan's date range, and lets the body of an issue or post be picked when it has comments, so an issue whose only comment is "Thanks" keeps its body.
 - `exo:spec` keeps a notes file while it plans a change of more than 3 tasks, reads only the researchers' short returns, and lets one builder write the brief, so the lead's window stays small and a compaction goes on from the notes without new fact checks.
@@ -19,6 +21,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- spec-late-fees grades that spec takes no default of its own and asks or lists each open choice.
+- `exo:spec` takes no default of its own: it asks each choice that code or web cannot prove, one at a time and at most 3 per round, writes proven facts under `## Facts` with their `path:line` or URL, and drops the `(exo decided)` mark and the code/assume/user sort.
+- `exo:build` hands a plan's `## Facts` to each builder with its Decisions and Non-goals in place of `## Assumptions`.
 - `exo:spec` runs its code-lookup researchers (`Sources: repo`, step 2) on Haiku at high effort instead of Sonnet medium, and so does the orient lookup of `exo:build`.
 - `exo:search` repeats rounds inside one call while time is left for another and sends one helper for the whole `Continue:` loop instead of one per call.
 - `exo:search` starts Chrome and takes its lock once per search process, loads Reddit threads with `fetch` in one shared page, and paces every Reddit request through one queue.
@@ -26,6 +31,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `exo:spec` plan check refuses a `## Facts` line with no `path:line` or URL, and warns when a cited file or line is missing.
 - `exo:search` answers a question with links and word-for-word quotes checked against saved evidence from GitHub, Reddit, Hacker News and the web; it moved in from the separate `/search` skill.
 - `exo:ideas` turns one question on any subject into a short list of novel ideas by running a fixed playbook as fresh subagents; it moved in from the separate `/ideas` skill.
 - `validate:static` fails a skill whose `SKILL.md` leaves the NVIDIA SkillEvaluator format: the `##` sections Purpose, Prerequisites, Instructions, Examples, Limitations, Troubleshooting and Available Scripts in that order, `metadata.author` and `metadata.tags`, and a scripts table with a row for each script the skill runs.

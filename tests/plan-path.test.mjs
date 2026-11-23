@@ -61,6 +61,13 @@ test('next-task prints the plan non-goals once with the next task', async () => 
   assert.match(report, /Next: 1 feat\(app\): greet/);
 });
 
+test('next-task prints the plan Facts with the next task', async () => {
+  const { root } = await landingCheckout();
+  const planText = PLAN.replace('## Non-goals', '## Facts\n- `src/app.js:1` exports `greet`.\n\n## Non-goals');
+  const report = nextTaskReport({ planText, planPath: path.join(root, RELATIVE_PLAN), root });
+  assert.match(report, /Facts:\n- `src\/app\.js:1` exports `greet`\./);
+});
+
 test('next-task prints four lines and writes the task text to the Brief file', async () => {
   const { root } = await landingCheckout();
   const result = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', root], { cwd: root });
