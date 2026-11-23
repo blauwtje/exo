@@ -25,6 +25,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:watch` launches at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (20 by default) researchers at once and relaunches the ones whose result holds an `error`, so a batch over 20 videos leaves none without notes.
+- `principles/eval.md` asks a scored judge for one low and one high example and for its reason before its score.
+- `evals/failures.md` lines can carry `open: <model>` for a task no model does yet, and the release step reruns each such task on the new model.
 - `exo:watch` fetches up to 3 videos at once (`EXO_WATCH_JOBS`), and hands one researcher several short videos up to 40000 tokens together.
 - `exo:watch` `list.mjs` prints a date for each video of a channel, from yt-dlp's approximate date, so recent videos can be picked by date.
 - `evals/failures.md` lines name the model a failure was seen on (`model: <id>`), and the release eval reruns the cases of lines seen on an older model without their rule and drops the rule when the case still passes.

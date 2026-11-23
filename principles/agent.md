@@ -20,6 +20,7 @@ Read it when: you design or change an agent loop, a workflow of several agents, 
 - **Remove a shared write target before you serialize it: give each parallel worker its own file, branch or directory and merge at the read.** [9] exo: gap, `lib/land-lock.mjs` serializes landing instead
 - **Build the script that does or proves the work and rerun it; fan out no subagent for what one script does in one pass.** [10] exo: `skills/build/scripts/land-task.mjs`
 - **Write a throughput checkpoint before fan-out: first blocking steps, independent workstreams, shared mutable state, smallest decomposition; keep an item that does not apply with `n/a` and why.** [12] exo: `skills/spec/SKILL.md`
+- **Start at most the concurrent subagent limit at once and check every launch result for an error, because a refused launch returns an error object, not an exception.** [13] exo: `skills/watch/SKILL.md`
 - **Run an improvement loop as one change, one measurement, keep or revert, and stop on a target paired with a floor on attempts.** [11] exo: gap
 
 ## Sources
@@ -36,3 +37,4 @@ Read it when: you design or change an agent loop, a workflow of several agents, 
 10. principle-build-the-lever, undated
 11. hillclimb playbook, undated
 12. feature playbook, undated
+13. How the Claude Code team uses Claude Code, undated

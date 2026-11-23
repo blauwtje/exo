@@ -1,6 +1,6 @@
 # Failures
 
-One line per failure seen in a real session: date, skill, what happened, session or commit, then optionally `covered: evals/<case>` when an eval case tests it or `fixed: <commit>` when a commit fixed it, and `model: <id>` naming the model the failure was seen on, when known.
+One line per failure seen in a real session: date, skill, what happened, session or commit, then optionally `covered: evals/<case>` when an eval case tests it or `fixed: <commit>` when a commit fixed it, and `model: <id>` naming the model the failure was seen on, when known, or `open: <model>` for a task that no model does yet, naming the last model that failed it.
 - 2026-11-13 gate eval gate-red-check: the `criteria` grader judged tool calls from the final message only, so a run that handed back to build could score 0 (`.exo/eval-gate-small.json`).
 - 2026-11-13 gate eval gate-skip-review: run 1 followed the skill and still scored 0, because the grader asked about `verify.mjs` and the agent dispatch, which the final message does not show (`.exo/eval-gate-small.json`).
 - 2026-11-13 gate eval gate-no-plan: the `criteria` grader asked about tool calls and written files that the final message does not show (`.exo/eval-gate-small.json`).
@@ -198,3 +198,4 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-23 watch: a 33-video batch fetched one video at a time, two yt-dlp calls each (user request)
 - 2026-11-23 watch: 6 of 33 caption-less videos failed with a line telling to install whisper.cpp while `whisper-cli` was installed and only the model file was missing (session f7048f05), model: claude-opus-5-5
 - 2026-11-23 watch: YouTube's bot check (`Sign in to confirm you’re not a bot`) failed all 6 videos of a batch, and `transcript.mjs` exited 1 as if every video had failed instead of 75 with the restart line (40 session files hold the bot check; session f7048f05), model: claude-opus-5-5
+- 2026-11-23 watch: the Agent tool refused 7 of 27 researchers with `Concurrent subagent limit reached. You can run 20 subagents at once.` as an `error` result the skill never checked (18 session files hold it; user request), model: claude-opus-5-5

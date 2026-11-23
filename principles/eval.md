@@ -16,6 +16,8 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 - **A flat 100% or 0% on every level or arm is void, not fail, unless a positive control that injects a known effect of at least the threshold size, through the path the test measures, is detected; when it is detected, the flat result stands as the verdict, because a true null also looks flat.** [1] exo: `evals/value.mjs`
 - **Grade outcomes, not step paths; choose deterministic graders first.** [1] exo: `skills/build/references/code-rules.md`
 - **Use a pairwise or pass/fail judge; swap response order and control length for position and verbosity bias.** [5] exo: gap
+- **Give a scored judge one example for the low end and one for the high end of its scale, because without anchors it scores almost everything at the top.** [15] exo: gap
+- **Make a judge write its reason before its score, because a score written first steers the reason.** [15] exo: gap
 - **Grade each dimension with an isolated judge, calibrated against humans.** [1][5] exo: gap, decided: one blinded judge scores both arms of a comparison in one pass on one scale
 - **Hold out tasks the change was not tuned on.** [5] exo: gap
 - **Run free regression evals on every change.** [5] exo: `verify.mjs`
@@ -44,3 +46,4 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 12. eval playbook, undated
 13. principle-explain-the-number, undated
 14. hillclimb playbook, undated
+15. Evals for taste: Hill-climbing a slide-generation agent, undated
