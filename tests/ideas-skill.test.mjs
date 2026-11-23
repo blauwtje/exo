@@ -11,3 +11,9 @@ test("every prompt path the skill names exists", () => {
   assert.ok(paths.length >= 8);
   for (const path of paths) assert.ok(existsSync(`${skillDir}${path}`), path);
 });
+
+test("lookup steps run on sonnet and revise on opus", () => {
+  const step = (name) => skill.split("\n").find((line) => line.includes(name));
+  assert.match(step("prior-art.md"), /model sonnet, effort medium/);
+  assert.match(step("revise.md"), /model opus, effort high/);
+});

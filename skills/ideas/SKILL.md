@@ -32,9 +32,9 @@ Run the steps below in order for the question in `$ARGUMENTS`, else the question
 
 1. Frame: `${CLAUDE_SKILL_DIR}/references/frame.md`, model opus, effort medium. Writes frame.md.
 2. Diverge: three agents in one message, model fable, effort high, one per prompt: `${CLAUDE_SKILL_DIR}/references/diverge-overgenerate.md`, `${CLAUDE_SKILL_DIR}/references/diverge-avoid-obvious.md`, `${CLAUDE_SKILL_DIR}/references/diverge-unrelated-domain.md`. Each writes `diverge-<arm>.md` with 5 ideas under `## Ideas`.
-3. Revise: `${CLAUDE_SKILL_DIR}/references/revise.md`, model fable, effort high. Writes revised.md with 5 ideas.
+3. Revise: `${CLAUDE_SKILL_DIR}/references/revise.md`, model opus, effort high. Writes revised.md with 5 ideas.
 4. Pool (main session): read only the `## Ideas` section of each diverge-*.md file (not `## Scaffold`) and of revised.md. Write pool.md with all ideas left after merging duplicates into one idea, one `### I01 <title>` heading each (`I01` onward, no gaps) followed by its description. Order the ideas round-robin across the four sources, so that each batch of 5 in order holds at most two ideas from one source. Write which source made each idea only to methods.md, never to pool.md.
-5. Prior art: split the pool IDs in order into batches of up to 5. Start one agent per batch in one message with `${CLAUDE_SKILL_DIR}/references/prior-art.md`, model opus, effort medium, `{batch}` = the IDs of the batch, `{n}` = 1, 2, 3 and so on, one per batch. Writes `prior-art-<n>.md`.
+5. Prior art: split the pool IDs in order into batches of up to 5. Start one agent per batch in one message with `${CLAUDE_SKILL_DIR}/references/prior-art.md`, model sonnet, effort medium, `{batch}` = the IDs of the batch, `{n}` = 1, 2, 3 and so on, one per batch. Writes `prior-art-<n>.md`.
 6. Score: start one fresh agent per batch in one message with `${CLAUDE_SKILL_DIR}/references/score.md`, model opus, effort high, the same `{batch}` and `{n}`. After the prompt add an empty line and `Read these files together in one message, with parallel calls: <prompt file>, RUN/frame.md, RUN/pool.md, RUN/prior-art-<n>.md.`, with full paths. Writes `score-<n>.md`.
 
 ### Pivot

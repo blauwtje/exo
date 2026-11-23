@@ -5,7 +5,9 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { scratchPath } from '../lib/scratch-path.mjs';
 import { entryOf } from '../skills/learn/scripts/corrections.mjs';
+import { handoffFile } from '../skills/save/scripts/handoff.mjs';
 
 const script = fileURLToPath(new URL('../skills/learn/scripts/corrections.mjs', import.meta.url));
 
@@ -776,4 +778,29 @@ test('a verdict in one project hides the cluster in the other', () => {
   assert.equal(kept.status, 0, kept.stderr);
   assert.equal(run(other, ['candidates', '--cwd', other.project]).stdout, '');
   assert.equal(run(env, ['candidates', '--cwd', env.project]).stdout, '');
+});
+
+test('a compact session-start names the newest plan, the notes file and the handoff that exist', () => {
+  const env = fixture();
+  const specs = path.join(env.project, 'docs', 'specs');
+  fs.mkdirSync(specs, { recursive: true });
+  fs.writeFileSync(path.join(specs, 'old.md'), 'old');
+  fs.utimesSync(path.join(specs, 'old.md'), 1, 1);
+  fs.writeFileSync(path.join(specs, 'new.md'), 'new');
+  const notes = path.join(scratchPath(env.project, 'specs'), 'topic-notes.md');
+  fs.writeFileSync(notes, 'notes');
+  const inheritedConfig = process.env.CLAUDE_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = env.config;
+  const handoff = handoffFile(env.project);
+  if (inheritedConfig === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+  else process.env.CLAUDE_CONFIG_DIR = inheritedConfig;
+  fs.mkdirSync(path.dirname(handoff), { recursive: true });
+  fs.writeFileSync(handoff, 'handoff');
+  const result = run(env, ['session-start'], JSON.stringify({ cwd: env.project, source: 'compact' }), { CLAUDE_PROJECT_DIR: env.project });
+  assert.equal(result.status, 0, result.stderr);
+  const printed = result.stdout;
+  assert.equal(printed.includes(path.join(specs, 'new.md')), true, printed);
+  assert.equal(printed.includes(path.join(specs, 'old.md')), false, printed);
+  assert.equal(printed.includes(notes), true, printed);
+  assert.equal(printed.includes(handoff), true, printed);
 });

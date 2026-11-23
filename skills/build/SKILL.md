@@ -29,6 +29,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
 4. **Route the return.** `GREEN` goes back to step 2. A `Removed test lines:` block in the landing report is a weakened test unless the task text asks for the removal; send it to a fix round.
    - `BLOCKED <n> NEEDS ANSWER: <question>`: ask the user with the builder's options and recommendation as the question, then re-dispatch that task with the answer in its prompt.
    - `PLAN DRIFT`: append a `## Log` line to the plan, then stop and hand the plan back to `exo:spec` with the builder's reason; when the reason makes a landed task wrong, add the lines that `node "${CLAUDE_SKILL_DIR}/scripts/undo-task.mjs" --plan <path> --root <checkout> <n>` prints.
+   - A builder that returns no status line: read `git status` of its checkout and its report file before sending a fresh builder, and pass both in that builder's prompt.
    - `BLOCKED <reason>`: append a `## Log` line to the plan before you report it.
    - A build that fails once, a self-built task included, goes back to a fresh `exo:builder` with the first builder's report path, `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" implementer-<n>.md` run in the checkout, in its prompt, on the second-attempt row of the Models table that fits its report.
    - `BLOCKED proof <command> did not fail first`: `land-task` refused the task: its proof passes without the change. Send a fresh `exo:builder` to tighten that test, or hand the plan to `exo:spec` for a `Red: none (<reason>)`, and name the task in the final report.

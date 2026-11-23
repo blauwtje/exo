@@ -134,6 +134,7 @@ process.stdin.on("end", () => console.log(JSON.stringify({ result: JSON.stringif
     assert.equal(after("--allowedTools"), "WebSearch");
     assert.equal(after("--max-turns"), "3");
     assert.ok(!args.includes("--json-schema"));
+    assert.ok(args.includes("--no-session-persistence"));
   } finally {
     process.env.PATH = saved;
   }

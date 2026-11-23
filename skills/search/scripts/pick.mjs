@@ -49,7 +49,7 @@ export function parseAnswer(stdout, schema) {
 export async function ask({ model, system, tools = "", schema, maxTurns }, input) {
   const args = [
     "-p", "--model", model, "--tools", tools, "--strict-mcp-config", "--setting-sources", "",
-    "--system-prompt", system, "--output-format", "json",
+    "--system-prompt", system, "--output-format", "json", "--no-session-persistence",
   ];
   if (tools) args.push("--allowedTools", tools);
   if (schema) args.push("--json-schema", JSON.stringify(schema));

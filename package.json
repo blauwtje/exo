@@ -8,6 +8,7 @@
   "imports": {
     "#basics": "./lib/basics.mjs",
     "#check-cache": "./lib/check-cache.mjs",
+    "#compact-state": "./lib/compact-state.mjs",
     "#config-directory": "./lib/config-directory.mjs",
     "#git": "./lib/git.mjs",
     "#mcp-tool-call": "./lib/mcp-tool-call.mjs",

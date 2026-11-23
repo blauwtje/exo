@@ -9,6 +9,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `exo:watch` converts the audio to a 16 kHz wav with `ffmpeg` before `whisper-cli`, which reads no webm, so a caption-less YouTube video no longer fails with `1 input file(s) failed`.
+- `exo:search` runs its pick helper calls with `--no-session-persistence`, so they leave no session files for `exo:learn` to mine.
 - `exo:watch` takes a YouTube video's original caption track (`en-orig`) instead of the auto-translated one (`en`) that YouTube answers with `HTTP Error 429`, and uses a translated track only when `--lang` names a language with no other track, so a batch no longer stops after the first auto-captioned video.
 - `exo:watch` treats YouTube's bot check (`Sign in to confirm you’re not a bot`) like a rate limit: it exits 75 with the restart line instead of 1.
 - `exo:watch` says a ggml model file is missing, with `--model` or `EXO_WHISPER_MODEL`, when `whisper-cli` is installed, instead of asking to install whisper.cpp.
@@ -25,6 +27,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:watch` merges YouTube's rolling auto-caption cues, so a transcript holds each spoken line once (84,190 to 28,426 characters on one video).
+- `exo:builder` stops with `BLOCKED stuck` when a command gives the same result twice or its context is nearly full, and `exo:build` reads the checkout's `git status` and the report before it sends a fresh builder for a return with no status line.
+- `exo:ideas` runs its prior-art lookups on Sonnet instead of Opus and its revise step on Opus instead of Fable.
 - `exo:watch` launches at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (20 by default) researchers at once and relaunches the ones whose result holds an `error`, so a batch over 20 videos leaves none without notes.
 - `principles/eval.md` asks a scored judge for one low and one high example and for its reason before its score.
 - `evals/failures.md` lines can carry `open: <model>` for a task no model does yet, and the release step reruns each such task on the new model.
@@ -41,6 +46,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- After a compaction, the SessionStart hook prints the newest plan, spec notes file and handoff path, so the lead reads them again.
 - `exo:spec` plan check refuses a `## Facts` line with no `path:line` or URL, and warns when a cited file or line is missing.
 - `exo:search` answers a question with links and word-for-word quotes checked against saved evidence from GitHub, Reddit, Hacker News and the web; it moved in from the separate `/search` skill.
 - `exo:ideas` turns one question on any subject into a short list of novel ideas by running a fixed playbook as fresh subagents; it moved in from the separate `/ideas` skill.

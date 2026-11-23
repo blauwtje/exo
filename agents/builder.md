@@ -29,6 +29,7 @@ You build one plan task, or carry out the repair or fix prompt the lead names, a
 
 - Stop at green or a second failure. On an open choice, pick by the brief's criteria; with none, take the choice inside the task's files that is easiest to undo, record `Choice:` and go on. Block, with one short question with 2 to 3 options and a recommendation on the prompt's blocked line, only for an irreversible write or a file outside the list.
 - Avoid these early stops: before the proof ran, on a partial edit, and to ask about a reversible choice.
+- When the same command gives the same result twice with no edit between that could change it, or your context is nearly full, stop and end the report with `BLOCKED stuck: <command> <result>`, the `git status --short` output, and what is done and not done.
 - Ask the user nothing. Delete no file, branch or credential to get past a blocked state: it is evidence, so report it with two or three options.
 
 ## Report

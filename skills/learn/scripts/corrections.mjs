@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { sleepSync } from '#basics';
 import { configDirectory } from '#config-directory';
+import { compactStateLine } from '#compact-state';
 import { scratchPath } from '#scratch-path';
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 import { lessonPaths } from './lessons.mjs';
@@ -756,7 +757,11 @@ async function main() {
   }
   if (command === 'session-start') {
     try {
-      await readInput().then((input) => announce(projectRoot(JSON.parse(input).cwd)));
+      const input = JSON.parse(await readInput());
+      if (input.source === 'compact') {
+        const line = compactStateLine(projectRoot(input.cwd));
+        if (line !== '') process.stdout.write(`${line}\n`);
+      } else announce(projectRoot(input.cwd));
     } catch (error) {
       console.error(`exo learn session-start: ${error.message}`);
     }

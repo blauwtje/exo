@@ -17,7 +17,7 @@ Answer from a video's transcript on disk, with `[mm:ss]` stamps, without pasting
 
 ## Prerequisites
 
-`node` and `yt-dlp`.
+`node` and `yt-dlp`; for a video without captions also `ffmpeg` and `whisper-cli` (whisper.cpp) or `whisper`.
 
 ## Instructions
 

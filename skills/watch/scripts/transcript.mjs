@@ -20,15 +20,26 @@ const TIME = /(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3}) --> /;
 
 export function parseVtt(text) {
   const cues = [];
+  let lastLine = '';
+  let lastText = '';
   for (const block of text.replaceAll('\r\n', '\n').split(/\n\n+/)) {
     const lines = block.split('\n');
     const at = lines.findIndex((line) => TIME.test(line));
     if (at === -1) continue;
     const [, hours = 0, minutes, seconds] = lines[at].match(TIME);
-    const body = lines.slice(at + 1).join(' ').replace(/<[^>]+>/g, '').replace(/\[[^\]]*\]|♪/g, ' ').replace(/\s+/g, ' ').trim();
-    if (body) cues.push({ start: Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds), text: body });
+    const shown = lines.slice(at + 1)
+      .map((raw) => raw.replace(/<[^>]+>/g, '').replace(/\[[^\]]*\]|♪/g, ' ').replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+    const fresh = [];
+    for (const line of shown) if (line !== (fresh.at(-1) ?? lastLine)) fresh.push(line);
+    let body = fresh.join(' ');
+    if (lastText && body.startsWith(`${lastText} `)) body = body.slice(lastText.length + 1);
+    if (shown.length) lastText = shown.join(' ');
+    if (!body) continue;
+    lastLine = fresh.at(-1);
+    cues.push({ start: Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds), text: body });
   }
-  return cues.filter((cue, index) => cue.text !== cues[index - 1]?.text);
+  return cues;
 }
 
 function stamp(seconds, id, youtube) {
@@ -91,16 +102,28 @@ async function transcribe(url, dir, { lang, model }) {
   const engine = (modelFile && onPath('whisper-cli')) ? 'whisper-cli' : onPath('whisper') ? 'whisper' : null;
   if (!engine && onPath('whisper-cli')) return { missing: 'a ggml model file for whisper-cli: pass --model <file> or set EXO_WHISPER_MODEL (for example ggml-base.en.bin from https://huggingface.co/ggerganov/whisper.cpp)' };
   if (!engine) return { missing: 'a local speech engine: install whisper.cpp (whisper-cli, with --model <ggml file>) or openai-whisper (whisper)' };
+  if (engine === 'whisper-cli' && !onPath('ffmpeg')) return { missing: 'ffmpeg, which converts the audio to wav for whisper-cli' };
   const download = await ytdlp(['-f', AUDIO, '--no-playlist', '-P', dir, '-o', 'audio.%(ext)s', '--', url]);
   const audio = fs.readdirSync(dir).find((file) => file.startsWith('audio.'));
   if (download.error || !audio) return { failure: `audio download failed: ${reason(download)}` };
-  const file = path.join(dir, audio);
+  const downloaded = path.join(dir, audio);
+  const wav = path.join(dir, 'audio16k.wav');
+  let file = downloaded;
+  if (engine === 'whisper-cli') {
+    const converted = await run('ffmpeg', ['-v', 'error', '-y', '-i', downloaded, '-ar', '16000', '-ac', '1', wav], SPEECH_MS);
+    if (converted.error) {
+      fs.rmSync(downloaded, { force: true });
+      return { failure: `ffmpeg failed: ${reason(converted)}` };
+    }
+    file = wav;
+  }
   const language = lang?.split('-')[0].toLowerCase();
   const args = engine === 'whisper-cli'
     ? ['-m', modelFile, '-f', file, '-l', language ?? 'auto', '-ovtt', '-of', path.join(dir, 'speech')]
     : [file, '--output_format', 'vtt', '--output_dir', dir, ...(language ? ['--language', language] : []), ...(model ? ['--model', model] : [])];
   const result = await run(engine, args, SPEECH_MS);
-  fs.rmSync(file, { force: true });
+  fs.rmSync(downloaded, { force: true });
+  fs.rmSync(wav, { force: true });
   const vtt = [path.join(dir, 'speech.vtt'), path.join(dir, 'audio.vtt')].find((candidate) => fs.existsSync(candidate));
   if (result.error || !vtt) return { failure: `${engine} failed: ${result.error ? reason(result) : 'it wrote no captions'}` };
   return { vtt: fs.readFileSync(vtt, 'utf8'), engine };
