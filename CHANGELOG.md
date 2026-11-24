@@ -24,6 +24,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:search` searches each Reddit term once over all named subreddits joined as `r/A+B+C`, so a run with 8 sub-questions, 2 terms and 5 subreddits plans 24 searches instead of 48 and drops none.
 - `exo:search` waits out a Reddit 429 by its `Retry-After`, else `x-ratelimit-reset`, else `EXO_SEARCH_REDDIT_BACKOFF_MS`, retries twice, and fails a request whose wait would pass the call deadline, instead of losing the threads of the rest of the run.
 - `exo:search` cuts the wait after a Reddit reply with `x-ratelimit-remaining` below 1 at the call deadline, and prints the `Continue:` line only after the last round of a call.
+- `exo:build` ends git's options with `--` before the untracked task files it stages, so a task file whose name starts with `-` is committed instead of read as a git option.
 
 ### Changed
 
