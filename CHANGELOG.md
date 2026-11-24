@@ -9,6 +9,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `exo:search` drops `utm_*` parameters from a source url, so one page tagged two ways counts as one source.
+- `exo:search` claims a hit before it reads the page and gives that claim a lease, so a hit another sub-question holds costs no read and a worker that dies mid-read frees the page.
+- `exo:search` keeps a read or fetched page when marking its claim fails, skips a corrupt claim record, and rejects a bad sub-question token in `claims.mjs`.
+- `exo:search` orders evidence files by sub-question number, so `evidence-10.jsonl` no longer comes before `evidence-2.jsonl`, and `verify.mjs` reports a link that is missing and outside the plan hosts once.
 - `exo:search` keeps its source for the run when one request or one judge batch fails, so only that request or batch is lost.
 - `exo:watch` converts the audio to a 16 kHz wav with `ffmpeg` before `whisper-cli`, which reads no webm, so a caption-less YouTube video no longer fails with `1 input file(s) failed`.
 - `exo:search` runs its pick helper calls with `--no-session-persistence`, so they leave no session files for `exo:learn` to mine.
@@ -93,6 +97,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - learn mines tool calls that fail in 3 sessions, counts their later clean runs and marks a cluster seen in 2 projects as global.
 - `lessons.mjs check` prints `stale:` lines for notes.
 - The repo map marks an export that 3 or more other files use as `name•N`.
+- `exo:search` workers in one run never share a source: `fetch.mjs`, `claims.mjs summary` and the search.mjs plan claim each url once per sub and answer `Taken:`, and verify.mjs flags links outside the `"hosts"` of plan.json.
 
 ### Changed
 

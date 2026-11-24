@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from "#script-flags";
 import { killChildren } from "./pick.mjs";
+import { SUB } from "./claims.mjs";
 import * as arxiv from "./arxiv.mjs";
 import * as github from "./github.mjs";
 import * as hn from "./hn.mjs";
@@ -73,6 +74,11 @@ function requireSkip(skip) {
   if (relative !== undefined) throw new Error(`Skip entry is not an absolute url: ${relative}`);
 }
 
+function requireClaimer(run, sub) {
+  if (run !== undefined && typeof run !== "string") throw new Error("Plan run must be a directory path");
+  if (sub !== undefined && !(typeof sub === "string" && SUB.test(sub))) throw new Error(`Plan sub must look like Q1: ${sub}`);
+}
+
 export function parsePlan(text, today = new Date()) {
   const raw = JSON.parse(text);
   if (typeof raw.question !== "string" || !raw.question.trim()) throw new Error("Plan needs a question");
@@ -83,6 +89,7 @@ export function parsePlan(text, today = new Date()) {
   requireSubQuestions(raw.subQuestions);
   const skip = raw.skip ?? [];
   requireSkip(skip);
+  requireClaimer(raw.run, raw.sub);
   const reads = requireReads(raw.reads);
   const days = raw.days === undefined ? DEFAULT_DAYS : raw.days;
   requireDays(days, today);
@@ -103,6 +110,8 @@ export function parsePlan(text, today = new Date()) {
     sites,
     subQuestions: raw.subQuestions,
     skip: new Set(skip),
+    run: raw.run,
+    sub: raw.sub,
   };
 }
 

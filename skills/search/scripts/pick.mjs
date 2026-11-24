@@ -1,6 +1,8 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { environmentMs } from "#script-flags";
+import { canonicalUrl, claimSource, markQuietly } from "./claims.mjs";
 
 function pickInput(prompt, plan, header, items) {
   const asks = plan.subQuestions.map(({ ask }, index) => `Q${index + 1} ${ask}`);
@@ -112,12 +114,6 @@ const READS_PER_SUBQUESTION = 3;
 const MAX_DOCUMENT_CHARS = 12000;
 const TOTAL_CHARS = 60000;
 
-export function canonicalUrl(url) {
-  const { host, pathname, search } = new URL(url);
-  const bare = host.replace(/^www\./, "").replace(/^old\.reddit\.com$/, "reddit.com");
-  return `${bare}${pathname.replace(/\/+$/, "")}${search}`;
-}
-
 export async function searchAll(searches) {
   const settled = await Promise.allSettled(searches.map(({ cards }) => cards));
   const lists = [];
@@ -179,6 +175,21 @@ async function judgeNext(plan, choose, state, result) {
   }
 }
 
+async function readClaimed({ run, sub }, { url }, read) {
+  if (run === undefined || sub === undefined) return read();
+  const leaseMs = environmentMs("EXO_SEARCH_URL_BUDGET_MS", 45000) + environmentMs("EXO_SEARCH_FETCH_MS", 15000);
+  if (claimSource(run, url, sub, { leaseMs }).taken) return null;
+  let value;
+  try {
+    value = await read();
+  } catch (error) {
+    markQuietly(run, url, sub, () => ({ status: "failed", leaseUntil: Date.now() }));
+    throw error;
+  }
+  const fieldsOf = value ? () => ({ status: "ok", leaseUntil: null, sha256: createHash("sha256").update(value.text).digest("hex") }) : () => ({ leaseUntil: Date.now() });
+  return markQuietly(run, url, sub, fieldsOf) === false ? null : value;
+}
+
 export async function readBest(plan, { find, open }, choose = pick, state = null, limit = Infinity) {
   const result = { read: [], found: 0, failed: [], state: null, done: false };
   if (!state) {
@@ -194,7 +205,9 @@ export async function readBest(plan, { find, open }, choose = pick, state = null
   while (next.queue.length < callCap && next.judged < next.cards.length) await judgeNext(plan, choose, next, result);
   const byId = new Map(next.cards.map((card) => [card.id, card]));
   const ids = next.queue.splice(0, callCap);
-  const settled = await Promise.allSettled(ids.map((id) => readCard(plan, { open }, choose, byId.get(id), budget)));
+  const settled = await Promise.allSettled(
+    ids.map((id) => readClaimed(plan, byId.get(id), () => readCard(plan, { open }, choose, byId.get(id), budget))),
+  );
   settled.forEach((outcome, index) => {
     if (outcome.status === "rejected") return result.failed.push(`${byId.get(ids[index]).url} failed: ${outcome.reason.message}`);
     if (outcome.value) result.read.push(outcome.value);

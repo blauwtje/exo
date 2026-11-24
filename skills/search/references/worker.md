@@ -1,6 +1,6 @@
 # Research worker brief
 
-You are one worker of a research run. Your message gives the run dir, your sub-question `Q<n>`, your call budget, your deadline, the skill dir, the watch scripts folder and the quality rubric path. Take the sub-question as your whole job.
+You are one worker of a research run. Your message gives the run dir, your sub-question `Q<n>`, your call budget, your deadline, the skill dir, the watch scripts folder and the quality rubric path. Take the sub-question as your whole job. Your claim token is your `Q<n>`, or the token your message gives.
 
 ## Objective
 
@@ -18,13 +18,13 @@ Stop early only when the target is met and 3 or more independent sources answer 
 
 The web is open: any site, any domain. Pick the routes that fit the sub-question.
 
-- WebSearch for the open web. Pass the urls you chose to `node "<skill dir>/scripts/fetch.mjs" --run <run dir> <url>...`. It saves each page's full text as `<run dir>/<sha1>.md` and prints `Fetched: <url> -> <file>` or `Failed: <url> ...`. Read the saved file, not a summary. Read several saved pages per call: one Bash call that prints the needed line ranges of several `<run dir>/<sha1>.md` files, because each call counts against your budget.
-- On a `Failed:` line only, read that page with WebFetch. Its text is a model summary, so write that page as an item with an empty `quote` and `"summary": true`.
-- The API sources `reddit`, `github`, `hn`, `wikipedia`, `arxiv` and `stackexchange` are extra routes for what people say, code, discussion, background, papers and answers. Run `node "<skill dir>/scripts/search.mjs"` with a plan on stdin, then every `Continue:` command it prints in turn until the last line no longer starts with `More:`. Use only the sources that fit, and `"sources"` names them. A plan has at most 2 terms of 2 to 4 words per sub-question, in a novice and an expert phrasing.
+- WebSearch for the open web. Pass the urls you chose to `node "<skill dir>/scripts/fetch.mjs" --run <run dir> Q<n> <url>...`, with your claim token after the run dir. It saves each page's full text as `<run dir>/<sha1>.md` and prints `Fetched: <url> -> <file>`, `Failed: <url> ...` or `Taken: <url> (Q<n>)`. On `Taken:` another sub-question already holds that source: pick another source. Read the saved file, not a summary. Read several saved pages per call: one Bash call that prints the needed line ranges of several `<run dir>/<sha1>.md` files, because each call counts against your budget.
+- On a `Failed:` line only, first run `node "<skill dir>/scripts/claims.mjs" summary <run dir> <token> <url>`; when that prints `Taken: <url> (Q<n>)`, skip WebFetch and pick another source. Else read that page with WebFetch. Its text is a model summary, so write that page as an item with an empty `quote` and `"summary": true`.
+- The API sources `reddit`, `github`, `hn`, `wikipedia`, `arxiv` and `stackexchange` are extra routes for what people say, code, discussion, background, papers and answers. Run `node "<skill dir>/scripts/search.mjs"` with a plan on stdin, then every `Continue:` command it prints in turn until the last line no longer starts with `More:`. Use only the sources that fit, and `"sources"` names them. Put `"run"` (the run dir) and `"sub"` (your claim token) in the plan so a hit another sub-question holds is dropped. A plan has at most 2 terms of 2 to 4 words per sub-question, in a novice and an expert phrasing.
 
 ```
 node "<skill dir>/scripts/search.mjs" <<'PLAN'
-{"question": "how do people test claude code skills", "sources": ["reddit", "github", "hn"], "days": 365, "reads": 50, "subreddits": ["ClaudeAI"], "topics": ["claude-code"], "subQuestions": [{"ask": "how do people test claude code skills", "terms": ["claude code skills", "skill testing"]}]}
+{"question": "how do people test claude code skills", "sources": ["reddit", "github", "hn"], "run": "<run dir>", "sub": "Q<n>", "days": 365, "reads": 50, "subreddits": ["ClaudeAI"], "topics": ["claude-code"], "subQuestions": [{"ask": "how do people test claude code skills", "terms": ["claude code skills", "skill testing"]}]}
 PLAN
 ```
 

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { environmentMs, isMain } from "#script-flags";
-import { canonicalUrl } from "./pick.mjs";
+import { canonicalUrl, claimSource, markQuietly, SUB } from "./claims.mjs";
 
 const RETRIES = 2;
 const SLOTS = 2;
@@ -153,16 +153,38 @@ export async function fetchPage(url, { cacheDir, fetchImpl = fetch, now = Date.n
   return download;
 }
 
+async function fetchClaimed(url, cacheDir, sub) {
+  const leaseMs = environmentMs("EXO_SEARCH_URL_BUDGET_MS", 45000) + environmentMs("EXO_SEARCH_FETCH_MS", 15000);
+  const claim = claimSource(cacheDir, url, sub, { leaseMs });
+  if (claim.taken) {
+    console.log(`Taken: ${url} (${claim.taken})`);
+    return;
+  }
+  let page;
+  try {
+    page = await fetchPage(url, { cacheDir });
+  } catch (error) {
+    markQuietly(cacheDir, url, sub, () => ({ status: "failed" }));
+    console.log(`Failed: ${url} ${error.message}; use WebFetch`);
+    return;
+  }
+  markQuietly(cacheDir, url, sub, () => ({ status: "ok", sha256: createHash("sha256").update(readFileSync(page.file)).digest("hex"), fetchedAt: new Date().toISOString() }));
+  console.log(`Fetched: ${url} -> ${page.file} (${page.via})`);
+}
+
 async function main(args) {
   const runAt = args.indexOf("--run");
   const cacheDir = args[runAt + 1];
-  const urls = args.filter((_, index) => index !== runAt && index !== runAt + 1);
+  const rest = args.filter((_, index) => index !== runAt && index !== runAt + 1);
+  const sub = rest.find((arg) => SUB.test(arg));
+  const urls = rest.filter((arg) => arg !== sub);
   if (runAt === -1 || !cacheDir || urls.length === 0) {
-    console.error("usage: fetch.mjs --run <dir> <url>...");
+    console.error("usage: fetch.mjs --run <dir> [Q<n>] <url>...");
     process.exit(2);
   }
   await Promise.all(
     urls.map(async (url) => {
+      if (sub) return fetchClaimed(url, cacheDir, sub);
       try {
         const { file, via } = await fetchPage(url, { cacheDir });
         console.log(`Fetched: ${url} -> ${file} (${via})`);

@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -366,4 +366,43 @@ test("a read carries the card's signals as a Signals line", async () => {
   const { read } = await readBest(plan, source, choose);
   assert.ok(read[0].text.endsWith(`Signals: ${JSON.stringify(signals)}`));
   assert.ok(!read[1].text.includes("Signals:"));
+});
+
+const claimSource = (urls) => ({
+  find: async () => ({ lists: [urls.map((url) => ({ url, title: url, facts: "f" }))], failed: [] }),
+  open: async (card) => ({ header: `H ${card.url}`, passages: [{ id: "p1", parent: null, label: "u/a", score: 1, body: "body", link: `${card.url}#p1` }] }),
+});
+const chooseAll = async (prompt, _plan, _header, items) => (prompt === "judge" ? items.map(({ id }) => ({ id, reason: "r" })) : [{ id: "p1", reason: "Q1 good" }]);
+
+test("parsePlan keeps run and sub and rejects a sub that is not Q<n>", () => {
+  const plan = parsePlan(planText({ run: "/tmp/run", sub: "Q2" }));
+  assert.equal(plan.run, "/tmp/run");
+  assert.equal(plan.sub, "Q2");
+  assert.equal(parsePlan(planText()).run, undefined);
+  assert.throws(() => parsePlan(planText({ run: "/tmp/run", sub: "two" })), /sub/);
+});
+
+test("with run and sub a hit another sub claimed is dropped and the hits read are claimed as ok", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "search-claims-"));
+  const base = { question: "q", sources: ["hn"], skip: new Set(), subQuestions: [{ ask: "one", terms: ["t"] }], run: dir };
+  const urls = ["https://x.com/a", "https://x.com/b"];
+  const first = await readBest({ ...base, sub: "Q1" }, claimSource(urls), chooseAll);
+  assert.deepEqual(first.read.map(({ url }) => url), urls);
+  const second = await readBest({ ...base, sub: "Q2" }, claimSource([...urls, "https://x.com/c"]), chooseAll);
+  assert.deepEqual(second.read.map(({ url }) => url), ["https://x.com/c"]);
+  const files = readdirSync(join(dir, "claims")).filter((name) => name.endsWith(".json"));
+  const records = files.map((name) => JSON.parse(readFileSync(join(dir, "claims", name), "utf8")));
+  assert.equal(records.length, 3);
+  const claimed = records.find(({ url }) => url === "x.com/a");
+  assert.equal(claimed.status, "ok");
+  assert.equal(claimed.sub, "Q1");
+  assert.equal(claimed.leaseUntil, null);
+  assert.match(claimed.sha256, /^[0-9a-f]{64}$/);
+});
+
+test("without run and sub the same hits are read twice", async () => {
+  const base = { question: "q", sources: ["hn"], skip: new Set(), subQuestions: [{ ask: "one", terms: ["t"] }] };
+  const urls = ["https://x.com/a"];
+  assert.equal((await readBest(base, claimSource(urls), chooseAll)).read.length, 1);
+  assert.equal((await readBest(base, claimSource(urls), chooseAll)).read.length, 1);
 });

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { canonicalUrl } from "./pick.mjs";
+import { canonicalUrl, claimOwner } from "./claims.mjs";
 
 const DAY_MS = 86400000;
 const SHINGLE_WORDS = 5;
@@ -149,22 +149,61 @@ function parseEvidenceLine(line) {
   }
 }
 
-function main(argv) {
-  const dir = flag(argv, "--run");
-  if (!dir) throw new Error("rank.mjs needs --run <dir>");
-  const items = readdirSync(dir)
+const subOfToken = (token) => token.replace(/b$/, "");
+
+function readEvidence(dir) {
+  return readdirSync(dir)
     .filter((name) => /^evidence-.*\.jsonl$/.test(name))
-    .flatMap((name) =>
-      readFileSync(join(dir, name), "utf8")
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+    .map((name) => ({
+      name,
+      sub: subOfToken(`Q${name.slice("evidence-".length, -".jsonl".length)}`),
+      lines: readFileSync(join(dir, name), "utf8")
         .split("\n")
         .flatMap((line, index) => {
           if (!line) return [];
           const item = parseEvidenceLine(line);
-          if (typeof item.url === "string" && typeof item.sub === "string") return [item];
+          if (typeof item.url === "string" && typeof item.sub === "string") return [{ line, item }];
           console.log(`Skipped: ${name} line ${index + 1}: ${item.error ?? "no url or sub"}`);
-          return [];
+          return [{ line }];
         }),
-    );
+    }));
+}
+
+function giveEachUrlOneSub(dir, files) {
+  const found = new Map();
+  for (const { sub, lines } of files)
+    for (const { item } of lines) {
+      if (!item) continue;
+      const key = canonicalUrl(item.url);
+      if (!found.has(key)) found.set(key, { url: item.url, subs: new Set() });
+      found.get(key).subs.add(sub);
+    }
+  const owners = new Map(
+    [...found].map(([key, { url, subs }]) => {
+      const claimer = subs.size > 1 ? subOfToken(claimOwner(dir, url) ?? "") : "";
+      return [key, subs.has(claimer) ? claimer : [...subs][0]];
+    }),
+  );
+  const taken = new Set();
+  const kept = files.map((file) => {
+    const lines = file.lines.filter(({ item }) => {
+      const owner = item && owners.get(canonicalUrl(item.url));
+      if (!owner || owner === file.sub) return true;
+      taken.add(`Taken: ${item.url} (${owner})`);
+      return false;
+    });
+    if (lines.length < file.lines.length) writeFileSync(join(dir, file.name), lines.map(({ line }) => `${line}\n`).join(""));
+    return { ...file, lines };
+  });
+  for (const line of taken) console.log(line);
+  return kept;
+}
+
+function main(argv) {
+  const dir = flag(argv, "--run");
+  if (!dir) throw new Error("rank.mjs needs --run <dir>");
+  const items = giveEachUrlOneSub(dir, readEvidence(dir)).flatMap(({ lines }) => lines.flatMap(({ item }) => (item ? [item] : [])));
   const halfLife = flag(argv, "--half-life");
   const subs = flag(argv, "--subs");
   const result = rank(items, {

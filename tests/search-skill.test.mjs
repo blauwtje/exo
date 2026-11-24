@@ -10,7 +10,7 @@ const worker = readFileSync(`${skillDir}references/worker.md`, "utf8");
 
 test("the plan example in the heredoc passes parsePlan", () => {
   const [, plan] = worker.match(/<<'PLAN'\n([\s\S]*?)\nPLAN/);
-  assert.doesNotThrow(() => parsePlan(plan));
+  assert.doesNotThrow(() => parsePlan(plan.replace("Q<n>", "Q1")));
 });
 
 test("every script the skill names exists", () => {
@@ -40,4 +40,14 @@ test("worker.md names a read target per tier and SKILL.md passes it to each work
   for (const tier of ["quick", "standard", "deep"])
     assert.match(worker, new RegExp(`${tier}: (fetch )?at least \\d+`, "i"), tier);
   assert.match(skill, /read target/i);
+});
+
+test("the docs tell workers and the lead about claims, Taken and hosts", () => {
+  assert.match(worker, /--run <run dir> Q<n>/);
+  assert.match(worker, /"run".*"sub"/);
+  assert.match(worker, /Taken: <url> \(Q<n>\)/);
+  assert.match(worker, /claims\.mjs" summary <run dir> <token> <url>/);
+  assert.match(skill, /"hosts"/);
+  assert.match(skill, /claims\.mjs/);
+  assert.match(skill, /fetch\.mjs.*Q<n>/);
 });

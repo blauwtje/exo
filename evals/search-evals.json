@@ -8,10 +8,11 @@
       "expected_output": "A standard-tier run with 3 to 5 workers writes docs/research/<topic>.md with the answer first, findings by theme and a source table, and every finding cites a link, a word-for-word quote and an evidence id.",
       "expectations": [
         "The report file docs/research/<topic>.md exists in the run folder and starts with the answer",
-        "The run is sized standard: plan.json lists 3 to 5 sub-questions and the lead launched 3 to 5 exo:researcher workers",
-        "At least 20 distinct sources were read, counted from the evidence files or the source table",
+        "The run is sized standard: outputs/run/plan.json lists 3 to 5 sub-questions and the lead launched 3 to 5 exo:researcher workers",
+        "At least 20 distinct sources were read, counted from the evidence files under outputs/run/ or the source table",
+        "No canonical url appears in two different workers' evidence files under outputs/run/",
         "Every finding in the report carries a link, a `>` quote and an evidence id [E<n>]",
-        "Every [E<n>] in the report exists in ranked.json",
+        "Every [E<n>] in the report exists in outputs/run/ranked.json",
         "verify.mjs run on the report ends with no flagged quote or link, or each flagged line was fixed once",
         "The run line in the report names the tier, the workers, the sources read and minutes, and the minutes are at most 15",
         "The transcript shows no --only parsing"
@@ -26,7 +27,7 @@
         "The report file docs/research/<topic>.md exists in the run folder",
         "Only the github source is used: no WebSearch call, and no reddit, hn, wikipedia, arxiv or stackexchange adapter call in the transcript",
         "Every link in the report is on github.com or a github-owned host",
-        "Every finding in the report carries a link, a `>` quote and an evidence id [E<n>] found in ranked.json",
+        "Every finding in the report carries a link, a `>` quote and an evidence id [E<n>] found in outputs/run/ranked.json",
         "verify.mjs run on the report ends with no flagged quote or link, or each flagged line was fixed once",
         "The transcript shows no --only parsing"
       ]
@@ -38,9 +39,9 @@
       "expected_output": "A quick-tier run with 1 worker writes a short report with the answer first and 1 to 10 sources, each finding with a link, a quote and an evidence id.",
       "expectations": [
         "The report file docs/research/<topic>.md exists in the run folder and starts with the answer",
-        "The run is sized quick: plan.json lists 1 sub-question and the lead launched 1 exo:researcher worker",
+        "The run is sized quick: outputs/run/plan.json lists 1 sub-question and the lead launched 1 exo:researcher worker",
         "At most 10 distinct sources were read",
-        "Every finding in the report carries a link, a `>` quote and an evidence id [E<n>] found in ranked.json",
+        "Every finding in the report carries a link, a `>` quote and an evidence id [E<n>] found in outputs/run/ranked.json",
         "verify.mjs run on the report ends with no flagged quote or link, or each flagged line was fixed once",
         "The run line in the report names the tier, the workers, the sources read and minutes, and the minutes are at most 5",
         "The transcript shows no --only parsing"
@@ -53,9 +54,10 @@
       "expected_output": "A deep-tier run with 8 to 15 workers writes a cited report with findings by theme, disagreements, confidence per finding, gaps and a source table, with 100 or more sources considered and the run inside 20 minutes.",
       "expectations": [
         "The report file docs/research/<topic>.md exists in the run folder and starts with the answer",
-        "The run is sized deep: plan.json lists 8 to 15 sub-questions and the lead launched 8 to 15 exo:researcher workers",
-        "At least 50 distinct sources were read, counted from the evidence files or the source table",
-        "Every finding in the report carries a link, a `>` quote and an evidence id [E<n>] found in ranked.json",
+        "The run is sized deep: outputs/run/plan.json lists 8 to 15 sub-questions and the lead launched 8 to 15 exo:researcher workers",
+        "At least 50 distinct sources were read, counted from the evidence files under outputs/run/ or the source table",
+        "No canonical url appears in two different workers' evidence files under outputs/run/",
+        "Every finding in the report carries a link, a `>` quote and an evidence id [E<n>] found in outputs/run/ranked.json",
         "The report has sections for disagreements, confidence per finding and gaps",
         "verify.mjs run on the report ends with no flagged quote or link, or each flagged line was fixed once",
         "The run line in the report names the tier, the workers, the sources read and minutes, and the minutes are at most 20",

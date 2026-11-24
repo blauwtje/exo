@@ -77,3 +77,31 @@ test("an evidence id that is not in the ranked file is listed once", () => {
   assert.equal(result.status, 1);
   assert.equal(result.stdout.trim(), "unknown evidence id: E7");
 });
+
+const withPlan = (plan) => {
+  const dir = mkdtempSync(join(tmpdir(), "verify-"));
+  const ranked = join(dir, "ranked.json");
+  writeFileSync(ranked, JSON.stringify({ ranked: [{ id: "E1" }] }));
+  if (plan) writeFileSync(join(dir, "plan.json"), JSON.stringify(plan));
+  const bundle = join(dir, "bundle.md");
+  writeFileSync(bundle, "https://github.com/a/b https://docs.github.com/x https://notgithub.com/y https://example.com/z");
+  return { ranked, bundle };
+};
+
+const verifyWith = (plan, answer) => {
+  const { ranked, bundle } = withPlan(plan);
+  return spawnSync("node", [script, "--ranked", ranked, bundle], { input: answer, encoding: "utf8" });
+};
+
+test("a link outside the plan hosts is flagged and a listed host or subdomain passes", () => {
+  const answer = "See https://github.com/a/b and https://docs.github.com/x [E1] and https://notgithub.com/y and https://example.com/z";
+  const result = verifyWith({ hosts: ["github.com", "example.com"] }, answer);
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout.trim(), "link outside hosts: https://notgithub.com/y");
+});
+
+test("without hosts in plan.json or without plan.json the links are not flagged", () => {
+  const answer = "See https://notgithub.com/y [E1]";
+  assert.equal(verifyWith({ other: 1 }, answer).status, 0);
+  assert.equal(verifyWith(null, answer).status, 0);
+});

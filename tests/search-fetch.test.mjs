@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { fetchPage, htmlToText } from "../skills/search/scripts/fetch.mjs";
-import { canonicalUrl } from "../skills/search/scripts/pick.mjs";
+import { canonicalUrl } from "../skills/search/scripts/claims.mjs";
 
 process.env.EXO_SEARCH_DOMAIN_GAP_MS = "1";
 process.env.EXO_SEARCH_BACKOFF_MS = "1";
@@ -122,4 +122,18 @@ test("the CLI prints one line per url and exits 0 even when a url fails", () => 
   const run = spawnSync(process.execPath, [script, "--run", dir(), "not a url"], { encoding: "utf8" });
   assert.equal(run.status, 0);
   assert.match(run.stdout, /^Failed: not a url .*; use WebFetch$/m);
+});
+
+test("with a sub, a failed fetch marks its claim failed", () => {
+  const cacheDir = dir();
+  const failed = spawnSync(process.execPath, [script, "--run", cacheDir, "Q1", "http://127.0.0.1:1/x"], { encoding: "utf8", env: { ...process.env, EXO_SEARCH_URL_BUDGET_MS: "1" } });
+  assert.match(failed.stdout, /^Failed: http:\/\/127\.0\.0\.1:1\/x /);
+  const claims = join(cacheDir, "claims");
+  const [name] = readdirSync(claims).filter((file) => file.endsWith(".json"));
+  assert.equal(JSON.parse(readFileSync(join(claims, name), "utf8")).status, "failed");
+});
+
+test("a sub token is not fetched as a url", () => {
+  const run = spawnSync(process.execPath, [script, "--run", dir(), "Q2b"], { encoding: "utf8" });
+  assert.equal(run.status, 2);
 });
