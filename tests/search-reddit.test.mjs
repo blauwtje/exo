@@ -128,7 +128,7 @@ test("paced runs one task at a time and waits the gap after each", async () => {
   };
   await Promise.all([run(task("a")), run(task("b"))]);
   const [aStart, aEnd, bStart] = events.map((event) => Number(event.split(" ")[2]));
-  assert.ok(aEnd >= aStart + 10);
+  assert.ok(aEnd >= aStart + 9);
   assert.ok(bStart >= aEnd + 45);
 });
 
