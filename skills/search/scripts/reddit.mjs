@@ -323,8 +323,16 @@ function searchUrl(term, subreddits, days) {
   return url.href;
 }
 
-const scrapeResults = (page) =>
-  page.$$eval(".search-result-link", (results) =>
+const number = (text) => Number(text.match(/\d[\d,]*/)?.[0].replaceAll(",", ""));
+
+export function redditSignals(facts) {
+  const [score = "", comments = "", , date = ""] = facts.split(" | ");
+  const signals = { score: number(score), comments: /^no comment/i.test(comments) ? 0 : number(comments), date };
+  return Object.fromEntries(Object.entries(signals).filter(([, value]) => value !== "" && !Number.isNaN(value)));
+}
+
+const scrapeResults = async (page) =>
+  (await page.$$eval(".search-result-link", (results) =>
     results.flatMap((result) => {
       const anchor = result.querySelector("a.search-title");
       if (!anchor) return [];
@@ -335,7 +343,7 @@ const scrapeResults = (page) =>
         facts: [text(".search-score"), text(".search-comments"), text(".search-subreddit-link"), result.querySelector("time")?.dateTime.slice(0, 10) ?? ""].join(" | "),
       };
     }),
-  );
+  )).map((card) => ({ ...card, signals: redditSignals(card.facts) }));
 
 const MAX_SEARCHES = 40;
 

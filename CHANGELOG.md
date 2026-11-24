@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `exo:search` keeps its source for the run when one request or one judge batch fails, so only that request or batch is lost.
 - `exo:watch` converts the audio to a 16 kHz wav with `ffmpeg` before `whisper-cli`, which reads no webm, so a caption-less YouTube video no longer fails with `1 input file(s) failed`.
 - `exo:search` runs its pick helper calls with `--no-session-persistence`, so they leave no session files for `exo:learn` to mine.
 - `exo:watch` takes a YouTube video's original caption track (`en-orig`) instead of the auto-translated one (`en`) that YouTube answers with `HTTP Error 429`, and uses a translated track only when `--lang` names a language with no other track, so a batch no longer stops after the first auto-captioned video.
@@ -28,6 +29,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:search` sizes a run to the question, sends parallel researcher workers that pick their own sources, ranks evidence by relevance and quality, and writes `docs/research/<topic>.md`.
 - The build lead runs the first `Land gate:` in the background to a log and reads only the failing lines, and `exo:researcher` sends a long command's output to a file and reads its end, so less command output grows their context.
 - Prompts lose duplicated rules, word limits move to the adhd output style, script-enforced caps leave the prose, and background runs now send a one-line update when a part lands, fails or needs an answer.
 - `exo:spec` suggests `sonnet high` instead of `opus high` as a new-design task's `Model:`, because a blinded eval on 3 such tasks found Sonnet high as good at half the cost.
@@ -50,6 +52,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `exo:search` adds `fetch.mjs` and the keyless `wikipedia`, `arxiv` and `stackexchange` sources.
 - After a compaction, the SessionStart hook prints the newest plan, spec notes file and handoff path, so the lead reads them again.
 - `exo:spec` plan check refuses a `## Facts` line with no `path:line` or URL, and warns when a cited file or line is missing.
 - `exo:search` answers a question with links and word-for-word quotes checked against saved evidence from GitHub, Reddit, Hacker News and the web; it moved in from the separate `/search` skill.
@@ -183,6 +186,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 
+- `exo:search` drops `--only` and the `web` source; workers use WebSearch and pass the urls they pick to `fetch.mjs`.
 - The commit check no longer refuses an AI attribution trailer, and the cache no longer skips `*-decisions.md` and `CHANGELOG.md`.
 - The `corrections.mjs replay` command added in 1.1.0, its helpers, the old `{verdict, text}` verdict rows and the copy of verdicts out of an old ledger in `reset`.
 - The `sessions.mjs` command line.

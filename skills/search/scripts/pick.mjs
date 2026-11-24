@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import { readFile } from "node:fs/promises";
+import { environmentMs } from "#script-flags";
 
 function pickInput(prompt, plan, header, items) {
   const asks = plan.subQuestions.map(({ ask }, index) => `Q${index + 1} ${ask}`);
@@ -9,6 +10,26 @@ function pickInput(prompt, plan, header, items) {
       : `[${item.id}] ${item.label} parent=${item.parent ?? "-"}\n${item.body}`,
   );
   return [`Question: ${plan.question}`, ...asks, "", header, "", ...lines].join("\n");
+}
+
+const entities = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+
+export function plainText(html) {
+  return html
+    .replace(/<\/?p>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (match, name) => {
+      if (name[0] !== "#") return entities[name.toLowerCase()] ?? match;
+      return String.fromCodePoint(name[1].toLowerCase() === "x" ? parseInt(name.slice(2), 16) : Number(name.slice(1)));
+    })
+    .trim();
+}
+
+export async function fetchOk(name, url, fetcher, headers = {}) {
+  const response = await fetcher(url, { headers, signal: AbortSignal.timeout(environmentMs("EXO_SEARCH_FETCH_MS", 15000)) });
+  if (!response.ok) throw new Error(`${name} answered ${response.status} for ${url}`);
+  return response;
 }
 
 const children = new Set();
@@ -141,7 +162,8 @@ async function readCard(plan, { open }, choose, card, budget) {
   const bodyPick = picks.find(({ id }) => id === "body");
   const passagePicks = picks.filter(({ id }) => id !== "body");
   const rendered = render(header, passagePicks.length ? passages : [], passagePicks, budget);
-  const text = bodyPick ? `${rendered}\n\nwhy: ${bodyPick.reason}` : rendered;
+  const withWhy = bodyPick ? `${rendered}\n\nwhy: ${bodyPick.reason}` : rendered;
+  const text = Object.keys(card.signals ?? {}).length ? `${withWhy}\n\nSignals: ${JSON.stringify(card.signals)}` : withWhy;
   return { url: card.url, text, subs };
 }
 
@@ -152,10 +174,8 @@ async function judgeNext(plan, choose, state, result) {
     const chosen = await choose("judge", plan, "Candidate pages:", batch);
     const ids = new Set(batch.map(({ id }) => id));
     state.queue.push(...chosen.map(({ id }) => id).filter((id) => ids.has(id) && !state.queue.includes(id)));
-    return true;
   } catch (error) {
     result.failed.push(`judge failed: ${error.message}`);
-    return false;
   }
 }
 
@@ -169,12 +189,9 @@ export async function readBest(plan, { find, open }, choose = pick, state = null
   const next = { cards: state.cards, judged: state.judged, queue: [...state.queue] };
   const cap = Math.min(MAX_READS, READS_PER_SUBQUESTION * plan.subQuestions.length);
   const callCap = Math.min(cap, limit);
-  const threadSources = Math.max(1, plan.sources.filter((source) => source !== "web").length);
+  const threadSources = Math.max(1, plan.sources.length);
   const budget = Math.min(MAX_DOCUMENT_CHARS, Math.floor(TOTAL_CHARS / (threadSources * cap)));
-  let judgeFailed = false;
-  while (!judgeFailed && next.queue.length < callCap && next.judged < next.cards.length) {
-    judgeFailed = !(await judgeNext(plan, choose, next, result));
-  }
+  while (next.queue.length < callCap && next.judged < next.cards.length) await judgeNext(plan, choose, next, result);
   const byId = new Map(next.cards.map((card) => [card.id, card]));
   const ids = next.queue.splice(0, callCap);
   const settled = await Promise.allSettled(ids.map((id) => readCard(plan, { open }, choose, byId.get(id), budget)));
@@ -184,7 +201,7 @@ export async function readBest(plan, { find, open }, choose = pick, state = null
   });
   result.found = next.cards.length;
   result.state = next;
-  result.done = judgeFailed || (!next.queue.length && next.judged >= next.cards.length);
+  result.done = (!next.queue.length && next.judged >= next.cards.length);
   return result;
 }
 

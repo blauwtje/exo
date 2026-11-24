@@ -48,10 +48,10 @@ const issueRow = {
 
 test("repoCards and issueCards turn gh rows into cards", () => {
   assert.deepEqual(repoCards([repoRow]), [
-    { url: "https://github.com/ann/hooks", title: "ann/hooks", facts: "120 stars | pushed 2026-03-05 | Hook kit" },
+    { url: "https://github.com/ann/hooks", title: "ann/hooks", facts: "120 stars | pushed 2026-03-05 | Hook kit", signals: { stars: 120, date: "2026-03-05" } },
   ]);
   assert.deepEqual(issueCards([issueRow]), [
-    { url: "https://github.com/ann/hooks/issues/12", title: "ann/hooks: Hook fails", facts: "2 comments | 2026-02-01" },
+    { url: "https://github.com/ann/hooks/issues/12", title: "ann/hooks: Hook fails", facts: "2 comments | 2026-02-01", signals: { comments: 2, date: "2026-02-01" } },
   ]);
 });
 
@@ -158,5 +158,20 @@ test("open reads an issue body as header and comments as passages", async () => 
     assert.ok(gh.calls().some((args) => args.includes("--paginate") && args.includes("--slurp")));
   } finally {
     gh.restore();
+  }
+});
+
+test("find turns a gh call that outlasts EXO_SEARCH_FETCH_MS into one search failed line", async () => {
+  process.env.EXO_SEARCH_FETCH_MS = "300";
+  const gh = fakeGh((args) => {
+    if (args[2].startsWith("beta ")) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 3000);
+    return [];
+  });
+  try {
+    const { failed } = await find(plan);
+    assert.equal(failed.filter((line) => line.startsWith("search failed: ")).length, 1);
+  } finally {
+    gh.restore();
+    delete process.env.EXO_SEARCH_FETCH_MS;
   }
 });

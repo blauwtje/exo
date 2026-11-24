@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { environmentMs } from "#script-flags";
 import { readBest, searchAll } from "./pick.mjs";
 
 const run = promisify(execFile);
@@ -11,7 +12,7 @@ const ISSUE_FIELDS = "title,url,body,commentsCount,createdAt,repository";
 
 async function gh(args) {
   try {
-    const { stdout } = await run("gh", args, { maxBuffer: MAX_BUFFER });
+    const { stdout } = await run("gh", args, { maxBuffer: MAX_BUFFER, timeout: environmentMs("EXO_SEARCH_FETCH_MS", 15000) });
     return stdout;
   } catch (error) {
     throw new Error(`gh ${args.slice(0, 2).join(" ")} failed: ${(error.stderr || error.message).trim()}`);
@@ -25,6 +26,7 @@ export const repoCards = (rows) =>
     url: row.url,
     title: row.fullName,
     facts: [`${row.stargazersCount} stars`, `pushed ${day(row.pushedAt)}`, row.description].filter(Boolean).join(" | "),
+    signals: { stars: row.stargazersCount, date: day(row.pushedAt) },
   }));
 
 export const issueCards = (rows) =>
@@ -32,6 +34,7 @@ export const issueCards = (rows) =>
     url: row.url,
     title: `${row.repository.nameWithOwner}: ${row.title}`,
     facts: `${row.commentsCount} comments | ${day(row.createdAt)}`,
+    signals: { comments: row.commentsCount, date: day(row.createdAt) },
   }));
 
 function searchCalls(plan) {

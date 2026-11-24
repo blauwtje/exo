@@ -5,20 +5,22 @@ import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { readBest } from "../skills/search/scripts/pick.mjs";
 import { adapters, advance, bundle, bundlePath, deadlineMs, limits, newRun, parsePlan, record } from "../skills/search/scripts/search.mjs";
 
 const script = fileURLToPath(new URL("../skills/search/scripts/search.mjs", import.meta.url));
 const planText = (extra = {}) =>
   JSON.stringify({ question: "How do hooks work?", subQuestions: [{ ask: "what runs", terms: ["hook events"] }], ...extra });
 
-test("adapters are the four sources", () => {
-  assert.deepEqual(Object.keys(adapters).sort(), ["github", "hn", "reddit", "web"]);
+test("adapters are the six sources", () => {
+  assert.deepEqual(Object.keys(adapters).sort(), ["arxiv", "github", "hn", "reddit", "stackexchange", "wikipedia"]);
   for (const adapter of Object.values(adapters)) assert.equal(typeof adapter.collect, "function");
 });
 
 test("parsePlan fills the defaults", () => {
   const plan = parsePlan(planText(), new Date("2026-03-11T12:00:00Z"));
-  assert.deepEqual(plan.sources, ["reddit", "github", "hn", "web"]);
+  assert.deepEqual(plan.sources, ["reddit", "github", "hn", "wikipedia", "arxiv", "stackexchange"]);
+  assert.deepEqual(plan.sites, ["stackoverflow"]);
   assert.equal(plan.days, 365);
   assert.equal(plan.since, "2025-03-11");
   assert.deepEqual(plan.subreddits, []);
@@ -35,7 +37,7 @@ test("parsePlan keeps given values and turns skip into a set", () => {
 
 test("parsePlan throws on an unknown source", () => {
   assert.throws(() => parsePlan(planText({ sources: ["hn", "x"] })), {
-    message: "Unknown source: x. Valid: reddit, github, hn, web",
+    message: "Unknown source: x. Valid: reddit, github, hn, wikipedia, arxiv, stackexchange",
   });
 });
 
@@ -57,7 +59,7 @@ test("parsePlan throws without sub-questions or terms", () => {
 test("bundle prints sections, failures and uncovered sub-questions", () => {
   const plan = parsePlan(
     planText({
-      sources: ["hn", "github", "web"],
+      sources: ["hn", "github", "reddit"],
       subQuestions: [
         { ask: "what runs", terms: ["term a"] },
         { ask: "who uses", terms: ["term b"] },
@@ -75,7 +77,7 @@ test("bundle prints sections, failures and uncovered sub-questions", () => {
   assert.match(text, /Q1 what runs\nQ2 who uses\nQ3 why/);
   assert.match(text, /## hn: 1 read, 5 found\n[\s\S]*u2 failed: boom[\s\S]*TEXT ONE/);
   assert.match(text, /## github: failed\n[\s\S]*gh missing/);
-  assert.match(text, /## web: 0 read, 0 found/);
+  assert.match(text, /## reddit: 0 read, 0 found/);
   assert.match(text, /Uncovered: Q2\nUncovered: Q3\n\nReport:\nu2 failed: boom\ngithub: failed: gh missing$/);
   assert.doesNotMatch(text, /Uncovered: Q1/);
 });
@@ -83,7 +85,7 @@ test("bundle prints sections, failures and uncovered sub-questions", () => {
 test("the command exits 1 with the message on an unknown source", () => {
   const run = spawnSync("node", [script], { input: planText({ sources: ["nope"] }), encoding: "utf8" });
   assert.equal(run.status, 1);
-  assert.match(run.stderr, /Unknown source: nope\. Valid: reddit, github, hn, web/);
+  assert.match(run.stderr, /Unknown source: nope\. Valid: reddit, github, hn/);
   assert.equal(run.stdout, "");
 });
 
@@ -168,7 +170,7 @@ test("advance calls no source that has no reads left to give and keeps it for a 
   const calls = [];
   for (const name of Object.keys(adapters)) adapters[name] = { collect: async (_plan, _state, limit) => (calls.push(`${name}:${limit}`), { read: [], found: 0, failed: [], state: null, done: true }) };
   try {
-    const plan = parsePlan(planText({ sources: ["hn", "github", "web"], reads: 2 }));
+    const plan = parsePlan(planText({ sources: ["hn", "github", "reddit"], reads: 2 }));
     const run = newRun({});
     await advance(plan, run);
     assert.deepEqual(calls, ["hn:1", "github:1"]);
@@ -189,6 +191,7 @@ test("the end line names the failed sources instead of saying no candidates are 
   try {
     const plan = parsePlan(planText({ sources: ["hn", "github"], reads: 20 }));
     const run = newRun({});
+    await advance(plan, run);
     const results = await advance(plan, run);
     assert.match(bundle(plan, results, run, "/tmp/r.json"), /Stopped: read 0 of 20, failed: hn, github\.$/);
   } finally {
@@ -217,9 +220,9 @@ test("--continue without a value exits 2 with a usage error", () => {
 
 test("EXO_SEARCH_DEADLINE_MS shortens the per-source deadline and is capped at 290000", async () => {
   const slow = { collect: () => new Promise(() => {}) };
-  const plan = { reads: 1, sources: ["web"], subQuestions: [] };
-  const saved = adapters.web;
-  adapters.web = slow;
+  const plan = { reads: 1, sources: ["reddit"], subQuestions: [] };
+  const saved = adapters.reddit;
+  adapters.reddit = slow;
   process.env.EXO_SEARCH_DEADLINE_MS = "100";
   try {
     const results = await advance(plan, newRun({}));
@@ -227,7 +230,7 @@ test("EXO_SEARCH_DEADLINE_MS shortens the per-source deadline and is capped at 2
     process.env.EXO_SEARCH_DEADLINE_MS = "999999";
     assert.equal(deadlineMs(), 290000);
   } finally {
-    adapters.web = saved;
+    adapters.reddit = saved;
     delete process.env.EXO_SEARCH_DEADLINE_MS;
   }
 });
@@ -258,7 +261,7 @@ test("parsePlan rejects a subreddit and a topic that break their pattern and nam
   assert.deepEqual(plan.topics, ["claude-code", "ai"]);
 });
 
-test("a source that never resolves times out as failed while the other source prints and is not retried", async () => {
+test("a source that never resolves is failed this round, stays pending and is done after a second failure", async () => {
   const saved = { ...adapters };
   adapters.hn = { collect: () => new Promise(() => {}) };
   adapters.github = fakeSource(1);
@@ -270,7 +273,30 @@ test("a source that never resolves times out as failed while the other source pr
     assert.match(text, /## hn: failed\n\ntimed out after 0\.02 s/);
     assert.match(text, /## github: 1 read, 1 found/);
     assert.deepEqual(run.failed, ["hn"]);
+    assert.ok(!run.done.includes("hn"));
+    assert.equal(run.failures.hn, 1);
+    await advance(plan, run, 20);
     assert.ok(run.done.includes("hn"));
+    assert.equal(run.failures.hn, 2);
+  } finally {
+    Object.assign(adapters, saved);
+  }
+});
+
+test("a success resets the consecutive-failure counter of a source", async () => {
+  const saved = { ...adapters };
+  let calls = 0;
+  adapters.hn = { collect: async () => (++calls === 2 ? { read: [], state: null, done: false } : Promise.reject(new Error("down"))) };
+  try {
+    const plan = parsePlan(planText({ sources: ["hn"], reads: 20 }));
+    const run = newRun({});
+    await advance(plan, run, 1000);
+    assert.equal(run.failures.hn, 1);
+    await advance(plan, run, 1000);
+    assert.equal(run.failures.hn, 0);
+    await advance(plan, run, 1000);
+    assert.equal(run.failures.hn, 1);
+    assert.ok(!run.done.includes("hn"));
   } finally {
     Object.assign(adapters, saved);
   }
@@ -322,4 +348,22 @@ test("a continued run prints its whole bundle through a pipe", () => {
   assert.equal(run.status, 0);
   assert.ok(run.stdout.length > 300000);
   assert.ok(run.stdout.trimEnd().endsWith("."));
+});
+
+test("parsePlan takes sites and rejects a site name that is not lowercase letters and dots", () => {
+  assert.deepEqual(parsePlan(planText({ sites: ["superuser", "math.stackexchange"] })).sites, ["superuser", "math.stackexchange"]);
+  assert.throws(() => parsePlan(planText({ sites: ["Stack Overflow"] })), { message: "Plan site is not valid: Stack Overflow" });
+});
+
+test("a read carries the card's signals as a Signals line", async () => {
+  const signals = { score: 5, date: "2026-01-02" };
+  const plan = { question: "q", sources: ["hn"], skip: new Set(), subQuestions: [{ ask: "one", terms: ["t"] }] };
+  const source = {
+    find: async () => ({ lists: [[{ url: "https://x.com/a", title: "a", facts: "f", signals }, { url: "https://x.com/b", title: "b", facts: "f" }]], failed: [] }),
+    open: async (card) => ({ header: `H ${card.url}`, passages: [{ id: "p1", parent: null, label: "u/a", score: 1, body: "body", link: `${card.url}#p1` }] }),
+  };
+  const choose = async (prompt, _plan, _header, items) => (prompt === "judge" ? items.map(({ id }) => ({ id, reason: "r" })) : [{ id: "p1", reason: "Q1 good" }]);
+  const { read } = await readBest(plan, source, choose);
+  assert.ok(read[0].text.endsWith(`Signals: ${JSON.stringify(signals)}`));
+  assert.ok(!read[1].text.includes("Signals:"));
 });

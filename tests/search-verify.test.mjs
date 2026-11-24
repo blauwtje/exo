@@ -61,3 +61,19 @@ test("urls wrapped in angle brackets, bold or quotes still match", () => {
   const answer = "<https://example.com/a> **(https://example.com/a)** \"https://example.com/a\" https://example.com/a: https://example.com/a! [https://example.com/a]";
   assert.deepEqual(misses(answer, [bundleText]), []);
 });
+
+test("a line marked (summary; verify) is skipped for its quote and url", () => {
+  const answer = "https://summary.example/page (summary; verify)\n> not on any page (summary; verify)\n> not on any page either";
+  assert.deepEqual(misses(answer, [bundleText]), ["missing quote: not on any page either"]);
+});
+
+test("an evidence id that is not in the ranked file is listed once", () => {
+  const dir = mkdtempSync(join(tmpdir(), "verify-"));
+  const ranked = join(dir, "ranked.json");
+  writeFileSync(ranked, JSON.stringify({ ranked: [{ id: "E1" }, { id: "E2" }] }));
+  const bundle = join(dir, "bundle.md");
+  writeFileSync(bundle, bundleText);
+  const result = spawnSync("node", [script, "--ranked", ranked, bundle], { input: "Hooks run [E1] [E7]. Again [E7] and [E2].", encoding: "utf8" });
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout.trim(), "unknown evidence id: E7");
+});

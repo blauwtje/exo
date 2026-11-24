@@ -1,25 +1,12 @@
-import { readBest, searchAll } from "./pick.mjs";
+import { environmentMs } from "#script-flags";
+import { plainText, readBest, searchAll } from "./pick.mjs";
 const api = "https://hn.algolia.com/api/v1";
 const SEARCH_LIMIT = 30;
 
 async function getJson(url) {
-  const response = await fetch(url);
+  const response = await fetch(url, { signal: AbortSignal.timeout(environmentMs("EXO_SEARCH_FETCH_MS", 15000)) });
   if (!response.ok) throw new Error(`Hacker News answered ${response.status} for ${url}`);
   return response.json();
-}
-
-const entities = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
-
-function plainText(html) {
-  return html
-    .replace(/<\/?p>/gi, "\n")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&(#x[0-9a-f]+|#\d+|\w+);/gi, (match, name) => {
-      if (name[0] !== "#") return entities[name.toLowerCase()] ?? match;
-      return String.fromCodePoint(name[1].toLowerCase() === "x" ? parseInt(name.slice(2), 16) : Number(name.slice(1)));
-    })
-    .trim();
 }
 
 function itemLink(id) {
@@ -68,6 +55,7 @@ export async function find(plan) {
           url: itemLink(hit.objectID),
           title: hit.title,
           facts: `${hit.points ?? 0} points | ${hit.num_comments ?? 0} comments | ${day(hit.created_at_i)}`,
+          signals: { points: hit.points ?? 0, comments: hit.num_comments ?? 0, date: day(hit.created_at_i) },
         })),
       );
       return { label: `"${term}"`, cards };

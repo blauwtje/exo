@@ -4,12 +4,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from "#script-flags";
 import { killChildren } from "./pick.mjs";
+import * as arxiv from "./arxiv.mjs";
 import * as github from "./github.mjs";
 import * as hn from "./hn.mjs";
 import * as reddit from "./reddit.mjs";
-import * as web from "./web.mjs";
+import * as stackexchange from "./stackexchange.mjs";
+import * as wikipedia from "./wikipedia.mjs";
 
-export const adapters = { reddit, github, hn, web };
+export const adapters = { reddit, github, hn, wikipedia, arxiv, stackexchange };
 
 const DEFAULT_DAYS = 365;
 const DAY_MS = 86400000;
@@ -17,7 +19,9 @@ const MAX_TERMS = 2;
 const MIN_TERM_WORDS = 2;
 const MAX_TERM_WORDS = 4;
 const SUBREDDIT = /^[A-Za-z0-9_]{2,21}$/;
+const SITE = /^[a-z][a-z.]*$/;
 const TOPIC = /^[a-z0-9][a-z0-9-]*$/;
+const MAX_FAILURES = 2;
 const MAX_DEADLINE_MS = 290000;
 const SCRIPT = fileURLToPath(import.meta.url);
 const RUNS_DIR = join(tmpdir(), "search-runs");
@@ -86,6 +90,8 @@ export function parsePlan(text, today = new Date()) {
   requireNames("subreddits", "subreddit", subreddits, SUBREDDIT);
   const topics = raw.topics ?? [];
   requireNames("topics", "topic", topics, TOPIC);
+  const sites = raw.sites ?? ["stackoverflow"];
+  requireNames("sites", "site", sites, SITE);
   return {
     reads,
     question: raw.question,
@@ -94,6 +100,7 @@ export function parsePlan(text, today = new Date()) {
     since: new Date(today.getTime() - days * DAY_MS).toISOString().slice(0, 10),
     subreddits,
     topics,
+    sites,
     subQuestions: raw.subQuestions,
     skip: new Set(skip),
   };
@@ -113,7 +120,7 @@ export function limits(remaining, count) {
 }
 
 export function newRun(rawPlan) {
-  return { plan: rawPlan, read: 0, covered: [], states: {}, done: [], failed: [] };
+  return { plan: rawPlan, read: 0, covered: [], states: {}, done: [], failed: [], failures: {} };
 }
 
 function withDeadline(promise, deadline) {
@@ -134,7 +141,13 @@ export async function advance(plan, run, deadline = deadlineMs()) {
   turns.forEach(({ source }, index) => {
     const result = settled[index];
     results[plan.sources.indexOf(source)] = result;
-    if (result.status === "rejected") return void (run.done.push(source), run.failed.push(source));
+    if (result.status === "rejected") {
+      run.failures[source] = (run.failures[source] ?? 0) + 1;
+      if (!run.failed.includes(source)) run.failed.push(source);
+      if (run.failures[source] >= MAX_FAILURES) run.done.push(source);
+      return;
+    }
+    run.failures[source] = 0;
     const { read, state, done } = result.value;
     run.read += read.length;
     run.covered = [...new Set([...run.covered, ...read.flatMap(({ subs }) => subs)])];

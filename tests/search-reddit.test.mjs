@@ -70,7 +70,7 @@ test("find without subreddits only searches site-wide", async () => {
 test("find reads cards from the results page", async () => {
   const rows = [{ url: "u", title: "t", facts: "f" }];
   const { lists } = await find({ ...plan, subreddits: [] }, (url, read) => read({ $$eval: async () => rows }));
-  assert.deepEqual(lists, [rows, rows]);
+  assert.deepEqual(lists, [rows, rows].map((list) => list.map((row) => ({ ...row, signals: {} }))));
 });
 
 test("find keeps the searches that succeeded and reports each failed one", async () => {
@@ -95,7 +95,7 @@ test("the results scraper skips a result that has no title link", async () => {
   const anchor = { href: "https://old.reddit.com/r/x/comments/1/t/", textContent: " T " };
   const result = (link) => ({ querySelector: (selector) => (selector === "a.search-title" ? link : null) });
   const { lists } = await find({ ...plan, subreddits: [] }, (url, read) => read({ $$eval: async (selector, scrape) => scrape([result(null), result(anchor)]) }));
-  assert.deepEqual(lists[0], [{ url: anchor.href, title: "T", facts: " |  |  | " }]);
+  assert.deepEqual(lists[0], [{ url: anchor.href, title: "T", facts: " |  |  | ", signals: {} }]);
 });
 
 test("threadDoc turns a thread into a header and labelled passages without removed comments", () => {
@@ -216,4 +216,10 @@ test("withLock gives up with the waiting message once EXO_SEARCH_LOCK_MS has pas
   process.env.EXO_SEARCH_LOCK_MS = "300";
   t.after(() => delete process.env.EXO_SEARCH_LOCK_MS);
   await assert.rejects(withLock(lockPort, async () => "ran"), new RegExp(`Waiting for the Chrome lock on 127.0.0.1:${lockPort}`));
+});
+
+test("redditSignals reads score, comments and date from the facts and leaves out what is missing", async () => {
+  const { redditSignals } = await import("../skills/search/scripts/reddit.mjs");
+  assert.deepEqual(redditSignals("1,234 points | 56 comments | r/x | 2026-01-02"), { score: 1234, comments: 56, date: "2026-01-02" });
+  assert.deepEqual(redditSignals("1 point | no comments | r/x | "), { score: 1, comments: 0 });
 });

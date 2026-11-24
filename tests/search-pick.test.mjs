@@ -321,8 +321,24 @@ test("readBest judges the next 60 cards when the queue runs short and is done af
   assert.equal(result.done, true);
 });
 
-test("readBest is done when the judge call failed", async () => {
+test("readBest loses only the failed judge batch, runs the next batch and is done after the last card", async () => {
+  const cards = Array.from({ length: 70 }, (_, index) => card(`https://x.com/${index}`));
+  let batches = 0;
+  const choose = chooser((items) => {
+    if (++batches === 1) throw new Error("judge down");
+    return items.map(({ id }) => ({ id, reason: "r" }));
+  });
+  const one = plan({ subQuestions: [{ ask: "one", terms: ["t"] }] });
+  const result = await readBest(one, adapter(cards), choose, null, 2);
+  assert.deepEqual(result.failed, ["judge failed: judge down"]);
+  assert.deepEqual(result.read.map(({ url }) => url), ["https://x.com/60", "https://x.com/61"]);
+  assert.equal(result.state.judged, 70);
+  assert.equal(result.done, false);
+});
+
+test("readBest is done when every judge batch failed and no card is left", async () => {
   const result = await readBest(plan(), adapter([card("https://x.com/a")]), chooser(() => { throw new Error("judge down"); }));
+  assert.deepEqual(result.failed, ["judge failed: judge down"]);
   assert.equal(result.done, true);
 });
 

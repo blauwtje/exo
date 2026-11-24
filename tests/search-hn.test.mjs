@@ -54,7 +54,7 @@ test("find searches stories once per term within the days window", async () => {
     const bound = Number(stub.calls[0].searchParams.get("numericFilters").match(/created_at_i>(\d+)/)[1]);
     assert.ok(Math.abs(bound - before) < 5);
     assert.deepEqual(lists[0], [
-      { url: "https://news.ycombinator.com/item?id=7", title: "alpha hit", facts: "12 points | 3 comments | 2023-11-14" },
+      { url: "https://news.ycombinator.com/item?id=7", title: "alpha hit", facts: "12 points | 3 comments | 2023-11-14", signals: { points: 12, comments: 3, date: "2023-11-14" } },
     ]);
   } finally {
     stub.restore();
@@ -104,5 +104,22 @@ test("collect hands its state and limit to readBest and searches nothing for a s
     assert.equal(calls, 0);
   } finally {
     globalThis.fetch = saved;
+  }
+});
+
+test("find turns a request that outlasts EXO_SEARCH_FETCH_MS into one search failed line", async () => {
+  process.env.EXO_SEARCH_FETCH_MS = "30";
+  const original = globalThis.fetch;
+  globalThis.fetch = (url, { signal }) =>
+    new Promise((resolve, reject) => {
+      if (new URL(url).searchParams.get("query") === "alpha") return signal.addEventListener("abort", () => reject(signal.reason));
+      resolve(json({ hits: [] }));
+    });
+  try {
+    const { failed } = await find(plan);
+    assert.equal(failed.filter((line) => line.startsWith("search failed: ")).length, 1);
+  } finally {
+    globalThis.fetch = original;
+    delete process.env.EXO_SEARCH_FETCH_MS;
   }
 });
