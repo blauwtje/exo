@@ -9,6 +9,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `exo:search` takes the run line's sources read count from the `Sources read:` line that `rank.mjs` prints, so the lead no longer overstates it.
+- `exo:search` sends 4 to 5 workers for the standard tier instead of 3 to 5, so a comparison reads the 20 sources its eval asks for.
 - `exo:search` drops `utm_*` parameters from a source url, so one page tagged two ways counts as one source.
 - `exo:search` claims a hit before it reads the page and gives that claim a lease, so a hit another sub-question holds costs no read and a worker that dies mid-read frees the page.
 - `exo:search` keeps a read or fetched page when marking its claim fails, skips a corrupt claim record, and rejects a bad sub-question token in `claims.mjs`.

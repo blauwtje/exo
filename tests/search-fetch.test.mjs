@@ -94,7 +94,10 @@ test("a request that exceeds the timeout falls through to the next route", async
     const fetchImpl = (url, { signal }) =>
       url.startsWith("https://r.jina.ai/")
         ? Promise.resolve(page("reader text", "text/plain"))
-        : new Promise((_, reject) => signal.addEventListener("abort", () => reject(signal.reason)));
+        : new Promise((_, reject) => {
+            const hold = setTimeout(() => {}, 5000);
+            signal.addEventListener("abort", () => (clearTimeout(hold), reject(signal.reason)));
+          });
     const result = await fetchPage("https://example.com/slow", { cacheDir, fetchImpl });
     assert.equal(result.via, "jina");
   } finally {

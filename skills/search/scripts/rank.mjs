@@ -212,6 +212,7 @@ function main(argv) {
   });
   writeFileSync(join(dir, "ranked.json"), JSON.stringify(result, null, 2));
   console.log(sourceTable(result));
+  console.log(`Sources read: ${result.ranked.length + result.dropped.length}`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main(process.argv.slice(2));

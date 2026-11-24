@@ -112,8 +112,9 @@ test("find turns a request that outlasts EXO_SEARCH_FETCH_MS into one search fai
   const original = globalThis.fetch;
   globalThis.fetch = (url, { signal }) =>
     new Promise((resolve, reject) => {
-      if (new URL(url).searchParams.get("query") === "alpha") return signal.addEventListener("abort", () => reject(signal.reason));
-      resolve(json({ hits: [] }));
+      if (new URL(url).searchParams.get("query") !== "alpha") return resolve(json({ hits: [] }));
+      const hold = setTimeout(() => {}, 5000);
+      signal.addEventListener("abort", () => (clearTimeout(hold), reject(signal.reason)));
     });
   try {
     const { failed } = await find(plan);

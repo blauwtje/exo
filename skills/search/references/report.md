@@ -28,9 +28,10 @@ Write `docs/research/<topic>.md` in the user's language, in the project the user
 | --- | --- | --- | --- |
 | E1 | https://link | hn | 0.0164 |
 
-Run: <tier>, <workers> workers, <sources read> sources read, <minutes> minutes
+Run: <tier>, <workers> workers, <n> sources read, <minutes> minutes
 ```
 
+- Write `<n>` as the number on the last `Sources read:` line of `rank.mjs`; never count it yourself.
 - Each claim carries the `[E<n>]` of the item whose quote supports it. One quote supports only what it says.
 - Quote only the item's `quote` field. An item with `summary` true has no quote: cite its link marked `(summary; verify)` with no `>` line, and keep that mark on its row in the source table.
 - Put each link on its own line, as the item holds it. Merge items that say the same thing into one finding with several ids.
