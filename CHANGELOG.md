@@ -28,6 +28,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The build lead runs the first `Land gate:` in the background to a log and reads only the failing lines, and `exo:researcher` sends a long command's output to a file and reads its end, so less command output grows their context.
 - Prompts lose duplicated rules, word limits move to the adhd output style, script-enforced caps leave the prose, and background runs now send a one-line update when a part lands, fails or needs an answer.
 - `exo:spec` suggests `sonnet high` instead of `opus high` as a new-design task's `Model:`, because a blinded eval on 3 such tasks found Sonnet high as good at half the cost.
 - `exo:watch` merges YouTube's rolling auto-caption cues, so a transcript holds each spoken line once (84,190 to 28,426 characters on one video).
