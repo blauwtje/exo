@@ -6,6 +6,7 @@ This file covers the start-of-run cleanup and how a finished branch lands on `ma
 
 - At the start of a run, squash and push leftover commits on `main`, then run `git pull --ff-only` and `git fetch --prune`.
 - Then remove every worktree and branch merged into `main` or marked `: gone]` in `git branch -vv`, local and remote.
+- Drop a stash made on a run branch once its content is on `main`, and leave every other stash untouched.
 
 ## Land
 

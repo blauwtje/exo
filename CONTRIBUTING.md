@@ -35,7 +35,7 @@ Load the `author` skill before any skill or delegate-prompt edit; it holds the s
 
 A skill whose work leaves the machine (a push, pull request, merge or issue) runs only on the authorization its body names: the user's pick of a finish route or a plain request. The one exception is `ship` under `ship=ask`, which pushes a non-default branch to origin without asking; merge, default-branch push, pull request and issue still ask. It leaves every branch in place and cuts no release.
 
-Every skill stays model-invocable, and its description names the words the user says, because a trigger on a fact nobody knows when the request arrives leaves the model to guess.
+A skill's description names the words the user says, because a trigger on a fact nobody knows when the request arrives leaves the model to guess.
 
 `ABOUT.md` says what exo is and lists exo's domain words with the synonym each replaces. Skill bodies, replies and commits use the left column.
 
@@ -55,7 +55,7 @@ A new setting is one `userConfig` entry in `.claude-plugin/plugin.json`.
 
 ## Evals
 
-`claude plugin eval` runs the suite under `evals/` (a case is `evals/<case>/case.yaml` with its graders inline, or `evals/<case>/prompt.md` with `graders/`; a scaffolded case adds a one-line `scaffold.sh` that calls `evals/scaffold.sh`); `evals/results/` is gitignored. Run it only before a release: list the `evals/failures.md` lines whose `model:` is older than the model under test, rerun each such line's `covered:` case once with its rule removed, and when it still passes, remove the rule and append `dropped: <model>` to the line; rerun the task of each line marked `open:` once on the new model, and when it passes replace `open: <model>` with `passed: <model>`; then print the case count with `ls -d evals/*/ | grep -vc results`, run one case first with `EXO_ROOT="$PWD" claude plugin eval --case <case> --scaffold --allow-tools Bash Edit Write --json --judge-model sonnet --max-cost-usd 2`, then the suite with the same flags without `--case` and `--max-cost-usd` set to `BUDGET_USD` in `evals/value.mjs`, then once more with `--model <other model>` and record both settings in the scorecard's model and effort columns. A measured case runs twice, and a third time only when the two runs split; `evals/value.md` shows a verdict per part (better, same, worse or not sure yet). `node evals/trigger.mjs <skill>` runs the near-miss prompts of `evals/trigger.json` and counts wrong triggers: tune a description on one half of a skill's prompts and accept it on the other half. Both call a model, so run them only before a release. `node evals/skill-corrections.mjs` calls no model and prints, per exo skill, in how many sessions a repeated correction followed it; record that count in `evals/failures.md` before changing the skill.
+`claude plugin eval` runs the suite under `evals/` (a case is `evals/<case>/case.yaml` with its graders inline, or `evals/<case>/prompt.md` with `graders/`; a scaffolded case adds a one-line `scaffold.sh` that calls `evals/scaffold.sh`); `evals/results/` is gitignored. Before a release, list the `evals/failures.md` lines whose `model:` is older than the model under test, rerun each such line's `covered:` case once with its rule removed, and when it still passes, remove the rule and append `dropped: <model>` to the line; rerun the task of each line marked `open:` once on the new model, and when it passes replace `open: <model>` with `passed: <model>`; then print the case count with `ls -d evals/*/ | grep -vc results`, run one case first with `EXO_ROOT="$PWD" claude plugin eval --case <case> --scaffold --allow-tools Bash Edit Write --json --judge-model sonnet --max-cost-usd 2`, then the suite with the same flags without `--case` and `--max-cost-usd` set to `BUDGET_USD` in `evals/value.mjs`, then once more with `--model <other model>` and record both settings in the scorecard's model and effort columns. A measured case runs twice, and a third time only when the two runs split; `evals/value.md` shows a verdict per part (better, same, worse or not sure yet). `node evals/trigger.mjs <skill>` runs the near-miss prompts of `evals/trigger.json` and counts wrong triggers: tune a description on one half of a skill's prompts and accept it on the other half. Both call a model, so run them only before a release. `node evals/skill-corrections.mjs` calls no model and prints, per exo skill, in how many sessions a repeated correction followed it.
 
 A case that passes gets one `criteria` grader; only a case that fails, is void or splits votes gets one grader per clause, as `evals/build-red-suite/case.yaml` does.
 
@@ -77,8 +77,7 @@ A case that passes gets one `criteria` grader; only a case that fails, is void o
 
 A plan whose tasks all landed passes the end-of-run review in one round, because land catches what the review would catch late.
 
-- **Tests at land**: after the Land gate passes, `land-task.mjs` runs the tests that read the task's changed files and refuses the land, naming the test, when one fails. `lib/covering-tests.mjs` finds them by scanning `tests/*.test.mjs` for a quoted path equal to a changed file or one of its ancestor folders, also with a leading `${...}` removed or a leading `./` or `../` resolved against `tests/`.
-- **Slow gates**: `land-task.mjs` skips a Land gate whose last pass took 60 s or more, so the end of a `build` run runs the plan's `Land gate:` once.
+- **Tests at land**: after the Land gate passes, `land-task.mjs` runs the tests that read the task's changed files and refuses the land, naming the test, when one fails. `coveringTests` in `skills/build/scripts/land-proof.mjs` finds them by scanning `tests/*.test.mjs` for a quoted path equal to a changed file or one of its ancestor folders, also with a leading `${...}` removed or a leading `./` or `../` resolved against `tests/`.
 
 ## Timeout constants
 
@@ -86,20 +85,16 @@ Each timeout is a `*_MS` constant in its file.
 
 ## Plan loop in this repository
 
-- A plan names no finish route and no commit subject: `ship` asks the route once, at the end. After the end-of-run review passes, the lead squashes the run branch onto `main` as one commit.
-- `exo:build <brief>` sends one fresh `exo:builder` per plan task in plan order; the builder runs `land-task.mjs`, which proves red then green, runs the Land gate and commits. To resume, run it again: it reads landed tasks from `Plan-task:` commits.
+- A plan names no finish route and no commit subject: `ship` asks the route once, at the end.
 - Check a plan with `node skills/spec/scripts/plan-check.mjs --plan <plan>`: it names missing sections, a task without `Files:`, `Proof:` or `Data:` (`Data: none (<reason>)` counts), two tasks on one file with no `Depends on:` path between them, a `Data:` that says `read by Task <n>` when that task does not depend on this one, a `Consumes: Task <n>: <name>` whose task is not on a `Depends on:` path, an Acceptance item that cites no task, `Data:` segment or the Success criterion and is not a Manual check, and open points.
 - A plan task lands only through that loop, so the lead and subagents commit no plan task on the run branch.
 - A blocked task leaves no commit. The lead fixes the plan, or the cause in a worktree subagent, and reruns `exo:build`.
 - A Land gate or Success criterion repair on the run branch is a `fix(<scope>):` commit with no `Plan-task:` trailer.
-- The end-of-run review is the built-in `code-review` at the effort that `next-task.mjs` derives from the diff size (`EXO_REVIEW_LINES`, default 150 changed lines) on the branch diff; a finding gets a fix round only when a command shows it.
-- Cleanup drops a stash made on a run branch once its content is on `main`, and every other stash stays untouched.
 - Every plan ends with a task that writes its `## Unreleased` line, so the line lands in the run's squash commit.
 - Phases hand over through the brief and files in the temp folder.
 
 ## Run contract
 
-- `land-task.mjs` lands one plan task: it runs the proof before the change and refuses the task when it passes there, after which the builder stops with `BLOCKED`; it runs the plan's `Land gate:` on the candidate commit and refuses on failure, then commits with the `Plan-task:` trailer.
 - `runCheck` in `lib/run-check.mjs` runs a check command through the tree-keyed record in `lib/check-cache.mjs`.
 
 ## Defaults
@@ -114,4 +109,4 @@ The plugin ships no permission guard: a cap on what a machine may do belongs in 
 
 A release is cut weekly, not per merge: a scheduled run every Monday 06:00 UTC cuts it when `## Unreleased` holds an entry, and `gh workflow run release.yml` (or the Run workflow button on the Actions page, optionally with `-f level=patch|minor|major`) cuts one sooner. A scheduled run uses level `auto`, which reads the level off `## Unreleased`. `.github/workflows/release.yml` runs only on `main`. It checks with `npm run release-pending` whether `## Unreleased` holds an entry; if so it runs `npm run check` and `npm run bump`, commits `chore(release): <version>`, tags `v<version>`, pushes both and publishes the GitHub Release from `npm run release-notes`. With nothing under `## Unreleased` it cuts no release.
 
-A change lands on `main` as one squashed commit carrying its changelog entry, and `### Highlights` when deserved, but no version. A change the user should read first gets at most three bold lead sentences under `### Highlights` in `## Unreleased`, in the commit that records it and not in a release commit; entries collect under `## Unreleased` until the next release. The release push uses `GITHUB_TOKEN`, which starts no further workflow, so the release commit does not release itself. After a release, `claude plugin marketplace update blauwtje` and `claude plugin update exo@blauwtje` install it locally; the marketplace compares only the manifest version, so an unbumped release installs as a no-op.
+A change the user should read first gets at most three bold lead sentences under `### Highlights` in `## Unreleased`, in the commit that records it and not in a release commit; entries collect under `## Unreleased` until the next release. The release push uses `GITHUB_TOKEN`, which starts no further workflow, so the release commit does not release itself. After a release, `claude plugin marketplace update blauwtje` and `claude plugin update exo@blauwtje` install it locally; the marketplace compares only the manifest version, so an unbumped release installs as a no-op.

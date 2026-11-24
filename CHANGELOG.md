@@ -27,6 +27,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- Prompts lose duplicated rules, word limits move to the adhd output style, script-enforced caps leave the prose, and background runs now send a one-line update when a part lands, fails or needs an answer.
 - `exo:spec` suggests `sonnet high` instead of `opus high` as a new-design task's `Model:`, because a blinded eval on 3 such tasks found Sonnet high as good at half the cost.
 - `exo:watch` merges YouTube's rolling auto-caption cues, so a transcript holds each spoken line once (84,190 to 28,426 characters on one video).
 - `exo:builder` stops with `BLOCKED stuck` when a command gives the same result twice or its context is nearly full, and `exo:build` reads the checkout's `git status` and the report before it sends a fresh builder for a return with no status line.

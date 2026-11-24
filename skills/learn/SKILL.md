@@ -52,13 +52,13 @@ Then run `node "${CLAUDE_SKILL_DIR}/scripts/corrections.mjs" keep <id>` with the
 4. Run `corrections.mjs keep <ids>` for the kept items and, only when the reply is just numbers, `all` or `none`, `corrections.mjs reject <ids>` for every other shown item; on any other reply keep what is clearly picked and leave the rest open. Reject every cluster you judged not a lesson; `later` runs neither. Map numbers back to the ids you showed.
 5. Write the kept lessons one after another, each as a check (Capture step 1), else as a note, with no further question, and end on one line per written lesson. Write a `global` lesson to the personal store. Keep a failure only as the fix that works, and reject one with later clean runs unless the user still wants it. For a line `<id> kept, <m> later clean runs`, offer to delete that note.
 
-Name each cluster you judged not a lesson in one short line with its reason, so the user can take one back.
+Name each cluster you judged not a lesson with its reason, so the user can take one back.
 
 A live lesson (hook flag or repeated correction) that cannot become a check: show it alone as item 1, and on a yes write the note and run `corrections.mjs keep <id>` with the id at the end of the hook line. On a no run `corrections.mjs reject <id>`.
 
 ### Notes
 
-A note is one file per topic, for the model only, at most 12 lines, in Claude Code's auto-memory shape:
+A note is one file per topic, for the model only, in Claude Code's auto-memory shape:
 
 ```
 ---
@@ -99,7 +99,7 @@ The user asks "mine my past sessions": Mine runs `corrections.mjs candidates --t
 ## Limitations
 
 - Write every note, index line and memory edit with the Write and Edit tools, because a sandboxed Bash cannot write in the Claude config folder, where the personal store, personal index and auto memory live.
-- Keep the store to 15 notes, path rules included. At 15, merge the new lesson into an old note or replace one, because a store that only grows is read less.
+- When `lessons.mjs check` reports the note cap, merge the new lesson into an old note or replace one, because a store that only grows is read less.
 
 ## Troubleshooting
 

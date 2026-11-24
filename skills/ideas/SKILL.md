@@ -54,7 +54,7 @@ Read the `Total:` lines. When round 1 is over and no idea has 14 or more out of 
    - For each of the top 3, a section `## <rank>. <title>` with the lines `Score: <n>/20`, `Prior art: <exists|partly|new>`, `Why it could fail:` (the idea's `Breaks where:` line from its score file) and `First test:` (from plan.md, with its pass and fail rule), and the idea's description.
    - Then a table of all scored ideas: rank, ID, title, total, prior-art verdict, method from methods.md.
    - A line for each agent that stayed missing after its rerun.
-4. Reply in the language of the question with the top 3 (title, score, one line each) and the path to report.md.
+4. Reply with the top 3 (title, score, one line each) and the path to report.md.
 
 ## Examples
 

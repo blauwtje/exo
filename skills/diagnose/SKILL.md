@@ -53,6 +53,7 @@ Next: exo:ship
 
 - Never revert or stash to show red.
 - Ask the user before any destructive step.
+- When the same thing is reported broken 3 messages in a row, stop changing code, name the likeliest wrong assumption and test it with a command; ask one question only when no command can test it.
 
 ## Troubleshooting
 

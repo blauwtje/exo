@@ -14,7 +14,6 @@ Applies to `CLAUDE.md`, rules, skills, agents and output styles.
 
 ## Cut
 
-- When in doubt, delete.
 - Delete a sentence a check enforces.
 - Cut a line when the model errs without it no more than with it: default behavior, what the code shows, stale text, a rule another file owns.
 - Cut comments, change history, opinions and dates, except a date on a fact that will age.

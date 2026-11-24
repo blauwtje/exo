@@ -85,7 +85,6 @@ Brief: /tmp/exo-user/app-1a2b3c4d/brief-3.md
 
 - Outside `Route: this session`, this session writes at most 2 product files in a run; send anything larger to a builder, one per independent part.
 - Run no check of your own after a landing.
-- Only a block, a failure or a question speaks.
 
 ## Troubleshooting
 
