@@ -24,7 +24,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
-- The red-green check counts a .NET test project folder ending in `.Tests` or `.Test` as a test path.
+- The red-green check sees test files by common naming conventions across ecosystems (`test`/`spec` folders and files, `FooTest.java`, `AppTests/`, `foo_test.go`), and, when none matches, counts a changed file or folder the proof command names as a test.
 
 - `exo:search` workers write a WebFetch-read page into their evidence file as an empty-quote summary item, so a sub-question read only through WebFetch is no longer left without evidence.
 - `exo:search` checks indented quote lines (`  > `) in `verify.mjs`, so a report in the report shape no longer passes with a quote that is not on its page.

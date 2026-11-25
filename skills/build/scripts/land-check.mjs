@@ -288,7 +288,7 @@ function redGreenLine(task, { proofCommands, root, pending }) {
   if (task.red !== null) return { line: `Red: skipped: none (${task.red.reason})` };
   if (pending !== null) return { line: 'Red: skipped: deferred MCP proof' };
   if (proofCommands.length === 0) return { line: 'Red: skipped: no passing Bash proof command' };
-  const overlay = testPaths(taskChangedPaths(root));
+  const overlay = testPaths(taskChangedPaths(root), proofCommands);
   const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   let sha = '';
   for (const command of proofCommands) {
@@ -303,7 +303,7 @@ function redGreenLine(task, { proofCommands, root, pending }) {
 }
 
 function refuseUntestedTestFirst(task, root) {
-  if (isTestFirst(task) && testPaths(taskChangedPaths(root)).length === 0) {
+  if (isTestFirst(task) && testPaths(taskChangedPaths(root), [task.proof]).length === 0) {
     throw new LandingError(`Task ${task.number} is test-first, but its change adds or changes no test file; add the failing test the task names`);
   }
 }
