@@ -38,10 +38,10 @@ PLAN
 Write only the evidence file your message names (`<run dir>/evidence-<n>.jsonl` by default), one JSON object per line:
 
 ```
-{"sub": "Q<n>", "url": "<url as fetched>", "source": "<web|reddit|github|hn|wikipedia|arxiv|stackexchange|video|file>", "title": "<title>", "date": "<ISO date or null>", "quote": "<passage>", "listRank": <0 for the first result of its list>, "primary": <true|false>, "signals": {"score": 0, "comments": 0, "points": 0, "stars": 0, "pushed": "", "accepted": false, "views": 0, "likes": 0}}
+{"sub": "Q<n>", "url": "<url as fetched>", "source": "<web|reddit|github|hn|wikipedia|arxiv|stackexchange|video|file>", "title": "<title>", "date": "<ISO date or null>", "quote": "<passage>", "summary": <true, only for a WebFetch-read page>, "listRank": <0 for the first result of its list>, "primary": <true|false>, "signals": {"score": 0, "comments": 0, "points": 0, "stars": 0, "pushed": "", "accepted": false, "views": 0, "likes": 0}}
 ```
 
-- Copy `quote` from the saved page or bundle word for word, one passage of one to three sentences, and never paraphrase, join or fix it. When no passage fits, write no item for that page.
+- Copy `quote` from the saved page or bundle word for word, one passage of one to three sentences, and never paraphrase, join or fix it. When no passage fits, write no item for that page, except a WebFetch-read page: write it with `"quote": ""` and `"summary": true` in the same evidence file.
 - Fill in only the `signals` the page or bundle states; leave the others out.
 - Write only that file. Do not edit the fetch cache or any other file.
 - Return at most 10 lines: your `Bundle: <path>` lines, one line on what you found and what is missing, a `Reddit login needed` line when `search.mjs` asks for one, each `Report:` line of `search.mjs` that says `<source>: failed` or `judge failed` copied as `Failed: <source> <reason>`, and last `Result: <your evidence file>`. Write no page text in the return.
