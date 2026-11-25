@@ -7,17 +7,18 @@ Read this before you write code. These rules need judgment; the project's own li
 - Name the data structure first, what holds the result and which module owns it, because the logic follows from the shape and a wrong shape costs every later line.
 - Let types and data rule out an invalid state, because a state that cannot be built needs no check.
 - Prefer a concrete shape: one state value over several booleans that must agree, a lookup table over a chain of branches.
-- Give each format, decision and piece of state one owning module that the others call, because a second copy drifts.
-- Compute in pure functions and keep I/O at the edges, so the logic can be tested without setup.
+- Give each format, decision, helper and piece of state one owning module that the others call, in its feature or, once two features use it, in shared code; search the project before you add a helper or a name, and give one name one meaning, because a second copy or meaning drifts.
+- Compute in pure functions and keep I/O at the edges. Point imports one way, from a feature (the folder or package of one product part) to shared code and from I/O to the core, reach another feature only through its exports, and write imports the way the project already does, so each part can be tested and changed alone.
 - An operation may run twice or stop halfway, so make it safe to repeat: a second run finds what the first one did and ends in the same state.
 
 ## Change
 
 - Delete before you add, because every line is one more to read and keep.
 - Before you remove or change behaviour you do not understand, read its callers and its history, because it may cover a case you cannot see.
-- When you replace an API, move every caller and delete the old one in the same change, because two ways to do one thing drift apart.
-- Add no wrapper with one caller and no function that only forwards a call, because a layer that hides nothing costs the reader a jump.
-- Extract on the third copy, or sooner when the copies encode the same rule; two similar shapes are not yet one idea.
+- When you replace an API, move every caller and delete the old one in the same change, and update the project's codemap (an ARCHITECTURE file or layout section) when you add or move a folder, because two ways to do one thing, or a stale map, drift apart.
+- Prefer deep modules, a small interface over much work: add no wrapper with one caller and no function that only forwards a call, because a layer that hides nothing costs the reader a jump.
+- Extract on the third copy, or sooner when the copies encode the same rule; two similar shapes are not yet one idea. Shared code with a flag or branch per caller is the wrong abstraction: give your caller its own function instead of one more flag, and name the flagged code on a `Noticed:` line.
+- Size is a smell: name on a `Noticed:` line each file or function your change takes past the project's lint limits, or, without them, a file past about 300 lines or a function past about 50 lines or 4 levels of nesting.
 - Add no cache or compatibility path the task does not ask for, and speed up only a path you measured.
 - Write no comment; put the reason in a name, a test or the commit message. The one exception is a reason an outside library, platform or protocol forces.
 

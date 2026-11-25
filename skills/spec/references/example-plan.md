@@ -28,6 +28,7 @@ Objection: the list already truncates long rows, so the badge may be clipped on 
 
 ## Review Focus
 - A task saved before this change has no due date: the list must still load.
+- `src/tasks/due-tone.js` stays pure: it imports nothing from the row, list or store files.
 
 ## Plan basis
 Repository: /repo

@@ -19,6 +19,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:diagnose` bisect and the `exo:spec` repo map use the shared git wrapper, so git output over 1 MiB no longer fails them.
 - `exo:search` names its JSON plan parser `parseSearchPlan`.
 - `exo:learn` splits `corrections.mjs` into `ledger.mjs` and `clusters.mjs`, with the same commands and output.
+- `exo:build` builders follow structure rules: one-way imports, one owner and one meaning per helper and name, deep modules, a new function instead of one more flag on shared code, a current codemap and file and function size as a smell, against the project's lint limit first.
+- The `exo:build` end-of-run review checks the diff against the structure rules, and an `exo:spec` Review Focus bullet may name a structure fault such as import direction.
 
 ### Fixed
 
