@@ -7,6 +7,7 @@ const collapse = (text) => text.replace(/\s+/g, " ").trim();
 const quotesOf = (answer) =>
   answer
     .split("\n")
+    .map((line) => line.trimStart())
     .filter((line) => line.startsWith(">"))
     .map((line) => collapse(line.slice(1)))
     .filter(Boolean);

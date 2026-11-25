@@ -105,3 +105,8 @@ test("without hosts in plan.json or without plan.json the links are not flagged"
   assert.equal(verifyWith({ other: 1 }, answer).status, 0);
   assert.equal(verifyWith(null, answer).status, 0);
 });
+
+test("an indented quote line is checked like a flush one", () => {
+  assert.deepEqual(misses("  > Hooks never run", [bundleText]), ["missing quote: Hooks never run"]);
+  assert.deepEqual(misses("  > The hooks run before every tool call.", [bundleText]), []);
+});
