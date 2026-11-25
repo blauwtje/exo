@@ -16,6 +16,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:builder` and `exo:researcher` agents have a `color` and an `<example>` block in their description.
 - `land-task` writes the `Outside Files:` line into the commit body of a task that changed paths outside its `Files:`, so git keeps the trace.
 - `land-task` no longer refuses a task for changed paths outside its `Files:`; it lands them and prints an `Outside Files:` line naming them.
 - `handoffFile` lives in `lib/handoff-file.mjs`, and every script reaches lib/ through a `#` alias.

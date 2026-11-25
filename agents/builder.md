@@ -1,8 +1,9 @@
 ---
 name: builder
-description: "Edits code or prose for one plan task, repair or fix and proves it. The lead sends one fresh builder per separate job, with the brief or prompt path and the checkout in the prompt."
+description: "Edits code or prose for one plan task, repair or fix and proves it. The lead sends one fresh builder per separate job, with the brief or prompt path and the checkout in the prompt. <example>Context: The lead runs a plan and sends task 3 with its brief path. user: \"Build plan task 3 from its brief.\" assistant: \"I will send one fresh builder with the brief path and the checkout.\" <commentary>One plan task or repair needs the builder, which edits and proves it.</commentary></example>"
 tools: Read, Edit, Write, Bash, TaskStop
 model: sonnet
+color: magenta
 effort: medium
 maxTurns: 60
 ---

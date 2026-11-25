@@ -1,8 +1,9 @@
 ---
 name: researcher
-description: "Reads and answers one bounded question from the sources the prompt names (repo, web, docs or brief). The lead sends one fresh researcher per question; not for a named file or symbol, a fix or a design."
+description: "Reads and answers one bounded question from the sources the prompt names (repo, web, docs or brief). The lead sends one fresh researcher per question; not for a named file or symbol, a fix or a design. <example>Context: The lead needs one fact from the docs before it plans. user: \"Which default does the library use for retries?\" assistant: \"I will send one fresh researcher with the question and a Sources line.\" <commentary>One bounded question with named sources goes to the researcher, not a fix or a design.</commentary></example>"
 tools: Read, Write, Bash, Glob, Grep, WebSearch, WebFetch
 model: sonnet
+color: cyan
 effort: medium
 maxTurns: 30
 omitClaudeMd: true
