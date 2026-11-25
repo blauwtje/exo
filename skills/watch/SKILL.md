@@ -1,6 +1,6 @@
 ---
 name: watch
-description: "Fetches captions (or a speech transcript) of a video and answers from them. Use when a video url (YouTube, TikTok, Instagram, Facebook, X or another site yt-dlp reads) or a YouTube id must be answered from, summarised or mined. Not for web pages."
+description: "Fetches captions (or a speech transcript) of a video and answers from them. Use when a video url (YouTube, TikTok, Instagram, Facebook, X or another site yt-dlp reads) or a YouTube id must be answered from, summarised or mined ('summarise this video', 'watch this video'). Not for web pages."
 argument-hint: "video, profile, channel or playlist url [more urls] [question]"
 model: sonnet
 effort: medium

@@ -1,6 +1,6 @@
 ---
 name: save
-description: "Writes a handoff file for unfinished work and reads it back in a fresh session. Use when the user asks to save, pause or hand off this session, or to continue from a saved handoff ('continue where I left off'). Not for finished work."
+description: "Writes a handoff file for unfinished work and reads it back in a fresh session. Use when the user asks to save, pause or hand off this session, or to continue from a saved handoff ('save this session', 'pause this session', 'continue where I left off'). Not for finished work."
 argument-hint: "[what the next session must not lose]"
 metadata:
   author: exo

@@ -244,8 +244,6 @@ One line per failure seen in a real session: date, skill, what happened, session
 - 2026-11-25 unlisted-paths: land-check refused a task whose changed paths fell outside its plan Files: list, a guess about scope: 111 session files hold 'changes paths outside its Files:' (user request), model: claude-opus-5-5
 - 2026-11-25 bisect-testpath: skills/diagnose/scripts/bisect.mjs kept its own TEST_NAME filter (`[._](test|spec)\.|^test_`) on top of isTestPath, so a polluter in a test folder without a test name (tests/c.sh) was never searched and the repro reported `Polluter: none`; consolidation requested by the user, no session count (user request).
 - 2026-11-25 outside-files-trace: land-task printed `Outside Files:` only in its land output, so a change outside `Files:` left no trace in git; the line now goes into the commit body (user request).
-<<<<<<< HEAD
 - 2026-11-25 agent-frontmatter: `agents/builder.md` and `agents/researcher.md` have no `color:` and no `<example>` block in the description, which the plugin-dev agent guidance asks for (evals/audit.md:7); 563 session files name `agents/(builder|researcher)\.md` (user request).
-=======
 - 2026-11-25 manual-skills: skills/ideas/SKILL.md and skills/search/SKILL.md carried disable-model-invocation: true with no route-eval case or seen wrong-time firing behind it (evals/audit.md top 5 item 2); 0 session files hold 'exo:(ideas|search)' within 200 characters of 'user-only|manual-only|handmatig' (user request), model: claude-opus-5-5
->>>>>>> manual-skills
+- 2026-11-25 skill-user-phrases: skills/watch and skills/save descriptions lacked quoted user phrases (audit top 5 item 4, source evals/audit.md): 25 session files hold 'summarise this video', 20 hold 'watch this video', 67 hold 'save this session', 4 hold 'pause this session' (user request)

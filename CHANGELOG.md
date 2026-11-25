@@ -16,6 +16,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:watch` and `exo:save` descriptions carry user phrases such as "summarise this video" and "save this session".
 - `exo:ideas` and `exo:search` no longer set `disable-model-invocation`, because no route eval or user request justified manual-only.
 - `exo:builder` and `exo:researcher` agents have a `color` and an `<example>` block in their description.
 - `land-task` writes the `Outside Files:` line into the commit body of a task that changed paths outside its `Files:`, so git keeps the trace.
