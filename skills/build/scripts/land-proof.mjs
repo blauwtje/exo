@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { runCheck } from '../../../lib/run-check.mjs';
+import { runCheck } from '#run-check';
 import { environmentMs } from '#script-flags';
 import { cachedPass, gateRefusal, recordPass, workingTreeKey } from '#check-cache';
 import { isWorktreePath } from '#checkout';

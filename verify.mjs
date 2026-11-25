@@ -19,6 +19,8 @@ import { checkPersonalPaths } from './verify/checks/personal-paths.mjs';
 import { startSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
 import { checkScriptOptions } from './verify/checks/script-options.mjs';
 import { checkPositionalLiterals } from './verify/checks/positional-literals.mjs';
+import { checkImportDirection } from './verify/checks/import-direction.mjs';
+import { checkFileSize } from './verify/checks/file-size.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
@@ -59,6 +61,8 @@ checkInvisibleUnicode(report, repository);
 checkPersonalPaths(report, repository);
 checkScriptOptions(report, repository);
 checkPositionalLiterals(report, repository);
+checkImportDirection(report, repository);
+checkFileSize(report, repository);
 if (behavior) {
   const outcome = await behavior;
   report.result(outcome.status, outcome.name, outcome.detail);

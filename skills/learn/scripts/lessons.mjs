@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { configDirectory } from '#config-directory';
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
-import { looksLikeRepoPath } from '../../../lib/repo-path.mjs';
+import { looksLikeRepoPath } from '#repo-path';
 import { projectFolder } from './sessions.mjs';
 
 const MAX_NOTES = 15;

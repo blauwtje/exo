@@ -7,7 +7,7 @@ const BASELINE = {
   'lib/statusline.mjs': 2,
   'lib/process-tree.mjs': 2,
   'skills/learn/scripts/lessons.mjs': 1,
-  'skills/learn/scripts/corrections.mjs': 1,
+  'skills/learn/scripts/ledger.mjs': 1,
   'skills/learn/scripts/sessions.mjs': 1,
   'lib/check-cache.mjs': 1,
   'lib/script-flags.mjs': 1,

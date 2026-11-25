@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import process from 'node:process';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
-import { isMain } from '../lib/script-flags.mjs';
+import { isMain } from '#script-flags';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const PROMPTS = new URL('./trigger.json', import.meta.url);

@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-import { isTestPath } from '../../../lib/red-green.mjs';
+import { git } from '#git';
+import { isTestPath } from '#red-green';
 import { isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 
 const USAGE = [
@@ -14,44 +15,43 @@ const USAGE = [
   'A <command> that holds the token __FILE__ searches test files instead: it prints Polluter: <file> or Polluter: none, and Bisect: the test fails alone (exit 1) when the command fails without the token.'
 ].join('\n');
 
-const git = (cwd, ...args) => spawnSync('git', args, { cwd, encoding: 'utf8' });
 const text = (result) => result.stdout.trim();
 const passes = (cwd, command) => spawnSync('sh', ['-c', command], { cwd, stdio: 'ignore' }).status === 0;
 
 function goodRef(worktree, command) {
-  const base = git(worktree, 'merge-base', 'HEAD', 'origin/HEAD');
-  if (base.status === 0 && text(base) !== text(git(worktree, 'rev-parse', 'HEAD'))) return text(base);
-  const count = Number(text(git(worktree, 'rev-list', '--count', 'HEAD')));
+  const base = git(worktree, ['merge-base', 'HEAD', 'origin/HEAD']);
+  if (base.status === 0 && text(base) !== text(git(worktree, ['rev-parse', 'HEAD']))) return text(base);
+  const count = Number(text(git(worktree, ['rev-list', '--count', 'HEAD'])));
   for (let back = 1; back < count + 1; back *= 2) {
     const ref = `HEAD~${Math.min(back, count - 1)}`;
-    git(worktree, 'checkout', '-q', '--detach', ref);
+    git(worktree, ['checkout', '-q', '--detach', ref]);
     const ok = passes(worktree, command);
-    git(worktree, 'checkout', '-q', '--detach', 'HEAD@{1}');
-    if (ok) return text(git(worktree, 'rev-parse', ref));
+    git(worktree, ['checkout', '-q', '--detach', 'HEAD@{1}']);
+    if (ok) return text(git(worktree, ['rev-parse', ref]));
     if (back >= count - 1) break;
   }
   return null;
 }
 
 function bisect(command) {
-  const top = text(git(process.cwd(), 'rev-parse', '--show-toplevel'));
+  const top = text(git(process.cwd(), ['rev-parse', '--show-toplevel']));
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-bisect-'));
   const worktree = path.join(folder, 'tree');
-  git(top, 'worktree', 'add', '--detach', worktree, 'HEAD');
+  git(top, ['worktree', 'add', '--detach', worktree, 'HEAD']);
   try {
     if (passes(worktree, command)) return 'Bisect: the repro passes at HEAD, so there is nothing to bisect';
     const good = goodRef(worktree, command);
     if (good === null) return 'Bisect: no commit in history passes the repro';
-    git(worktree, 'checkout', '-q', '--detach', 'HEAD');
-    git(worktree, 'bisect', 'start', 'HEAD', good);
-    const run = git(worktree, 'bisect', 'run', 'sh', '-c', command);
-    const bad = run.status === 0 ? text(git(worktree, 'rev-parse', '--verify', '-q', 'refs/bisect/bad')) : '';
+    git(worktree, ['checkout', '-q', '--detach', 'HEAD']);
+    git(worktree, ['bisect', 'start', 'HEAD', good]);
+    const run = git(worktree, ['bisect', 'run', 'sh', '-c', command]);
+    const bad = run.status === 0 ? text(git(worktree, ['rev-parse', '--verify', '-q', 'refs/bisect/bad'])) : '';
     if (!bad) return 'Bisect: the repro cannot be bisected (its result alternates or every run was skipped)';
-    const files = text(git(worktree, 'show', '--name-only', '--format=', bad));
-    return [`First bad: ${text(git(worktree, 'log', '-1', '--format=%h %s', bad))}`, `Good: ${good.slice(0, 7)}`, `Files:\n${files}`].join('\n');
+    const files = text(git(worktree, ['show', '--name-only', '--format=', bad]));
+    return [`First bad: ${text(git(worktree, ['log', '-1', '--format=%h %s', bad]))}`, `Good: ${good.slice(0, 7)}`, `Files:\n${files}`].join('\n');
   } finally {
-    git(worktree, 'bisect', 'reset');
-    git(top, 'worktree', 'remove', '--force', worktree);
+    git(worktree, ['bisect', 'reset']);
+    git(top, ['worktree', 'remove', '--force', worktree]);
     fs.rmSync(folder, { recursive: true, force: true });
   }
 }
@@ -61,18 +61,18 @@ const TEST_NAME = /[._](test|spec)\.|^test_/;
 const quoted = (file) => `'${file.replaceAll("'", "'\\''")}'`;
 
 function pollutionSearch(command) {
-  const top = text(git(process.cwd(), 'rev-parse', '--show-toplevel'));
+  const top = text(git(process.cwd(), ['rev-parse', '--show-toplevel']));
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-polluter-'));
   const worktree = path.join(folder, 'tree');
-  git(top, 'worktree', 'add', '--detach', worktree, 'HEAD');
+  git(top, ['worktree', 'add', '--detach', worktree, 'HEAD']);
   const passesWith = (files) => {
-    git(worktree, 'reset', '--hard', '-q');
-    git(worktree, 'clean', '-fdq');
+    git(worktree, ['reset', '--hard', '-q']);
+    git(worktree, ['clean', '-fdq']);
     return passes(worktree, command.replaceAll(TOKEN, files.map(quoted).join(' ')));
   };
   try {
     if (!passesWith([])) return 'Bisect: the test fails alone';
-    let candidates = text(git(worktree, 'ls-files')).split('\n')
+    let candidates = text(git(worktree, ['ls-files'])).split('\n')
       .filter((file) => isTestPath(file) && TEST_NAME.test(path.basename(file)) && !command.includes(file));
     if (passesWith(candidates)) return 'Polluter: none';
     while (candidates.length > 1) {
@@ -85,7 +85,7 @@ function pollutionSearch(command) {
     if (passesWith(candidates)) return `Bisect: the polluter is unclear, ${candidates[0]} alone does not make the test fail`;
     return `Polluter: ${candidates[0]}`;
   } finally {
-    git(top, 'worktree', 'remove', '--force', worktree);
+    git(top, ['worktree', 'remove', '--force', worktree]);
     fs.rmSync(folder, { recursive: true, force: true });
   }
 }

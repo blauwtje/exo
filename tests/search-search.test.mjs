@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readBest } from "../skills/search/scripts/pick.mjs";
-import { adapters, advance, bundle, bundlePath, deadlineMs, limits, newRun, parsePlan, record } from "../skills/search/scripts/search.mjs";
+import { adapters, advance, bundle, bundlePath, deadlineMs, limits, newRun, parseSearchPlan, record } from "../skills/search/scripts/search.mjs";
 
 const script = fileURLToPath(new URL("../skills/search/scripts/search.mjs", import.meta.url));
 const planText = (extra = {}) =>
@@ -17,8 +17,8 @@ test("adapters are the six sources", () => {
   for (const adapter of Object.values(adapters)) assert.equal(typeof adapter.collect, "function");
 });
 
-test("parsePlan fills the defaults", () => {
-  const plan = parsePlan(planText(), new Date("2026-03-11T12:00:00Z"));
+test("parseSearchPlan fills the defaults", () => {
+  const plan = parseSearchPlan(planText(), new Date("2026-03-11T12:00:00Z"));
   assert.deepEqual(plan.sources, ["reddit", "github", "hn", "wikipedia", "arxiv", "stackexchange"]);
   assert.deepEqual(plan.sites, ["stackoverflow"]);
   assert.equal(plan.days, 365);
@@ -28,36 +28,36 @@ test("parsePlan fills the defaults", () => {
   assert.deepEqual(plan.skip, new Set());
 });
 
-test("parsePlan keeps given values and turns skip into a set", () => {
-  const plan = parsePlan(planText({ sources: ["hn"], days: 7, skip: ["https://a.example/x"] }), new Date("2026-03-11T12:00:00Z"));
+test("parseSearchPlan keeps given values and turns skip into a set", () => {
+  const plan = parseSearchPlan(planText({ sources: ["hn"], days: 7, skip: ["https://a.example/x"] }), new Date("2026-03-11T12:00:00Z"));
   assert.deepEqual(plan.sources, ["hn"]);
   assert.equal(plan.since, "2026-03-04");
   assert.deepEqual(plan.skip, new Set(["https://a.example/x"]));
 });
 
-test("parsePlan throws on an unknown source", () => {
-  assert.throws(() => parsePlan(planText({ sources: ["hn", "x"] })), {
+test("parseSearchPlan throws on an unknown source", () => {
+  assert.throws(() => parseSearchPlan(planText({ sources: ["hn", "x"] })), {
     message: "Unknown source: x. Valid: reddit, github, hn, wikipedia, arxiv, stackexchange",
   });
 });
 
-test("parsePlan rejects a missing question, bad sources and skip entries without a scheme", () => {
+test("parseSearchPlan rejects a missing question, bad sources and skip entries without a scheme", () => {
   const sq = [{ ask: "a", terms: ["term one"] }];
-  assert.throws(() => parsePlan(JSON.stringify({ subQuestions: sq })), /question/);
-  assert.throws(() => parsePlan(planText({ sources: "hn" })), /sources/);
-  assert.throws(() => parsePlan(planText({ sources: [] })), /sources/);
-  assert.throws(() => parsePlan(planText({ sources: ["hn", "hn"] })), /Duplicate source: hn/);
-  assert.throws(() => parsePlan(planText({ skip: ["github.com/ann/hooks"] })), /github\.com\/ann\/hooks/);
-  assert.throws(() => parsePlan(planText({ skip: "https://a.example" })), /skip/);
+  assert.throws(() => parseSearchPlan(JSON.stringify({ subQuestions: sq })), /question/);
+  assert.throws(() => parseSearchPlan(planText({ sources: "hn" })), /sources/);
+  assert.throws(() => parseSearchPlan(planText({ sources: [] })), /sources/);
+  assert.throws(() => parseSearchPlan(planText({ sources: ["hn", "hn"] })), /Duplicate source: hn/);
+  assert.throws(() => parseSearchPlan(planText({ skip: ["github.com/ann/hooks"] })), /github\.com\/ann\/hooks/);
+  assert.throws(() => parseSearchPlan(planText({ skip: "https://a.example" })), /skip/);
 });
 
-test("parsePlan throws without sub-questions or terms", () => {
-  assert.throws(() => parsePlan(JSON.stringify({ question: "q", subQuestions: [] })), /sub-question/);
-  assert.throws(() => parsePlan(JSON.stringify({ question: "q", subQuestions: [{ ask: "a", terms: [] }] })), /terms/);
+test("parseSearchPlan throws without sub-questions or terms", () => {
+  assert.throws(() => parseSearchPlan(JSON.stringify({ question: "q", subQuestions: [] })), /sub-question/);
+  assert.throws(() => parseSearchPlan(JSON.stringify({ question: "q", subQuestions: [{ ask: "a", terms: [] }] })), /terms/);
 });
 
 test("bundle prints sections, failures and uncovered sub-questions", () => {
-  const plan = parsePlan(
+  const plan = parseSearchPlan(
     planText({
       sources: ["hn", "github", "reddit"],
       subQuestions: [
@@ -97,7 +97,7 @@ test("the command runs when its folder is reached through a symlink", () => {
   assert.match(run.stderr, /Unknown source: nope/);
 });
 
-test("parsePlan rejects a term of more than 4 words and names the sub-question and term", () => {
+test("parseSearchPlan rejects a term of more than 4 words and names the sub-question and term", () => {
   const text = JSON.stringify({
     question: "q",
     subQuestions: [
@@ -105,19 +105,19 @@ test("parsePlan rejects a term of more than 4 words and names the sub-question a
       { ask: "b", terms: ["ok term", "one two three four five"] },
     ],
   });
-  assert.throws(() => parsePlan(text), { message: "Sub-question Q2 term has more than 4 words: one two three four five" });
+  assert.throws(() => parseSearchPlan(text), { message: "Sub-question Q2 term has more than 4 words: one two three four five" });
 });
 
-test("parsePlan rejects a term that is not a string and names the sub-question", () => {
+test("parseSearchPlan rejects a term that is not a string and names the sub-question", () => {
   const text = JSON.stringify({ question: "q", subQuestions: [{ ask: "a", terms: ["ok term"] }, { ask: "b", terms: [42] }] });
-  assert.throws(() => parsePlan(text), { message: "Sub-question Q2 term is not a string: 42" });
+  assert.throws(() => parseSearchPlan(text), { message: "Sub-question Q2 term is not a string: 42" });
 });
 
-test("parsePlan returns reads or null and rejects other values", () => {
-  assert.equal(parsePlan(planText()).reads, null);
-  assert.equal(parsePlan(planText({ reads: 20 })).reads, 20);
+test("parseSearchPlan returns reads or null and rejects other values", () => {
+  assert.equal(parseSearchPlan(planText()).reads, null);
+  assert.equal(parseSearchPlan(planText({ reads: 20 })).reads, 20);
   for (const reads of [0, 1.5, "20", -1]) {
-    assert.throws(() => parsePlan(planText({ reads })), { message: "Plan reads must be a whole number of at least 1" });
+    assert.throws(() => parseSearchPlan(planText({ reads })), { message: "Plan reads must be a whole number of at least 1" });
   }
 });
 
@@ -140,22 +140,22 @@ test("two calls of one run never read more than reads and the second continues t
   const saved = { ...adapters };
   Object.assign(adapters, { hn: fakeSource(10), github: fakeSource(10) });
   try {
-    const plan = parsePlan(planText({ sources: ["hn", "github"], reads: 7 }));
+    const plan = parseSearchPlan(planText({ sources: ["hn", "github"], reads: 7 }));
     const run = newRun({});
     await advance(plan, run);
     assert.equal(run.read, 7);
     assert.match(bundle(plan, [null, null], run, "/tmp/r.json"), /Done: read 7 of 7\.$/);
-    const wide = parsePlan(planText({ sources: ["hn", "github"], reads: 30 }));
+    const wide = parseSearchPlan(planText({ sources: ["hn", "github"], reads: 30 }));
     const run2 = newRun({});
     await advance(wide, run2);
     assert.equal(run2.read, 20);
     assert.deepEqual(run2.done, ["hn", "github"]);
     assert.match(bundle(wide, [null, null], run2, "/tmp/r.json"), /Stopped: read 20 of 30, no candidates left\.$/);
-    const partial = parsePlan(planText({ sources: ["hn", "github"], reads: 12 }));
+    const partial = parseSearchPlan(planText({ sources: ["hn", "github"], reads: 12 }));
     const run3 = newRun({});
     await advance(partial, run3);
     assert.equal(run3.read, 12);
-    const more = parsePlan(planText({ sources: ["hn", "github"], reads: 14 }));
+    const more = parseSearchPlan(planText({ sources: ["hn", "github"], reads: 14 }));
     const run4 = newRun({});
     run4.read = 4;
     await advance(more, run4);
@@ -170,7 +170,7 @@ test("advance calls no source that has no reads left to give and keeps it for a 
   const calls = [];
   for (const name of Object.keys(adapters)) adapters[name] = { collect: async (_plan, _state, limit) => (calls.push(`${name}:${limit}`), { read: [], found: 0, failed: [], state: null, done: true }) };
   try {
-    const plan = parsePlan(planText({ sources: ["hn", "github", "reddit"], reads: 2 }));
+    const plan = parseSearchPlan(planText({ sources: ["hn", "github", "reddit"], reads: 2 }));
     const run = newRun({});
     await advance(plan, run);
     assert.deepEqual(calls, ["hn:1", "github:1"]);
@@ -189,7 +189,7 @@ test("the end line names the failed sources instead of saying no candidates are 
   const saved = { ...adapters };
   for (const name of ["hn", "github"]) adapters[name] = { collect: async () => Promise.reject(new Error("down")) };
   try {
-    const plan = parsePlan(planText({ sources: ["hn", "github"], reads: 20 }));
+    const plan = parseSearchPlan(planText({ sources: ["hn", "github"], reads: 20 }));
     const run = newRun({});
     await advance(plan, run);
     const results = await advance(plan, run);
@@ -200,7 +200,7 @@ test("the end line names the failed sources instead of saying no candidates are 
 });
 
 test("bundle ends with More and the continue command while sources are not done", () => {
-  const plan = parsePlan(planText({ sources: ["hn"], reads: 9 }));
+  const plan = parseSearchPlan(planText({ sources: ["hn"], reads: 9 }));
   const run = { ...newRun({}), read: 3, covered: [1] };
   const text = bundle(plan, [{ status: "fulfilled", value: { read: [], found: 0, failed: [] } }], run, "/tmp/r.json");
   assert.match(text, /\nMore: read 3 of 9\. Continue: node ".*search\.mjs" --continue "\/tmp\/r\.json"$/);
@@ -235,28 +235,28 @@ test("EXO_SEARCH_DEADLINE_MS shortens the per-source deadline and is capped at 2
   }
 });
 
-test("parsePlan rejects more than 2 terms and a term of fewer than 2 words", () => {
+test("parseSearchPlan rejects more than 2 terms and a term of fewer than 2 words", () => {
   const terms = (list) => JSON.stringify({ question: "q", subQuestions: [{ ask: "a", terms: list }] });
-  assert.throws(() => parsePlan(terms(["one two", "three four", "five six"])), { message: "Sub-question Q1 has more than 2 terms" });
-  assert.throws(() => parsePlan(terms(["single"])), { message: "Sub-question Q1 term has fewer than 2 words: single" });
-  assert.throws(() => parsePlan(terms(["one two", "   "])), /fewer than 2 words/);
+  assert.throws(() => parseSearchPlan(terms(["one two", "three four", "five six"])), { message: "Sub-question Q1 has more than 2 terms" });
+  assert.throws(() => parseSearchPlan(terms(["single"])), { message: "Sub-question Q1 term has fewer than 2 words: single" });
+  assert.throws(() => parseSearchPlan(terms(["one two", "   "])), /fewer than 2 words/);
 });
 
-test("parsePlan rejects days that is not a whole number of at least 1", () => {
+test("parseSearchPlan rejects days that is not a whole number of at least 1", () => {
   for (const days of [0, -3, 1.5, "7", null]) {
-    assert.throws(() => parsePlan(planText({ days })), { message: "Plan days must be a whole number of at least 1" });
+    assert.throws(() => parseSearchPlan(planText({ days })), { message: "Plan days must be a whole number of at least 1" });
   }
-  assert.equal(parsePlan(planText({ days: 1 })).days, 1);
+  assert.equal(parseSearchPlan(planText({ days: 1 })).days, 1);
 });
 
-test("parsePlan rejects a subreddit and a topic that break their pattern and names the value", () => {
-  assert.throws(() => parsePlan(planText({ subreddits: ["ClaudeAI", "r/x"] })), { message: "Plan subreddit is not valid: r/x" });
-  assert.throws(() => parsePlan(planText({ subreddits: ["a"] })), /subreddit/);
-  assert.throws(() => parsePlan(planText({ subreddits: "ClaudeAI" })), /subreddits/);
-  assert.throws(() => parsePlan(planText({ topics: ["claude-code", "Bad Topic"] })), { message: "Plan topic is not valid: Bad Topic" });
-  assert.throws(() => parsePlan(planText({ topics: ["-x"] })), /topic/);
-  assert.throws(() => parsePlan(planText({ topics: "claude" })), /topics/);
-  const plan = parsePlan(planText({ subreddits: ["ClaudeAI", "a_b2"], topics: ["claude-code", "ai"] }));
+test("parseSearchPlan rejects a subreddit and a topic that break their pattern and names the value", () => {
+  assert.throws(() => parseSearchPlan(planText({ subreddits: ["ClaudeAI", "r/x"] })), { message: "Plan subreddit is not valid: r/x" });
+  assert.throws(() => parseSearchPlan(planText({ subreddits: ["a"] })), /subreddit/);
+  assert.throws(() => parseSearchPlan(planText({ subreddits: "ClaudeAI" })), /subreddits/);
+  assert.throws(() => parseSearchPlan(planText({ topics: ["claude-code", "Bad Topic"] })), { message: "Plan topic is not valid: Bad Topic" });
+  assert.throws(() => parseSearchPlan(planText({ topics: ["-x"] })), /topic/);
+  assert.throws(() => parseSearchPlan(planText({ topics: "claude" })), /topics/);
+  const plan = parseSearchPlan(planText({ subreddits: ["ClaudeAI", "a_b2"], topics: ["claude-code", "ai"] }));
   assert.deepEqual(plan.subreddits, ["ClaudeAI", "a_b2"]);
   assert.deepEqual(plan.topics, ["claude-code", "ai"]);
 });
@@ -266,7 +266,7 @@ test("a source that never resolves is failed this round, stays pending and is do
   adapters.hn = { collect: () => new Promise(() => {}) };
   adapters.github = fakeSource(1);
   try {
-    const plan = parsePlan(planText({ sources: ["hn", "github"], reads: 20 }));
+    const plan = parseSearchPlan(planText({ sources: ["hn", "github"], reads: 20 }));
     const run = newRun({});
     const results = await advance(plan, run, 20);
     const text = bundle(plan, results, run, "/tmp/r.json");
@@ -288,7 +288,7 @@ test("a success resets the consecutive-failure counter of a source", async () =>
   let calls = 0;
   adapters.hn = { collect: async () => (++calls === 2 ? { read: [], state: null, done: false } : Promise.reject(new Error("down"))) };
   try {
-    const plan = parsePlan(planText({ sources: ["hn"], reads: 20 }));
+    const plan = parseSearchPlan(planText({ sources: ["hn"], reads: 20 }));
     const run = newRun({});
     await advance(plan, run, 1000);
     assert.equal(run.failures.hn, 1);
@@ -303,13 +303,13 @@ test("a success resets the consecutive-failure counter of a source", async () =>
 });
 
 test("bundle prints Report: none when nothing limited the call", () => {
-  const plan = parsePlan(planText({ sources: ["hn"] }));
+  const plan = parseSearchPlan(planText({ sources: ["hn"] }));
   const text = bundle(plan, [{ status: "fulfilled", value: { read: [{ url: "u", text: "T", subs: [1] }], found: 1, failed: [] } }]);
   assert.match(text, /\n\nReport: none$/);
 });
 
 test("bundle orders Uncovered, Report, Bundle and the end line and repeats each limit line", () => {
-  const plan = parsePlan(planText({ sources: ["hn"], reads: 9 }));
+  const plan = parseSearchPlan(planText({ sources: ["hn"], reads: 9 }));
   const run = { ...newRun({}), read: 1 };
   const failed = ["no hits: hook events", "dropped 2 of 50 searches: limit is 40: a, b", "search failed: boom"];
   const text = bundle(plan, [{ status: "fulfilled", value: { read: [], found: 0, failed } }], run, "/tmp/r.json");
@@ -321,7 +321,7 @@ test("record writes the bundle for a run without reads and appends the next call
   const dir = mkdtempSync(join(tmpdir(), "search-test-"));
   const file = join(dir, "1.json");
   const empty = { status: "fulfilled", value: { read: [], found: 0, failed: [] } };
-  const plan = parsePlan(planText({ sources: ["hn"] }));
+  const plan = parseSearchPlan(planText({ sources: ["hn"] }));
   const first = record(plan, [empty], newRun({}), file);
   assert.equal(readFileSync(join(dir, "1.md"), "utf8"), `${first}\n`);
   const second = record(plan, [{ status: "rejected", reason: new Error("late") }], newRun({}), file);
@@ -329,8 +329,8 @@ test("record writes the bundle for a run without reads and appends the next call
   assert.match(second, /Report:\nhn: failed: late\n\nBundle: .*1\.md$/);
 });
 
-test("parsePlan rejects a days value too large for a date and names days", () => {
-  assert.throws(() => parsePlan(planText({ days: 1000000000 })), /Plan days is too large: 1000000000/);
+test("parseSearchPlan rejects a days value too large for a date and names days", () => {
+  assert.throws(() => parseSearchPlan(planText({ days: 1000000000 })), /Plan days is too large: 1000000000/);
 });
 
 test("bundlePath always gives a different .md path", () => {
@@ -350,9 +350,9 @@ test("a continued run prints its whole bundle through a pipe", () => {
   assert.ok(run.stdout.trimEnd().endsWith("."));
 });
 
-test("parsePlan takes sites and rejects a site name that is not lowercase letters and dots", () => {
-  assert.deepEqual(parsePlan(planText({ sites: ["superuser", "math.stackexchange"] })).sites, ["superuser", "math.stackexchange"]);
-  assert.throws(() => parsePlan(planText({ sites: ["Stack Overflow"] })), { message: "Plan site is not valid: Stack Overflow" });
+test("parseSearchPlan takes sites and rejects a site name that is not lowercase letters and dots", () => {
+  assert.deepEqual(parseSearchPlan(planText({ sites: ["superuser", "math.stackexchange"] })).sites, ["superuser", "math.stackexchange"]);
+  assert.throws(() => parseSearchPlan(planText({ sites: ["Stack Overflow"] })), { message: "Plan site is not valid: Stack Overflow" });
 });
 
 test("a read carries the card's signals as a Signals line", async () => {
@@ -374,12 +374,12 @@ const claimSource = (urls) => ({
 });
 const chooseAll = async (prompt, _plan, _header, items) => (prompt === "judge" ? items.map(({ id }) => ({ id, reason: "r" })) : [{ id: "p1", reason: "Q1 good" }]);
 
-test("parsePlan keeps run and sub and rejects a sub that is not Q<n>", () => {
-  const plan = parsePlan(planText({ run: "/tmp/run", sub: "Q2" }));
+test("parseSearchPlan keeps run and sub and rejects a sub that is not Q<n>", () => {
+  const plan = parseSearchPlan(planText({ run: "/tmp/run", sub: "Q2" }));
   assert.equal(plan.run, "/tmp/run");
   assert.equal(plan.sub, "Q2");
-  assert.equal(parsePlan(planText()).run, undefined);
-  assert.throws(() => parsePlan(planText({ run: "/tmp/run", sub: "two" })), /sub/);
+  assert.equal(parseSearchPlan(planText()).run, undefined);
+  assert.throws(() => parseSearchPlan(planText({ run: "/tmp/run", sub: "two" })), /sub/);
 });
 
 test("with run and sub a hit another sub claimed is dropped and the hits read are claimed as ok", async () => {

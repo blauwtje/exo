@@ -7,6 +7,19 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ## Unreleased
 
+### Added
+
+- The `import direction` check fails when lib/ imports a skill, a skill imports another skill, or code outside lib/ imports lib/ by a relative path.
+- The `file size` check fails a script under lib/, skills/*/scripts/ or verify/ over 400 lines.
+- CONTRIBUTING.md has a Codemap section naming the folders and the import and size rules.
+
+### Changed
+
+- `handoffFile` lives in `lib/handoff-file.mjs`, and every script reaches lib/ through a `#` alias.
+- `exo:diagnose` bisect and the `exo:spec` repo map use the shared git wrapper, so git output over 1 MiB no longer fails them.
+- `exo:search` names its JSON plan parser `parseSearchPlan`.
+- `exo:learn` splits `corrections.mjs` into `ledger.mjs` and `clusters.mjs`, with the same commands and output.
+
 ### Fixed
 
 - `exo:search` checks indented quote lines (`  > `) in `verify.mjs`, so a report in the report shape no longer passes with a quote that is not on its page.

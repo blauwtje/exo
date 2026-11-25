@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { isMain } from '../lib/script-flags.mjs';
+import { isMain } from '#script-flags';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const TABLE = path.join(ROOT, 'evals', 'value.md');

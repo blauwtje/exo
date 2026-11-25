@@ -2,15 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parsePlan } from "../skills/search/scripts/search.mjs";
+import { parseSearchPlan } from "../skills/search/scripts/search.mjs";
 
 const skillDir = fileURLToPath(new URL("../skills/search/", import.meta.url));
 const skill = readFileSync(`${skillDir}SKILL.md`, "utf8");
 const worker = readFileSync(`${skillDir}references/worker.md`, "utf8");
 
-test("the plan example in the heredoc passes parsePlan", () => {
+test("the plan example in the heredoc passes parseSearchPlan", () => {
   const [, plan] = worker.match(/<<'PLAN'\n([\s\S]*?)\nPLAN/);
-  assert.doesNotThrow(() => parsePlan(plan.replace("Q<n>", "Q1")));
+  assert.doesNotThrow(() => parseSearchPlan(plan.replace("Q<n>", "Q1")));
 });
 
 test("every script the skill names exists", () => {

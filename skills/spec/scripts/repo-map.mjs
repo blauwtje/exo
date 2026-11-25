@@ -1,6 +1,6 @@
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import { git } from '#git';
 import { scratchPath } from '#scratch-path';
 
 const SOURCE = /\.(?:[cm]?[jt]sx?|py|rs|go)$/;
@@ -8,10 +8,6 @@ const EXPORT = /^export\s+(?:default\s+)?(?:async\s+)?(?:function\*?|class|const
 const MAX_BYTES = 1024 * 1024;
 const HUB_USERS = 3;
 const LEGEND = 'name•N: N other files use this export';
-
-function git(args) {
-  return spawnSync('git', args, { encoding: 'utf8' });
-}
 
 function textOf(file) {
   const stats = fs.statSync(file, { throwIfNoEntry: false });
@@ -37,10 +33,10 @@ function userCount(name, file, texts) {
 }
 
 function main() {
-  const top = git(['rev-parse', '--show-toplevel']);
+  const top = git(process.cwd(), ['rev-parse', '--show-toplevel']);
   if (top.status !== 0) return console.log('no map: this directory is not inside a git repository');
   const root = top.stdout.trim();
-  const listing = git(['-C', root, 'ls-files']).stdout.split('\n').filter(Boolean);
+  const listing = git(root, ['ls-files']).stdout.split('\n').filter(Boolean);
   const texts = new Map(listing.map((file) => [file, textOf(path.join(root, file))]));
   const lines = listing.map((file) => {
     const names = exportsOf(file, texts.get(file)).map((name) => {

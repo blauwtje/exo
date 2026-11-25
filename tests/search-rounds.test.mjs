@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { adapters, newRun, parsePlan, rounds } from "../skills/search/scripts/search.mjs";
+import { adapters, newRun, parseSearchPlan, rounds } from "../skills/search/scripts/search.mjs";
 
 const planText = (extra = {}) =>
   JSON.stringify({ question: "How do hooks work?", subQuestions: [{ ask: "what runs", terms: ["hook events"] }], sources: ["hn"], ...extra });
@@ -20,7 +20,7 @@ test("rounds repeat while the end line is More and the time left allows another 
   const deadlines = [];
   let calls = 0;
   await withSource(async (plan, state, limit, deadline) => { deadlines.push(deadline); return oneRead(++calls); }, async () => {
-    const plan = parsePlan(planText({ reads: 3 }));
+    const plan = parseSearchPlan(planText({ reads: 3 }));
     const file = join(mkdtempSync(join(tmpdir(), "search-rounds-")), "run.json");
     const texts = await rounds(plan, newRun({}), file, 100000);
     assert.equal(texts.length, 3);
@@ -33,7 +33,7 @@ test("rounds repeat while the end line is More and the time left allows another 
 
 test("rounds stop with More when the time left is under 1.5 times the last round", async () => {
   await withSource(() => new Promise((resolve) => setTimeout(() => resolve(oneRead(1)), 40)), async () => {
-    const plan = parsePlan(planText({ reads: 5 }));
+    const plan = parseSearchPlan(planText({ reads: 5 }));
     const file = join(mkdtempSync(join(tmpdir(), "search-rounds-")), "run.json");
     const texts = await rounds(plan, newRun({}), file, 80);
     assert.equal(texts.length, 1);

@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { gitText } from './lib/git.mjs';
+import { gitText } from '#git';
 import { releaseHeading, sectionBody } from './verify/changelog.mjs';
 
 const ORDER = ['Highlights', 'Added', 'Changed', 'Fixed', 'Removed'];

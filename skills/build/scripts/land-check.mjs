@@ -13,11 +13,11 @@ import { changedPaths } from './land-paths.mjs';
 import { runCoveringTests, runProof, runNamedTests } from './land-proof.mjs';
 import { UsageError, environmentMs } from '#script-flags';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { runCheck } from '../../../lib/run-check.mjs';
+import { runCheck } from '#run-check';
 import { gateRefusal, lastPassMs, GATE_ONCE_PER_RUN_FROM_MS, treePassMs } from '#check-cache';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
 import { createWorktree, worktreePath } from '#checkout';
-import { isTestFirst, runInWorktree, testPaths } from '../../../lib/red-green.mjs';
+import { isTestFirst, runInWorktree, testPaths } from '#red-green';
 
 export function checkTask({ planText, number, root, reportText, reportPath, planPath }) {
   refuseMismatchedToplevel(root);

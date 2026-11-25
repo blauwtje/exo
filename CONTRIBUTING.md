@@ -6,6 +6,20 @@ Clone the repository. You need Node 22 or newer and `bash` on `PATH`; the verifi
 
 A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an edit there is live only after a release; `claude --plugin-dir <your clone>` runs the working tree instead. A marketplace added from a local directory whose `marketplace.json` sets `"source": "./"` (this checkout is one) loads the plugin in place, with no cache copy: an edit is live after `/reload-plugins`.
 
+## Codemap
+
+- `lib/`: shared modules for every script; each is imported through a `#` alias.
+- `skills/`: one folder per skill, with its body, references and `scripts/`.
+- `agents/`: the delegate prompts.
+- `hooks/`: the hook scripts and `hooks.json`.
+- `verify/`: the static checks that `verify.mjs` runs.
+- `tests/`: the script tests, which reach into any module by path.
+- `evals/`: the route and value evals, harness code that may import skill scripts by path.
+- `docs/`: specs and plans.
+
+The `import direction` check fails a `lib/` file that imports a skill, a skill that imports another skill, and code outside `lib/` that reaches `lib/` by a relative path instead of a `#` alias from `package.json`.
+The `file size` check fails a script under `lib/`, `skills/*/scripts/` or `verify/` over 400 lines.
+
 ## Checks
 
 ### Gate

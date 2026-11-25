@@ -79,7 +79,7 @@ function requireClaimer(run, sub) {
   if (sub !== undefined && !(typeof sub === "string" && SUB.test(sub))) throw new Error(`Plan sub must look like Q1: ${sub}`);
 }
 
-export function parsePlan(text, today = new Date()) {
+export function parseSearchPlan(text, today = new Date()) {
   const raw = JSON.parse(text);
   if (typeof raw.question !== "string" || !raw.question.trim()) throw new Error("Plan needs a question");
   const sources = raw.sources ?? Object.keys(adapters);
@@ -231,7 +231,7 @@ export async function rounds(plan, run, file, deadline = deadlineMs()) {
 function loadRun(file) {
   try {
     const run = JSON.parse(readFileSync(file, "utf8"));
-    return { plan: parsePlan(JSON.stringify(run.plan)), run };
+    return { plan: parseSearchPlan(JSON.stringify(run.plan)), run };
   } catch (error) {
     throw new Error(`Cannot continue ${file}: ${error.message}`);
   }
@@ -245,7 +245,7 @@ async function readStdin() {
 
 async function start() {
   const text = await readStdin();
-  const plan = parsePlan(text);
+  const plan = parseSearchPlan(text);
   return { plan, run: newRun(JSON.parse(text)), file: join(RUNS_DIR, `${Date.now()}.json`) };
 }
 

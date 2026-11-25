@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import process from 'node:process';
-import { UsageError, USAGE_EXIT, isMain, parseFlags } from '../lib/script-flags.mjs';
+import { UsageError, USAGE_EXIT, isMain, parseFlags } from '#script-flags';
 
 const USAGE = 'usage: node benchmarks/layout-ab.mjs [--runs <n>=10] [--model <name>=haiku] [--max-cost-usd <usd>=1] [--dry-run] [--claude <bin>=claude]';
 const MIN_RUNS = 5;
