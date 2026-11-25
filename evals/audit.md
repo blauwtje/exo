@@ -5,7 +5,7 @@ Rapport van de audit. Achteraf gedaan: dependabot toegevoegd (.github/dependabot
 ## Top 5
 
 1. **Agents missen `color` en `<example>`-blokken** (S). Bron: plugin-validator. Bewijs: agents/builder.md:1-8, agents/researcher.md:1-9.
-2. **Twee skills zijn handmatig zonder gezien falen** (S). Bron: plugin-validator tegen .claude/CLAUDE.md (Editing). Bewijs: skills/ideas/SKILL.md:4, skills/search/SKILL.md:4. Controleer of een route-eval of verzoek dit dekt.
+2. **Twee skills zijn handmatig zonder gezien falen** (S).  Afgehandeld: geen route-eval-case en 0 sessiebestanden als bewijs, dus de vlag is bij ideas en search verwijderd. Bron: plugin-validator tegen .claude/CLAUDE.md (Editing). Bewijs: skills/ideas/SKILL.md:4, skills/search/SKILL.md:4. Controleer of een route-eval of verzoek dit dekt.
 3. **Geen dependabot en geen CODEOWNERS** (S). Bron: vergelijking met affaan-m/ECC (310k sterren). Bewijs: https://github.com/affaan-m/ECC/tree/main/.github tegenover `ls .github` in exo.
 4. **Skill-descriptions van watch en save missen gebruikerszinnen** (S). Bron: skill-reviewer. Bewijs: skills/watch/SKILL.md:3, skills/save/SKILL.md:3.
 5. **Workflow-hardening en issue-triage ontbreken** (M). Bron: vergelijking met anthropics/claude-code (157k). Bewijs: https://github.com/anthropics/claude-code/tree/main/.github/workflows (workflow-hardening.yml, claude-issue-triage.yml); exo heeft 2 workflows.

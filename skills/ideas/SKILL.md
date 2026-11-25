@@ -1,7 +1,6 @@
 ---
 name: ideas
 description: "Turns one question on any subject into a short list of novel, useful and well-reasoned ideas by running a fixed ideation playbook as fresh helpers. Use when the user says 'give me ideas', 'what are my options' or 'how could I approach' a problem. Not for design options for a code change (exo:spec) or sourced research (exo:search)."
-disable-model-invocation: true
 argument-hint: "<question>"
 metadata:
   author: exo

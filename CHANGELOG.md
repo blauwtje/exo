@@ -16,6 +16,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:ideas` and `exo:search` no longer set `disable-model-invocation`, because no route eval or user request justified manual-only.
 - `exo:builder` and `exo:researcher` agents have a `color` and an `<example>` block in their description.
 - `land-task` writes the `Outside Files:` line into the commit body of a task that changed paths outside its `Files:`, so git keeps the trace.
 - `land-task` no longer refuses a task for changed paths outside its `Files:`; it lands them and prints an `Outside Files:` line naming them.
