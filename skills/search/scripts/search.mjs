@@ -216,15 +216,15 @@ export function record(plan, results, run, file) {
   return text;
 }
 
-export async function rounds(plan, run, file, deadline = deadlineMs()) {
-  const started = Date.now();
+export async function rounds(plan, run, file, deadline = deadlineMs(), now = Date.now) {
+  const started = now();
   const texts = [];
   let last;
   do {
-    const begun = Date.now();
+    const begun = now();
     texts.push(record(plan, await advance(plan, run, deadline - (begun - started)), run, file));
-    last = Date.now() - begun;
-  } while (texts.at(-1).split("\n").at(-1).startsWith("More:") && deadline - (Date.now() - started) > 1.5 * last);
+    last = now() - begun;
+  } while (texts.at(-1).split("\n").at(-1).startsWith("More:") && deadline - (now() - started) > 1.5 * last);
   return texts.map((text, index) => (index < texts.length - 1 ? text.replace(/\nMore: [^\n]*$/, "") : text));
 }
 

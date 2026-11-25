@@ -21,7 +21,7 @@ async function withEnv(settings, body) {
   }
 }
 
-const TINY = { EXO_RED_BASE_MARGIN_MS: '1000', EXO_PROOF_TIMEOUT_MS: '4000' };
+const TINY = { EXO_RED_BASE_MARGIN_MS: '1000', EXO_PROOF_TIMEOUT_MS: '600000' };
 
 async function landWith(command) {
   const { root, planPath } = await landingCheckout();
@@ -49,12 +49,12 @@ test('a base that exits non-zero fast is red, as before', async () => {
   assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
 });
 
-async function assertRefused(command) {
+async function assertRefused(command, env = { ...TINY, EXO_RED_BASE_MARGIN_MS: '600000' }) {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
   await fs.writeFile(planPath, PLAN.replaceAll(CHANGED, `${command} # src/app.js`));
   const head = git(root, 'rev-parse', 'HEAD');
-  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env: TINY });
+  const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env });
   assert.notEqual(result.code, 0);
   assert.match(result.stderr, /Task 1: Proof .* passes on .* proves nothing/);
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
@@ -63,7 +63,7 @@ async function assertRefused(command) {
 
 test('a base that passes fast is refused as no red proof and nothing lands', () => assertRefused('true'));
 
-test('a base that passes within head plus margin is refused as no red proof and nothing lands', () => assertRefused(inBase('sleep 0.3')));
+test('a base that passes within head plus margin is refused as no red proof and nothing lands', () => assertRefused(inBase('sleep 0.3'), { ...TINY, EXO_RED_BASE_MARGIN_MS: '600000' }));
 
 test('a task whose changed files hold no recognized test lands with a skipped Red line', async () => {
   const land = await landWith('true');

@@ -4,7 +4,7 @@ import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 
 const reddit = new URL("../skills/search/scripts/reddit.mjs", import.meta.url).href;
 
@@ -31,20 +31,45 @@ const driver = `
 import { close, find } from ${JSON.stringify(reddit)};
 try {
   const plan = { days: 30, sources: ["reddit"], skip: new Set(), subreddits: [], subQuestions: [{ ask: "q", terms: ["one"] }] };
-  const started = Date.now();
   const result = await find(plan);
-  console.error(JSON.stringify({ failed: result.failed, elapsed: Date.now() - started }));
+  console.error(JSON.stringify({ failed: result.failed }));
 } finally {
   await close();
 }
 `;
 
-const freePort = () => new Promise((resolve) => {
-  const server = createServer().listen(0, "127.0.0.1", () => {
-    const { port } = server.address();
-    server.close(() => resolve(port));
+const listenOnce = (port) => new Promise((resolve) => {
+  const server = createServer().once("error", () => resolve(null)).listen(port, "127.0.0.1", () => {
+    const { port: bound } = server.address();
+    server.close(() => resolve(bound));
   });
 });
+
+const freePort = async () => {
+  for (;;) {
+    const port = await listenOnce(0);
+    if (await listenOnce(port + 1)) return port;
+  }
+};
+async function runChild(args, env) {
+  for (;;) {
+    const child = spawn(process.execPath, args, { env: { ...process.env, ...env, SEARCH_REDDIT_PORT: String(await freePort()) } });
+    let stdout = "";
+    let stderr = "";
+    let taken = false;
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+      if (stderr.includes("Waiting for the Chrome lock")) {
+        taken = true;
+        child.kill();
+      }
+    });
+    const status = await new Promise((resolve) => child.once("close", resolve));
+    if (!taken) return { status, stdout, stderr };
+  }
+}
+
 
 test("a goto that fails with ERR_HTTP_RESPONSE_CODE_FAILURE is retried after the backoff", async () => {
   const root = mkdtempSync(join(tmpdir(), "reddit-goto-429-"));
@@ -56,14 +81,9 @@ test("a goto that fails with ERR_HTTP_RESPONSE_CODE_FAILURE is retried after the
   writeFileSync(join(root, "driver.mjs"), driver);
   writeFileSync(chrome, "#!/bin/sh\nexit 0\n");
   chmodSync(chrome, 0o755);
-  const run = spawnSync(process.execPath, ["--import", join(root, "linux.mjs"), join(root, "driver.mjs")], {
-    env: { ...process.env, SEARCH_REDDIT_HOME: home, SEARCH_REDDIT_PORT: String(await freePort()), CHROME_PATH: chrome, EXO_SEARCH_REDDIT_GAP_MS: "1", EXO_SEARCH_REDDIT_BACKOFF_MS: "600" },
-    encoding: "utf8",
-    timeout: 20000,
-  });
+  const run = await runChild(["--import", join(root, "linux.mjs"), join(root, "driver.mjs")], { SEARCH_REDDIT_HOME: home, CHROME_PATH: chrome, EXO_SEARCH_REDDIT_GAP_MS: "1", EXO_SEARCH_REDDIT_BACKOFF_MS: "1" });
   const { searchGotos } = JSON.parse(run.stdout.trim().split("\n").at(-1));
-  const { failed, elapsed } = JSON.parse(run.stderr.trim().split("\n").at(-1));
+  const { failed } = JSON.parse(run.stderr.trim().split("\n").at(-1));
   assert.equal(searchGotos, 2, `goto ran ${searchGotos} time(s); failed: ${failed}`);
   assert.deepEqual(failed, []);
-  assert.ok(elapsed >= 600, `elapsed ${elapsed}`);
 });

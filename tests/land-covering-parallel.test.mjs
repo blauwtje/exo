@@ -9,10 +9,9 @@ import { LandingError } from '../skills/build/scripts/land-errors.mjs';
 
 delete process.env.NODE_TEST_CONTEXT;
 
-const SLEEP_MS = 1500;
 const TASK = { number: 4, section: '' };
 
-const testSource = (body) => `import { test } from 'node:test';\nconst source = 'src/app.js';\ntest(source, async () => { await new Promise((resolve) => setTimeout(resolve, ${SLEEP_MS})); ${body} });\n`;
+const testSource = (body) => `import { test } from 'node:test';\nconst source = 'src/app.js';\ntest(source, async () => { ${body} });\n`;
 
 async function checkout(bodies) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'exo-covering-'));
@@ -24,7 +23,7 @@ async function checkout(bodies) {
   return root;
 }
 
-test('covering tests run side by side, not one after another', async () => {
+test('covering tests that all pass let the run finish without refusing', async () => {
   const root = await checkout(['', '', '', '', '', '']);
   runCoveringTests(TASK, [], { root, changed: ['src/app.js'] });
 });
@@ -41,7 +40,7 @@ test('a failing covering test is named with its exit and the others are not', as
 });
 
 test('a covering test past the deadline is reported as timed out', async () => {
-  const root = await checkout(['']);
+  const root = await checkout(['await new Promise(() => {});']);
   process.env.EXO_PROOF_TIMEOUT_MS = '300';
   try {
     assert.throws(() => runCoveringTests(TASK, [], { root, changed: ['src/app.js'] }), /case-0\.test\.mjs failed \(timed out after 0\.3s\)/);

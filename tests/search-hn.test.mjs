@@ -42,17 +42,17 @@ function stubFetch(handler) {
 
 const json = (body, status = 200) => ({ ok: status === 200, status, json: async () => body });
 
-test("find searches stories once per term within the days window", async () => {
+test("find searches stories once per term within the days window", async (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: 1.7e12 });
   const stub = stubFetch((url) =>
     json({ hits: [{ objectID: "7", title: `${url.searchParams.get("query")} hit`, points: 12, num_comments: 3, created_at_i: 1700000000 }] }),
   );
   try {
-    const before = Math.floor(Date.now() / 1000) - 30 * 86400;
     const { lists } = await find(plan);
     assert.deepEqual(stub.calls.map((url) => url.searchParams.get("query")), ["alpha", "beta", "gamma"]);
     assert.equal(stub.calls[0].searchParams.get("tags"), "story");
     const bound = Number(stub.calls[0].searchParams.get("numericFilters").match(/created_at_i>(\d+)/)[1]);
-    assert.ok(Math.abs(bound - before) < 5);
+    assert.equal(bound, 1.7e9 - 30 * 86400);
     assert.deepEqual(lists[0], [
       { url: "https://news.ycombinator.com/item?id=7", title: "alpha hit", facts: "12 points | 3 comments | 2023-11-14", signals: { points: 12, comments: 3, date: "2023-11-14" } },
     ]);

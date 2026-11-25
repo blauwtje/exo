@@ -109,10 +109,14 @@ test("at most 2 requests per domain run at once and the lock slots are released"
   const cacheDir = dir();
   let active = 0;
   let peak = 0;
+  let full;
+  const filled = new Promise((resolve) => (full = resolve));
   const fetchImpl = async () => {
     active += 1;
     peak = Math.max(peak, active);
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    if (active === 2) full();
+    await filled;
+    await new Promise(setImmediate);
     active -= 1;
     return page("<p>x</p>");
   };

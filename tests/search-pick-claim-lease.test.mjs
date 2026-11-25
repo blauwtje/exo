@@ -1,9 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { setTimeout as sleep } from "node:timers/promises";
 import { readBest } from "../skills/search/scripts/pick.mjs";
 
 const plan = (run, sub) => ({ question: "q", sources: ["hn"], skip: new Set(), subQuestions: [{ ask: "one", terms: ["t"] }], run, sub });
@@ -32,7 +31,11 @@ test("a claim held by a reader that never finishes can be taken by another sub a
   const started = new Promise((resolve) => (opened = resolve));
   readBest(plan(dir, "Q1"), source(() => (opened(), new Promise(() => {}))), chooseAll);
   await started;
-  await sleep(50);
+  const claims = join(dir, "claims");
+  for (const name of readdirSync(claims)) {
+    const file = join(claims, name);
+    writeFileSync(file, JSON.stringify({ ...JSON.parse(readFileSync(file, "utf8")), leaseUntil: 1 }));
+  }
   const second = await readBest(plan(dir, "Q2"), source(page), chooseAll);
   assert.deepEqual(second.read.map(({ url }) => url), [URL_A]);
 });

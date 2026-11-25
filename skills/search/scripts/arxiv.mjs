@@ -9,9 +9,9 @@ const pause = () => sleep(environmentMs("EXO_SEARCH_ARXIV_GAP_MS", 3000));
 
 let tail = Promise.resolve();
 
-function inTurn(task) {
+function inTurn(task, wait) {
   const result = tail.then(task);
-  tail = result.then(pause, pause);
+  tail = result.then(wait, wait);
   return result;
 }
 
@@ -33,12 +33,12 @@ function parseEntries(xml) {
 
 const query = (term) => term.split(/\s+/).map((word) => `all:${word}`).join(" AND ");
 
-export async function find(plan, fetcher = fetch) {
+export async function find(plan, fetcher = fetch, wait = pause) {
   const terms = plan.subQuestions.flatMap(({ terms }) => terms);
   return searchAll(
     terms.map((term) => {
       const params = new URLSearchParams({ search_query: query(term), max_results: SEARCH_LIMIT, sortBy: "relevance" });
-      const cards = inTurn(async () => parseEntries(await (await fetchOk("arXiv", `${api}?${params}`, fetcher)).text()));
+      const cards = inTurn(async () => parseEntries(await (await fetchOk("arXiv", `${api}?${params}`, fetcher)).text()), wait);
       return { label: `"${term}"`, cards };
     }),
   );

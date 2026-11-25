@@ -415,7 +415,6 @@ setTimeout(() => {}, 60000);
   process.env.PATH = `${dir}:${saved}`;
   try {
     const pending = ask({ model: "haiku", system: "sys" }, "in");
-    await new Promise((resolve) => setTimeout(resolve, 300));
     killChildren();
     await assert.rejects(pending, /claude exited/);
   } finally {

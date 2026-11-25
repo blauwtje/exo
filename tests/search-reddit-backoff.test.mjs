@@ -4,7 +4,9 @@ import { chmodSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
+
+import { holdMs, retryWaitMs } from "../skills/search/scripts/reddit.mjs";
 
 const reddit = new URL("../skills/search/scripts/reddit.mjs", import.meta.url).href;
 
@@ -35,8 +37,7 @@ const driver = `
 import { close, collect, open } from ${JSON.stringify(reddit)};
 const card = { url: "https://www.reddit.com/r/x/comments/1/t/" };
 const calls = [];
-const started = Date.now();
-const record = (label) => calls.push([label, Date.now() - started]);
+const record = (label) => calls.push(label);
 try {
   if (process.env.DRIVER === "collect") {
     const plan = { days: 30, sources: ["reddit"], skip: new Set(), subreddits: [], subQuestions: [{ ask: "q", terms: ["one"] }] };
@@ -58,12 +59,19 @@ try {
 }
 `;
 
-const freePort = () => new Promise((resolve) => {
-  const server = createServer().listen(0, "127.0.0.1", () => {
-    const { port } = server.address();
-    server.close(() => resolve(port));
+const listenOnce = (port) => new Promise((resolve) => {
+  const server = createServer().once("error", () => resolve(null)).listen(port, "127.0.0.1", () => {
+    const { port: bound } = server.address();
+    server.close(() => resolve(bound));
   });
 });
+
+const freePort = async () => {
+  for (;;) {
+    const port = await listenOnce(0);
+    if (await listenOnce(port + 1)) return port;
+  }
+};
 
 async function runDriver(replies, extraEnv = {}) {
   const root = mkdtempSync(join(tmpdir(), "reddit-backoff-"));
@@ -75,41 +83,60 @@ async function runDriver(replies, extraEnv = {}) {
   writeFileSync(join(root, "driver.mjs"), driver);
   writeFileSync(chrome, "#!/bin/sh\nexit 0\n");
   chmodSync(chrome, 0o755);
-  const run = spawnSync(process.execPath, ["--import", join(root, "linux.mjs"), join(root, "driver.mjs")], {
-    env: { ...process.env, SEARCH_REDDIT_HOME: home, SEARCH_REDDIT_PORT: String(await freePort()), CHROME_PATH: chrome, EXO_SEARCH_REDDIT_GAP_MS: "1", FAKE_REPLIES: JSON.stringify(replies), ...extraEnv },
-    encoding: "utf8",
-    timeout: 20000,
-  });
+  const run = await runChild(["--import", join(root, "linux.mjs"), join(root, "driver.mjs")], { SEARCH_REDDIT_HOME: home, CHROME_PATH: chrome, EXO_SEARCH_REDDIT_GAP_MS: "1", FAKE_REPLIES: JSON.stringify(replies), ...extraEnv });
   assert.equal(run.status, 0, run.stderr);
   return JSON.parse(run.stdout.trim().split("\n").at(-1));
 }
+async function runChild(args, env) {
+  for (;;) {
+    const child = spawn(process.execPath, args, { env: { ...process.env, ...env, SEARCH_REDDIT_PORT: String(await freePort()) } });
+    let stdout = "";
+    let stderr = "";
+    let taken = false;
+    child.stdout.on("data", (chunk) => (stdout += chunk));
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+      if (stderr.includes("Waiting for the Chrome lock")) {
+        taken = true;
+        child.kill();
+      }
+    });
+    const status = await new Promise((resolve) => child.once("close", resolve));
+    if (!taken) return { status, stdout, stderr };
+  }
+}
 
-test("a 429 waits the Retry-After seconds before the retry", async () => {
-  const [[label, elapsed]] = await runDriver([[429, { "retry-after": "1" }], [200, {}]]);
+
+test("a 429 retries after the Retry-After wait", async () => {
+  const [label] = await runDriver([[429, { "retry-after": "0" }], [200, {}]]);
   assert.equal(label, "ok");
-  assert.ok(elapsed >= 990, `elapsed ${elapsed}`);
 });
 
-test("a 429 without Retry-After waits x-ratelimit-reset, else the backoff default", async () => {
-  const [[, byReset]] = await runDriver([[429, { "x-ratelimit-reset": "1" }], [200, {}]], { EXO_SEARCH_REDDIT_BACKOFF_MS: "5000" });
-  assert.ok(byReset >= 990 && byReset < 4000, `elapsed ${byReset}`);
-  const [[, byDefault]] = await runDriver([[429, {}], [200, {}]], { EXO_SEARCH_REDDIT_BACKOFF_MS: "600" });
-  assert.ok(byDefault >= 600 && byDefault < 4000, `elapsed ${byDefault}`);
+test("a 429 wait is Retry-After, else x-ratelimit-reset, else the backoff default", () => {
+  assert.equal(retryWaitMs({ "retry-after": "1" }, 600), 1000);
+  assert.equal(retryWaitMs({ "x-ratelimit-reset": "1" }, 5000), 1000);
+  assert.equal(retryWaitMs({}, 600), 600);
+  assert.equal(retryWaitMs({ "retry-after": "0" }, 600), 0);
+});
+
+test("a 429 without Retry-After retries after the backoff default", async () => {
+  const [label] = await runDriver([[429, {}], [200, {}]], { EXO_SEARCH_REDDIT_BACKOFF_MS: "1" });
+  assert.equal(label, "ok");
 });
 
 test("a request fails naming the 429 after two retries", async () => {
-  const [[label]] = await runDriver([[429, { "retry-after": "0" }]]);
+  const [label] = await runDriver([[429, { "retry-after": "0" }]]);
   assert.match(label, /429.*after 2 retries/);
 });
 
-test("a response with no requests remaining holds the next request for x-ratelimit-reset", async () => {
-  const calls = await runDriver([[200, { "x-ratelimit-remaining": "0", "x-ratelimit-reset": "1" }], [200, {}]], { OPENS: "2" });
-  assert.ok(calls[1][1] - calls[0][1] >= 900, JSON.stringify(calls));
+test("the hold after a response with no requests remaining is x-ratelimit-reset", async () => {
+  assert.equal(holdMs({ "x-ratelimit-reset": "1" }), 1000);
+  assert.equal(holdMs({}), 0);
+  const calls = await runDriver([[200, { "x-ratelimit-remaining": "0", "x-ratelimit-reset": "0" }], [200, {}]], { OPENS: "2" });
+  assert.deepEqual(calls, ["ok", "ok"]);
 });
 
 test("a 429 wait that passes the call deadline fails the request instead of waiting", async () => {
-  const started = Date.now();
   const { failed } = await runDriver([[429, { "retry-after": "30" }]], { DRIVER: "collect" });
-  assert.ok(Date.now() - started < 10000);
   assert.ok(failed.some((message) => /429.*deadline/.test(message)), failed.join("\n"));
 });

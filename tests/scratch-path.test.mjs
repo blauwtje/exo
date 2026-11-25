@@ -52,7 +52,7 @@ test('a scratch call removes sibling folders older than the keep limit', async (
   fs.mkdirSync(userRoot, { mode: 0o700 });
   fs.mkdirSync(old);
   fs.mkdirSync(fresh);
-  const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
+  const eightDaysAgo = new Date(0);
   fs.utimesSync(old, eightDaysAgo, eightDaysAgo);
   const root = await gitRepository({ 'a.txt': 'a\n' });
   const current = scratchPath(root, '');

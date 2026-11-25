@@ -30,10 +30,14 @@ test("find searches each term with the generic user agent and turns hits into ca
 test("find runs at most 3 requests at once", async () => {
   let active = 0;
   let peak = 0;
+  let full;
+  const filled = new Promise((resolve) => (full = resolve));
   const fetcher = async () => {
     active += 1;
     peak = Math.max(peak, active);
-    await new Promise((resolve) => setTimeout(resolve, 10));
+    if (active === 3) full();
+    await filled;
+    await new Promise(setImmediate);
     active -= 1;
     return json({ query: { search: [] } });
   };

@@ -78,27 +78,37 @@ test("marking a url nobody claimed throws and names the url", () => {
 });
 
 const TAKE_OVER = `
-const [claims, dir, sub, startAt] = process.argv.slice(2);
+const [claims, dir, sub] = process.argv.slice(2);
 const { claimSource } = await import(claims);
-while (Date.now() < Number(startAt));
+console.log("ready");
+await new Promise((resolve) => process.stdin.once("data", resolve));
 console.log(JSON.stringify(claimSource(dir, "https://example.com/a", sub, { now: 1e6, leaseMs: 1000 })));
 `;
 
-const takeOver = (dir, sub, startAt) =>
-  new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ["--input-type=module", "-e", TAKE_OVER, "takeover", CLAIMS, dir, sub, String(startAt)]);
-    let out = "";
-    let err = "";
-    child.stdout.on("data", (chunk) => (out += chunk));
-    child.stderr.on("data", (chunk) => (err += chunk));
-    child.on("close", (code) => (code === 0 ? resolve(JSON.parse(out)) : reject(new Error(err))));
+const takeOver = (dir, sub) => {
+  const child = spawn(process.execPath, ["--input-type=module", "-e", TAKE_OVER, "takeover", CLAIMS, dir, sub]);
+  let out = "";
+  let err = "";
+  let ready;
+  const isReady = new Promise((resolve) => (ready = resolve));
+  child.stdout.on("data", (chunk) => {
+    out += chunk;
+    if (out.includes("ready\n")) ready();
   });
+  child.stderr.on("data", (chunk) => (err += chunk));
+  const result = new Promise((resolve, reject) =>
+    child.on("close", (code) => (code === 0 ? resolve(JSON.parse(out.replace("ready\n", ""))) : reject(new Error(err)))),
+  );
+  return { isReady, go: () => child.stdin.end("go\n"), result };
+};
 
 test("eight processes taking over one expired claim give exactly one winner", async () => {
   const dir = runDir();
   claimSource(dir, URL_A, "Q0", { now: 0, leaseMs: 1000 });
-  const startAt = Date.now() + 1500;
-  const results = await Promise.all(Array.from({ length: 8 }, (_, index) => takeOver(dir, `Q${index + 1}`, startAt)));
+  const children = Array.from({ length: 8 }, (_, index) => takeOver(dir, `Q${index + 1}`));
+  await Promise.all(children.map(({ isReady }) => isReady));
+  children.forEach(({ go }) => go());
+  const results = await Promise.all(children.map(({ result }) => result));
   const winners = results.filter((result) => result.claimed);
   assert.equal(winners.length, 1);
   const winner = `Q${results.indexOf(winners[0]) + 1}`;
@@ -125,7 +135,7 @@ test("summary on an unclaimed url claims it for the sub with status summary", ()
 
 test("summary on another sub's live claim prints Taken and changes nothing", () => {
   const dir = runDir();
-  claimSource(dir, URL_A, "Q1", { now: Date.now(), leaseMs: 60000 });
+  claimSource(dir, URL_A, "Q1", { now: 0, leaseMs: 1e13 });
   const result = summary(dir, "Q2", URL_A);
   assert.equal(result.stdout.trim(), `Taken: ${URL_A} (Q1)`);
   assert.deepEqual(records(dir).map(({ sub, status }) => ({ sub, status })), [{ sub: "Q1", status: undefined }]);

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { collect, find, open } from "../skills/search/scripts/arxiv.mjs";
 
-process.env.EXO_SEARCH_ARXIV_GAP_MS = "40";
+process.env.EXO_SEARCH_ARXIV_GAP_MS = "1";
 
 const plan = {
   question: "q",
@@ -21,21 +21,24 @@ Second line. </summary>
 
 const text = (body, status = 200) => ({ ok: status === 200, status, text: async () => body });
 
-test("find sends one request at a time with a gap and turns entries into cards", async () => {
+test("find sends one request at a time with a wait after each and turns entries into cards", async () => {
   const starts = [];
+  const events = [];
   let active = 0;
   const fetcher = async (url) => {
     assert.equal(active, 0);
     active += 1;
-    starts.push({ at: Date.now(), url: new URL(url) });
-    await new Promise((resolve) => setTimeout(resolve, 5));
+    events.push("fetch");
+    starts.push({ url: new URL(url) });
+    await new Promise(setImmediate);
     active -= 1;
     return text(feed);
   };
-  const { lists } = await find(plan, fetcher);
+  const wait = async () => events.push("wait");
+  const { lists } = await find(plan, fetcher, wait);
   assert.equal(starts[0].url.host, "export.arxiv.org");
   assert.equal(starts[0].url.pathname, "/api/query");
-  assert.ok(starts[1].at - starts[0].at >= 40);
+  assert.deepEqual(events, ["fetch", "wait", "fetch", "wait"]);
   assert.deepEqual(lists[0], [
     {
       url: "https://arxiv.org/abs/2401.00001v1",

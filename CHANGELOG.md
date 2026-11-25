@@ -10,6 +10,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Added
 
 - `evals/trigger.json` holds near-miss prompts for `exo:ideas` and `exo:search`.
+- The `test timing` check fails a test that reads the clock (`Date.now`, `performance.now`, `hrtime`, `process.uptime`) or waits a fixed time (`setTimeout(resolve`, `sleep(<n>`, `pause(<n>`).
 - The repo has a Dependabot config that opens weekly update pull requests for GitHub Actions and npm.
 - The `import direction` check fails when lib/ imports a skill, a skill imports another skill, or code outside lib/ imports lib/ by a relative path.
 - The `file size` check fails a script under lib/, skills/*/scripts/ or verify/ over 400 lines.
@@ -38,7 +39,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
-- Two search tests no longer fail on a loaded machine, because their timing margins are wider.
+- Tests no longer depend on timing: they assert the delay a script decides or the order of events instead of measured time, wait on a file, line or signal instead of a fixed sleep, and race a short budget only against a fake that never ends, so a loaded machine gives the same result.
 - The red-green check sees test files by common naming conventions across ecosystems (`test` folders and files, `spec` files, a root `spec/` folder, `FooTest.java`, `AppTests/`, `foo_test.go`, `test_foo.py`), and, when none matches, counts a changed file or folder the proof command names as a test.
 
 - `exo:search` workers write a WebFetch-read page into their evidence file as an empty-quote summary item, so a sub-question read only through WebFetch is no longer left without evidence.

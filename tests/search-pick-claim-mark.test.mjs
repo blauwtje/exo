@@ -37,7 +37,7 @@ test("a read page is kept and a read error is reported when the claim mark fails
 test("a read page is dropped when another sub took its claim during the read", async () => {
   const dir = mkdtempSync(join(tmpdir(), "pick-claim-mark-"));
   const open = async ({ url }) => {
-    claimSource(dir, url, "Q2", { now: Date.now() + 1e9 });
+    claimSource(dir, url, "Q2", { now: 1e13 });
     return page(url);
   };
   const result = await readBest(plan(dir, "Q1"), source([A], open), chooseAll);

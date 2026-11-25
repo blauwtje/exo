@@ -31,7 +31,7 @@ test("every url gets a result line when a saved page cannot be read back for its
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
     const { stdout, stderr } = await promisify(execFile)(process.execPath, ["--import", preload, FETCH, "--run", dir, "Q1", `${base}/a`, `${base}/b`], {
-      env: { ...process.env, EXO_SEARCH_DOMAIN_GAP_MS: "0" },
+      env: { ...process.env, EXO_SEARCH_DOMAIN_GAP_MS: "1" },
     });
     assert.match(stdout, new RegExp(`Fetched: ${base}/a `));
     assert.match(stdout, new RegExp(`Fetched: ${base}/b `));

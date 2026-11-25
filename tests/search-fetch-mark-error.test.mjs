@@ -22,7 +22,7 @@ test("a saved page is reported fetched when its claim mark fails and other urls 
   const base = `http://127.0.0.1:${server.address().port}`;
   try {
     const { stdout } = await promisify(execFile)(process.execPath, [FETCH, "--run", dir, "Q1", `${base}/a`, `${base}/b`], {
-      env: { ...process.env, EXO_SEARCH_DOMAIN_GAP_MS: "0" },
+      env: { ...process.env, EXO_SEARCH_DOMAIN_GAP_MS: "1" },
     });
     assert.match(stdout, new RegExp(`Fetched: ${base}/a `));
     assert.match(stdout, new RegExp(`Fetched: ${base}/b `));

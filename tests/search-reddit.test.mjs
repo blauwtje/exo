@@ -119,17 +119,18 @@ test("open loads the thread json url and returns its document", async () => {
 });
 
 test("paced runs one task at a time and waits the gap after each", async () => {
-  const run = paced(50);
   const events = [];
+  const run = paced(50, async (gap) => {
+    events.push(`wait ${gap}`);
+  });
   const task = (name) => async () => {
-    events.push(`${name} start ${Date.now()}`);
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    events.push(`${name} end ${Date.now()}`);
+    events.push(`${name} start`);
+    await new Promise(setImmediate);
+    events.push(`${name} end`);
   };
   await Promise.all([run(task("a")), run(task("b"))]);
-  const [aStart, aEnd, bStart] = events.map((event) => Number(event.split(" ")[2]));
-  assert.ok(aEnd >= aStart + 9);
-  assert.ok(bStart >= aEnd + 45);
+  await run(async () => {});
+  assert.deepEqual(events.slice(0, 6), ["a start", "a end", "wait 50", "b start", "b end", "wait 50"]);
 });
 
 test("paced keeps running after a task fails", async () => {
@@ -150,7 +151,7 @@ test("withLock runs tasks on one port one at a time", async () => {
   const events = [];
   const task = (name) => async () => {
     events.push(`start ${name}`);
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise(setImmediate);
     events.push(`end ${name}`);
   };
   await Promise.all([withLock(lockPort, task("a")), withLock(lockPort, task("b"))]);
@@ -158,36 +159,39 @@ test("withLock runs tasks on one port one at a time", async () => {
   assert.deepEqual(events, [`start ${first}`, `end ${first}`, `start ${second}`, `end ${second}`]);
 });
 
-test("withLock runs at once after the process that held it is killed", { timeout: 5000 }, async () => {
+test("withLock runs at once after the process that held it is killed", async () => {
   const lockPort = await freePort();
   const holder = spawn(process.execPath, ["--input-type=module", "-e", `
     import { connect, createServer } from "node:net";
     createServer().listen(${lockPort}, "127.0.0.1", () => console.log("held"));
   `], { stdio: ["ignore", "pipe", "inherit"] });
-  await new Promise((resolve) => holder.stdout.once("data", resolve));
+  const exited = new Promise((resolve) => holder.once("exit", resolve));
+  await Promise.race([new Promise((resolve) => holder.stdout.once("data", resolve)), exited]);
   holder.kill("SIGKILL");
+  await exited;
   assert.equal(await withLock(lockPort, async () => "ran"), "ran");
 });
 
-test("withLock returns when a client is still connected to its port", { timeout: 5000 }, async () => {
+test("withLock returns when a client is still connected to its port", async () => {
   const lockPort = await freePort();
   const task = () => new Promise((resolve) => {
-    const client = connect(lockPort, "127.0.0.1", () => setTimeout(resolve, 100));
+    const client = connect(lockPort, "127.0.0.1", () => resolve());
     client.on("error", () => {});
   });
   await withLock(lockPort, task);
 });
 
-test("withLock says once what it waits for when its port is taken", { timeout: 5000 }, async (t) => {
-  const lockPort = await freePort();
-  const other = createServer().listen(lockPort, "127.0.0.1");
+test("withLock says once what it waits for when its port is taken", async (t) => {
+  const other = createServer().listen(0, "127.0.0.1");
   await new Promise((resolve) => other.once("listening", resolve));
-  const said = t.mock.method(console, "error", () => {});
+  const { port: lockPort } = other.address();
+  const spoke = Promise.withResolvers();
+  const said = t.mock.method(console, "error", () => spoke.resolve());
   const waiting = withLock(lockPort, async () => "ran");
-  await new Promise((resolve) => setTimeout(resolve, 700));
+  await spoke.promise;
   await new Promise((resolve) => other.close(resolve));
   assert.equal(await waiting, "ran");
-  assert.equal(said.mock.callCount(), 1);
+  assert.equal(said.mock.calls.filter(({ arguments: [line] }) => line.startsWith("Waiting")).length, 1);
   assert.match(said.mock.calls[0].arguments[0], new RegExp(`Waiting for the Chrome lock on 127.0.0.1:${lockPort}`));
 });
 
@@ -197,20 +201,20 @@ test("withLock never lets two of many waiters hold it at once", async () => {
   let most = 0;
   const task = async () => {
     most = Math.max(most, ++active);
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await new Promise(setImmediate);
     active--;
   };
   await Promise.all(Array.from({ length: 12 }, async () => {
-    await new Promise((resolve) => setTimeout(resolve, Math.random() * 3));
+    await new Promise(setImmediate);
     await withLock(lockPort, task);
   }));
   assert.equal(most, 1);
 });
 
-test("withLock gives up with the waiting message once EXO_SEARCH_LOCK_MS has passed", { timeout: 5000 }, async (t) => {
-  const lockPort = await freePort();
-  const other = createServer().listen(lockPort, "127.0.0.1");
+test("withLock gives up with the waiting message once EXO_SEARCH_LOCK_MS has passed", async (t) => {
+  const other = createServer().listen(0, "127.0.0.1");
   await new Promise((resolve) => other.once("listening", resolve));
+  const { port: lockPort } = other.address();
   t.mock.method(console, "error", () => {});
   t.after(() => other.close());
   process.env.EXO_SEARCH_LOCK_MS = "300";

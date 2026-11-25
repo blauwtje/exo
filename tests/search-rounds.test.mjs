@@ -32,10 +32,11 @@ test("rounds repeat while the end line is More and the time left allows another 
 });
 
 test("rounds stop with More when the time left is under 1.5 times the last round", async () => {
-  await withSource(() => new Promise((resolve) => setTimeout(() => resolve(oneRead(1)), 40)), async () => {
+  let clock = 0;
+  await withSource(async () => { clock += 40; return oneRead(1); }, async () => {
     const plan = parseSearchPlan(planText({ reads: 5 }));
     const file = join(mkdtempSync(join(tmpdir(), "search-rounds-")), "run.json");
-    const texts = await rounds(plan, newRun({}), file, 80);
+    const texts = await rounds(plan, newRun({}), file, 80, () => clock);
     assert.equal(texts.length, 1);
     assert.match(texts[0], /\nMore: read 1 of 5\. Continue:/);
   });

@@ -105,6 +105,7 @@ async function takeLock(lockPort, deadline) {
       const waiting = `Waiting for the Chrome lock on 127.0.0.1:${lockPort}: another run holds it, or another app uses that port.`;
       if (Date.now() >= deadline) throw new Error(waiting);
       if (attempt === 0) console.error(waiting);
+      if (attempt === 1) console.error(`Still ${waiting[0].toLowerCase()}${waiting.slice(1)}`);
       await sleep(250);
     }
   }
@@ -170,15 +171,21 @@ const headerMs = (headers, name) => {
   return Number.isNaN(seconds) ? null : seconds * 1000;
 };
 
+export const holdMs = (headers) => headerMs(headers, "x-ratelimit-reset") ?? 0;
+
+export const retryWaitMs = (headers, backoffMs) => headerMs(headers, "retry-after") ?? headerMs(headers, "x-ratelimit-reset") ?? backoffMs;
+
+export const nextGapMs = (gapMs, holdWait, deadlineAt, now) => Math.max(gapMs, Math.min(holdWait, Math.max(0, deadlineAt - now)));
+
 async function throttled(url, send) {
   for (let retries = 0; ; retries++) {
     const reply = await send();
     if (reply.status !== 429) {
-      if (parseFloat(reply.headers["x-ratelimit-remaining"]) < 1) hold = headerMs(reply.headers, "x-ratelimit-reset") ?? 0;
+      if (parseFloat(reply.headers["x-ratelimit-remaining"]) < 1) hold = holdMs(reply.headers);
       return reply;
     }
     if (retries === MAX_RETRIES) throw new Error(`Reddit answered 429 for ${url} after ${MAX_RETRIES} retries`);
-    const wait = headerMs(reply.headers, "retry-after") ?? headerMs(reply.headers, "x-ratelimit-reset") ?? environmentMs("EXO_SEARCH_REDDIT_BACKOFF_MS", 60000);
+    const wait = retryWaitMs(reply.headers, environmentMs("EXO_SEARCH_REDDIT_BACKOFF_MS", 60000));
     if (Date.now() + wait > callDeadlineAt) throw new Error(`Reddit answered 429 for ${url} and the ${wait / 1000} s wait passes the call deadline`);
     await sleep(wait);
   }
@@ -270,18 +277,18 @@ export function timeBucket(days) {
   return "all";
 }
 
-export function paced(gap) {
+export function paced(gap, wait = sleep) {
   let tail = Promise.resolve();
   return (task) => {
     const run = tail.then(task);
-    tail = run.catch(() => {}).then(() => sleep(typeof gap === "function" ? gap() : gap));
+    tail = run.catch(() => {}).then(() => wait(typeof gap === "function" ? gap() : gap));
     return run;
   };
 }
 
 const gapMs = environmentMs("EXO_SEARCH_REDDIT_GAP_MS", 2000);
 const queue = paced(() => {
-  const wait = Math.max(gapMs, Math.min(hold, Math.max(0, callDeadlineAt - Date.now())));
+  const wait = nextGapMs(gapMs, hold, callDeadlineAt, Date.now());
   hold = 0;
   return wait;
 });

@@ -1,7 +1,9 @@
 
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { landTask } from '../skills/build/scripts/land-task.mjs';
 import { workingTreeKey } from '#check-cache';
@@ -111,25 +113,29 @@ test('a Land gate past its deadline is stopped and refused with timed out after 
   assert.equal(git(root, 'rev-list', '--count', 'HEAD'), '1');
 });
 
-const survivorCommand = (marker) => `(sleep 1; touch ${marker}) & sleep 10`;
+const survivorCommand = (id) => `sleep ${id} & sleep ${id}`;
+const survivorId = () => 60000 + Math.floor(Math.random() * 30000);
+
+async function untilGone(id) {
+  while (spawnSync('pgrep', ['-f', `sleep ${id}`]).status === 0) await new Promise(setImmediate);
+}
 
 test('a timed-out Land gate stops the processes it started too', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  const marker = path.join(tempDir('exo-tree-'), 'survivor');
+  const id = survivorId();
   process.env.EXO_LAND_GATE_TIMEOUT_MS = '300';
   try {
-    assert.throws(() => landTask({ planPath, planText: withGate(PLAN, survivorCommand(marker)), number: 1, root }), /timed out after 0\.3s/);
+    assert.throws(() => landTask({ planPath, planText: withGate(PLAN, survivorCommand(id)), number: 1, root }), /timed out after 0\.3s/);
   } finally {
     delete process.env.EXO_LAND_GATE_TIMEOUT_MS;
   }
-  await new Promise((resolve) => setTimeout(resolve, 1600));
-  await assert.rejects(fs.access(marker));
+  await untilGone(id);
 });
 
 test('a timed-out Proof is refused with timed out after <n>s, its process tree stopped, and nothing commits', async () => {
-  const marker = path.join(tempDir('exo-tree-'), 'survivor');
-  const command = survivorCommand(marker);
+  const id = survivorId();
+  const command = survivorCommand(id);
   const { root, planPath } = await compactCheckout(COMPACT_PLAN.replace('node tests/app.test.mjs', command));
   await writeReport(root, `Landed: src/app.js\nProof:\n- \`${command}\`: pass\nUnresolved: none\n`);
   const head = git(root, 'rev-parse', 'HEAD');
@@ -137,8 +143,7 @@ test('a timed-out Proof is refused with timed out after <n>s, its process tree s
   assert.equal(result.code, 1, result.stderr);
   assert.match(result.stderr, /failed \(timed out after 0\.3s\)/);
   assert.equal(git(root, 'rev-parse', 'HEAD'), head);
-  await new Promise((resolve) => setTimeout(resolve, 1600));
-  await assert.rejects(fs.access(marker));
+  await untilGone(id);
 });
 
 test('a Proof whose bash exits 0 while a background child outlives the deadline is refused, not cached as a pass', async () => {
@@ -224,15 +229,21 @@ async function afterTaskOne() {
 }
 
 const LANDING_ARGS = (planPath, root, ...extra) => ['--plan', planPath, '--task', '4', '--root', root, ...extra];
-const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function untilExists(file) {
+  while (!existsSync(file)) await new Promise(setImmediate);
+}
 
-test('a --check and a landing running at once leave one task commit with only its files and the prior commit untouched', async () => {
+test('a --check and a landing started together leave one task commit with only its files and the prior commit untouched', async () => {
   const { root, planPath } = await afterTaskOne();
-  await fs.writeFile(planPath, withGate(PLAN, 'sleep 1'));
+  const signals = tempDir('exo-gate-');
+  const started = path.join(signals, 'started');
+  const release = path.join(signals, 'release');
+  await fs.writeFile(planPath, withGate(PLAN, `touch ${started}; while [ ! -e ${release} ]; do sleep 0.05; done`));
   const prior = git(root, 'rev-parse', 'HEAD');
   const checking = run(SCRIPT, LANDING_ARGS(planPath, root, '--check'), { cwd: root });
-  await pause(300);
+  await untilExists(started);
   const landing = run(SCRIPT, LANDING_ARGS(planPath, root), { cwd: root });
+  await fs.writeFile(release, '');
   const [checked, landed] = await Promise.all([checking, landing]);
   assert.equal(checked.code, 0, checked.stderr);
   assert.equal(landed.code, 0, landed.stderr);
@@ -270,7 +281,7 @@ function landFromCli({ root, planPath }, env = {}) {
   return run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env: { NODE_TEST_CONTEXT: undefined, ...env } });
 }
 
-const COVERING_HANG = COVERING_FAIL.replace(/test\('greet says hello'.*\n/, "test('greet says hello', () => new Promise((resolve) => setTimeout(resolve, 60_000)));\n");
+const COVERING_HANG = COVERING_FAIL.replace(/test\('greet says hello'.*\n/, "test('greet says hello', () => new Promise(() => {}));\n");
 
 test('out-of-scope: a failing covering test of a changed file refuses the land, naming the test file and its output', async () => {
   const checkout = await coveringCheckout({ 'tests/covers.test.mjs': COVERING_FAIL, 'tests/other.test.mjs': COVERING_FAIL.replace('src/app.js', 'src/none.js') });

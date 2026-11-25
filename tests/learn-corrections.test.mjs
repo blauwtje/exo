@@ -13,7 +13,7 @@ const script = fileURLToPath(new URL('../skills/learn/scripts/corrections.mjs', 
 
 function fixture() {
   const config = fs.mkdtempSync(path.join(os.tmpdir(), 'learn-corrections-'));
-  const project = path.join(fs.realpathSync(os.tmpdir()), 'learn.corrections_x', 'app');
+  const project = path.join(fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'learn.corrections_x-')), 'app');
   fs.mkdirSync(project, { recursive: true });
   const name = fs.realpathSync(project).replace(/[^A-Za-z0-9]/g, '-');
   const folder = path.join(config, 'projects', name);
@@ -440,7 +440,7 @@ test('a hook that cannot get the lock in time writes and prints nothing, and a s
   assert.equal(held.status, 0, held.stderr);
   assert.equal(held.stdout, '');
   assert.equal(fs.readFileSync(env.ledger, 'utf8'), before);
-  const old = new Date(Date.now() - 60_000);
+  const old = new Date(0);
   fs.utimesSync(lock, old, old);
   assert.equal(hook(env, 'now', REPEAT).includes('on 2026-01-02'), true);
   assert.equal(readLedger(env).filter((row) => row.flagged !== undefined).length, 1);
@@ -505,6 +505,11 @@ function slashEntry(name, args) {
 
 const modeOf = (file) => fs.statSync(file).mode & 0o777;
 
+async function untilRecounted(env) {
+  while (!fs.existsSync(`${env.ledger}.count`)) await new Promise(setImmediate);
+  while (fs.existsSync(`${env.ledger}.lock`)) await new Promise(setImmediate);
+}
+
 function assertPrivateStore(env) {
   assert.equal(modeOf(path.dirname(env.ledger)), 0o700);
   for (const file of [env.ledger, `${env.ledger}.count`, verdictsPath(env)]) {
@@ -513,9 +518,10 @@ function assertPrivateStore(env) {
   assert.equal(fs.existsSync(`${env.ledger}.lock`), false);
 }
 
-test('a store the hook creates is readable by its owner only and leaves its parent folder alone', () => {
+test('a store the hook creates is readable by its owner only and leaves its parent folder alone', async () => {
   const env = fixture();
   hook(env, 'first', REPEAT);
+  await untilRecounted(env);
   hook(env, 'second', REPEAT);
   assertPrivateStore(env);
   assert.notEqual(modeOf(path.dirname(path.dirname(env.ledger))), 0o700);
@@ -550,8 +556,9 @@ test('a hook started while a slow recount runs still stores its row', async () =
   const rows = Array.from({ length: 2000 }, (_, index) => entryOf({ date: today, session: `s${index % 60}`, text: Array.from({ length: 20 + (index % 30) }, (_, j) => `w${(index * 7919 + j) % 3000}`).join(' ') }));
   writeRows(env.ledger, rows);
   const recount = spawn('node', [script, 'recount', '--cwd', env.project], { env: { ...inheritedEnv(), CLAUDE_CONFIG_DIR: env.config }, stdio: 'ignore' });
-  const finished = new Promise((resolve) => recount.on('exit', resolve));
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  let exited = false;
+  const finished = new Promise((resolve) => recount.on('exit', () => { exited = true; resolve(); }));
+  while (!exited && !fs.existsSync(`${env.ledger}.lock`)) await new Promise(setImmediate);
   hook(env, 'new-session', 'please never amend commits without asking me first');
   await finished;
   assert.equal(readLedger(env).some((row) => row.seen === 'new-session'), true);
@@ -671,14 +678,14 @@ test('recount reads only the transcripts changed since the failures file was wri
   const env = fixture();
   writeLedger(env, fillers(60));
   assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
-  const past = new Date(Date.now() - 3_600_000);
+  const past = new Date(0);
   for (const [session, date] of [['f1', '2026-01-03'], ['f2', '2026-01-04'], ['f3', '2026-01-05']]) {
     toolCall(env, session, date, 'Bash', { command: BUILD });
     fs.utimesSync(path.join(env.folder, `${session}.jsonl`), past, past);
   }
   assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);
   assert.equal(countOf(env), 0);
-  const later = new Date(Date.now() + 60_000);
+  const later = new Date(4e12);
   fs.utimesSync(path.join(env.folder, 'f3.jsonl'), later, later);
   for (const session of ['f1', 'f2']) fs.utimesSync(path.join(env.folder, `${session}.jsonl`), later, later);
   assert.equal(run(env, ['recount', '--cwd', env.project]).status, 0);

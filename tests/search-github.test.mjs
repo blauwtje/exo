@@ -161,15 +161,16 @@ test("open reads an issue body as header and comments as passages", async () => 
   }
 });
 
-test("find turns a gh call that outlasts EXO_SEARCH_FETCH_MS into one search failed line", async () => {
-  process.env.EXO_SEARCH_FETCH_MS = "1500";
-  const gh = fakeGh((args) => {
-    if (args[2].startsWith("beta ")) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 6000);
-    return [];
+test("find turns every gh call that outlasts EXO_SEARCH_FETCH_MS into a search failed line", async () => {
+  process.env.EXO_SEARCH_FETCH_MS = "1";
+  const gh = fakeGh(() => {
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, Infinity);
   });
   try {
-    const { failed } = await find(plan);
-    assert.equal(failed.filter((line) => line.startsWith("search failed: ")).length, 1);
+    const { lists, failed } = await find(plan);
+    assert.deepEqual(lists, []);
+    assert.equal(failed.length, 9);
+    assert.ok(failed.every((line) => line.startsWith("search failed: ")));
   } finally {
     gh.restore();
     delete process.env.EXO_SEARCH_FETCH_MS;

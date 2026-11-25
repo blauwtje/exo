@@ -41,13 +41,6 @@ await close();
 console.log(JSON.stringify(found.failed));
 `;
 
-const freePort = () => new Promise((resolve) => {
-  const server = createServer().listen(0, "127.0.0.1", () => {
-    const { port } = server.address();
-    server.close(() => resolve(port));
-  });
-});
-
 test("a second process waits for the Chrome lock past EXO_SEARCH_LOCK_MS without losing its Reddit results", async () => {
   const root = mkdtempSync(join(tmpdir(), "reddit-lock-wait-"));
   const home = join(root, "home");
@@ -59,17 +52,19 @@ test("a second process waits for the Chrome lock past EXO_SEARCH_LOCK_MS without
   writeFileSync(join(root, "log"), "");
   writeFileSync(chrome, "#!/bin/sh\nexit 0\n");
   chmodSync(chrome, 0o755);
-  const port = await freePort();
   const holder = createServer((socket) => socket.destroy());
-  await new Promise((resolve) => holder.listen(port + 1, "127.0.0.1", resolve));
-  setTimeout(() => holder.close(), 2000);
+  await new Promise((resolve) => holder.listen(0, "127.0.0.1", resolve));
+  const port = holder.address().port - 1;
   const child = spawn(process.execPath, ["--import", join(root, "linux.mjs"), join(root, "driver.mjs")], {
-    env: { ...process.env, SEARCH_REDDIT_HOME: home, SEARCH_REDDIT_PORT: String(port), CHROME_PATH: chrome, EXO_SEARCH_REDDIT_GAP_MS: "1", EXO_SEARCH_LOCK_MS: "500", FAKE_LOG: join(root, "log") },
+    env: { ...process.env, SEARCH_REDDIT_HOME: home, SEARCH_REDDIT_PORT: String(port), CHROME_PATH: chrome, EXO_SEARCH_REDDIT_GAP_MS: "1", EXO_SEARCH_LOCK_MS: "1", FAKE_LOG: join(root, "log") },
   });
   let stdout = "";
   let stderr = "";
   child.stdout.on("data", (chunk) => (stdout += chunk));
-  child.stderr.on("data", (chunk) => (stderr += chunk));
+  child.stderr.on("data", (chunk) => {
+    stderr += chunk;
+    if (stderr.includes("Still waiting for the Chrome lock")) holder.close();
+  });
   const status = await new Promise((resolve) => child.once("close", resolve));
   holder.close();
   assert.equal(status, 0, stderr);

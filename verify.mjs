@@ -19,6 +19,7 @@ import { checkPersonalPaths } from './verify/checks/personal-paths.mjs';
 import { startSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
 import { checkScriptOptions } from './verify/checks/script-options.mjs';
 import { checkPositionalLiterals } from './verify/checks/positional-literals.mjs';
+import { checkTestTiming } from './verify/checks/test-timing.mjs';
 import { checkImportDirection } from './verify/checks/import-direction.mjs';
 import { checkFileSize } from './verify/checks/file-size.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
@@ -61,6 +62,7 @@ checkInvisibleUnicode(report, repository);
 checkPersonalPaths(report, repository);
 checkScriptOptions(report, repository);
 checkPositionalLiterals(report, repository);
+checkTestTiming(report, repository);
 checkImportDirection(report, repository);
 checkFileSize(report, repository);
 if (behavior) {

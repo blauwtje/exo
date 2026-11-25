@@ -8,11 +8,12 @@ import { adapters, newRun, parseSearchPlan, rounds } from "../skills/search/scri
 test("a multi-round call prints one Continue line, on the last line", async () => {
   const saved = { ...adapters };
   let calls = 0;
-  adapters.hn = { collect: async () => new Promise((resolve) => setTimeout(() => resolve({ read: [{ url: `u${++calls}`, text: `T${calls}`, subs: [1] }], found: 1, failed: [], state: calls, done: false }), 40)) };
+  let clock = 0;
+  adapters.hn = { collect: async () => { clock += 40; return { read: [{ url: `u${++calls}`, text: `T${calls}`, subs: [1] }], found: 1, failed: [], state: calls, done: false }; } };
   try {
     const plan = parseSearchPlan(JSON.stringify({ question: "q", subQuestions: [{ ask: "a", terms: ["hook events"] }], sources: ["hn"], reads: 10 }));
     const file = join(mkdtempSync(join(tmpdir(), "search-one-continue-")), "run.json");
-    const texts = await rounds(plan, newRun({}), file, 200);
+    const texts = await rounds(plan, newRun({}), file, 200, () => clock);
     assert.ok(texts.length > 1);
     const output = texts.join("\n\n");
     assert.equal(output.split("Continue:").length - 1, 1);
