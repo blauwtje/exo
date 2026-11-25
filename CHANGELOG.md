@@ -24,6 +24,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- The red-green check counts a .NET test project folder ending in `.Tests` or `.Test` as a test path.
+
 - `exo:search` workers write a WebFetch-read page into their evidence file as an empty-quote summary item, so a sub-question read only through WebFetch is no longer left without evidence.
 - `exo:search` checks indented quote lines (`  > `) in `verify.mjs`, so a report in the report shape no longer passes with a quote that is not on its page.
 - `exo:search` takes the run line's sources read count from the `Sources read:` line that `rank.mjs` prints, so the lead no longer overstates it.
