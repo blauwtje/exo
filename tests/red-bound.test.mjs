@@ -52,7 +52,7 @@ test('a base that exits non-zero fast is red, as before', async () => {
 async function assertRefused(command) {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
-  await fs.writeFile(planPath, PLAN.replaceAll(CHANGED, command));
+  await fs.writeFile(planPath, PLAN.replaceAll(CHANGED, `${command} # src/app.js`));
   const head = git(root, 'rev-parse', 'HEAD');
   const result = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env: TINY });
   assert.notEqual(result.code, 0);
@@ -64,6 +64,13 @@ async function assertRefused(command) {
 test('a base that passes fast is refused as no red proof and nothing lands', () => assertRefused('true'));
 
 test('a base that passes within head plus margin is refused as no red proof and nothing lands', () => assertRefused(inBase('sleep 0.3')));
+
+test('a task whose changed files hold no recognized test lands with a skipped Red line', async () => {
+  const land = await landWith('true');
+  const result = await withEnv(TINY, land);
+  assert.match(result, /^Red: skipped: no test file seen$/m);
+  assert.match(result, /^Committed: [0-9a-f]+ Task 1$/m);
+});
 
 test('Red: none lands a proof that passes at the base', async () => {
   const { root, planPath } = await compactCheckout(COMPACT_PLAN.replace('node tests/app.test.mjs', 'true'));

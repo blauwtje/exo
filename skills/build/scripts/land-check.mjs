@@ -17,7 +17,7 @@ import { runCheck } from '#run-check';
 import { gateRefusal, lastPassMs, GATE_ONCE_PER_RUN_FROM_MS, treePassMs } from '#check-cache';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
 import { createWorktree, worktreePath } from '#checkout';
-import { isTestFirst, runInWorktree, testPaths } from '#red-green';
+import { runInWorktree, testPaths } from '#red-green';
 
 export function checkTask({ planText, number, root, reportText, reportPath, planPath }) {
   refuseMismatchedToplevel(root);
@@ -29,7 +29,6 @@ function checkTaskLocked({ planText, number, root, reportText, reportPath, planP
   const task = taskOf(plan, number);
   const planId = planIdOf(planPath);
   clearStaleCandidate(root, planId);
-  refuseUntestedTestFirst(task, root);
   checkReport(task, reportText, reportPath);
   const frame = frameOf(plan.frame);
   const gateLine = gateCheckedOnCandidate({ task, frame, root, planId });
@@ -85,7 +84,6 @@ export function taskOf(plan, number) {
 }
 
 export function refuseBeforeProof(task, { root, planPath, planId, reportText, reportPath }) {
-  refuseUntestedTestFirst(task, root);
   checkReport(task, reportText, reportPath);
   const outside = changedPaths(root, planPath);
   refuseUnlisted(task, outside);
@@ -289,6 +287,7 @@ function redGreenLine(task, { proofCommands, root, pending }) {
   if (pending !== null) return { line: 'Red: skipped: deferred MCP proof' };
   if (proofCommands.length === 0) return { line: 'Red: skipped: no passing Bash proof command' };
   const overlay = testPaths(taskChangedPaths(root), proofCommands);
+  if (overlay.length === 0) return { line: 'Red: skipped: no test file seen' };
   const timeoutMs = environmentMs('EXO_PROOF_TIMEOUT_MS', PROOF_TIMEOUT_MS);
   let sha = '';
   for (const command of proofCommands) {
@@ -300,12 +299,6 @@ function redGreenLine(task, { proofCommands, root, pending }) {
     if (base.status === 'red') return { line: 'Red: proved' };
   }
   throw new LandingError(`Task ${task.number}: Proof ${proofCommands.map((command) => `"${command}"`).join(', ')} passes on ${sha} without the production change, so it proves nothing; tighten the test or add \`Red: none (<reason>)\` to the task`);
-}
-
-function refuseUntestedTestFirst(task, root) {
-  if (isTestFirst(task) && testPaths(taskChangedPaths(root), [task.proof]).length === 0) {
-    throw new LandingError(`Task ${task.number} is test-first, but its change adds or changes no test file; add the failing test the task names`);
-  }
 }
 
 export function refuseAlreadyLanded(plan, task, { root, planId }) {

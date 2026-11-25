@@ -19,12 +19,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:diagnose` bisect and the `exo:spec` repo map use the shared git wrapper, so git output over 1 MiB no longer fails them.
 - `exo:search` names its JSON plan parser `parseSearchPlan`.
 - `exo:learn` splits `corrections.mjs` into `ledger.mjs` and `clusters.mjs`, with the same commands and output.
+- `exo:build` lands a task with `Red: skipped: no test file seen` instead of refusing it when no changed file is recognised as a test.
 - `exo:build` builders follow structure rules: one-way imports, one owner and one meaning per helper and name, deep modules, a new function instead of one more flag on shared code, a current codemap and file and function size as a smell, against the project's lint limit first.
 - The `exo:build` end-of-run review checks the diff against the structure rules, and an `exo:spec` Review Focus bullet may name a structure fault such as import direction.
 
 ### Fixed
 
-- The red-green check sees test files by common naming conventions across ecosystems (`test`/`spec` folders and files, `FooTest.java`, `AppTests/`, `foo_test.go`), and, when none matches, counts a changed file or folder the proof command names as a test.
+- The red-green check sees test files by common naming conventions across ecosystems (`test` folders and files, `spec` files, a root `spec/` folder, `FooTest.java`, `AppTests/`, `foo_test.go`, `test_foo.py`), and, when none matches, counts a changed file or folder the proof command names as a test.
 
 - `exo:search` workers write a WebFetch-read page into their evidence file as an empty-quote summary item, so a sub-question read only through WebFetch is no longer left without evidence.
 - `exo:search` checks indented quote lines (`  > `) in `verify.mjs`, so a report in the report shape no longer passes with a quote that is not on its page.
