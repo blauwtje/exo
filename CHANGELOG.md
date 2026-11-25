@@ -15,7 +15,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `land-task` no longer refuses a task for changed paths outside its `Files:`; it lands them and prints an `Outside Files:` line naming them.
 - `handoffFile` lives in `lib/handoff-file.mjs`, and every script reaches lib/ through a `#` alias.
+- `exo:diagnose` polluter search names a test file by the shared `isTestPath` only, so a test in a test folder without a `.test.`/`test_` name is found too.
 - `exo:diagnose` bisect and the `exo:spec` repo map use the shared git wrapper, so git output over 1 MiB no longer fails them.
 - `exo:search` names its JSON plan parser `parseSearchPlan`.
 - `exo:learn` splits `corrections.mjs` into `ledger.mjs` and `clusters.mjs`, with the same commands and output.

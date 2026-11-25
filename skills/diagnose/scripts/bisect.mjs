@@ -57,7 +57,6 @@ function bisect(command) {
 }
 
 const TOKEN = '__FILE__';
-const TEST_NAME = /[._](test|spec)\.|^test_/;
 const quoted = (file) => `'${file.replaceAll("'", "'\\''")}'`;
 
 function pollutionSearch(command) {
@@ -73,7 +72,7 @@ function pollutionSearch(command) {
   try {
     if (!passesWith([])) return 'Bisect: the test fails alone';
     let candidates = text(git(worktree, ['ls-files'])).split('\n')
-      .filter((file) => isTestPath(file) && TEST_NAME.test(path.basename(file)) && !command.includes(file));
+      .filter((file) => isTestPath(file) && !command.includes(file));
     if (passesWith(candidates)) return 'Polluter: none';
     while (candidates.length > 1) {
       const half = candidates.length >> 1;

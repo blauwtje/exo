@@ -80,16 +80,12 @@ test('a failing Land gate is refused before anything commits, naming the command
   assert.ok(!('echo gate broke && exit 1' in cache));
 });
 
-test('a change outside the task Files: is refused, naming the paths, and nothing commits', async () => {
+test('a change outside the task Files: lands with an Outside Files: line naming the paths', async () => {
   const { root, planPath } = await compactCheckout();
   await fs.writeFile(path.join(root, 'src/extra.js'), 'export {};\n');
   await fs.writeFile(path.join(root, 'tests/greet.test.mjs'), '');
-  const head = git(root, 'rev-parse', 'HEAD');
-  assert.throws(
-    () => landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: PASS_REPORT }),
-    /Task 1 changes paths outside its Files: tests\/greet\.test\.mjs, src\/extra\.js/
-  );
-  assert.equal(git(root, 'rev-parse', 'HEAD'), head);
+  const output = landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: PASS_REPORT });
+  assert.match(output, /^Outside Files: tests\/greet\.test\.mjs, src\/extra\.js$/m);
 });
 
 test('a Land gate past its deadline is stopped and refused with timed out after <n>s, and nothing commits', async () => {

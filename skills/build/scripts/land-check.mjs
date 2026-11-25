@@ -86,16 +86,15 @@ export function taskOf(plan, number) {
 export function refuseBeforeProof(task, { root, planPath, planId, reportText, reportPath }) {
   checkReport(task, reportText, reportPath);
   const outside = changedPaths(root, planPath);
-  refuseUnlisted(task, outside);
   refuseSecrets(task, root);
   const block = commitBlockOf({ task, planId, root });
   refuseBadCommitText(task.title, root);
-  return { block, outside };
+  return { block, outside, unlistedLine: unlistedLineOf(task, outside) };
 }
 
-function refuseUnlisted(task, changed) {
+function unlistedLineOf(task, changed) {
   const unlisted = changed.filter((file) => !task.files.some(({ path: listed }) => file === listed || (listed.endsWith('/') && file.startsWith(listed))));
-  if (unlisted.length > 0) throw new LandingError(`Task ${task.number} changes paths outside its Files: ${unlisted.join(', ')}; list them in the plan or revert them`);
+  return unlisted.length === 0 ? '' : `Outside Files: ${unlisted.join(', ')}\n`;
 }
 
 const SECRET_PATTERNS = [

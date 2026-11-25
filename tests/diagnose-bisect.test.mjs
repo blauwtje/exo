@@ -49,3 +49,9 @@ test('a clean set prints Polluter: none', async () => {
   const result = await run(SCRIPT, ['--repro', POLLUTION_REPRO], { cwd: root });
   assert.equal(result.stdout.trim(), 'Polluter: none');
 });
+
+test('a polluter in a test folder without a test name is named', async () => {
+  const root = await gitRepository({ [VICTIM]: 'test ! -f marker\n', 'tests/a.sh': 'true\n', 'tests/c.sh': 'touch marker\n' });
+  const result = await run(SCRIPT, ['--repro', POLLUTION_REPRO], { cwd: root });
+  assert.equal(result.stdout.trim(), 'Polluter: tests/c.sh');
+});
