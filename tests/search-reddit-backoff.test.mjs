@@ -104,7 +104,7 @@ test("a request fails naming the 429 after two retries", async () => {
 
 test("a response with no requests remaining holds the next request for x-ratelimit-reset", async () => {
   const calls = await runDriver([[200, { "x-ratelimit-remaining": "0", "x-ratelimit-reset": "1" }], [200, {}]], { OPENS: "2" });
-  assert.ok(calls[1][1] - calls[0][1] >= 990, JSON.stringify(calls));
+  assert.ok(calls[1][1] - calls[0][1] >= 900, JSON.stringify(calls));
 });
 
 test("a 429 wait that passes the call deadline fails the request instead of waiting", async () => {

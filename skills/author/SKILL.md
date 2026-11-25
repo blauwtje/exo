@@ -34,7 +34,7 @@ Produce a skill or agent where every line changes what the model does.
 - `description` says what the skill does, then when to use it, in the third person. Add `Not for` only where two skills could both match. Leave process steps out, because the model acts on the summary instead of reading the body.
 - Material only some runs need goes to `references/<topic>.md`, named in the body with the condition for opening it.
 - To use another skill, write "run `<plugin>:<name>`" and do not restate its rules.
-- Text handed to a delegate sits beside `SKILL.md` as `<role>-prompt.md`.
+- Text handed to a delegate goes under `references/` too, named in the step that hands it over.
 
 ### Agents
 

@@ -39,6 +39,16 @@
     { "prompt": "Write a handoff so I can continue this work tomorrow.", "should_trigger": false },
     { "prompt": "Open a pull request for the commits on this branch.", "should_trigger": false }
   ],
+  "ideas": [
+    { "prompt": "Give me ideas for getting more people to read our newsletter.", "should_trigger": true },
+    { "prompt": "What are my options for keeping a small team focused while working remotely?", "should_trigger": true },
+    { "prompt": "How could I approach learning Spanish in three months with an hour a day?", "should_trigger": true },
+    { "prompt": "I need fresh angles for a birthday present for my dad who has everything.", "should_trigger": true },
+    { "prompt": "Give me design options for how the cache layer in this repo should invalidate entries, then pick one.", "should_trigger": false },
+    { "prompt": "Find sources and cite studies on whether remote work raises productivity.", "should_trigger": false },
+    { "prompt": "The checkout page throws a 500 error after I submit the form. What is wrong?", "should_trigger": false },
+    { "prompt": "Rename the helper parseRow to parseLine across the codebase.", "should_trigger": false }
+  ],
   "learn": [
     { "prompt": "I told you three times not to use default exports. Remember this.", "should_trigger": true },
     { "prompt": "Mine my past sessions for lessons worth keeping.", "should_trigger": true },
@@ -58,6 +68,16 @@
     { "prompt": "Remember that I prefer tabs over spaces.", "should_trigger": false },
     { "prompt": "Commit the finished work and open a pull request.", "should_trigger": false },
     { "prompt": "Summarize what changed in the last three commits.", "should_trigger": false }
+  ],
+  "search": [
+    { "prompt": "Search for what people say about the new Framework laptop battery life.", "should_trigger": true },
+    { "prompt": "Find sources on how bees survive winter and write up what you find.", "should_trigger": true },
+    { "prompt": "Research the pros and cons of heat pumps in cold climates, with links.", "should_trigger": true },
+    { "prompt": "What do people say about switching from Notion to Obsidian?", "should_trigger": true },
+    { "prompt": "Summarize this video for me: https://www.youtube.com/watch?v=dQw4w9WgXcQ", "should_trigger": false },
+    { "prompt": "How does the retry logic in this repo decide when to give up?", "should_trigger": false },
+    { "prompt": "Give me some ideas for a name for my bakery.", "should_trigger": false },
+    { "prompt": "Add a --verbose flag to the import command.", "should_trigger": false }
   ],
   "ship": [
     { "prompt": "Ship it.", "should_trigger": true },

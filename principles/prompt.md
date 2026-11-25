@@ -18,7 +18,7 @@ Read it when: you write or change a prompt, skill, agent brief or delegation tex
 - **Cut a prompt line that changes no decision, and delete a reference with no new content instead of leaving a stub.** [11][13] exo: `skills/author/references/instruction-style.md`
 - **Point at the structural source (types, README, config) instead of restating it.** [11] exo: `CONTRIBUTING.md`
 - **Encode a rule that keeps coming back as a lint, flag or script and drop the sentence; when only judgment fits, make the instruction prominent and add an example of the failure.** [14] exo: `skills/learn/SKILL.md` looks for an existing check first, decided: a mistake that recurs becomes a check and the sentence it replaces is deleted in the same change; no check for a mistake not seen
-- **Restate the user's goal at the start of a task and in every subagent brief.** [12] exo: `skills/build/run-task-prompt.md`
+- **Restate the user's goal at the start of a task and in every subagent brief.** [12] exo: `skills/build/references/run-task-prompt.md`
 - **Label each claim in a report as measured, inferred or guess, in the same sentence.** [12] exo: `skills/build/SKILL.md`
 
 ## Sources

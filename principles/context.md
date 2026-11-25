@@ -11,7 +11,7 @@ Read it when: you change what a skill, agent or run loads into a window, hands t
 - **Keep full history in a durable store outside the window.** Irreversible trimming loses what a later step may need; a loop keeps its state in files, so the lead reads rows, not logs. [3][4] exo: `skills/build/SKILL.md` keeps landed tasks in commits
 - **Hand over files rather than a summary when a fresh start is cheaper.** A reset hands over files instead of a summary; auto compaction still covers the context target, so a reset is a choice, not a rule. [1][2] exo: `skills/save/SKILL.md` saves a session for a fresh one, `skills/build/SKILL.md` resumes from commits
 - **Route bulk output to a subagent and keep only its summary in the main thread; cap the files per phase.** [5] exo: `skills/build/SKILL.md` keeps the lead thin and sends work to builders
-- **Pass a subagent file pointers, not inlined context.** [6] exo: `skills/build/run-task-prompt.md` is passed by path, decided: a subagent gets the plan path, task number, checkout and run-task-prompt.md by path, and reads the task and the plan sections itself
+- **Pass a subagent file pointers, not inlined context.** [6] exo: `skills/build/references/run-task-prompt.md` is passed by path, decided: a subagent gets the plan path, task number, checkout and run-task-prompt.md by path, and reads the task and the plan sections itself
 
 ## Sources
 

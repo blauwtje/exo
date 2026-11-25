@@ -34,7 +34,7 @@ Prove the cause before changing code, because a fix for a guessed cause hides th
 
 ### Delegating
 
-When reading alone does not prove the cause, send a fresh `exo:builder` (model and effort from the Models table of `exo:build`, row "Find a cause") `investigator-prompt.md` (Steps 1 to 3) with the report path that `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" debug/<slug>.md` prints, <slug> being the symptom in kebab-case of at most 40 characters. Once its handoff says `Status: proven`, settle where the fix commits as step 1 of `exo:build` does, say where, then send a fresh `exo:builder` `fixer-prompt.md` (Steps 4 and 5). On `failed`, send one more fresh `exo:builder` the same prompt with the failed handoff path, once. After `status=fixed`, run the handoff's Repro command yourself as the verdict. Commit the new test alone, then the fix. Read only their status lines and handoff fields.
+When reading alone does not prove the cause, send a fresh `exo:builder` (model and effort from the Models table of `exo:build`, row "Find a cause") `references/investigator-prompt.md` (Steps 1 to 3) with the report path that `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" debug/<slug>.md` prints, <slug> being the symptom in kebab-case of at most 40 characters. Once its handoff says `Status: proven`, settle where the fix commits as step 1 of `exo:build` does, say where, then send a fresh `exo:builder` `references/fixer-prompt.md` (Steps 4 and 5). On `failed`, send one more fresh `exo:builder` the same prompt with the failed handoff path, once. After `status=fixed`, run the handoff's Repro command yourself as the verdict. Commit the new test alone, then the fix. Read only their status lines and handoff fields.
 
 ### Report
 

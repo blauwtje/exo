@@ -14,11 +14,11 @@ Rapport van de audit. Achteraf gedaan: dependabot toegevoegd (.github/dependabot
 
 | Bevinding | Bron | Bewijs | Moeite |
 |---|---|---|---|
-| Prompt-bestanden staan in de skill-root, niet in references/ (controleer eerst harde paden in tests) | skill-reviewer | skills/build/run-task-prompt.md, skills/diagnose/fixer-prompt.md, skills/diagnose/investigator-prompt.md | S |
-| .DS_Store in skillmappen (controleer of getrackt) | skill-reviewer | skills/build/.DS_Store, skills/spec/.DS_Store | S |
+| Prompt-bestanden staan in de skill-root, niet in references/ (controleer eerst harde paden in tests) Afgehandeld: verplaatst naar references/, en de author-skill zegt nu hetzelfde. | skill-reviewer | skills/build/references/run-task-prompt.md, skills/diagnose/references/fixer-prompt.md, skills/diagnose/references/investigator-prompt.md | S |
+| .DS_Store in skillmappen (controleer of getrackt) Afgehandeld: .gitignore dekt .DS_Store en geen enkel bestand is getrackt; de lokale bestanden zijn gewist. | skill-reviewer | skills/build/.DS_Store, skills/spec/.DS_Store | S |
 | build is de grootste skill (2207 woorden, onder 3000) | skill-reviewer | skills/build/SKILL.md | M |
 | Frontmatter niet uniform: model/effort alleen bij watch en diagnose | skill-reviewer | skills/watch/SKILL.md:5-7, skills/diagnose/SKILL.md:5-7 | S |
-| docs/ staat in .gitignore maar een bestand is getrackt | plugin-validator | .gitignore, docs/specs/repo-survey-improvements.md | S |
+| docs/ staat in .gitignore maar een bestand is getrackt Afgehandeld: het bestand is uit git gehaald. | plugin-validator | .gitignore, docs/specs/repo-survey-improvements.md | S |
 | `claude plugin validate --strict` niet gedraaid in deze audit | plugin-validator | verify/checks/plugin-validate.mjs | S |
 | userConfig-schema (options/default bij string) niet bevestigd tegen docs | docs-helper | .claude-plugin/plugin.json:11-26; https://code.claude.com/docs/en/plugins-reference#user-configuration | S |
 | `metadata` in skill-frontmatter wordt door Claude Code genegeerd (onschadelijk) | docs-helper | skills/*/SKILL.md; https://code.claude.com/docs/en/skills | S |

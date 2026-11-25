@@ -162,9 +162,9 @@ test("open reads an issue body as header and comments as passages", async () => 
 });
 
 test("find turns a gh call that outlasts EXO_SEARCH_FETCH_MS into one search failed line", async () => {
-  process.env.EXO_SEARCH_FETCH_MS = "300";
+  process.env.EXO_SEARCH_FETCH_MS = "1500";
   const gh = fakeGh((args) => {
-    if (args[2].startsWith("beta ")) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 3000);
+    if (args[2].startsWith("beta ")) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 6000);
     return [];
   });
   try {

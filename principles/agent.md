@@ -7,7 +7,7 @@ Read it when: you design or change an agent loop, a workflow of several agents, 
 - **Start with the simplest solution and add agents only when they demonstrably improve outcomes.** [1] exo: `.claude/CLAUDE.md` adds an agent or stage only after a recorded failure
 - **Use a workflow for predefined code paths, an agent only for open-ended tasks that need flexible control.** [1] exo: `skills/build/SKILL.md`
 - **Give each subagent an objective, an output format, tool guidance and explicit boundaries.** [2] exo: `agents/builder.md`
-- **Have subagents write results to external storage and return lightweight references.** [2] exo: `skills/build/run-task-prompt.md`
+- **Have subagents write results to external storage and return lightweight references.** [2] exo: `skills/build/references/run-task-prompt.md`
 - **Use multi-agent setups only for high-value, breadth-first work.** The post cites about 15x the tokens of a chat. [2] exo: gap, skips subagents for small plans, but no cost test for breadth-first work
 - **Lower effort to cut thinking, not prompt text.** Opus 5.5 defaults to medium and cannot disable thinking. [5] exo: `agents/builder.md`, `agents/researcher.md` set `effort:` in frontmatter
 - **Name the kinds of early stop to avoid in unattended runs.** [5] exo: `agents/builder.md`

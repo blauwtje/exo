@@ -17,7 +17,7 @@ Read it when: you design a run loop, a hook, a subagent hand-off or a check that
 - **Rewrite input with `updatedInput` alone.** `allow` skips the user's prompt. [6] exo: gap
 - **`/goal` is a prompt-based Stop hook judged by a fresh model.** [7] exo: gap, unused
 - **Plugin agents ignore `hooks`, `permissionMode` and `mcpServers`.** Declare them at plugin level. [8] exo: gap
-- **Give a subagent one task, with its context and must-keep rules in the prompt.** It starts blank. [5] exo: `skills/build/run-task-prompt.md`, decided: pass file pointers, see context.md
+- **Give a subagent one task, with its context and must-keep rules in the prompt.** It starts blank. [5] exo: `skills/build/references/run-task-prompt.md`, decided: pass file pointers, see context.md
 - **Guard with a script, check or lint and ship no hook; the pinned sources declare only skills and agents.** [12][13] exo: conflict with [3], decided: keep only the two hooks in `hooks/hooks.json`, add none
 - **Accept a verdict only from a verifier that did not write the code; green CI and a bot approval are not verdicts; tune it to be skeptical.** [1][4][14] exo: `skills/build/scripts/land-task.mjs`, `skills/build/SKILL.md` ends with the built-in `code-review`, decided: only a verdict from an agent that did not write the code counts, at any size; for a fix under the review threshold, the lead rerunning the repro command itself is that verdict
 - **Compare `git patch-id` at the verdict's commit with the current head before you trust an older verdict.** A rebase moves a commit without failing a check. [14] exo: gap
