@@ -16,6 +16,13 @@ test('a 401-line lib file fails and names its length', () => {
   assert.match(result.detail, /lib\/big\.mjs \(401 lines\)/);
 });
 
+test('a 401-line skill script and verify file fail and are named', () => {
+  const result = run({ 'skills/x/scripts/a.mjs': body(401), 'verify/a.mjs': body(401) });
+  assert.equal(result.ok, false);
+  assert.match(result.detail, /skills\/x\/scripts\/a\.mjs \(401 lines\)/);
+  assert.match(result.detail, /verify\/a\.mjs \(401 lines\)/);
+});
+
 test('a 400-line file passes', () => {
   const result = run({ 'lib/ok.mjs': body(400) });
   assert.equal(result.ok, true, result.detail);
