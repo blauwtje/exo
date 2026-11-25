@@ -9,12 +9,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- The repo has a Dependabot config that opens weekly update pull requests for GitHub Actions and npm.
 - The `import direction` check fails when lib/ imports a skill, a skill imports another skill, or code outside lib/ imports lib/ by a relative path.
 - The `file size` check fails a script under lib/, skills/*/scripts/ or verify/ over 400 lines.
 - CONTRIBUTING.md has a Codemap section naming the folders and the import and size rules.
 
 ### Changed
 
+- `land-task` writes the `Outside Files:` line into the commit body of a task that changed paths outside its `Files:`, so git keeps the trace.
 - `land-task` no longer refuses a task for changed paths outside its `Files:`; it lands them and prints an `Outside Files:` line naming them.
 - `handoffFile` lives in `lib/handoff-file.mjs`, and every script reaches lib/ through a `#` alias.
 - `exo:diagnose` polluter search names a test file by the shared `isTestPath` only, so a test in a test folder without a `.test.`/`test_` name is found too.

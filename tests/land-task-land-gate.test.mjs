@@ -88,6 +88,14 @@ test('a change outside the task Files: lands with an Outside Files: line naming 
   assert.match(output, /^Outside Files: tests\/greet\.test\.mjs, src\/extra\.js$/m);
 });
 
+test('a change outside the task Files: leaves the Outside Files: line in the commit body', async () => {
+  const { root, planPath } = await compactCheckout();
+  await fs.writeFile(path.join(root, 'src/extra.js'), 'export {};\n');
+  await fs.writeFile(path.join(root, 'tests/greet.test.mjs'), '');
+  landTask({ planPath, planText: COMPACT_PLAN, number: 1, root, reportText: PASS_REPORT });
+  assert.match(git(root, 'log', '-1', '--format=%B'), /^Outside Files: tests\/greet\.test\.mjs, src\/extra\.js$/m);
+});
+
 test('a Land gate past its deadline is stopped and refused with timed out after <n>s, and nothing commits', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);

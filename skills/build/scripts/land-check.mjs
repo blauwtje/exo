@@ -87,9 +87,10 @@ export function refuseBeforeProof(task, { root, planPath, planId, reportText, re
   checkReport(task, reportText, reportPath);
   const outside = changedPaths(root, planPath);
   refuseSecrets(task, root);
-  const block = commitBlockOf({ task, planId, root });
+  const unlistedLine = unlistedLineOf(task, outside);
+  const block = commitBlockOf({ task, planId, root, unlistedLine });
   refuseBadCommitText(task.title, root);
-  return { block, outside, unlistedLine: unlistedLineOf(task, outside) };
+  return { block, outside, unlistedLine };
 }
 
 function unlistedLineOf(task, changed) {

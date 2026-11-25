@@ -15,7 +15,7 @@ function addLineOf(command, paths) {
   return paths.length === 0 ? '' : `${command} ${paths.map(shellQuote).join(' ')}\n`;
 }
 
-export function commitBlockOf({ task, planId, root }) {
+export function commitBlockOf({ task, planId, root, unlistedLine = '' }) {
   if (task.files.length === 0) {
     throw new LandingError(`Task ${task.number} has no Files: to commit`);
   }
@@ -23,5 +23,5 @@ export function commitBlockOf({ task, planId, root }) {
   const paths = task.files.map((file) => file.path).filter((file) => !removed.has(file));
   const tracked = new Set(paths.length === 0 ? [] : execFileSync('git', ['-C', root, 'ls-files', '-z', '--', ...paths], { encoding: 'utf8' }).split('\0'));
   const addLine = addLineOf('git add -u --', paths.filter((file) => tracked.has(file))) + addLineOf('git add --', paths.filter((file) => !tracked.has(file)));
-  return `${addLine}git commit -m ${shellQuote(task.title)} -m ${shellQuote(planTaskTrailer(planId, task.number))}`;
+  return `${addLine}git commit -m ${shellQuote(task.title)}${unlistedLine === '' ? '' : ` -m ${shellQuote(unlistedLine.trim())}`} -m ${shellQuote(planTaskTrailer(planId, task.number))}`;
 }
