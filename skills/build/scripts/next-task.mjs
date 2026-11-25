@@ -1,6 +1,6 @@
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
+import { expandHome } from '#basics';
 import { parseFlags, isMain, environmentMs } from '#script-flags';
 import { resolvePlanPath } from '#checkout';
 import { landedTasks, planIdOf, defaultBase } from '#plan-landed';
@@ -42,7 +42,7 @@ function movedCounts(root, numstat, moves) {
   let moved = 0;
   const missing = [];
   for (const { source: written, dest } of moves) {
-    const source = written === '~' || written.startsWith('~/') ? path.join(os.homedir(), written.slice(1)) : written;
+    const source = expandHome(written);
     const diff = fs.existsSync(source) ? git(root, ['diff', '--no-index', '--numstat', '-M', source, path.join(root, dest)]) : null;
     if (!diff || (diff.status !== 0 && diff.status !== 1) || diff.stderr) {
       missing.push(written);

@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import vm from 'node:vm';
+import { git } from '#git';
 import { isMain } from '#script-flags';
 import { isFile } from '../repository.mjs';
 
@@ -27,10 +28,7 @@ function failureOf(file) {
 }
 
 export function listedFiles(repository, keep) {
-  const listing = spawnSync('git', ['-C', repository.root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024
-  });
+  const listing = git(repository.root, ['ls-files', '-z', '--cached', '--others', '--exclude-standard']);
   if (listing.status !== 0) {
     return repository.walk(repository.root, (file) => keep(repository.relative(file)) && undotted(file), undotted);
   }

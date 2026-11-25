@@ -1,9 +1,9 @@
 import fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
-import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { expandHome } from '#basics';
 import { configDirectory } from '#config-directory';
+import { git as runGit } from '#git';
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 import { looksLikeRepoPath } from '#repo-path';
 import { projectFolder } from './sessions.mjs';
@@ -111,7 +111,7 @@ function backtickedPaths(body, root) {
 
 export function staleNotes(dir) {
   const root = path.resolve(dir, '..', '..');
-  const git = (args) => spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  const git = (args) => runGit(root, args);
   const inRepo = fs.existsSync(root) && git(['rev-parse', '--show-toplevel']).status === 0;
   const tracked = inRepo ? git(['ls-files']).stdout.split('\n').filter((line) => line !== '') : [];
   const limit = Date.now() - environmentMs('EXO_LEARN_STALE_DAYS', 180) * DAY_MS;
@@ -156,12 +156,12 @@ function readSettings(file) {
 }
 
 function repoRoot(root) {
-  const result = spawnSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: root, encoding: 'utf8' });
+  const result = runGit(root, ['rev-parse', '--path-format=absolute', '--git-common-dir']);
   return result.status === 0 ? path.dirname(result.stdout.trim()) : root;
 }
 
 function topFolder(cwd) {
-  const result = spawnSync('git', ['rev-parse', '--show-toplevel'], { cwd, encoding: 'utf8' });
+  const result = runGit(cwd, ['rev-parse', '--show-toplevel']);
   return result.status === 0 ? path.resolve(result.stdout.trim()) : cwd;
 }
 
@@ -170,7 +170,7 @@ function autoMemoryPath(root) {
   const setting = (key) => settings.find((file) => file[key] !== undefined)?.[key];
   if (process.env.CLAUDE_CODE_DISABLE_AUTO_MEMORY === '1' || setting('autoMemoryEnabled') === false) return 'none';
   const directory = setting('autoMemoryDirectory');
-  if (typeof directory === 'string') return path.join(directory.startsWith('~/') ? path.join(os.homedir(), directory.slice(2)) : directory, 'MEMORY.md');
+  if (typeof directory === 'string') return path.join(expandHome(directory), 'MEMORY.md');
   const folder = projectFolder(repoRoot(root));
   const named = process.env.CLAUDE_CODE_PROJECT_DIR_NAME ? path.join(path.dirname(folder), process.env.CLAUDE_CODE_PROJECT_DIR_NAME) : folder;
   return path.join(named, 'memory', 'MEMORY.md');
@@ -194,8 +194,7 @@ export function lessonPaths(root) {
 }
 
 function resolveImport(fromFile, target) {
-  const expanded = target.startsWith('~/') ? path.join(os.homedir(), target.slice(2)) : target;
-  return path.resolve(path.dirname(fromFile), expanded);
+  return path.resolve(path.dirname(fromFile), expandHome(target));
 }
 
 function importedFiles(file) {

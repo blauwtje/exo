@@ -1,7 +1,7 @@
 import fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { onPath } from '#basics';
+import { git } from '#git';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { frameOf, openPoints } from '#plan-frame';
@@ -97,7 +97,7 @@ function ignoredFileProblems(plan) {
   const root = repositoryRoot(plan);
   if (root === undefined) return [];
   const paths = [...new Set(plan.tasks.flatMap((task) => task.files.map((file) => file.path)))];
-  const result = spawnSync('git', ['-C', root, 'check-ignore', '-z', '--stdin'], { input: paths.join('\0'), encoding: 'utf8' });
+  const result = git(root, ['check-ignore', '-z', '--stdin'], { input: paths.join('\0') });
   const ignored = new Set(result.stdout.split('\0'));
   return plan.tasks.flatMap((task) => task.files
     .filter((file) => ignored.has(file.path))

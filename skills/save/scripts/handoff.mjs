@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
+import { git } from '#git';
 import { handoffFile } from '#handoff-file';
 import { defaultBase } from '#plan-landed';
 import { looksLikeRepoPath } from '#repo-path';
@@ -14,7 +14,7 @@ const USAGE = 'usage: node handoff.mjs path|facts|stale [--cwd <dir>]\npath prin
 const RELATIVE_PATH = /^(?:[\w.-]+(?:\/[\w.-]+)+\/?|\w[\w-]*\.\w+)$/;
 
 function gitOutput(cwd, args) {
-  return spawnSync('git', ['-C', cwd, ...args], { encoding: 'utf8' }).stdout.trimEnd();
+  return git(cwd, args).stdout.trimEnd();
 }
 
 function lines(text) {
@@ -42,7 +42,7 @@ function stale(cwd) {
   const text = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   const written = /^Written: .*last commit ([0-9a-f]+)/m.exec(text);
   if (written === null) throw new Error(`no handoff with a Written line at ${file}`);
-  const log = spawnSync('git', ['-C', cwd, 'log', `${written[1]}..HEAD`, '--oneline'], { encoding: 'utf8' });
+  const log = git(cwd, ['log', `${written[1]}..HEAD`, '--oneline']);
   if (log.status !== 0) return [`Commits since: unknown, the handoff's commit ${written[1]} is not in this repository`];
   const commits = lines(log.stdout.trimEnd());
   const changed = lines(gitOutput(cwd, ['diff', '--name-only', `${written[1]}..HEAD`]));

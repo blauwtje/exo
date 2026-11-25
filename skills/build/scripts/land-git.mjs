@@ -1,19 +1,19 @@
-import { spawnSync } from 'node:child_process';
+import { git } from '#git';
 import { LandLockError, withLandLock } from '#land-lock';
 import { LockHeldError } from './land-errors.mjs';
 
 export function headMessage(root) {
-  const head = spawnSync('git', ['-C', root, 'log', '-1', '--format=%B'], { encoding: 'utf8' });
+  const head = git(root, ['log', '-1', '--format=%B']);
   return head.status === 0 ? head.stdout : '';
 }
 
 export function headSha(root) {
-  const head = spawnSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' });
+  const head = git(root, ['rev-parse', 'HEAD']);
   return head.status === 0 ? head.stdout.trim() : null;
 }
 
 export function moveHead(root, message, { target, expected }) {
-  const moved = spawnSync('git', ['-C', root, 'update-ref', '-m', message, 'HEAD', target, expected], { encoding: 'utf8' });
+  const moved = git(root, ['update-ref', '-m', message, 'HEAD', target, expected]);
   return moved.status === 0;
 }
 

@@ -2,6 +2,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { sleep } from "#basics";
 import { environmentMs, isMain } from "#script-flags";
 import { canonicalUrl, claimSource, markQuietly, SUB } from "./claims.mjs";
 
@@ -11,8 +12,6 @@ const SLOT_POLL_MS = 20;
 const inflight = new Map();
 const ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 const DROPPED = /<(script|style|nav|header|footer|noscript)\b[\s\S]*?<\/\1>|<!--[\s\S]*?-->/gi;
-
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function htmlToText(html) {
   return html

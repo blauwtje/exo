@@ -17,4 +17,4 @@ Found: <what exists and how close it is to the idea, or what you searched for an
 Links: <up to 3 URLs, or none>
 Gap: <what the idea adds beyond the closest match, or none>
 
-Do not rate or rank the ideas and do not suggest improvements. Reply with only the path you wrote.
+Do not rate or rank the ideas and do not suggest improvements. Reply with Result: {run}/prior-art-{n}.md as the last line.

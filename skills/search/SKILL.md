@@ -1,6 +1,6 @@
 ---
 name: search
-description: "Runs deep research: sizes the run to the question, sends parallel workers over the open web (any site through WebSearch, plus the Reddit, GitHub, Hacker News, Wikipedia, arXiv and Stack Exchange APIs as extra routes) and writes a cited report to docs/research/ whose quotes and links are checked against the saved pages. Use when the user says 'search for', 'what do people say about', 'find sources on' or 'research X'. Not for this repo's code, a video url (exo:watch) or ideas (exo:ideas)."
+description: "Writes a cited deep-research report to docs/research/ whose quotes and links are checked against the saved pages. Use when the user says 'search for', 'what do people say about', 'find sources on' or 'research X'. Not for this repo's code, a video url (exo:watch) or ideas (exo:ideas)."
 argument-hint: "<question>"
 metadata:
   author: exo

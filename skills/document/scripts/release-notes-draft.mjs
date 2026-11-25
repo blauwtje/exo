@@ -1,6 +1,6 @@
-import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
+import { git as runGit } from '#git';
 
 const SECTIONS = ['Added', 'Changed', 'Fixed', 'Removed'];
 const SECTION_OF_TYPE = { feat: 'Added', fix: 'Fixed', perf: 'Changed', revert: 'Removed' };
@@ -10,7 +10,7 @@ const RECORD = '\x1e';
 const FIELD = '\x1f';
 
 function git(repo, args) {
-  const result = spawnSync('git', args, { cwd: repo, encoding: 'utf8' });
+  const result = runGit(repo, args);
   if (result.status !== 0) throw new Error(result.stderr.trim());
   return result.stdout.trim();
 }
@@ -33,7 +33,7 @@ function entryOf({ subject, body }) {
 }
 
 function draft(repo, { from, to = 'HEAD' }) {
-  const start = from ?? spawnSync('git', ['describe', '--tags', '--abbrev=0', '--match', 'v*', to], { cwd: repo, encoding: 'utf8' }).stdout.trim();
+  const start = from ?? runGit(repo, ['describe', '--tags', '--abbrev=0', '--match', 'v*', to]).stdout.trim();
   const range = start ? `${start}..${to}` : to;
   const log = git(repo, ['log', '--no-merges', `--format=${RECORD}%s${FIELD}%b`, range]);
   const entries = log.split(RECORD).filter(Boolean).map((record) => {

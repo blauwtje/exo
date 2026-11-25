@@ -1,6 +1,6 @@
 ---
 name: ideas
-description: "Turns one question on any subject into a short list of novel, useful and well-reasoned ideas by running a fixed ideation playbook as fresh helpers. Use when the user says 'give me ideas', 'what are my options' or 'how could I approach' a problem. Not for design options for a code change (exo:spec) or sourced research (exo:search)."
+description: "Turns one question on any subject into a short list of novel, useful and well-reasoned ideas as a ranked report. Use when the user says 'give me ideas', 'what are my options' or 'how could I approach' a problem. Not for design options for a code change (exo:spec) or sourced research (exo:search)."
 argument-hint: "<question>"
 metadata:
   author: exo
@@ -24,7 +24,7 @@ Run the steps below in order for the question in `$ARGUMENTS`, else the question
 ### Setup
 
 1. Make the run folder `$HOME/.ideas/<YYYY-MM-DD>-<slug>/`, where the slug is the question in ASCII, lowercase, words joined by `-`, at most 40 characters; when the folder exists add `-2` (then `-3`). Call its absolute path `RUN`.
-2. Every step below is one fresh `general-purpose` agent with the model and effort given for it. Its prompt is: `Read <prompt file> and follow it exactly. Fill the placeholders {run} = RUN, {question} = <the question, verbatim>`, plus `{batch}` and `{n}` where the step gives them. Start agents of the same step in one message, and start the next step only after every file of the current step exists. When an Agent call with model fable is rejected, start it again with model opus and the same effort, and note this in report.md.
+2. Every step below is one fresh `general-purpose` agent (`exo:researcher` for Prior art) with the model and effort given for it. Its prompt is: `Read <prompt file> and follow it exactly. Fill the placeholders {run} = RUN, {question} = <the question, verbatim>`, plus `{batch}` and `{n}` where the step gives them. Start agents of the same step in one message, at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (20 by default) at once, check every launch result for an error, and start the next step only after every file of the current step exists. When an Agent call with model fable is rejected, start it again with model opus and the same effort, and note this in report.md.
 3. An agent writes its file and replies with the path. Run files are append-only: never edit a file an agent wrote, and write only the files marked "main session". When an expected file is missing, rerun that agent once. When a batch file is still missing, go on with the batch short and record that in report.md. When frame.md, diverge-avoid-obvious.md or revised.md is still missing, stop the run and tell the user which step failed.
 
 ### Round 1
@@ -33,7 +33,7 @@ Run the steps below in order for the question in `$ARGUMENTS`, else the question
 2. Diverge: three agents in one message, model fable, effort high, one per prompt: `${CLAUDE_SKILL_DIR}/references/diverge-overgenerate.md`, `${CLAUDE_SKILL_DIR}/references/diverge-avoid-obvious.md`, `${CLAUDE_SKILL_DIR}/references/diverge-unrelated-domain.md`. Each writes `diverge-<arm>.md` with 5 ideas under `## Ideas`.
 3. Revise: `${CLAUDE_SKILL_DIR}/references/revise.md`, model opus, effort high. Writes revised.md with 5 ideas.
 4. Pool (main session): read only the `## Ideas` section of each diverge-*.md file (not `## Scaffold`) and of revised.md. Write pool.md with all ideas left after merging duplicates into one idea, one `### I01 <title>` heading each (`I01` onward, no gaps) followed by its description. Order the ideas round-robin across the four sources, so that each batch of 5 in order holds at most two ideas from one source. Write which source made each idea only to methods.md, never to pool.md.
-5. Prior art: split the pool IDs in order into batches of up to 5. Start one agent per batch in one message with `${CLAUDE_SKILL_DIR}/references/prior-art.md`, model sonnet, effort medium, `{batch}` = the IDs of the batch, `{n}` = 1, 2, 3 and so on, one per batch. Writes `prior-art-<n>.md`.
+5. Prior art: split the pool IDs in order into batches of up to 5. Start one `exo:researcher` per batch in one message with `${CLAUDE_SKILL_DIR}/references/prior-art.md`, line `Sources: web` first, model sonnet, effort medium, `{batch}` = the IDs of the batch, `{n}` = 1, 2, 3 and so on, one per batch. Writes `prior-art-<n>.md`.
 6. Score: start one fresh agent per batch in one message with `${CLAUDE_SKILL_DIR}/references/score.md`, model opus, effort high, the same `{batch}` and `{n}`. After the prompt add an empty line and `Read these files together in one message, with parallel calls: <prompt file>, RUN/frame.md, RUN/pool.md, RUN/prior-art-<n>.md.`, with full paths. Writes `score-<n>.md`.
 
 ### Pivot
@@ -76,6 +76,6 @@ Report: ~/.ideas/<YYYY-MM-DD>-<slug>/report.md
 
 | Error | Cause | Solution |
 | --- | --- | --- |
-| An Agent call with model fable is rejected | The model is not available | Rerun it with model opus and the same effort, and note it in report.md. |
-| An expected file is missing | An agent failed to write it | Rerun that agent once; a batch file still missing goes on short and is recorded in report.md. |
+| An Agent call with model fable is rejected | The model is not available | See Setup step 2. |
+| An expected file is missing | An agent failed to write it | See Setup step 3. |
 | frame.md, diverge-avoid-obvious.md or revised.md is missing after the rerun | A core step failed | Stop the run and tell the user which step failed. |

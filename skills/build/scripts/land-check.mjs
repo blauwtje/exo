@@ -12,7 +12,7 @@ import { commitBlockOf, candidatePrefix, candidateTrailer } from './land-commit-
 import { changedPaths } from './land-paths.mjs';
 import { runCoveringTests, runProof, runNamedTests } from './land-proof.mjs';
 import { UsageError, environmentMs } from '#script-flags';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { runCheck } from '#run-check';
 import { gateRefusal, lastPassMs, GATE_ONCE_PER_RUN_FROM_MS, treePassMs } from '#check-cache';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
@@ -109,7 +109,7 @@ function addedLinesOf(root) {
   const added = [];
   let file = null;
   let inHeader = false;
-  const diff = execFileSync('git', ['-C', root, 'diff', 'HEAD', '-U0', '--no-color'], { encoding: 'utf8', maxBuffer: 1 << 28 });
+  const diff = gitText(root, ['diff', 'HEAD', '-U0', '--no-color'], { trim: false });
   for (const line of diff.split('\n')) {
     if (line.startsWith('diff --git ')) inHeader = true;
     else if (line.startsWith('@@')) inHeader = false;
@@ -155,14 +155,14 @@ export function fixLand({ root, subject, body = null }) {
 }
 
 function fixLandLocked({ root, subject, body }) {
-  const status = execFileSync('git', ['-C', root, 'status', '--porcelain'], { encoding: 'utf8' });
+  const status = gitText(root, ['status', '--porcelain']);
   if (status.trim() === '') {
     throw new LandingError('no changed path to commit; edit a file before running --fix');
   }
-  execFileSync('git', ['-C', root, 'add', '-A'], { encoding: 'utf8' });
+  gitText(root, ['add', '-A']);
   const messages = body === null ? ['-m', subject] : ['-m', subject, '-m', body];
-  execFileSync('git', ['-C', root, 'commit', ...messages], { encoding: 'utf8' });
-  const sha = execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
+  gitText(root, ['commit', ...messages]);
+  const sha = gitText(root, ['rev-parse', '--short', 'HEAD']);
   return `Committed: ${sha}\n`;
 }
 
@@ -188,7 +188,7 @@ function dropCandidate(root, { base, candidate }) {
 export function clearStaleCandidate(root, planId) {
   if (!headMessage(root).split('\n').some((line) => line.startsWith(candidatePrefix(planId)))) return;
   const candidate = headSha(root);
-  const base = spawnSync('git', ['-C', root, 'rev-parse', 'HEAD~1'], { encoding: 'utf8' });
+  const base = git(root, ['rev-parse', 'HEAD~1']);
   if (base.status !== 0) return;
   dropCandidate(root, { base: base.stdout.trim(), candidate });
 }
@@ -209,15 +209,15 @@ function authorEnvOf(root, candidate) {
 }
 
 function signsCommits(root) {
-  const signing = spawnSync('git', ['-C', root, 'config', '--type=bool', '--get', 'commit.gpgsign'], { encoding: 'utf8' });
+  const signing = git(root, ['config', '--type=bool', '--get', 'commit.gpgsign']);
   return signing.stdout.trim() === 'true';
 }
 
 function promoteCandidate({ root, task, planId, candidate: { base, candidate } }) {
-  const message = execFileSync('git', ['-C', root, 'log', '-1', '--format=%B', candidate], { encoding: 'utf8' })
+  const message = gitText(root, ['log', '-1', '--format=%B', candidate], { trim: false })
     .replace(candidateTrailer(planId, task.number), planTaskTrailer(planId, task.number));
   const signing = signsCommits(root) ? ['-S'] : [];
-  const promoted = execFileSync('git', ['-C', root, 'commit-tree', `${candidate}^{tree}`, '-p', base, ...signing, '-F', '-'], { encoding: 'utf8', input: message, env: authorEnvOf(root, candidate) }).trim();
+  const promoted = gitText(root, ['commit-tree', `${candidate}^{tree}`, '-p', base, ...signing, '-F', '-'], { input: message, stdio: 'pipe', env: authorEnvOf(root, candidate) });
   if (!moveHead(root, 'land-task: promote candidate', { target: promoted, expected: candidate })) {
     throw new LandingError(`HEAD moved off the candidate ${shortSha(candidate)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
   }
@@ -259,11 +259,11 @@ function runCommitBlock(block, root, number) {
 }
 
 function stageOutside(root, paths) {
-  if (paths.length > 0) execFileSync('git', ['-C', root, 'update-index', '--add', '--remove', '--', ...paths]);
+  if (paths.length > 0) gitText(root, ['update-index', '--add', '--remove', '--', ...paths]);
 }
 
 function committedSha(task, { root, planId, planPath, base }) {
-  const head = execFileSync('git', ['-C', root, 'log', '-1', '--format=%h%n%s%n%B'], { encoding: 'utf8' });
+  const head = gitText(root, ['log', '-1', '--format=%h%n%s%n%B'], { trim: false });
   const [sha, subject, ...body] = head.split('\n');
   const trailer = planTaskTrailer(planId, task.number);
   if (!body.includes(trailer)) throw new LandingError(`HEAD ${sha} carries no "${trailer}" trailer`);
@@ -273,7 +273,7 @@ function committedSha(task, { root, planId, planPath, base }) {
 }
 
 export function taskChangedPaths(root) {
-  const entries = execFileSync('git', ['-C', root, 'status', '--porcelain', '-z', '-uall'], { encoding: 'utf8' }).split('\0').filter((entry) => entry !== '');
+  const entries = gitText(root, ['status', '--porcelain', '-z', '-uall'], { trim: false }).split('\0').filter((entry) => entry !== '');
   const paths = [];
   for (let i = 0; i < entries.length; i++) {
     paths.push(entries[i].slice(3));
@@ -308,7 +308,7 @@ export function refuseAlreadyLanded(plan, task, { root, planId }) {
 }
 
 export function refuseMismatchedToplevel(root) {
-  const toplevel = execFileSync('git', ['-C', root, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
+  const toplevel = gitText(root, ['rev-parse', '--show-toplevel']);
   if (realpathSync(toplevel) !== realpathSync(root)) throw new RefusedError(`--root '${root}' is not the checkout toplevel: git rev-parse --show-toplevel there prints '${toplevel}'`);
 }
 

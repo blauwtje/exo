@@ -21,6 +21,9 @@ Noticed: none
 ```
 
 - Run the land command your agent body gives, with `--plan <plan> --task <n> --root <checkout>`, after your last edit. Fix what it refuses inside the task's files and rerun.
+- A `Deferred:` brief line names a Proof only the session can run. Skip it and write `<command>: deferred`.
+- With no `Proof:`, pick or write one test for `Success criterion:`, run only it, and list it first under Proof.
+- In a long task, code each step. Green is each `Run:` printing `Expected:`.
 - Push nothing, and start no worktree.
 - Only an irreversible write or a file outside the list ends the reply with `BLOCKED <n> NEEDS ANSWER: <question> (A) <option> (B) <option> Recommended: (A), because <reason>`, with 2 to 3 options.
 - Reply with `Report: <the report path the dispatch gives>` and nothing else but the last line, which is `Task <n>: GREEN`, `Task <n>: BLOCKED <reason>` or `Task <n>: PLAN DRIFT <reason>`.

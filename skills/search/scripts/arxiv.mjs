@@ -1,10 +1,11 @@
+import { sleep } from "#basics";
 import { environmentMs } from "#script-flags";
 import { fetchOk, plainText, readBest, searchAll } from "./pick.mjs";
 
 const api = "https://export.arxiv.org/api/query";
 const SEARCH_LIMIT = 20;
 
-const pause = () => new Promise((resolve) => setTimeout(resolve, environmentMs("EXO_SEARCH_ARXIV_GAP_MS", 3000)));
+const pause = () => sleep(environmentMs("EXO_SEARCH_ARXIV_GAP_MS", 3000));
 
 let tail = Promise.resolve();
 

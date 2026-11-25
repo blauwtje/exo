@@ -4,6 +4,7 @@ import { createServer } from "node:net";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { sleep } from "#basics";
 import { environmentMs, isMain } from "#script-flags";
 import { readBest, searchAll } from "./pick.mjs";
 
@@ -57,7 +58,7 @@ async function connect(visible) {
       return await chromium.connectOverCDP(`http://127.0.0.1:${port}`, { timeout: Math.max(1, deadline - Date.now()) });
     } catch (error) {
       lastError = error;
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await sleep(250);
     }
   }
   stopChrome(child);
@@ -104,7 +105,7 @@ async function takeLock(lockPort, deadline) {
       const waiting = `Waiting for the Chrome lock on 127.0.0.1:${lockPort}: another run holds it, or another app uses that port.`;
       if (Date.now() >= deadline) throw new Error(waiting);
       if (attempt === 0) console.error(waiting);
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await sleep(250);
     }
   }
 }
@@ -179,7 +180,7 @@ async function throttled(url, send) {
     if (retries === MAX_RETRIES) throw new Error(`Reddit answered 429 for ${url} after ${MAX_RETRIES} retries`);
     const wait = headerMs(reply.headers, "retry-after") ?? headerMs(reply.headers, "x-ratelimit-reset") ?? environmentMs("EXO_SEARCH_REDDIT_BACKOFF_MS", 60000);
     if (Date.now() + wait > callDeadlineAt) throw new Error(`Reddit answered 429 for ${url} and the ${wait / 1000} s wait passes the call deadline`);
-    await new Promise((resolve) => setTimeout(resolve, wait));
+    await sleep(wait);
   }
 }
 
@@ -273,7 +274,7 @@ export function paced(gap) {
   let tail = Promise.resolve();
   return (task) => {
     const run = tail.then(task);
-    tail = run.catch(() => {}).then(() => new Promise((resolve) => setTimeout(resolve, typeof gap === "function" ? gap() : gap)));
+    tail = run.catch(() => {}).then(() => sleep(typeof gap === "function" ? gap() : gap));
     return run;
   };
 }
