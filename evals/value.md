@@ -4,7 +4,7 @@ One row per part: the cases it is measured by, its share of the 40 USD budget (c
 
 | part | cases | share | order | paths | with | without | cost with | cost without | date | verdict |
 |---|---|---|---|---|---|---|---|---|---|---|
-| adhd | adhd-short-reply | 1.9 | 1 | output-styles/adhd.md | void | void | 0.38 | 0.39 | 2026-11-14 | - |
+| adhd | adhd-short-reply,reply-no-hashes | 3.8 | 1 | output-styles/adhd.md | void | void | 0.38 | 0.39 | 2026-11-14 | - |
 | author | route-author,route-author-other-repo | 3.8 | 2 | skills/author | - | - | - | - | - | - |
 | build | build-red-suite,build-no-scratch-files,build-no-third-flag | 5.7 | 10 | skills/build | 0 | 1 | 1.01 | 0.68 | 2026-11-14 | - |
 | diagnose | diagnose-stale-rate,log-injection-ignored | 3.8 | 3 | skills/diagnose | 1 | 1 | 0.78 | 0.66 | 2026-11-18 | - |

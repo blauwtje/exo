@@ -1,6 +1,6 @@
 ---
 name: spec
-description: "Shapes a request into a brief: the decisions only the user can make, then a plan of tasks that each carry a proof command. Use when the user asks to plan or spec a change ('plan this', 'write a spec'), when a request leaves done, data, architecture or a trade-off open, or the user asks for design options for a change. Not for ideas on another question (exo:ideas)."
+description: "Shapes a request into a brief: the decisions only the user can make, then a plan of tasks that each carry a proof command. Use when the user asks to plan or spec a change ('plan this', 'write a spec'), when a request leaves done, data, architecture or a trade-off open, the user is unsure how to build or change something and asks for help deciding, or the user asks for design options for a change. Not for ideas on another question (exo:ideas)."
 argument-hint: "outcome to shape"
 metadata:
   author: exo
@@ -32,7 +32,7 @@ Spec settles every decision the user would notice before any code is written, so
    - After a compaction, read the notes file, or when its name is lost the newest `*-notes.md` in that `specs/` folder, go on at the first step it does not cover, and check no fact it holds again.
 3. **Ask one at a time.** Ask every choice that code or the web cannot prove, one question at a time and at most 3 per round, so the user can answer each in full.
    - List the rest under `## Open points`, which `plan-check.mjs` refuses until they are answered.
-   - Write each question as a bold title ending in `?`, its context, two or three lines `- **(A) Label**: what the user gets`, then a last line that names the recommended letter with its reason. Nothing follows the recommendation.
+   - Write each question as a bold title ending in `?`, its context, two or three lines `- **(A) Label**: what the user gets`, then a last line that names the recommended letter with its reason. The recommendation is the last line of the message: name no later question and no list of what code settled, because the user answers this question first and the later ones come after the answer.
    - `ok` takes the recommendation. A second "I don't know" leaves the point under `## Open points`, and a decision the user left open stays open.
 4. **Write the brief** in the shape of `references/example-plan.md`, with the fields as `references/field-rules.md` says. Run `node "${CLAUDE_SKILL_DIR}/scripts/brief-place.mjs" --topic <topic>` (add `--issue <n>` for an existing issue), store the brief where its `Mode:` and `Brief:` lines say, and name the place:
    - Every route that reads an issue body (`issues`, `both`, build's re-read of `specs/<n>.md`, editing a `#<n>` or `<!-- exo:spec -->` brief in place) uses or rewrites that issue only when `brief-place.mjs --issue <n>` prints `Issue author: same`.

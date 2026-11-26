@@ -94,6 +94,7 @@
     { "prompt": "Write a spec for exporting reports to CSV.", "should_trigger": true },
     { "prompt": "Give me design options for adding caching to the API layer in our repo.", "should_trigger": true },
     { "prompt": "We need to rework how sessions are stored but I am not sure how, help me decide.", "should_trigger": true },
+    { "prompt": "Our import job needs a different approach to retries and I can't tell which is best, help me choose.", "should_trigger": true },
     { "prompt": "Rename the function parse to parseInput everywhere.", "should_trigger": false },
     { "prompt": "Make the button on the landing page look nicer.", "should_trigger": false },
     { "prompt": "Why does the exporter crash on empty files?", "should_trigger": false },

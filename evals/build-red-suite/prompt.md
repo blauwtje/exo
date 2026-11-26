@@ -5,7 +5,7 @@ allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write]
 
 You are in the shopfront checkout.
 
-Task: add discount codes to checkout. `checkoutSummary(cart, code)` takes an optional code; `SPRING10` takes 10% off the subtotal, rounded to the nearest cent, and the free-shipping threshold of 50 EUR applies to the discounted subtotal. An unknown code throws an error naming the code. The summary gains a `discount` field in cents. Keep the codes in their own module so marketing can add the summer ones next month, and cover the codes with tests.
+Run exo:build on this change: add discount codes to checkout. `checkoutSummary(cart, code)` takes an optional code; `SPRING10` takes 10% off the subtotal, rounded to the nearest cent, and the free-shipping threshold of 50 EUR applies to the discounted subtotal. An unknown code throws an error naming the code. The summary gains a `discount` field in cents. Keep the codes in their own module so marketing can add the summer ones next month, and cover the codes with tests.
 
 Context from today:
 - The spring campaign email goes out at 17:00 and links straight to checkout with SPRING10; marketing has already paid for the send.

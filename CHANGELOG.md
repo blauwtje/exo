@@ -80,6 +80,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The skill frontmatter check accepts the documented fields `when_to_use`, `arguments`, `background` and `paths`, and fails a `description` plus `when_to_use` over 1,536 characters.
 - The `exo:spec` and `exo:learn` descriptions drop the exclusions that no seen failure backs.
 - `guide/search.md` gives no size for `playwright-core`.
+- `exo:spec` also fires when the user is unsure how to build or change something and asks for help deciding, and its question ends on the recommendation line with no later question or list after it.
 
 ### Fixed
 
@@ -136,6 +137,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The criteria graders of `route-author`, `route-save` and `route-watch` no longer ask the judge whether a skill loaded, which it cannot see.
 - The `skill sections` check no longer prints a pass text that names a section format it stopped checking.
 - The session start hook also runs in a forked session.
+- The eval cases `adhd-short-reply` and `reply-no-hashes` carry the text of `output-styles/adhd.md` as `append_system_prompt`, because the eval runner cannot switch on an output style, and `tests/eval-style-text.test.mjs` fails when a copy differs.
+- The eval cases `ship-branch-push` and `spec-tide-export` check the reply shape with a `regex` grader and the forbidden steps with `tool_used` graders, and `ship-set-route` and `spec-late-fees` no longer ask for what their skill does not.
+- The eval cases `build-red-suite` and `build-no-third-flag` name `exo:build` in the request, so they test the build rules; on a plain request the skill fired in 0 of 2 runs per case.
 
 ### Changed
 

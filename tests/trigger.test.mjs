@@ -28,11 +28,12 @@ function runTrigger(bin, ...args) {
   });
 }
 
-test('trigger.json holds 4 should-fire and 4 near-miss prompts for each of the eleven skills', () => {
+test('trigger.json holds 4 should-fire and 4 near-miss prompts for each of the eleven skills, spec one more should-fire', () => {
   assert.deepEqual(Object.keys(prompts).sort(), SKILLS);
   for (const skill of SKILLS) {
-    assert.equal(prompts[skill].length, 8, skill);
-    assert.equal(prompts[skill].filter((entry) => entry.should_trigger).length, 4, skill);
+    const fires = skill === 'spec' ? 5 : 4;
+    assert.equal(prompts[skill].length, fires + 4, skill);
+    assert.equal(prompts[skill].filter((entry) => entry.should_trigger).length, fires, skill);
   }
 });
 

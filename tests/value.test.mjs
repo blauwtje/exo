@@ -11,7 +11,7 @@ const table = fs.readFileSync(path.join(root, 'evals', 'value.md'), 'utf8');
 
 test('the plan assigns every case to one part and orders parts by share', () => {
   const output = execFileSync('node', [path.join(root, 'evals', 'value.mjs'), '--plan'], { encoding: 'utf8' });
-  assert.match(output, /^adhd share 1\.90 measured/);
+  assert.match(output, /^adhd share 3\.80 measured/);
 });
 
 test('parts whose share exceeds what is left are not measured', () => {

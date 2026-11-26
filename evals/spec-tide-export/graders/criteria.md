@@ -3,16 +3,8 @@ type: llm
 weight: 1
 ---
 
-Pass only when all of these hold for each question the assistant sends. One verdict line with the Verdict and Objection may come before the question and counts toward none of the limits below:
+Judge only the assistant's messages. Pass only when all of these hold:
 
-- One message holds one question, or, when several open decisions wait on no other answer, all of them, numbered; the next comes only after the answer, and only while a question is still open.
-- No later question repeats a point already asked or decided unless a reply opened a new costly point.
-- Each question opens with a title line `**<title>**`, unnumbered outside a batch, a plain everyday question of about ten words at most.
-- Each question has two short sentences of context at most, only what the user needs to choose.
-- Two or three options, two only when no honest third route exists, each on its own line as `- **(A) Label**: what the user gets`, the label one to three words, the text one short plain clause on what the user gets or gives up.
-- The options run in the order A, B, C, never moved or re-lettered; the recommendation may sit on any letter, no option is marked "(recommended)" and no other option carries a mark.
-- The last line names the recommended letter of a shown option and gives one plain clause on why it beats the others, not inside an option line.
-- The question, counted from the title line to the recommendation line, stays under about 60 words outside the option labels.
+- Each message asks one question, or, when several open decisions wait on no other answer, at most 3 numbered ones; the next comes only after the answer.
+- No later question repeats a point already asked or decided.
 - The options are text in the reply; no question tool, form or picker is used.
-
-The run asks the question and writes no file and starts no build before the user answers.
