@@ -31,12 +31,20 @@ const registryOf = (root) => JSON.parse(readText(root, REGISTRY_FILE));
 const matchesOf = (entry, text) => [...text.matchAll(new RegExp(entry.pattern, 'gmd'))];
 const agrees = (entry, capture, expected) => (isFrontmatter(entry) ? capture.toLowerCase() === expected.toLowerCase() : capture === expected);
 
-function problemsOf(entry, root, values) {
+function entryProblems(entry, root, values) {
   const file = path.join(root, entry.file);
   const matches = fs.existsSync(file) ? matchesOf(entry, fs.readFileSync(file, 'utf8')) : [];
   if (matches.length === 0) return [`${entry.file}: pattern ${entry.pattern} matches nothing`];
   const expected = expectedOf(entry, root, values);
   return matches.filter((match) => !agrees(entry, match[1], expected)).map((match) => `${entry.file}: ${match[1]} is not ${expected} (${entry.value})`);
+}
+
+function problemsOf(entry, root, values) {
+  try {
+    return entryProblems(entry, root, values);
+  } catch (error) {
+    return [`malformed entry ${JSON.stringify(entry)}: ${error.message}`];
+  }
 }
 
 export async function checkSharedMentions(report, repository) {

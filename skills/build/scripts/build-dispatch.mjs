@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { parseFlags, isMain } from '#script-flags';
+import { parseFlags, isMain, UsageError, USAGE_EXIT, POSITIVE_INTEGER } from '#script-flags';
 import { RETRY_MODEL, RETRY_EFFORT } from '#shared-values';
 
 const USAGE = 'usage: build-dispatch.mjs --plan <plan> --root <checkout> [--attempt <n>] [--missing-input]';
@@ -23,8 +23,15 @@ export function dispatchReport(nextOutput, { attempt = 1, missingInput = false }
 }
 
 if (isMain(import.meta.url)) {
-  const flags = parseFlags(process.argv.slice(2), { plan: 'value', root: 'value', attempt: 'value', 'missing-input': 'boolean' }, { usage: USAGE });
-  const args = Object.entries({ plan: flags.plan, root: flags.root }).filter(([, value]) => value !== undefined).flatMap(([name, value]) => [`--${name}`, value]);
-  const output = execFileSync(process.execPath, [NEXT_TASK, ...args], { encoding: 'utf8', cwd: process.cwd() });
-  process.stdout.write(dispatchReport(output, { attempt: Number(flags.attempt ?? 1), missingInput: flags['missing-input'] === true }));
+  try {
+    const flags = parseFlags(process.argv.slice(2), { plan: 'value', root: 'value', attempt: 'value', 'missing-input': 'boolean' }, { usage: USAGE });
+    if (flags.attempt !== undefined && !POSITIVE_INTEGER.test(flags.attempt)) throw new UsageError(`--attempt '${flags.attempt}' must be a whole number of 1 or more`);
+    const args = Object.entries({ plan: flags.plan, root: flags.root }).filter(([, value]) => value !== undefined).flatMap(([name, value]) => [`--${name}`, value]);
+    const output = execFileSync(process.execPath, [NEXT_TASK, ...args], { encoding: 'utf8', cwd: process.cwd() });
+    process.stdout.write(dispatchReport(output, { attempt: Number(flags.attempt ?? 1), missingInput: flags['missing-input'] === true }));
+  } catch (error) {
+    if (!(error instanceof UsageError)) throw error;
+    process.stderr.write(`${error.message}\n${USAGE}\n`);
+    process.exitCode = USAGE_EXIT;
+  }
 }

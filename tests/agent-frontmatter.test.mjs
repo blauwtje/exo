@@ -9,6 +9,6 @@ const AGENTS = fileURLToPath(new URL('../agents/', import.meta.url));
 for (const file of fs.readdirSync(AGENTS)) {
   test(`${file} has a color`, () => {
     const text = fs.readFileSync(path.join(AGENTS, file), 'utf8');
-    assert.match(text, /^color: (blue|cyan|green|yellow|magenta|red)$/m);
+    assert.match(text, /^color: (red|blue|green|yellow|purple|orange|pink|cyan)$/m);
   });
 }

@@ -72,7 +72,7 @@ checkImportDirection(report, repository);
 checkFileSize(report, repository);
 checkScratchKey(report, repository);
 checkModelRouting(report, repository);
-checkSharedLiterals(report, repository);
+await checkSharedLiterals(report, repository);
 await checkSharedMentions(report, repository);
 const outcome = behavior ? await behavior : null;
 if (outcome) report.result(outcome.status, outcome.name, outcome.detail);

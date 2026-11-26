@@ -1,5 +1,6 @@
 import fs from 'node:fs';
-import * as sharedValues from '#shared-values';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { listedFiles } from './script-syntax.mjs';
 
 const MODULE_FILE = 'lib/shared-values.mjs';
@@ -13,7 +14,7 @@ function leavesOf(value, name) {
   return [{ name, value }];
 }
 
-function scannedLeaves() {
+function scannedLeaves(sharedValues) {
   return Object.entries(sharedValues).flatMap(([name, value]) => leavesOf(value, name)).filter(({ value }) => {
     if (typeof value === 'string') return STRING_MARKS.test(value);
     return Number.isInteger(value) && String(value).length >= 4;
@@ -22,7 +23,7 @@ function scannedLeaves() {
 
 function countIn(text, value) {
   if (typeof value === 'string') return text.split(value).length - 1;
-  const tokens = text.match(/\d[\d_]*/g) ?? [];
+  const tokens = text.match(/(?<![\w.])\d[\d_]*(?!\w|\.\d)/g) ?? [];
   return tokens.filter((token) => Number(token.replaceAll('_', '')) === value && /^\d+$/.test(token.replaceAll('_', ''))).length;
 }
 
@@ -31,9 +32,9 @@ function baselineOf(repository) {
   return fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
 }
 
-function problemsOf(repository) {
+async function problemsOf(repository) {
   const baseline = baselineOf(repository);
-  const leaves = scannedLeaves();
+  const leaves = scannedLeaves(await import(pathToFileURL(path.join(repository.root, MODULE_FILE)).href));
   const files = listedFiles(repository, (entry) => entry.endsWith('.mjs') && CODE_FILE.test(entry) && entry !== MODULE_FILE);
   return files.flatMap((file) => {
     const relative = repository.relative(file);
@@ -46,8 +47,8 @@ function problemsOf(repository) {
   });
 }
 
-export function checkSharedLiterals(report, repository) {
-  const problems = problemsOf(repository);
+export async function checkSharedLiterals(report, repository) {
+  const problems = await problemsOf(repository);
   report.assert(
     problems.length === 0,
     'shared literals',

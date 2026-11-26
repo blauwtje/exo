@@ -1,5 +1,6 @@
 ---
 max_turns: 10
+tags: [smoke]
 allowed_tools: [Read, Glob, Grep, Skill]
 ---
 

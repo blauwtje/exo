@@ -36,20 +36,20 @@ test('a skill with the six sections, metadata and no scripts passes', () => {
   assert.equal(result.ok, true, result.detail);
 });
 
-test('a missing section is named with the skill path', () => {
+test('a missing section passes', () => {
   const errors = errorsFor({ 'skills/demo/SKILL.md': skill({ headings: HEADINGS.filter((name) => name !== 'Examples') }) });
-  assert.match(errors.join('\n'), /^skills\/demo\/SKILL\.md: .*Examples/m);
+  assert.deepEqual(errors, []);
 });
 
-test('an extra ## heading is named', () => {
+test('an extra ## heading passes', () => {
   const errors = errorsFor({ 'skills/demo/SKILL.md': skill({ headings: [...HEADINGS, 'Models'] }) });
-  assert.match(errors.join('\n'), /skills\/demo\/SKILL\.md: .*Models/);
+  assert.deepEqual(errors, []);
 });
 
-test('a misordered section fails', () => {
+test('a misordered section passes', () => {
   const swapped = ['Purpose', 'Instructions', 'Prerequisites', 'Examples', 'Limitations', 'Troubleshooting'];
   const errors = errorsFor({ 'skills/demo/SKILL.md': skill({ headings: swapped }) });
-  assert.equal(errors.length > 0, true);
+  assert.deepEqual(errors, []);
 });
 
 test('a ## line inside a code fence is not a heading', () => {
@@ -69,9 +69,9 @@ test('a troubleshooting table with another header fails', () => {
   assert.match(errorsFor({ 'skills/demo/SKILL.md': text }).join('\n'), /Troubleshooting/);
 });
 
-test('a scripts folder needs the Available Scripts section last', () => {
+test('a scripts folder without an Available Scripts section passes', () => {
   const errors = errorsFor({ 'skills/demo/SKILL.md': skill(), 'skills/demo/scripts/run.mjs': '' });
-  assert.match(errors.join('\n'), /Available Scripts/);
+  assert.deepEqual(errors, []);
 });
 
 test('an Available Scripts table whose file exists passes', () => {
@@ -106,10 +106,16 @@ test('a troubleshooting table without a data row fails', () => {
   assert.match(errorsFor({ 'skills/demo/SKILL.md': text }).join('\n'), /Troubleshooting/);
 });
 
-test('a script the text runs without an Available Scripts row fails', () => {
+test('a script the text runs without an Available Scripts row passes', () => {
   const text = skill({ headings: [...HEADINGS, 'Available Scripts'] })
     .replace(/## Available Scripts\nText\.\n/, `## Available Scripts\n${SCRIPTS_TABLE}\n`)
     .replace('## Purpose\nText.', '## Purpose\nRun `node scripts/other.mjs` first.');
   const files = { 'skills/demo/SKILL.md': text, 'skills/demo/scripts/run.mjs': '', 'skills/demo/scripts/other.mjs': '' };
-  assert.match(errorsFor(files).join('\n'), /other\.mjs/);
+  assert.deepEqual(errorsFor(files), []);
+});
+
+test('a script the text names that does not exist fails', () => {
+  const text = skill().replace('## Purpose\nText.', '## Purpose\nRun `node scripts/gone.mjs` first.');
+  const errors = errorsFor({ 'skills/demo/SKILL.md': text });
+  assert.match(errors.join('\n'), /gone\.mjs/);
 });

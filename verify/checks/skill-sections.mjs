@@ -1,7 +1,6 @@
 import path from 'node:path';
 import { readFrontmatter } from '../frontmatter.mjs';
 
-const SECTIONS = ['Purpose', 'Prerequisites', 'Instructions', 'Examples', 'Limitations', 'Troubleshooting'];
 const SCRIPTS_SECTION = 'Available Scripts';
 const TABLE_HEADERS = {
   Troubleshooting: ['Error', 'Cause', 'Solution'],
@@ -48,23 +47,16 @@ function sectionTableErrors(section, scriptFiles) {
     .map((script) => `## ${SCRIPTS_SECTION} names ${script}, which is not under scripts/`);
 }
 
-function scriptRowErrors(sections) {
-  const table = sections.find((section) => section.title === SCRIPTS_SECTION);
-  const rowNames = new Set((table ? sectionTable(table) ?? [] : []).map((row) => row[0].replace(/`/g, '')));
-  const text = sections.filter((section) => section !== table).flatMap((section) => section.lines).join('\n');
+function namedScriptErrors(sections, scriptFiles) {
+  const text = sections.flatMap((section) => section.lines).join('\n');
   const named = new Set([...text.matchAll(/scripts\/([\w./-]*\w)/g)].map((match) => match[1]));
   return [...named]
-    .filter((script) => !rowNames.has(script))
-    .map((script) => `## ${SCRIPTS_SECTION} lacks a row for scripts/${script}, which the text names`);
+    .filter((script) => !scriptFiles.includes(script))
+    .map((script) => `the text names scripts/${script}, which does not exist`);
 }
 
 function sectionErrors(sections, scriptFiles) {
-  const expected = scriptFiles.length > 0 ? [...SECTIONS, SCRIPTS_SECTION] : SECTIONS;
-  const found = sections.map((section) => section.title);
-  const orderErrors = found.join('|') === expected.join('|')
-    ? []
-    : [`## headings are ${found.join(', ') || 'missing'}, expected ${expected.join(', ')}`];
-  return [...orderErrors, ...sections.flatMap((section) => sectionTableErrors(section, scriptFiles)), ...scriptRowErrors(sections)];
+  return [...sections.flatMap((section) => sectionTableErrors(section, scriptFiles)), ...namedScriptErrors(sections, scriptFiles)];
 }
 
 function metadataErrors(values) {

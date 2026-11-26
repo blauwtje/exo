@@ -42,3 +42,10 @@ test('a failed report adds the Failed report path to the output', async () => {
   const result = await run(BUILD_DISPATCH, ['--plan', PLAN, '--root', root, '--attempt', '2'], { cwd: root });
   assert.match(result.stdout, /^Failed report: .*failed-report\.md$/m);
 });
+
+test('an attempt that is not a whole number of 1 or more is a usage error', async () => {
+  const { root } = await landingCheckout();
+  git(root, 'checkout', '-q', '-b', 'topic');
+  const result = await run(BUILD_DISPATCH, ['--plan', PLAN, '--root', root, '--attempt', 'two'], { cwd: root });
+  assert.equal(result.code, 2);
+});

@@ -61,3 +61,12 @@ test('a number outside the list and a positional word are refused', () => {
   const positional = spawnSync('node', [step, 'all', '--candidates', setup.file], { encoding: 'utf8', env: setup.env });
   assert.equal(positional.status, 2);
 });
+
+test('a failing subprocess exits 1 and names the ids already saved', () => {
+  const setup = fixture();
+  const file = path.join(path.dirname(setup.file), 'unknown.txt');
+  fs.writeFileSync(file, `${setup.ids[0]} "first"\nnosuchid "second"\n`);
+  const result = pick({ ...setup, file }, '1');
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, new RegExp(`already saved: ${setup.ids[0]}`));
+});

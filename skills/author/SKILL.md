@@ -31,7 +31,7 @@ Produce a skill or agent where every line changes what the model does.
 ### Shape
 
 - `npm run check` enforces the SKILL.md format; run it and fix what it names.
-- `description` says what the skill does, then when to use it, in the third person. Add `Not for` only where two skills could both match. Leave process steps out, because the model acts on the summary instead of reading the body.
+- `description` says what the skill does, then when to use it, in the third person. Add `Not for` only where two skills could both match; the check does not require it. Leave process steps out, because the model acts on the summary instead of reading the body.
 - Material only some runs need goes to `references/<topic>.md`, named in the body with the condition for opening it.
 - To use another skill, write "run `<plugin>:<name>`" and do not restate its rules.
 - Text handed to a delegate goes under `references/` too, named in the step that hands it over.
@@ -71,7 +71,6 @@ Request: "shorten the learn skill".
 | Error | Cause | Solution |
 | --- | --- | --- |
 | The static check is red | The skill's structure breaks a rule | Follow step 4. |
-| `## headings are ..., expected ...` | A `##` heading is extra, missing or out of order | Use the headings in Shape, in that order, and move the old sections under `###` in Instructions. |
 | An agent key has no effect | Plugin agents ignore an unknown key silently | Run `claude --debug` once on the new agent. |
 
 ## Available Scripts

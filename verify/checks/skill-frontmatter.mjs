@@ -18,8 +18,8 @@ function skillErrors(file, relative, values) {
   if (description.trim() === '' || description.length > 1024 || /[<>]/.test(description)) {
     errors.push(`${relative}: invalid description`);
   }
-  if (!/\bUse (when|for|at|only)\b/.test(description) || !/\bNot (for|when)\b/.test(description)) {
-    errors.push(`${relative}: description lacks a Use clause or a Not clause`);
+  if (!/\bUse (when|for|at|only)\b/.test(description)) {
+    errors.push(`${relative}: description lacks a Use clause`);
   }
   if (values.get('disable-model-invocation') !== 'true' && !description.includes('Use when ')) {
     errors.push(`${relative}: model-invocable description has no 'Use when'`);

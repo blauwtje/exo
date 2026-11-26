@@ -47,3 +47,11 @@ test('with a handoff the fixer prompt holds the root, the worktree and the hando
   assert.doesNotMatch(stdout, /Investigate the symptom/);
   assert.doesNotMatch(stdout, /<(root|abs path|skill dir|handoff path|one line)>/);
 });
+
+test('symptoms that share their first characters get different report files, the same symptom the same one', async () => {
+  const first = (await prep(['--symptom', `${SYMPTOM} in the first file`])).stdout.split('\n')[0];
+  const second = (await prep(['--symptom', `${SYMPTOM} in the second file`])).stdout.split('\n')[0];
+  const again = (await prep(['--symptom', `${SYMPTOM} in the first file`])).stdout.split('\n')[0];
+  assert.notEqual(path.basename(first), path.basename(second));
+  assert.equal(path.basename(first), path.basename(again));
+});

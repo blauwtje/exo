@@ -10,7 +10,7 @@ One row per part: the cases it is measured by, its share of the 40 USD budget (c
 | diagnose | diagnose-stale-rate | 1.9 | 4 | skills/diagnose | 1 | 1 | 0.78 | 0.66 | 2026-11-18 | - |
 | document | route-document | 1.9 | 5 | skills/document | void | void | 0.47 | 0.34 | 2026-11-14 | - |
 | learn | learn-lint-first | 1.9 | 6 | skills/learn | 1 | 0 | 0.61 | 0.55 | 2026-11-16 | - |
-| save | route-save | 1.9 | 7 | skills/save | 1 | 0 | 0.68 | 0.37 | 2026-11-14 | - |
+| save | route-save,route-none-typo | 3.8 | 8 | skills/save | 1 | 0 | 0.68 | 0.37 | 2026-11-14 | - |
 | spec | spec-tide-export,spec-late-fees | 3.8 | 10 | skills/spec | fail | fail | 1.21 | 1.07 | 2026-11-14 | - |
-| watch | route-watch | 1.9 | 8 | skills/watch | 1 | 0 | 0.56 | 0.34 | 2026-11-14 | - |
+| watch | route-watch | 1.9 | 7 | skills/watch | 1 | 0 | 0.56 | 0.34 | 2026-11-14 | - |
 | ship | ship-branch-push,ship-set-route | 3.8 | 9 | skills/ship | void | void | 1.09 | 0.95 | 2026-11-14 | - |

@@ -59,6 +59,15 @@ test('a frontmatter mismatch fails and a case difference passes', async () => {
   assert.match(result.detail, /skills\/build\/SKILL\.md: Sonnet is not opus \(agents\/builder\.md#model\)/);
 });
 
+test('a malformed entry fails naming the entry instead of throwing', async () => {
+  const unknown = await outcome({ [REGISTRY]: JSON.stringify([entry({ value: 'NO_SUCH_VALUE' })]) });
+  assert.equal(unknown.status, 'FAIL');
+  assert.match(unknown.detail, /NO_SUCH_VALUE/);
+  const missing = await outcome({ [REGISTRY]: JSON.stringify([{ pattern: 'x', value: 'SELF_BUILD_TASKS' }]) });
+  assert.equal(missing.status, 'FAIL');
+  assert.match(missing.detail, /malformed entry/);
+});
+
 test('write mode rewrites a module capture and skips a frontmatter entry', async () => {
   const root = tree(files({
     'guide/spec.md': 'A plan of at most 5 tasks skips research.\n',

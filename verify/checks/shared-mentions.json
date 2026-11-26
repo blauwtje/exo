@@ -537,12 +537,12 @@
     "value": "STATUS_BLOCKED"
   },
   {
-    "file": "skills/build/SKILL.md",
+    "file": "skills/build/references/no-plan.md",
     "pattern": "Otherwise dispatch `exo:researcher` with `Sources: repo`, with the Agent tool's `model: (\\w+)`",
     "value": "CODE_LOOKUP_MODEL"
   },
   {
-    "file": "skills/build/SKILL.md",
+    "file": "skills/build/references/no-plan.md",
     "pattern": "Otherwise dispatch `exo:researcher` with `Sources: repo`, with the Agent tool's `model: \\w+` and `effort: (\\w+)`",
     "value": "CODE_LOOKUP_EFFORT"
   },

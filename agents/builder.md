@@ -3,7 +3,7 @@ name: builder
 description: "Edits code or prose, or investigates read-only, for one job: a plan task, repair, fix, diagnosis or brief, and proves it. The lead sends one fresh builder per separate job, with the brief or prompt path and the checkout in the prompt."
 tools: Read, Edit, Write, Bash, TaskStop
 model: sonnet
-color: magenta
+color: purple
 effort: medium
 maxTurns: 60
 ---

@@ -33,6 +33,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The `skill sections` check no longer fails a skill for a missing, extra or reordered `##` section or a script with no table row, and the `skill frontmatter` check no longer needs a `Not for` clause, as Anthropic's own skills have neither rule.
+- `exo:build`, `exo:spec` and `exo:diagnose` have their long steps split into short ones with a reason per judgment rule; the no-plan route, the `Route: this session` steps and the review brief of `exo:build` live in `skills/build/references/`.
+- The evals gain the negative case `evals/route-none-typo`, `tags: [smoke]` on `route-save` and `route-watch`, `--no-publish` in the documented eval commands, and a looser grader rule: one grader on the result and one on the steps.
+- The `builder` agent uses the documented color `purple`.
 - The candidate commit steps of `land-check.mjs` live in `land-candidate.mjs`, which leaves `land-check.mjs` at 348 lines, under the 400-line limit.
 - `exo:build` lands a linear chain of more than three tasks in one fresh builder per four tasks, with one report and status line per task.
 - `exo:spec` ends with a paste-ready prompt that runs `exo:build` in a fresh session, instead of invoking build itself.
@@ -64,6 +68,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `build-dispatch.mjs` ends with a usage error on an `--attempt` that is not a whole number of 1 or more, where `--attempt two` picked the second-attempt model.
+- The `lib/` files import `shared-values.mjs` by relative path.
+- The `shared mentions` check reports a malformed entry as a FAIL naming the entry instead of crashing.
+- The `shared literals` check matches a shared number only as a whole token and reads the values under `--repository-root`.
+- `dispatch-prep.mjs` gives each symptom its own report file, where two symptoms with the same first 40 characters shared one.
+- `learn-step.mjs` exits 1 on a subprocess failure and lists the ids already saved.
 - `next-task.mjs` moves a failed report to `failed-report.md` and prints its `Failed report:` path when it dispatches the task again, so the new attempt starts with no stale report.
 - `land-task.mjs` lists untracked files once per run and reads the git common dir once, through the repo state and `commonDir`.
 - A `Files:` glob covers a staged deletion it names, and a glob that names only an ignored file is refused by name.

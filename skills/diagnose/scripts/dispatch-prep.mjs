@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -9,7 +10,9 @@ import { scratchPath } from '#scratch-path';
 
 const USAGE = 'usage: dispatch-prep.mjs --symptom <text> [--bisect <file>] [--handoff <file>] [--ruled-out <text>]';
 const SKILL_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SLUG_MAX = 40;
+const NAME_MAX = 40;
+const HASH_LENGTH = 8;
+const SLUG_MAX = NAME_MAX - HASH_LENGTH - 1;
 
 function template(name) {
   const text = fs.readFileSync(path.join(SKILL_DIR, 'references', name), 'utf8');
@@ -22,7 +25,8 @@ function fill(text, values) {
 
 export function slugOf(symptom) {
   const slug = symptom.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, SLUG_MAX).replace(/^-+|-+$/g, '');
-  return slug === '' ? 'symptom' : slug;
+  const hash = crypto.createHash('sha256').update(symptom).digest('hex').slice(0, HASH_LENGTH);
+  return `${slug === '' ? 'symptom' : slug}-${hash}`;
 }
 
 function firstBad(file) {

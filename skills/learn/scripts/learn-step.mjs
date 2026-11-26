@@ -21,10 +21,13 @@ function pickedIndexes(pick, count) {
   return numbers.map((number) => number - 1);
 }
 
-function decide(command, ids, cwd) {
+class StepError extends Error {}
+
+function decide(command, ids, cwd, saved) {
   if (ids.length === 0) return;
   const result = spawnSync(process.execPath, [CORRECTIONS, command, ...ids, ...(cwd === undefined ? [] : ['--cwd', cwd])], { encoding: 'utf8' });
-  if (result.status !== 0) throw new UsageError(result.stderr.trim() || `${command} failed`);
+  if (result.status !== 0) throw new StepError(`${result.stderr.trim() || `${command} failed`}\nalready saved: ${saved.length === 0 ? 'none' : saved.join(' ')}`);
+  saved.push(...ids);
 }
 
 function main() {
@@ -34,8 +37,9 @@ function main() {
   const picked = new Set(pickedIndexes(pick, ids.length));
   const kept = ids.filter((_, index) => picked.has(index));
   const rejected = ids.filter((_, index) => !picked.has(index));
-  decide('keep', kept, cwd);
-  decide('reject', rejected, cwd);
+  const saved = [];
+  decide('keep', kept, cwd, saved);
+  decide('reject', rejected, cwd, saved);
   process.stdout.write(`kept:${kept.map((id) => ` ${id}`).join('')}\nrejected:${rejected.map((id) => ` ${id}`).join('')}\n`);
 }
 
@@ -43,8 +47,8 @@ if (isMain(import.meta.url)) {
   try {
     main();
   } catch (error) {
-    if (!(error instanceof UsageError)) throw error;
+    if (!(error instanceof UsageError || error instanceof StepError)) throw error;
     console.error(error.message);
-    process.exitCode = USAGE_EXIT;
+    process.exitCode = error instanceof UsageError ? USAGE_EXIT : 1;
   }
 }
