@@ -37,6 +37,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:build` lands a task with `Red: skipped: no test file seen` instead of refusing it when no changed file is recognised as a test.
 - `exo:build` builders follow structure rules: one-way imports, one owner and one meaning per helper and name, deep modules, a new function instead of one more flag on shared code, a current codemap and file and function size as a smell, against the project's lint limit first.
 - The `exo:build` end-of-run review checks the diff against the structure rules, and an `exo:spec` Review Focus bullet may name a structure fault such as import direction.
+- `exo:ideas` starts 4 helpers instead of about 15 (a scout and two generators side by side, then one judge that rewrites near misses once), has no second round, and counts an idea as strong only at 16/20 or more, not `exists` in prior art, and beating the best existing answer in both orders.
 
 ### Fixed
 
