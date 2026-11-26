@@ -10,7 +10,7 @@ const FRONTMATTER = [
   'description: Use when testing. Not for real skills.',
   'metadata:',
   '  author: exo',
-  '  tags: [demo, test]',
+  '  tags: demo, test',
   '---'
 ];
 const HEADINGS = ['Purpose', 'Prerequisites', 'Instructions', 'Examples', 'Limitations', 'Troubleshooting'];

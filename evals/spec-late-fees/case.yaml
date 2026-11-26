@@ -2,35 +2,3 @@ schema_version: "1.1"
 name: spec-late-fees
 context:
   scaffold_script: scaffold.sh
-execution:
-  max_turns: 40
-  allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write, Task, Agent]
-  prompt: |
-    I run the little shelf lending app in this folder and want late fees added. Plan it for me, don't build anything yet, and I won't be around to answer questions, so take sensible defaults for anything I don't mention.
-
-    What I want, all decided:
-    - A fee is 25 cents per late day, starting after a 3 day grace period, capped at 5 euros per loan.
-    - Fees apply to open loans (counted up to today) and to loans returned late (counted up to the return date).
-    - A new `fees` command lists each member with a fee, with the total per member.
-    - A `fees-export` command writes the fee lines to a file for the bookkeeper, one line per loan with a fee, with the member, the title, the days late and the fee.
-    - The `overdue` command also shows each loan's fee.
-    - A member whose open fees are over 10 euros in total is flagged as blocked from borrowing in the `fees` output.
-
-    Write the plan so someone can build it later without asking me anything.
-graders:
-  - name: skill
-    type: tool_used
-    tool: Skill
-  - name: brief-written
-    type: file_exists
-    path: 'docs/specs/*.md'
-  - name: criteria
-    type: llm
-    weight: 1
-    criteria: |
-      Read the final message. Pass only when all of these hold:
-
-      - It names the path of the brief written under `docs/specs/`.
-      - It says nothing was built or committed as code.
-      - It takes no default of its own: each choice the request leaves open that no code or web source settles is asked as a question for the user or listed under `## Open points` in the brief.
-      - It says what runs next: the build.

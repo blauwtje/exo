@@ -8,7 +8,7 @@ Each release appends one row and no row is rewritten. The releasing session runs
 - check seconds: time `npm run check`
 - always-on tokens: `claude plugin details exo`
 - tokens per use of `build`, `gate`, `spec`, `diagnose` and `ship`: `claude -p "/skill-doctor"`, 7-day tokens divided by uses
-- eval score with and without the plugin, cost ratio and time ratio: `claude plugin eval --json --max-cost-usd 38`
+- eval score with and without the plugin, cost ratio and time ratio: `claude plugin eval . --trust-plugin --scaffold --allow-tools Bash Edit Write --json --judge-model sonnet --no-publish --max-cost-usd 38`
 - model and effort: the setting of that eval run; a second row records the same eval with `--model` set to another model
 
 | date | commit | tracked files | check modules | test files | check seconds | always-on tokens | build | gate | spec | diagnose | ship | eval score with / without | cost ratio | time ratio | model | effort |

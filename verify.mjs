@@ -7,6 +7,8 @@ import { createReport } from './verify/report.mjs';
 import { createRepository } from './verify/repository.mjs';
 import { checkSkillFrontmatter } from './verify/checks/skill-frontmatter.mjs';
 import { checkSkillSections } from './verify/checks/skill-sections.mjs';
+import { checkAgentFrontmatter } from './verify/checks/agent-frontmatter.mjs';
+import { checkEvalCases } from './verify/checks/eval-cases.mjs';
 import { checkMarkdownReferences } from './verify/checks/markdown-references.mjs';
 import { checkPluginValidate } from './verify/checks/plugin-validate.mjs';
 import { checkReferenceSplit } from './verify/checks/reference-split.mjs';
@@ -56,6 +58,8 @@ const behavior = values.static ? null : startSkillScriptBehavior(repository);
 
 checkSkillFrontmatter(report, repository);
 checkSkillSections(report, repository);
+checkAgentFrontmatter(report, repository);
+checkEvalCases(report, repository);
 checkMarkdownReferences(report, repository);
 checkPluginValidate(report, repository);
 checkReferenceSplit(report, repository);

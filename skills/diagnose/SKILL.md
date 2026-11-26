@@ -6,8 +6,9 @@ model: opus
 effort: medium
 metadata:
   author: exo
-  tags: [debugging, bisect, repro]
+  tags: debugging, bisect, repro
 ---
+
 # Diagnose
 
 ## Purpose
@@ -77,11 +78,8 @@ Next: exo:ship
 
 | Error | Cause | Solution |
 | --- | --- | --- |
-| No repro | No command shows the failure | Follow step 1. |
 | `Bisect:` line, exit 1, repro passes at HEAD | There is nothing to bisect | Follow step 1. |
 | `Bisect:` line, exit 1, cannot be bisected | No good commit exists, or the result alternates or every run was skipped | Find the suspect without bisect, starting at step 2. |
-| Two rounds with no change | Isolation removed nothing that clears the symptom | Follow step 3. |
-| Handoff says `failed` | The fix did not prove | Follow Delegating. |
 
 ## Available Scripts
 

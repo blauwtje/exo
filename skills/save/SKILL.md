@@ -4,7 +4,7 @@ description: "Writes a handoff file for unfinished work and reads it back in a f
 argument-hint: "[what the next session must not lose]"
 metadata:
   author: exo
-  tags: [handoff, session, resume]
+  tags: handoff, session, resume
 ---
 
 # Save
@@ -39,7 +39,7 @@ Freeze what this session knows and the next one cannot rebuild. Point to files a
 
 ### Continue from a handoff
 
-When the user asks to continue saved work, run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path`, read the file it prints, run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" stale`, then this text once: "Diff the work this handoff records as done against the work it still lists as next or open, name the resume point, and repeat no step it records as proven. Verify an inherited claim against the real artifact before building on it: a prior session's report is not the proof. Name what handoff.mjs stale lists as changed since, before relying on a claim." With no file there, say which branch has none and write nothing.
+When the user asks to continue saved work, run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path`, read the file it prints, run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" stale`, then say the text in `references/continue.md` once. Open it when the user asks to continue. With no file there, say which branch has none and write nothing.
 
 ## Examples
 
@@ -52,14 +52,6 @@ Saved to <handoff path>. Run /clear, then say "continue from the handoff".
 ## Limitations
 
 - Push nothing and open no pull request.
-
-## Troubleshooting
-
-| Error | Cause | Solution |
-| --- | --- | --- |
-| No file at the printed handoff path | Nothing was saved on this branch | Say which branch has none and write nothing. |
-| `git diff > <patch>` fails | The parent folder of the handoff path does not exist | Create the parent folder, then rerun the command. |
-| The handoff names a commit that is not `git log -1` | Work continued after the `Written` date | Name what changed since before relying on a claim. |
 
 ## Available Scripts
 

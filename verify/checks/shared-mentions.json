@@ -121,21 +121,6 @@
   },
   {
     "file": "skills/search/SKILL.md",
-    "pattern": "quick \\(\\d+ worker, (\\d+) calls",
-    "value": "SEARCH_TIERS.quick.calls"
-  },
-  {
-    "file": "skills/search/SKILL.md",
-    "pattern": "quick \\(\\d+ worker, \\d+ calls, (\\d+) minutes",
-    "value": "SEARCH_TIERS.quick.minutes"
-  },
-  {
-    "file": "skills/search/SKILL.md",
-    "pattern": "quick \\(.*?read target (\\d+) pages\\)",
-    "value": "SEARCH_TIERS.quick.pages"
-  },
-  {
-    "file": "skills/search/SKILL.md",
     "pattern": "standard \\((\\d+) to \\d+ workers",
     "value": "SEARCH_TIERS.standard.workers.0"
   },
@@ -143,21 +128,6 @@
     "file": "skills/search/SKILL.md",
     "pattern": "standard \\(\\d+ to (\\d+) workers",
     "value": "SEARCH_TIERS.standard.workers.1"
-  },
-  {
-    "file": "skills/search/SKILL.md",
-    "pattern": "standard \\(.*?workers, (\\d+) calls",
-    "value": "SEARCH_TIERS.standard.calls"
-  },
-  {
-    "file": "skills/search/SKILL.md",
-    "pattern": "standard \\(.*?calls, (\\d+) minutes",
-    "value": "SEARCH_TIERS.standard.minutes"
-  },
-  {
-    "file": "skills/search/SKILL.md",
-    "pattern": "standard \\(.*?read target (\\d+) pages\\)",
-    "value": "SEARCH_TIERS.standard.pages"
   },
   {
     "file": "skills/search/SKILL.md",
@@ -171,23 +141,8 @@
   },
   {
     "file": "skills/search/SKILL.md",
-    "pattern": "deep \\(.*?workers, (\\d+) calls",
-    "value": "SEARCH_TIERS.deep.calls"
-  },
-  {
-    "file": "skills/search/SKILL.md",
-    "pattern": "deep \\(.*?calls each, (\\d+) minutes each",
-    "value": "SEARCH_TIERS.deep.minutes"
-  },
-  {
-    "file": "skills/search/SKILL.md",
     "pattern": "(\\d+) minutes for the whole run",
     "value": "SEARCH_TIERS.deep.runMinutes"
-  },
-  {
-    "file": "skills/search/SKILL.md",
-    "pattern": "deep \\(.*?read target (\\d+) pages per worker",
-    "value": "SEARCH_TIERS.deep.pages"
   },
   {
     "file": "CONTRIBUTING.md",
@@ -230,11 +185,6 @@
     "file": "guide/ship.md",
     "pattern": "body of at most (\\d+) lines",
     "value": "PR_BODY_MAX_LINES"
-  },
-  {
-    "file": "skills/learn/SKILL.md",
-    "pattern": "store holds (\\d+) notes",
-    "value": "LESSON_MAX_NOTES"
   },
   {
     "file": "skills/learn/SKILL.md",
@@ -358,12 +308,12 @@
   },
   {
     "file": "skills/spec/SKILL.md",
-    "pattern": "model and effort `(\\w+) [\\d.]+, \\w+`",
+    "pattern": "`Route: builder`, `(\\w+), \\w+`",
     "value": "agents/builder.md#model"
   },
   {
     "file": "skills/spec/SKILL.md",
-    "pattern": "model and effort `\\w+ [\\d.]+, (\\w+)`",
+    "pattern": "`Route: builder`, `\\w+, (\\w+)`",
     "value": "agents/builder.md#effort"
   },
   {
@@ -387,37 +337,37 @@
     "value": "agents/researcher.md#effort"
   },
   {
-    "file": "skills/search/SKILL.md",
+    "file": "skills/search/references/environment.md",
     "pattern": "the deadline of a call \\((\\d+), at most",
     "value": "SEARCH_DEADLINE_MS"
   },
   {
-    "file": "skills/search/SKILL.md",
+    "file": "skills/search/references/environment.md",
     "pattern": "the deadline of a call \\(\\d+, at most (\\d+)\\)",
     "value": "SEARCH_MAX_DEADLINE_MS"
   },
   {
-    "file": "skills/search/SKILL.md",
+    "file": "skills/search/references/environment.md",
     "pattern": "a fetch \\((\\d+)\\)",
     "value": "SEARCH_FETCH_MS"
   },
   {
-    "file": "skills/search/SKILL.md",
+    "file": "skills/search/references/environment.md",
     "pattern": "all attempts at one url \\((\\d+)\\)",
     "value": "SEARCH_URL_BUDGET_MS"
   },
   {
-    "file": "skills/search/SKILL.md",
+    "file": "skills/search/references/environment.md",
     "pattern": "the Chrome lock wait \\((\\d+)\\)",
     "value": "SEARCH_LOCK_MS"
   },
   {
-    "file": "skills/search/SKILL.md",
+    "file": "skills/search/references/environment.md",
     "pattern": "the Chrome start \\((\\d+)\\)",
     "value": "SEARCH_CHROME_START_MS"
   },
   {
-    "file": "skills/search/SKILL.md",
+    "file": "skills/search/references/environment.md",
     "pattern": "the pause between Reddit requests \\((\\d+)\\)",
     "value": "SEARCH_REDDIT_GAP_MS"
   },
@@ -445,16 +395,6 @@
     "file": "skills/build/SKILL.md",
     "pattern": "`(\\w+) <n> [A-Z][A-Z ]*[A-Z]",
     "value": "STATUS_BLOCKED"
-  },
-  {
-    "file": "skills/build/SKILL.md",
-    "pattern": "\\| `\\w+ <n> ([A-Z][A-Z ]*[A-Z])` \\|",
-    "value": "STATUS_NEEDS_ANSWER"
-  },
-  {
-    "file": "skills/build/SKILL.md",
-    "pattern": "\\| `([A-Z][A-Z ]*[A-Z])` \\| The plan no longer fits",
-    "value": "STATUS_PLAN_DRIFT"
   },
   {
     "file": "skills/build/SKILL.md",
@@ -518,7 +458,7 @@
   },
   {
     "file": "skills/spec/SKILL.md",
-    "pattern": "\\| `([A-Z][A-Z ]*[A-Z])` from a builder \\|",
+    "pattern": "On `([A-Z][A-Z ]*[A-Z])` or a Decision",
     "value": "STATUS_PLAN_DRIFT"
   },
   {

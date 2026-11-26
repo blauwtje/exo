@@ -4,7 +4,7 @@ description: "Turns one question on any subject into a short list of novel, usef
 argument-hint: "<question>"
 metadata:
   author: exo
-  tags: [ideas, brainstorm, ideation]
+  tags: ideas, brainstorm, ideation
 ---
 
 # Ideas
@@ -39,8 +39,6 @@ Start three helpers in one message, side by side, because none needs another's f
 
 Start the Judge as soon as all three helpers have returned: `exo:researcher`, prompt line `Sources: web` first, `${CLAUDE_SKILL_DIR}/references/judge.md`, model sonnet, effort high. It screens the ideas, improves the near misses once, compares the promising ones with the best existing answer in both orders, ranks them, and writes judge.md only. It replies with text: the `Strong: <n> of <m>` line and the top 3, one line each.
 
-The strong rule: an idea is strong only when its total is at least 16 out of 20, its verdict is not `exists`, and it beats the best existing answer in both orders.
-
 ### Reply
 
 From the Judge's reply, give the top 3 (title, score, strong yes or no, one line each) and the path of judge.md. Read no file.
@@ -59,15 +57,8 @@ Report: ~/.ideas/<YYYY-MM-DD>-<slug>/judge.md
 ## Limitations
 
 - The run is fully automatic: it asks nothing after the question.
-- Ideas rest on the helpers' knowledge and a web check for prior art, not on a sourced search; use /exo:search for sources.
+- Ideas rest on the helpers' knowledge and a web check for prior art, not on a sourced search; use `exo:search` for sources.
 - Run files are append-only, and a run folder is never reused: a second run of the same question gets `-2`.
-
-## Troubleshooting
-
-| Error | Cause | Solution |
-| --- | --- | --- |
-| A helper reports an error or no result | It failed to run or to write its file | See Setup step 3. |
-| A helper still fails after the rerun | A core step failed | Stop the run and tell the user which step failed. |
 
 ## Available Scripts
 

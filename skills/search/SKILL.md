@@ -4,7 +4,7 @@ description: "Writes a cited deep-research report to docs/research/ whose quotes
 argument-hint: "<question>"
 metadata:
   author: exo
-  tags: [search, research, reddit, github, wikipedia]
+  tags: search, research, reddit, github, wikipedia
 ---
 
 # Search
@@ -30,7 +30,7 @@ Split the question into sub-questions, let one worker per sub-question read the 
 ## Instructions
 
 1. Note the start time.
-2. Pick the tier from the question's complexity: one fact is quick (1 worker, 10 calls, 2 minutes each, read target 5 pages); a comparison of a few named things is standard (4 to 5 workers, 15 calls, 5 minutes each, read target 8 pages); an open or broad question is deep (8 to 15 workers, 18 calls each, 15 minutes each, 20 minutes for the whole run, read target 12 pages per worker). Words in the prompt that ask for quick or deep override this.
+2. Pick the tier from the question's complexity: one fact is quick (1 worker); a comparison of a few named things is standard (4 to 5 workers); an open or broad question is deep (8 to 15 workers, 20 minutes for the whole run). `plan.mjs` sets each worker's call budget, read target and deadline for the tier. Words in the prompt that ask for quick or deep override this.
 3. Write as many sub-questions as the tier has workers, each from a different perspective: a novice and an expert, a user and a maintainer, a critic and a fan, the past and the present.
 4. Write the sub-questions as a JSON array of strings to a file, then run `node "${CLAUDE_SKILL_DIR}/scripts/plan.mjs" --question <question> --tier <tier> --subs <file>`, adding `--hosts <host,host>` when the user said to use only some sources, so `verify.mjs` flags a report link outside them, and `--sources <text>` for the sources the user named. It prints `Run: <run dir>` and one ready worker prompt per sub-question, and writes `<run dir>/plan.json` with each status `open`.
 5. Send one `exo:researcher` per printed worker prompt in one message, with no model or effort named, the prompt as its message, at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (20 by default) at once. Check each result for an error and launch the refused ones after the first group ends.
@@ -56,21 +56,17 @@ People test skills by running fixed prompts and diffing the output. Report: <pat
 
 ## Limitations
 
-- Reddit blocks logged-out and headless requests and WebFetch cannot reach it, so the Reddit part uses the user's own login in a Chrome window; the first Reddit search installs `playwright-core` (about 14 MB, no browser download) into `~/.search-reddit`.
+- Reddit blocks logged-out and headless requests and WebFetch cannot reach it, so the Reddit part uses the user's own login in a Chrome window; the first Reddit search installs `playwright-core` (no browser download) into `~/.search-reddit`.
 - Reddit's User Agreement does not allow automated access without Reddit's permission, and Reddit can suspend the account used. Use it at your own risk and at a slow, personal pace.
 - `~/.search-reddit/profile` holds the Reddit login. Anyone who gets that folder can use the account, so never share it or commit it.
-- Environment variables: `SEARCH_REDDIT_HOME` keeps the login and `playwright-core` somewhere other than `~/.search-reddit`; `CHROME_PATH` names the Chrome binary; `SEARCH_REDDIT_PORT` sets the Chrome debugging port when 9333 is taken, and the port after it must be free too. `EXO_SEARCH_DEADLINE_MS`, `EXO_SEARCH_FETCH_MS`, `EXO_SEARCH_URL_BUDGET_MS`, `EXO_SEARCH_LOCK_MS`, `EXO_SEARCH_CHROME_START_MS` and `EXO_SEARCH_REDDIT_GAP_MS` set the deadline of a call (240000, at most 290000), a fetch (15000), all attempts at one url (45000), the Chrome lock wait (60000), the Chrome start (10000) and the pause between Reddit requests (2000), all in milliseconds.
+- To move the Reddit login, name the Chrome binary, change the debugging port or change a time limit, read `references/environment.md`.
 
 ## Troubleshooting
 
 | Error | Cause | Solution |
 | --- | --- | --- |
 | `search.mjs` exits 1 with a reason | The JSON plan a worker passed is invalid | Fix the plan as the reason says and rerun. |
-| `Uncovered: Q<n>` | No worker found evidence for that sub-question | Follow step 8. |
-| `verify.mjs` lists a line | A quote or link is not in a saved page, or an `[E<n>]` is not in `ranked.json` | Fix that line once, then reply. |
 | `Failed:` from `fetch.mjs` | The page and its fallbacks could not be read | The worker reads it with WebFetch and marks it `summary`. |
-| `Reddit login needed` in a return | No Reddit login in the Chrome profile | Follow the Reddit login paragraph after step 12. |
-| 403 from Reddit | Reddit refused the request | Report it. |
 
 ## Available Scripts
 

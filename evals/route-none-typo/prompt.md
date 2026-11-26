@@ -1,6 +1,7 @@
 ---
 max_turns: 10
-allowed_tools: [Read, Glob, Grep, Skill]
+tags: [smoke]
+allowed_tools: [Read, Glob, Grep, Skill, Edit]
 ---
 
 In the README, "recieve" is a typo; fix that one word.

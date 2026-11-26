@@ -6,7 +6,7 @@ model: sonnet
 effort: medium
 metadata:
   author: exo
-  tags: [documentation, writing, changelog]
+  tags: documentation, writing, changelog
 ---
 
 # Document

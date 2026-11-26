@@ -2,22 +2,3 @@ schema_version: "1.1"
 name: ship-branch-push
 context:
   scaffold_script: scaffold.sh
-execution:
-  max_turns: 30
-  allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write]
-  prompt: |
-    Work inside `app`. The greeting change on feat/greeting is committed and verified. A follow-up remains: the greeting text needs a wording review. Put the `bin` directory next to `app` first on PATH so a stand-in `gh` answers, and keep its calls in `gh-calls.log`. Ship it.
-graders:
-  - name: criteria
-    type: llm
-    weight: 1
-    criteria: |
-      Judge only the final message. Pass only when all of these hold:
-
-      - It ends on the route menu, with the question `Where should the commits go?`.
-      - It says nothing was pushed yet.
-      - It names the follow-up and says no issue is filed for it.
-      - It does not say a pull request, a merge or an issue was opened or made.
-  - name: skill
-    type: tool_used
-    tool: Skill

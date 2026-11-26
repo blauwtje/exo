@@ -38,15 +38,13 @@ function parseLine(line, values) {
 }
 
 const METADATA_LINE = /^ {2}(?<key>author|tags): +(?<value>.+)$/;
-const TAG_LIST = /^\[(?<items>[^\]]*)\]$/;
 const TAG_WORD = /^[a-z]+$/;
 const TAG_LIMIT = 5;
 
 function parseTags(valueText) {
-  const match = TAG_LIST.exec(valueText);
-  const items = match ? match.groups.items.split(',').map((item) => item.trim()) : [];
-  const valid = items.length >= 1 && items.length <= TAG_LIMIT && items.every((item) => TAG_WORD.test(item));
-  return valid ? { value: items } : { error: `metadata tags must be [a, b] with 1 to ${TAG_LIMIT} lowercase words` };
+  const items = valueText.split(', ');
+  const valid = items.length <= TAG_LIMIT && items.every((item) => TAG_WORD.test(item));
+  return valid ? { value: valueText } : { error: `metadata tags must be a plain string of 1 to ${TAG_LIMIT} lowercase words separated by ", "` };
 }
 
 function splitMetadata(head) {

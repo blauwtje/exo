@@ -4,7 +4,7 @@ description: "Shapes a request into a brief: the decisions only the user can mak
 argument-hint: "outcome to shape"
 metadata:
   author: exo
-  tags: [spec, plan, brief]
+  tags: spec, plan, brief
 ---
 
 # Spec
@@ -52,7 +52,7 @@ Spec settles every decision the user would notice before any code is written, so
    - It reads the brief as a builder who cannot ask anyone, and returns each point where a guess changes the build as a Fact line with its `path:line` or URL, or as a question for the user.
    - Put each Fact under `## Facts` only when the researcher labelled it measured. Send an inferred or guess claim to a fresh `exo:researcher` as one bounded question, or to the user.
    - Ask each user question as in step 3, and list an unanswered one under `## Open points`. Then rerun step 5.
-7. **Hand off.** Invoked by another stage: return without asking. In plan mode, plan approval is the reply. Else end with the brief path or `#<n>`, one code block holding a paste-ready prompt that runs `exo:build` on that path, and one line naming the model and effort `Sonnet 5.5, medium`. Invoke nothing.
+7. **Hand off.** Invoked by another stage: return without asking. In plan mode, plan approval is the reply. Else end with the brief path or `#<n>`, one code block holding a paste-ready prompt that runs `exo:build` on that path, and one line naming the model and effort as the Models table of `exo:build` gives for `Route: builder`, `Sonnet, medium`. Invoke nothing.
 8. **Replan.** On `PLAN DRIFT` or a Decision proven wrong, edit only the tasks with no `Plan-task:` commit, keep the other Decisions closed, rerun step 5 and append one `## Log` line to the brief.
 
 ## Examples
@@ -80,9 +80,6 @@ After the answer, the brief is stored where the `specs` setting says and the rep
 | Error | Cause | Solution |
 | --- | --- | --- |
 | `plan-check.mjs` refuses the brief | An `## Open points` entry has no answer | Ask the open point as in step 3, then rerun step 5 |
-| `Verdict: stop` | An existing tool already covers the request | Write no brief and name that tool |
-| `gh auth status` fails or no GitHub `origin` | The `issues` setting cannot reach GitHub | Write the file and say so |
-| `PLAN DRIFT` from a builder | A Decision proved wrong | Follow step 8 |
 
 ## Available Scripts
 

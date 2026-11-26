@@ -85,6 +85,6 @@ export function checkSkillSections(report, repository) {
   report.assert(
     errors.length === 0,
     'Skill sections',
-    { pass: 'every skill follows the NVIDIA section format', fail: errors.join('; ') }
+    { pass: 'every skill has its metadata, valid tables and existing scripts', fail: errors.join('; ') }
   );
 }

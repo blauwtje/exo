@@ -68,7 +68,7 @@ test('rejects when_to_use', () => {
   assert.equal(frontmatterResult(null, ['when_to_use: Use when testing']).passed, false);
 });
 
-const METADATA = ['metadata:', '  author: exo', '  tags: [build, plan]'];
+const METADATA = ['metadata:', '  author: exo', '  tags: build, plan'];
 
 test('accepts a metadata block with author and tags', () => {
   const outcome = frontmatterResult(null, METADATA);
@@ -76,15 +76,19 @@ test('accepts a metadata block with author and tags', () => {
 });
 
 test('rejects six tags', () => {
-  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: [a, b, c, d, e, f]']).passed, false);
+  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: a, b, c, d, e, f']).passed, false);
 });
 
 test('rejects an uppercase tag', () => {
-  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: [Build]']).passed, false);
+  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: Build']).passed, false);
 });
 
-test('rejects an empty tag list', () => {
-  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: []']).passed, false);
+test('rejects the list form of tags', () => {
+  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: [build, plan]']).passed, false);
+});
+
+test('rejects tags separated without a space', () => {
+  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: build,plan']).passed, false);
 });
 
 test('rejects an unknown metadata key', () => {

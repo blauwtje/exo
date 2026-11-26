@@ -30,6 +30,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `proof-run.mjs` runs a build proof to a log and prints the failing lines or the last 40 lines, and `build-dispatch.mjs` prints the next task's dispatch fields.
 - `handoff-write.mjs` writes the save handoff file, and `learn-step.mjs` records a numbered pick as keep and reject.
 - `run-init.mjs` makes the ideas run folder, `pack.mjs` packs the transcript lines into researcher batches, and `plan-template.mjs` chains the definition-of-done commands.
+- The `agent frontmatter` check fails an agent whose frontmatter leaves Anthropic's documented fields, models, efforts or colors, and an output style with an undocumented key.
+- The `eval cases` check fails an eval case without `prompt.md` and a grader file, with an undocumented key or grader type, a `Skill` grader with no `input_match`, or a `smoke` case that holds a judge grader.
+- `skills/author/references/anthropic-format.md` lists the Anthropic format rules that no check enforces, and a principle refresh re-reads its sources.
+- `evals/route-none-typo` has a scaffold that writes the README and a `regex` grader on the fixed word.
 
 ### Changed
 
@@ -65,6 +69,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `search` scripts (`fetch`, `pick`, `plan`, `search`, `reddit`, `github`, `hn`) read their shared values from `lib/shared-values.mjs`, and each `EXO_*_MS` variable still overrides a duration.
 - The `watch` scripts (`list`, `pack`, `transcript`) and the `learn` scripts (`ledger`, `lessons`) read their shared limits from `lib/shared-values.mjs`.
 - The `build` scripts (`build-dispatch`, `land-task`, `next-task`, `undo-task`), `ship.mjs` and `brief-place.mjs` read their shared values from `lib/shared-values.mjs`.
+- Skill `metadata.tags` is a plain string such as `tags: spec, plan, brief`, because the Agent Skills spec makes metadata a map of strings.
+- Every eval case is `prompt.md` with `graders/`, each `Skill` grader names its skill in `input_match`, and the `smoke` tag sits on a case with no judge.
+- The eval commands in CONTRIBUTING.md and `evals/scorecard.md` carry `--trust-plugin`, `--scaffold`, `--allow-tools`, `--judge-model` and `--no-publish`.
+- `exo:spec` names the build model as `Sonnet, medium`, without a version.
+- Skill bodies drop the Troubleshooting rows that only restate a step, split their longest steps, and move the search environment variables, the save continue text and the watch batch brief to references.
+- The author skill asks for a reason with every judgment rule and number, and for one concrete example per output-shaping skill.
 
 ### Fixed
 
@@ -118,6 +128,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:search` waits out a Reddit 429 by its `Retry-After`, else `x-ratelimit-reset`, else `EXO_SEARCH_REDDIT_BACKOFF_MS`, retries twice, and fails a request whose wait would pass the call deadline, instead of losing the threads of the rest of the run.
 - `exo:search` cuts the wait after a Reddit reply with `x-ratelimit-remaining` below 1 at the call deadline, and prints the `Continue:` line only after the last round of a call.
 - `exo:build` ends git's options with `--` before the untracked task files it stages, so a task file whose name starts with `-` is committed instead of read as a git option.
+- The criteria graders of `route-author`, `route-save` and `route-watch` no longer ask the judge whether a skill loaded, which it cannot see.
+- The `skill sections` check no longer prints a pass text that names a section format it stopped checking.
 
 ### Changed
 

@@ -6,7 +6,7 @@ model: opus
 effort: medium
 metadata:
   author: exo
-  tags: [skill, agent, script]
+  tags: skill, agent, script
 ---
 
 # Author
@@ -35,6 +35,8 @@ Produce a skill or agent where every line changes what the model does.
 - Material only some runs need goes to `references/<topic>.md`, named in the body with the condition for opening it.
 - To use another skill, write "run `<plugin>:<name>`" and do not restate its rules.
 - Text handed to a delegate goes under `references/` too, named in the step that hands it over.
+- Open `references/anthropic-format.md` when you write or change a skill, agent, output style, hook or eval case, because it lists Anthropic's format rules that no check enforces.
+- Frontmatter keys `argument-hint`, `model` and `effort` are not in the Agent Skills spec and break a claude.ai upload, so add them only to a skill that runs in Claude Code.
 
 ### Agents
 

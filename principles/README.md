@@ -18,5 +18,6 @@ Add or keep a hook, check, agent, review, model tier or retry only if its value 
 
 Run `exo:researcher` on a page's Sources. If a page will not open, use the obscura browser.
 Then edit the page's bullets and its `Checked:` date.
+A refresh also re-reads the pages linked in `skills/author/references/anthropic-format.md` and updates that file and the value lists of the format checks under `verify/checks/`.
 
 Source addresses and pins live in the file docs/research/principle-sources.md at the repo root, outside git. A refresh lists the changed files per pin with `gh api repos/<owner>/<repo>/compare/<pin>...HEAD --jq '.files[].filename'`, reads only those, edits the bullets and `Checked:` dates, then moves the pin in that file.

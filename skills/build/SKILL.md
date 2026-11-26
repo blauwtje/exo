@@ -4,7 +4,7 @@ description: "Builds a change with a proof for each step and one review of the r
 argument-hint: "[plan path] [--land]"
 metadata:
   author: exo
-  tags: [build, plan, proof]
+  tags: build, plan, proof
 ---
 
 # Build
@@ -107,15 +107,6 @@ Dispatch:
 
 - Outside `Route: this session`, this session writes at most 2 product files in a run; send anything larger to a builder, one per independent part.
 - Run no check of your own after a landing.
-
-## Troubleshooting
-
-| Error | Cause | Solution |
-|---|---|---|
-| `BLOCKED <n> NEEDS ANSWER` | The task has an irreversible write or a file outside its list | Follow its route in step 4 of The loop |
-| `PLAN DRIFT` | The plan no longer fits the code | Follow its route in step 4 of The loop |
-| `BLOCKED proof <command> did not fail first` | The proof passes without the change | Follow its route in step 4 of The loop |
-| A build that fails twice | The first repair did not fix the cause | Follow its route in step 4 of The loop |
 
 ## Available Scripts
 
