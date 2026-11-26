@@ -55,3 +55,12 @@ test('a sub count outside the tier fails', async () => {
   assert.equal(code, 1);
   assert.match(stderr, /standard/);
 });
+
+test('a deep plan prints and stores the run deadline from runMinutes', async () => {
+  const eight = Array.from({ length: SEARCH_TIERS.deep.workers[0] }, (_, index) => `ask ${index}`);
+  const { stdout, plan: written } = await plan(eight, ['--tier', 'deep']);
+  const printed = stdout.match(/^Run deadline: (.+)$/m)?.[1];
+  assert.equal(printed, written.runDeadline);
+  const wait = Date.parse(printed) - Date.parse(written.subQuestions[0].deadline);
+  assert.equal(wait, (SEARCH_TIERS.deep.runMinutes - SEARCH_TIERS.deep.minutes) * 60 * 1000);
+});

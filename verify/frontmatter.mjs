@@ -1,7 +1,8 @@
 import { ALLOWED_EFFORT, ALLOWED_MODEL } from '#shared-values';
 
-const KEY_LINE = /^(?<key>name|description|effort|model|allowed-tools|argument-hint|disable-model-invocation|shell|license|compatibility|user-invocable|disallowed-tools|context|agent): +(?<value>.+)$/;
-const BOOLEAN_KEYS = ['disable-model-invocation', 'user-invocable'];
+const KEY_LINE = /^(?<key>name|description|effort|model|allowed-tools|argument-hint|disable-model-invocation|shell|license|compatibility|user-invocable|disallowed-tools|context|agent|when_to_use|arguments|background|paths): +(?<value>.+)$/;
+const BOOLEAN_KEYS = ['disable-model-invocation', 'user-invocable', 'background'];
+const HOOKS_LINE = /^hooks:/;
 const AMBIGUOUS_START = /^[-?:,[\]{}#&*!|>@`]/;
 const AMBIGUOUS_COLON = /:\s/;
 const AMBIGUOUS_COMMENT = /\s#/;
@@ -30,6 +31,7 @@ function parseQuoted(key, valueText) {
 }
 
 function parseLine(line, values) {
+  if (HOOKS_LINE.test(line)) return { error: 'hooks is not allowed in a skill: exo ships hooks only through hooks/hooks.json' };
   const match = KEY_LINE.exec(line);
   if (!match) return { error: `unsupported frontmatter line: ${line}` };
   const { key, value } = match.groups;

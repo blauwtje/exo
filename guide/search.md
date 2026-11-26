@@ -15,7 +15,7 @@ Not for this repo's code, a video url (`exo:watch`) or ideas (`exo:ideas`).
 - The skill sizes the run to the question: quick (1 worker), standard (4 to 5) or deep (8 to 15). Each worker takes one sub-question, searches, fetches the best pages with `skills/search/scripts/fetch.mjs` and writes word-for-word evidence; the API sources run through `search.mjs`.
 - `rank.mjs` merges the evidence by relevance, quality and diversity and lists each `Uncovered` sub-question, which gets one more worker.
 - The report goes to `docs/research/`, with an evidence id, a link and a quote per claim. `verify.mjs` checks that each quote and link is in a saved page, and a fresh reviewer checks that each quote supports its claim.
-- The first Reddit search installs `playwright-core` (about 14 MB, no browser download) into `~/.search-reddit`. If you are not logged in, Claude opens a Chrome window: log in to Reddit there and close that tab. After that, every Reddit call runs Chrome in the background, off screen and without taking focus, and quits it when done.
+- The first Reddit search installs `playwright-core` (no browser download) into `~/.search-reddit`. If you are not logged in, Claude opens a Chrome window: log in to Reddit there and close that tab. After that, every Reddit call runs Chrome in the background, off screen and without taking focus, and quits it when done.
 
 ## Requirements
 

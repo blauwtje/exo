@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { canonicalUrl, claimOwner } from "./claims.mjs";
@@ -200,6 +200,11 @@ function giveEachUrlOneSub(dir, files) {
   return kept;
 }
 
+export function runDeadlinePassed(dir, now = Date.now()) {
+  const file = join(dir, "plan.json");
+  return existsSync(file) && now > Date.parse(JSON.parse(readFileSync(file, "utf8")).runDeadline);
+}
+
 function main(argv) {
   const dir = flag(argv, "--run");
   if (!dir) throw new Error("rank.mjs needs --run <dir>");
@@ -213,6 +218,7 @@ function main(argv) {
   writeFileSync(join(dir, "ranked.json"), JSON.stringify(result, null, 2));
   console.log(sourceTable(result));
   console.log(`Sources read: ${result.ranked.length + result.dropped.length}`);
+  if (runDeadlinePassed(dir)) console.log("Run deadline passed");
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main(process.argv.slice(2));

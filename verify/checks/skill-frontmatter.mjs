@@ -4,6 +4,7 @@ import { readFrontmatter } from '../frontmatter.mjs';
 const SKILL_NAME_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const RESERVED_NAME = /anthropic|claude/;
 const COMPATIBILITY_LIMIT = 500;
+const LISTING_LIMIT = 1536;
 
 function skillErrors(file, relative, values) {
   const errors = [];
@@ -17,6 +18,9 @@ function skillErrors(file, relative, values) {
   if (name !== path.basename(path.dirname(file))) errors.push(`${relative}: name does not match directory`);
   if (description.trim() === '' || description.length > 1024 || /[<>]/.test(description)) {
     errors.push(`${relative}: invalid description`);
+  }
+  if (description.length + (values.get('when_to_use') ?? '').length > LISTING_LIMIT) {
+    errors.push(`${relative}: description and when_to_use exceed ${LISTING_LIMIT} characters`);
   }
   if (!/\bUse (when|for|at|only)\b/.test(description)) {
     errors.push(`${relative}: description lacks a Use clause`);

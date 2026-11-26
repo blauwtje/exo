@@ -1,6 +1,6 @@
 ---
 name: spec
-description: "Shapes a request into a brief: the decisions only the user can make, then a plan of tasks that each carry a proof command. Use when the user asks to plan or spec a change ('plan this', 'write a spec'), when a request leaves done, data, architecture or a trade-off open, or the user asks for design options for a change. Not for a clear goal, a failure, visual-only work, or ideas on another question (exo:ideas)."
+description: "Shapes a request into a brief: the decisions only the user can make, then a plan of tasks that each carry a proof command. Use when the user asks to plan or spec a change ('plan this', 'write a spec'), when a request leaves done, data, architecture or a trade-off open, or the user asks for design options for a change. Not for ideas on another question (exo:ideas)."
 argument-hint: "outcome to shape"
 metadata:
   author: exo

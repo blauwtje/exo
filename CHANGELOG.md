@@ -34,6 +34,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `eval cases` check fails an eval case without `prompt.md` and a grader file, with an undocumented key or grader type, a `Skill` grader with no `input_match`, or a `smoke` case that holds a judge grader.
 - `skills/author/references/anthropic-format.md` lists the Anthropic format rules that no check enforces, and a principle refresh re-reads its sources.
 - `evals/route-none-typo` has a scaffold that writes the README and a `regex` grader on the fixed word.
+- Seven eval cases replay failures from `evals/failures.md`: `build-no-scratch-files`, `build-no-third-flag`, `document-release-notes`, `log-injection-ignored`, `route-author-other-repo`, `route-none-first-correction` and `watch-quotes-url`.
+- `plan.mjs` prints a `Run deadline:` line for a deep search run and `rank.mjs` prints `Run deadline passed` after it, so a script holds the 20-minute limit.
 
 ### Changed
 
@@ -75,6 +77,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:spec` names the build model as `Sonnet, medium`, without a version.
 - Skill bodies drop the Troubleshooting rows that only restate a step, split their longest steps, and move the search environment variables, the save continue text and the watch batch brief to references.
 - The author skill asks for a reason with every judgment rule and number, and for one concrete example per output-shaping skill.
+- The skill frontmatter check accepts the documented fields `when_to_use`, `arguments`, `background` and `paths`, and fails a `description` plus `when_to_use` over 1,536 characters.
+- The `exo:spec` and `exo:learn` descriptions drop the exclusions that no seen failure backs.
+- `guide/search.md` gives no size for `playwright-core`.
 
 ### Fixed
 
@@ -130,6 +135,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:build` ends git's options with `--` before the untracked task files it stages, so a task file whose name starts with `-` is committed instead of read as a git option.
 - The criteria graders of `route-author`, `route-save` and `route-watch` no longer ask the judge whether a skill loaded, which it cannot see.
 - The `skill sections` check no longer prints a pass text that names a section format it stopped checking.
+- The session start hook also runs in a forked session.
 
 ### Changed
 

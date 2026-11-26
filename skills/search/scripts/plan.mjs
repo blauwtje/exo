@@ -40,9 +40,10 @@ export function makePlan({ question, tierName, asks, hosts, sources }, cwd, now 
   const deadline = new Date(now + tier.minutes * SECONDS_PER_MINUTE * MS_PER_SECOND).toISOString();
   const subQuestions = asks.map((ask, index) => ({ id: `Q${index + 1}`, ask, calls: tier.calls, deadline, status: 'open' }));
   const dir = fs.mkdtempSync(path.join(scratchPath(cwd, RESEARCH_SCRATCH), 'run-'));
-  const plan = { question, tier: tierName, subQuestions, ...(hosts.length > 0 && { hosts }) };
+  const runDeadline = tier.runMinutes && new Date(now + tier.runMinutes * SECONDS_PER_MINUTE * MS_PER_SECOND).toISOString();
+  const plan = { question, tier: tierName, subQuestions, ...(runDeadline && { runDeadline }), ...(hosts.length > 0 && { hosts }) };
   fs.writeFileSync(path.join(dir, 'plan.json'), `${JSON.stringify(plan, null, 2)}\n`);
-  const lines = [`Run: ${dir}`];
+  const lines = [`Run: ${dir}`, ...(runDeadline ? [`Run deadline: ${runDeadline}`] : [])];
   for (const sub of subQuestions) lines.push(`Worker ${sub.id}:`, workerPrompt(sub, { dir, tier, question, sources }));
   return lines.join('\n');
 }

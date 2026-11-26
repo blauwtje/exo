@@ -70,3 +70,23 @@ test("CLI writes ranked.json and prints the table and Uncovered lines", () => {
   assert.match(run.stdout, /Uncovered: Q2/);
   assert.equal(JSON.parse(readFileSync(join(dir, "ranked.json"), "utf8")).ranked[0].id, "E1");
 });
+
+test("runDeadlinePassed compares the injected clock with the plan's run deadline", async () => {
+  const { runDeadlinePassed } = await import("../skills/search/scripts/rank.mjs");
+  const dir = mkdtempSync(join(tmpdir(), "rank-deadline-"));
+  assert.equal(runDeadlinePassed(dir, now), false);
+  writeFileSync(join(dir, "plan.json"), JSON.stringify({ runDeadline: new Date(now).toISOString() }));
+  assert.equal(runDeadlinePassed(dir, now), false);
+  assert.equal(runDeadlinePassed(dir, now + 1), true);
+});
+
+test("CLI prints Run deadline passed only when the plan's run deadline is past", () => {
+  const dir = mkdtempSync(join(tmpdir(), "rank-line-"));
+  writeFileSync(join(dir, "evidence-1.jsonl"), `${JSON.stringify(item({ title: "Hello" }))}\n`);
+  const cli = () => spawnSync(process.execPath, ["skills/search/scripts/rank.mjs", "--run", dir, "--subs", "1"], { encoding: "utf8" });
+  assert.doesNotMatch(cli().stdout, /^Run deadline passed$/m);
+  writeFileSync(join(dir, "plan.json"), JSON.stringify({ runDeadline: "2020-01-01T00:00:00Z" }));
+  assert.match(cli().stdout, /^Run deadline passed$/m);
+  writeFileSync(join(dir, "plan.json"), JSON.stringify({ runDeadline: "2999-01-01T00:00:00Z" }));
+  assert.doesNotMatch(cli().stdout, /^Run deadline passed$/m);
+});

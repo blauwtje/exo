@@ -38,6 +38,10 @@ const ACCEPTED_KEYS = [
   'disallowed-tools: Bash',
   'context: fork',
   'agent: Explore',
+  'when_to_use: Use when testing',
+  'arguments: issue branch',
+  'background: false',
+  'paths: "src/**/*.js"',
 ];
 
 for (const line of ACCEPTED_KEYS) {
@@ -64,8 +68,25 @@ test('rejects a non-boolean user-invocable', () => {
   assert.equal(frontmatterResult(null, ['user-invocable: maybe']).passed, false);
 });
 
-test('rejects when_to_use', () => {
-  assert.equal(frontmatterResult(null, ['when_to_use: Use when testing']).passed, false);
+test('rejects hooks and names hooks/hooks.json', () => {
+  const outcome = frontmatterResult(null, ['hooks: {}']);
+  assert.equal(outcome.passed, false);
+  assert.match(outcome.detail, /hooks\/hooks\.json/);
+});
+
+test('rejects a non-boolean background', () => {
+  assert.equal(frontmatterResult(null, ['background: maybe']).passed, false);
+});
+
+test('rejects the list form of arguments, naming the field', () => {
+  const outcome = frontmatterResult(null, ['arguments: [issue, branch]']);
+  assert.equal(outcome.passed, false);
+  assert.match(outcome.detail, /arguments/);
+});
+
+test('rejects description plus when_to_use over 1536 characters', () => {
+  assert.equal(frontmatterResult(null, [`when_to_use: ${'a'.repeat(1500)}`]).passed, false);
+  assert.equal(frontmatterResult(null, [`when_to_use: ${'a'.repeat(1000)}`]).passed, true);
 });
 
 const METADATA = ['metadata:', '  author: exo', '  tags: build, plan'];
