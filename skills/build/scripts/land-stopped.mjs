@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { scratchPath } from '#scratch-path';
+import { taskScratchPath } from '#scratch-path';
 
 const STDIN_REPORT = 'stdin';
 
-export const implementerReportPath = (root, number) => scratchPath(root, `implementer-${number}.md`);
+export const implementerReportPath = (state, planId, number) => taskScratchPath(state, { planId, number }, 'implementer.md');
 
 function fileReportOf(file) {
   return fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
@@ -17,10 +17,10 @@ export function reportFlagOf(report) {
 
 const filled = (text) => text !== null && text.trim() !== '';
 
-export function reportSourceOf({ root, number, reportText, reportPath }) {
-  const named = reportPath ?? (reportText === null ? implementerReportPath(root, number) : STDIN_REPORT);
+export function reportSourceOf({ state, planId, number, reportText, reportPath }) {
+  const named = reportPath ?? (reportText === null ? implementerReportPath(state, planId, number) : STDIN_REPORT);
   if (filled(reportText)) return { reportText, reportPath: named };
-  const file = named === STDIN_REPORT ? implementerReportPath(root, number) : named;
+  const file = named === STDIN_REPORT ? implementerReportPath(state, planId, number) : named;
   const fromFile = fileReportOf(file);
   if (filled(fromFile)) return { reportText: fromFile, reportPath: file };
   return { reportText: null, reportPath: named };

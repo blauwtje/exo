@@ -3,10 +3,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { resolvePlanPath } from '../lib/checkout.mjs';
-import { scratchPath } from '../lib/scratch-path.mjs';
 import { REPOSITORY_ROOT, git, run, tempDir } from './harness.mjs';
 import { nextTaskReport, reviewEffort } from '../skills/build/scripts/next-task.mjs';
-import { landingCheckout, PLAN, SCRIPT as LAND_TASK } from './land-task-fixture.mjs';
+import { landingCheckout, reportFile, PLAN, SCRIPT as LAND_TASK } from './land-task-fixture.mjs';
 
 const NEXT_TASK = new URL('../skills/build/scripts/next-task.mjs', import.meta.url).pathname;
 const RELATIVE_PLAN = 'docs/plans/fixture.md';
@@ -81,14 +80,14 @@ test('next-task prints the brief, report and dispatch lines and writes the task 
   const briefPath = lines[3].replace(/^Brief: /, '');
   assert.notEqual(briefPath, lines[3]);
   assert.ok(path.isAbsolute(briefPath), briefPath);
-  assert.equal(lines[4], `Report: ${scratchPath(root, 'implementer-1.md')}`);
+  assert.equal(lines[4], `Report: ${reportFile(root, 'fixture', 1)}`);
   assert.equal(lines[5], 'Dispatch:');
   assert.deepEqual(lines.slice(6), [
     `  Plan: ${path.join(root, RELATIVE_PLAN)}`,
     `  Checkout: ${root}`,
     '  Task: 1',
     `  Read first: ${briefPath}`,
-    `  Report path: ${scratchPath(root, 'implementer-1.md')}`,
+    `  Report path: ${reportFile(root, 'fixture', 1)}`,
     `  Prompt: ${path.join(REPOSITORY_ROOT, 'skills/build/references/run-task-prompt.md')}`,
     `  Land with: --plan ${path.join(root, RELATIVE_PLAN)} --task 1 --root ${root}`
   ]);

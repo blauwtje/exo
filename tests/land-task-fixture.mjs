@@ -3,7 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { memoryDirectory } from '#config-directory';
-import { scratchPath } from '#scratch-path';
+import { taskScratchPath } from '#scratch-path';
+import { repoState } from '#repo-state';
 import { compactPlanFixture, compactTask as plainCompactTask, git, gitRepository } from './harness.mjs';
 
 export const compactTask = (options) => `${plainCompactTask(options)} | Red: none (fixture)`;
@@ -19,6 +20,8 @@ export const PLAN = compactPlanFixture({ tasks: [
   plainCompactTask({ number: 4, title: 'feat(app): two files', dependsOn: '1', files: ['src/app.js', 'src/note.md'], proof: CHANGED })
 ] }).replace('## Tasks', '## Non-goals\n- `src/other.js` stays as it is.\n\n## Tasks');
 
+export const reportFile = (root, planId, number) => taskScratchPath(repoState(root), { planId, number }, 'implementer.md');
+
 const LANDED_REPORT = 'Landed: the change\nUnresolved: none\n';
 
 export async function landingCheckout() {
@@ -26,8 +29,8 @@ export async function landingCheckout() {
   git(root, 'config', 'user.name', 'exo-test');
   git(root, 'config', 'user.email', 'exo-test@example.com');
   git(root, 'config', 'commit.gpgsign', 'false');
-  await fs.writeFile(scratchPath(root, 'implementer-1.md'), LANDED_REPORT);
-  await fs.writeFile(scratchPath(root, 'implementer-4.md'), LANDED_REPORT);
+  await fs.writeFile(reportFile(root, 'fixture', 1), LANDED_REPORT);
+  await fs.writeFile(reportFile(root, 'fixture', 4), LANDED_REPORT);
   return { root, planPath: path.join(root, 'docs/plans/fixture.md') };
 }
 
@@ -79,5 +82,5 @@ export async function compactCheckout(plan = COMPACT_PLAN) {
 }
 
 export async function writeReport(root, text) {
-  await fs.writeFile(scratchPath(root, 'implementer-1.md'), text);
+  await fs.writeFile(reportFile(root, 'compact', 1), text);
 }

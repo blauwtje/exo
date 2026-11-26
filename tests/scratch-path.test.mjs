@@ -3,7 +3,8 @@ import os from 'node:os';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
-import { scratchPath, ScratchPathError } from '../lib/scratch-path.mjs';
+import { scratchPath, ScratchPathError, taskScratchPath } from '../lib/scratch-path.mjs';
+import { repoState } from '../lib/repo-state.mjs';
 import { gitRepository, tempDir } from './harness.mjs';
 
 test('a scratch path lies under the system temp folder', async () => {
@@ -75,4 +76,28 @@ test('a scratch root that is a symlink is refused', { skip: process.platform ===
   fs.symlinkSync(await tempDir(), userRoot);
   const root = await gitRepository({ 'a.txt': 'a\n' });
   assert.throws(() => scratchPath(root, ''), (error) => error instanceof ScratchPathError && error.message.includes(userRoot));
+});
+
+test('a task scratch path is keyed by checkout, plan and task ', async () => {
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  const state = repoState(root);
+  const target = taskScratchPath(state, { planId: 'my-plan', number: 3 }, 'brief-3.md');
+  assert.equal(path.basename(path.dirname(target)), 'task-3');
+  assert.equal(path.basename(path.dirname(path.dirname(target))), 'my-plan');
+  assert.ok(target.startsWith(scratchPath(root, '')), target);
+  assert.equal(fs.statSync(path.dirname(target)).mode & 0o777, 0o700);
+  assert.notEqual(target, taskScratchPath(state, { planId: 'other', number: 3 }, 'brief-3.md'));
+});
+
+test('a task scratch path falls back to the state root outside git', async () => {
+  const plain = await tempDir();
+  const target = taskScratchPath({ root: plain, toplevel: () => null }, { planId: 'p', number: 1 }, 'x.md');
+  assert.ok(target.includes(`${path.basename(plain)}-`), target);
+});
+
+test('a plan id or name with a slash or .. is refused', async () => {
+  const state = { root: await tempDir(), toplevel: () => null };
+  for (const [planId, name] of [['a/b', 'x.md'], ['..', 'x.md'], ['p', 'a/b.md'], ['p', '../x.md']]) {
+    assert.throws(() => taskScratchPath(state, { planId, number: 1 }, name), ScratchPathError);
+  }
 });

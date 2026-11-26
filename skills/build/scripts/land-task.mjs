@@ -4,6 +4,7 @@ import { landedTasks, planIdOf } from '#plan-landed';
 import { frameOf } from '#plan-frame';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { resolvePlanPath } from '#checkout';
+import { repoState } from '#repo-state';
 import { LandingError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';
 import { checkTask, fixLand, refuseAlreadyLanded, refuseUnfinishedMerge, refuseMismatchedToplevel, taskOf, refuseBeforeProof, proveTask, clearStaleCandidate, stageCandidate, coverOrDrop, promoteAndCommit } from './land-check.mjs';
@@ -29,23 +30,24 @@ export function landingForCaller(text) {
 }
 
 export function landTask({ planText, number, root, reportText = null, reportPath = null, planPath }) {
-  refuseMismatchedToplevel(root);
+  const state = repoState(root);
+  refuseMismatchedToplevel(state);
   refuseUnfinishedMerge(root);
-  return locked(root, () => landLocked({ planText, number, root, ...reportSourceOf({ root, number, reportText, reportPath }), planPath }));
+  return locked(root, () => landLocked({ planText, number, root, state, ...reportSourceOf({ state, planId: planIdOf(planPath), number, reportText, reportPath }), planPath }));
 }
 
-function landLocked({ planText, number, root, reportText, reportPath, planPath }) {
+function landLocked({ planText, number, root, state, reportText, reportPath, planPath }) {
   const plan = parsePlan(planText);
   const planId = planIdOf(planPath);
-  clearStaleCandidate(root, planId);
+  clearStaleCandidate(state, planId);
   const task = taskOf(plan, number);
-  refuseAlreadyLanded(plan, task, { root, planId });
-  const { outside, unlistedLine } = refuseBeforeProof(task, { root, planPath, planId, reportText, reportPath });
+  refuseAlreadyLanded(plan, task, { state, planId });
+  const { outside, unlistedLine } = refuseBeforeProof(task, { state, planPath, planId, reportText, reportPath });
   const { proofs, pending, redLine } = proveTask(task, { root, planPath, reportText, reportPath });
-  const { changed, candidate, gateLine, missingLine, removedBlock } = stageCandidate({ task, frame: frameOf(plan.frame), unlistedLine, outside, root, planId });
-  coverOrDrop({ task, proofs, root, changed, candidate });
-  const sha = promoteAndCommit({ task, root, planId, planPath, candidate });
-  const landed = landedTasks(plan.tasks, root, planId);
+  const { changed, candidate, gateLine, missingLine, removedBlock } = stageCandidate({ task, frame: frameOf(plan.frame), unlistedLine, outside, state, planId });
+  coverOrDrop({ task, proofs, state, changed, candidate });
+  const sha = promoteAndCommit({ task, state, planId, planPath, candidate });
+  const landed = landedTasks(plan.tasks, state.planCommits(), planId);
   return landingReport({ number, sha, landed, proofs, pending, redLine, unlistedLine, missingLine, gateLine, removedBlock });
 }
 

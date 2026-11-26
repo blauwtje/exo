@@ -4,11 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { expandHome } from '#basics';
 import { parseFlags, isMain, environmentMs } from '#script-flags';
 import { resolvePlanPath } from '#checkout';
-import { landedTasks, planIdOf, defaultBase, commitsOf, taskCommits } from '#plan-landed';
-import { git, gitLine, gitText, shortSha } from '#git';
+import { landedTasks, planIdOf, taskCommits } from '#plan-landed';
+import { repoState } from '#repo-state';
+import { git, gitText, shortSha } from '#git';
 import { parsePlan } from '#plan-tasks';
 import { frameOf } from '#plan-frame';
-import { scratchPath } from '#scratch-path';
+import { taskScratchPath } from '#scratch-path';
 import { implementerReportPath } from './land-stopped.mjs';
 
 const USAGE = 'usage: next-task.mjs --plan <plan> [--root <checkout>]';
@@ -58,8 +59,8 @@ function movedCounts(root, numstat, moves) {
   return { changed, moved, missing };
 }
 
-export function reviewEffortLine(root, planText) {
-  const base = defaultBase(root);
+export function reviewEffortLine(root, planText, state = repoState(root)) {
+  const base = state.defaultBase();
   if (base === null) return 'Review effort: medium (base unknown)\n';
   const numstat = gitText(root, ['diff', '--numstat', '-M', `${base}...HEAD`]);
   const moves = frameOf(parsePlan(planText).frame).moves;
@@ -81,9 +82,9 @@ function routeLine(tasks, landed) {
   return length < 2 ? 'Route: builder\n' : `Route: builder chain ${length}\n`;
 }
 
-export function nextTaskReport({ planText, planPath, root }) {
+export function nextTaskReport({ planText, planPath, root, state = repoState(root) }) {
   const { tasks, frame } = parsePlan(planText);
-  const landed = landedTasks(tasks, root, planIdOf(planPath));
+  const landed = landedTasks(tasks, state.planCommits(), planIdOf(planPath));
   const next = tasks.find((task) => !landed.includes(task.number) && task.dependsOn.every((number) => landed.includes(number)));
   const landedLine = `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}\n`;
   if (next === undefined) return `${landedLine}Next: none\n`;
@@ -92,27 +93,25 @@ export function nextTaskReport({ planText, planPath, root }) {
   return standing === '' ? task : `${task}\n${standing}`;
 }
 
-function noticedLines({ tasks, commits, root, planId }) {
-  const oldest = commits.at(-1);
-  const startedAt = oldest === undefined ? 0 : Number(gitLine(root, ['log', '-1', '--format=%ct', `${oldest.sha}^`]) ?? 0);
+function noticedLines({ tasks, commits, state, planId }) {
   return tasks.filter((task) => taskCommits(task, commits, planId).length > 0).flatMap(({ number }) => {
-    const report = implementerReportPath(root, number);
-    if (!fs.existsSync(report) || Math.floor(fs.statSync(report).mtimeMs / 1000) <= startedAt) return [];
+    const report = implementerReportPath(state, planId, number);
+    if (!fs.existsSync(report)) return [];
     return fs.readFileSync(report, 'utf8').split('\n')
       .filter((line) => line.startsWith('Noticed:') && line.trim() !== 'Noticed: none')
       .map((line) => `Task ${number}: ${line}`);
   });
 }
 
-export function endReportLines({ root, planText, planPath }) {
+export function endReportLines({ root, planText, planPath, state = repoState(root) }) {
   const { tasks } = parsePlan(planText);
   const planId = planIdOf(planPath);
-  const base = defaultBase(root);
-  const stat = base === null ? 'Diff stat: base unknown' : `Diff stat:\n${gitText(root, ['diff', '--stat', `${base}...HEAD`])}`;
-  const shas = new Set(tasks.flatMap((task) => taskCommits(task, root, planId)));
-  const commits = commitsOf(root).filter((commit) => shas.has(commit.sha));
+  const base = state.defaultBase();
+  const stat = base === null ? 'Diff stat: base unknown' : `Diff stat:\n${gitText(root, ['diff', '--stat', `${base}...HEAD`], { trim: false }).trimEnd()}`;
+  const shas = new Set(tasks.flatMap((task) => taskCommits(task, state.planCommits(), planId)));
+  const commits = state.planCommits().filter((commit) => shas.has(commit.sha));
   const commitLines = commits.map((commit) => `${shortSha(commit.sha)} ${commit.subject}`).reverse();
-  const noticed = noticedLines({ tasks, commits, root, planId });
+  const noticed = noticedLines({ tasks, commits, state, planId });
   return `${stat}\nPlan-task commits:\n${commitLines.join('\n')}\n${noticed.length === 0 ? 'Noticed: none' : `Noticed:\n${noticed.join('\n')}`}\n`;
 }
 
@@ -139,15 +138,19 @@ if (isMain(import.meta.url)) {
   const planPath = resolvePlanPath({ plan: flags.plan, root: flags.root });
   const root = flags.root ?? process.cwd();
   const planText = fs.readFileSync(planPath, 'utf8');
-  const report = nextTaskReport({ planText, planPath, root });
+  const state = repoState(root);
+  const report = nextTaskReport({ planText, planPath, root, state });
   const [landedLine, nextLine, routeText] = report.split('\n');
   if (nextLine === 'Next: none') {
-    process.stdout.write(`${report}${reviewEffortLine(root, planText)}${reviewFocusLines(planText)}${endReportLines({ root, planText, planPath })}`);
+    process.stdout.write(`${report}${reviewEffortLine(root, planText, state)}${reviewFocusLines(planText)}${endReportLines({ root, planText, planPath, state })}`);
   } else {
     const number = Number(nextLine.split(' ')[1]);
-    const brief = scratchPath(root, `brief-${number}.md`);
+    const planId = planIdOf(planPath);
+    const brief = taskScratchPath(state, { planId, number }, 'brief.md');
     fs.writeFileSync(brief, report);
-    const dispatch = dispatchLines({ planPath, root, number, brief, report: implementerReportPath(root, number) });
+    const reportFile = implementerReportPath(state, planId, number);
+    fs.rmSync(reportFile, { force: true });
+    const dispatch = dispatchLines({ planPath, root, number, brief, report: reportFile });
     process.stdout.write(`${landedLine}\n${nextLine}\n${routeText}\nBrief: ${brief}\n${dispatch}\n`);
   }
 }

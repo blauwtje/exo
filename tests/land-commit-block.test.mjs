@@ -43,6 +43,7 @@ test('a Files directory that the change removed with git rm lands', async () => 
   const before = commitCount(root);
   const landed = await land(root, planPath);
   assert.equal(landed.code, 0, landed.stderr);
+  assert.doesNotMatch(landed.stdout, /Files not found/);
   assert.equal(commitCount(root), before + 1);
 });
 

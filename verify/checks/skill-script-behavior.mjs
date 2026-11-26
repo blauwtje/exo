@@ -30,16 +30,16 @@ function runNode(args, env) {
 
 const NAME = 'skill script behavior';
 
-function outcomeOf(run) {
+function outcomeOf(run, traceRoot) {
   const lines = run.output.split('\n');
   const tally = tallyFrom(lines);
   const summary = `${tally.pass} passed, ${tally.fail} failed, ${tally.skipped} skipped of ${tally.tests} behavioral tests`;
 
   if (run.status !== 0) {
     const failing = lines.filter((line) => line.startsWith('not ok '));
-    return { status: 'FAIL', name: NAME, detail: `${summary}; ${failing.join('; ')}` };
+    return { status: 'FAIL', name: NAME, detail: `${summary}; ${failing.join('; ')}`, traceRoot };
   }
-  return { status: 'PASS', name: NAME, detail: summary };
+  return { status: 'PASS', name: NAME, detail: summary, traceRoot };
 }
 
 export function startSkillScriptBehavior(repository) {
@@ -57,7 +57,8 @@ export function startSkillScriptBehavior(repository) {
   const stripFile = repository.join('tests', 'clean-run-env.mjs');
   const strip = ['--import', pathToFileURL(stripFile).href];
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-behavior-'));
+  const traceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'exo-git-trace-'));
   const cleanup = () => fs.rmSync(scratch, { recursive: true, force: true });
-  return runNode([...strip, '--test', '--test-reporter=tap', ...testFiles], { ...process.env, TMPDIR: scratch })
-    .then((run) => { cleanup(); return outcomeOf(run); });
+  return runNode([...strip, '--test', '--test-reporter=tap', ...testFiles], { ...process.env, TMPDIR: scratch, EXO_GIT_TRACE_ROOT: traceRoot })
+    .then((run) => { cleanup(); return outcomeOf(run, traceRoot); });
 }

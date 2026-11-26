@@ -52,6 +52,10 @@ async function isolatedEnv(overrides) {
 
 export async function run(file, args, options = {}) {
   const env = await isolatedEnv(options.env);
+  const traceRoot = process.env.EXO_GIT_TRACE_ROOT;
+  if (traceRoot && !options.env?.GIT_TRACE2_EVENT) {
+    env.GIT_TRACE2_EVENT = mkdtempSync(path.join(traceRoot, `${path.basename(file)}-`));
+  }
   return new Promise((resolve) => {
     const child = execFile(
       process.execPath,

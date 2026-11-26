@@ -31,7 +31,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
    - `PLAN DRIFT`: append a `## Log` line to the plan, then stop and hand the plan back to `exo:spec` with the builder's reason; when the reason makes a landed task wrong, add the lines that `node "${CLAUDE_SKILL_DIR}/scripts/undo-task.mjs" --plan <path> --root <checkout> <n>` prints.
    - A builder that returns no status line: read `git status` of its checkout and its report file before sending a fresh builder, and pass both in that builder's prompt.
    - `BLOCKED <reason>`: append a `## Log` line to the plan before you report it.
-   - A build that fails once, a self-built task included, goes back to a fresh `exo:builder` with the first builder's `Report:` path in its prompt, on the second-attempt row of the Models table that fits its report.
+   - A build that fails once, a self-built task included, goes back to a fresh `exo:builder` with the first dispatch's `Report:` path in its prompt, on the second-attempt row of the Models table that fits its report; run next-task again only after the retry read that report, because a new `Next:` dispatch of the task clears it.
    - `BLOCKED proof <command> did not fail first`: `land-task` refused the task: its proof passes without the change. Send a fresh `exo:builder` to tighten that test, or hand the plan to `exo:spec` for a `Red: none (<reason>)`, and name the task in the final report.
    - A build that fails twice, or a repair that must change a module outside the task's `Files:`: stop, report both and hand it to `exo:diagnose`.
    - A repair names the rule the code broke and fixes the hits the finding names; one guard that fails on a new instance, at most one new test per cause.
@@ -59,7 +59,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
    - Send each important finding to one fresh `exo:builder`, all in one message, start at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (20 by default) at once and check every launch result for an error, briefed "write the failing test or repro for this finding in a new test file named for its finding, so parallel builders never share a file; with no repro, drop it", where a structure finding's repro is the command whose output shows it, such as the import line or a line count, because a finding nobody reproduced may be wrong. Fix only the reproduced findings, in one builder fix round that commits with the land command's `--fix <subject>`.
    - List the dropped findings as unproven, and the nit and pre_existing ones, in the report.
 2. Run the plan's `Success criterion` command once, in the background, to a log, and read only the failing lines. Then run the plan's `Land gate:` command once the same way unless it is `none`: `land-task.mjs` skips a gate whose last pass took 60 s or more, so this is the one run of a slow gate. A failure goes to one builder fix and one rerun; a second failure ends with what still fails.
-3. Build the report from the `Diff stat:` and `Plan-task commits:` lines that `next-task.mjs` printed with `Next: none`, not from the builders' summaries. State whether the branch is ready, the findings and what the user does next, and label each claim measured, inferred or guess. Keep `Proof:` lines and `## Manual checks` out of the message; the task reports in the temp folder hold them. List every `Noticed:` line it printed, so no issue a builder left unfixed is lost. Run `node "${CLAUDE_SKILL_DIR}/scripts/run-usage.mjs" --session ${CLAUDE_SESSION_ID} --since <start>` and put its lines in the report.
+3. Build the report from the `Diff stat:` and `Plan-task commits:` lines that `next-task.mjs` printed with `Next: none`, not from the builders' summaries. `Diff stat: base unknown` means no origin/HEAD and no local main or master, or a checkout on the default branch, so no base exists; then the report names the branch, says the diff stat is unknown and builds on the `Plan-task commits:` lines. State whether the branch is ready, the findings and what the user does next, and label each claim measured, inferred or guess. Keep `Proof:` lines and `## Manual checks` out of the message; the task reports in the temp folder hold them. List every `Noticed:` line it printed, so no issue a builder left unfixed is lost. Run `node "${CLAUDE_SKILL_DIR}/scripts/run-usage.mjs" --session ${CLAUDE_SESSION_ID} --since <start>` and put its lines in the report.
 4. Before ending, commit the plan's new `## Log` lines as one commit on the branch, unless it lies outside the checkout or git ignores it (no `git add -f`), because the plan belongs in the pull request. End on `exo:ship`, unless the request rules out a push; then say nothing left the machine. `--land` passes `--land` to `ship`.
 
 ### No plan
@@ -82,8 +82,8 @@ Request: "run the plan docs/specs/login.md". Build runs the loop, one fresh `exo
 ```
 Landed: 1, 2
 Next: 3 feat(login): add the token check
-Brief: /tmp/exo-user/app-1a2b3c4d/brief-3.md
-Report: /tmp/exo-user/app-1a2b3c4d/implementer-3.md
+Brief: /tmp/exo-user/app-1a2b3c4d/login/task-3/brief.md
+Report: /tmp/exo-user/app-1a2b3c4d/login/task-3/implementer.md
 Dispatch:
   ...
 ```

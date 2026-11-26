@@ -19,6 +19,7 @@
     "#land-lock": "./lib/land-lock.mjs",
     "#plan-tasks": "./lib/plan-tasks.mjs",
     "#process-tree": "./lib/process-tree.mjs",
+    "#repo-state": "./lib/repo-state.mjs",
     "#red-green": "./lib/red-green.mjs",
     "#repo-path": "./lib/repo-path.mjs",
     "#run-check": "./lib/run-check.mjs",

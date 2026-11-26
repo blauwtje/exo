@@ -1,0 +1,7 @@
+{
+  "adopt-plan.mjs: git rev-parse --show-toplevel": { "count": 2, "reason": "adopt-plan.mjs is outside this plan's files" },
+  "adopt-plan.mjs: git rev-parse --path-format=absolute --git-common-dir": { "count": 2, "reason": "lib/checkout.mjs is outside this plan's files" },
+  "adopt-plan.mjs: git status --porcelain -- docs/specs/topic.md": { "count": 2, "reason": "adopt-plan.mjs is outside this plan's files" },
+  "land-task.mjs: git rev-parse --path-format=absolute --git-common-dir": { "count": 2, "reason": "lib/checkout.mjs and land-proof.mjs are non-goals of this plan" },
+  "land-task.mjs: git status --porcelain -z -uall": { "count": 2, "reason": "changedPaths in land-paths.mjs is a non-goal of this plan" }
+}

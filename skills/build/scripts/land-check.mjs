@@ -7,7 +7,7 @@ import { planIdOf, landedTasks, planTaskTrailer, taskCommits } from '#plan-lande
 import { LEGACY_EXO_FOLDER, scratchPath } from '#scratch-path';
 import { LandingError, RefusedError, AlreadyLandedError, UnfinishedMergeError } from './land-errors.mjs';
 import { reportSourceOf } from './land-stopped.mjs';
-import { locked, headMessage, headSha, moveHead } from './land-git.mjs';
+import { locked, moveHead } from './land-git.mjs';
 import { commitBlockOf, missingFilesLine, candidatePrefix, candidateTrailer } from './land-commit-block.mjs';
 import { changedPaths } from './land-paths.mjs';
 import { runCoveringTests, runProof, runNamedTests } from './land-proof.mjs';
@@ -16,40 +16,43 @@ import { spawnSync } from 'node:child_process';
 import { runCheck } from '#run-check';
 import { gateRefusal, lastPassMs, GATE_ONCE_PER_RUN_FROM_MS, treePassMs } from '#check-cache';
 import { PROOF_TIMEOUT_MS, PROOF_TAIL_LINES, mcpProofOf, deferredProofOf, proofCommandOf } from './land-report.mjs';
+import { repoState } from '#repo-state';
 import { createWorktree, worktreePath } from '#checkout';
 import { runInWorktree, testPaths } from '#red-green';
 
 export function checkTask({ planText, number, root, reportText, reportPath, planPath }) {
-  refuseMismatchedToplevel(root);
-  return locked(root, () => checkTaskLocked({ planText, number, root, ...reportSourceOf({ root, number, reportText, reportPath }), planPath }));
+  const state = repoState(root);
+  refuseMismatchedToplevel(state);
+  return locked(root, () => checkTaskLocked({ planText, number, root, state, ...reportSourceOf({ state, planId: planIdOf(planPath), number, reportText, reportPath }), planPath }));
 }
 
-function checkTaskLocked({ planText, number, root, reportText, reportPath, planPath }) {
+function checkTaskLocked({ planText, number, root, state, reportText, reportPath, planPath }) {
   const plan = parsePlan(planText);
   const task = taskOf(plan, number);
   const planId = planIdOf(planPath);
-  clearStaleCandidate(root, planId);
+  clearStaleCandidate(state, planId);
   checkReport(task, reportText, reportPath);
   const frame = frameOf(plan.frame);
-  const gateLine = gateCheckedOnCandidate({ task, frame, root, planId });
+  const gateLine = gateCheckedOnCandidate({ task, frame, state, planId });
   return `${gateLine}Report OK: Task ${number}\n`;
 }
 
-function gateCheckedOnCandidate({ task, frame, root, planId }) {
+function gateCheckedOnCandidate({ task, frame, state, planId }) {
   if (frame.landGate === null || frame.landGate === 'none') return '';
-  const candidate = commitCandidate({ block: commitBlockOf({ task, planId, root }), root, task, planId });
-  const gateLine = gateCandidate({ frame, root, candidate });
-  if (!dropCandidate(root, candidate)) throw new LandingError(`HEAD moved off the candidate ${shortSha(candidate.candidate)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
+  const candidate = commitCandidate({ block: commitBlockOf({ task, planId, root: state.root, state }), state, task, planId });
+  const gateLine = gateCandidate({ frame, state, candidate });
+  if (!dropCandidate(state, candidate)) throw new LandingError(`HEAD moved off the candidate ${shortSha(candidate.candidate)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
   return gateLine;
 }
 
-export function stageCandidate({ task, frame, unlistedLine, outside, root, planId }) {
+export function stageCandidate({ task, frame, unlistedLine, outside, state, planId }) {
+  const { root } = state;
   const changed = taskChangedPaths(root);
-  stageOutside(root, outside);
-  const block = commitBlockOf({ task, planId, root, unlistedLine });
-  const missingLine = missingFilesLine(task, root);
-  const candidate = commitCandidate({ block, root, task, planId });
-  const gateLine = gateCandidate({ frame, root, candidate });
+  stageOutside(state, outside);
+  const block = commitBlockOf({ task, planId, root, unlistedLine, state });
+  const missingLine = missingFilesLine(task, state);
+  const candidate = commitCandidate({ block, state, task, planId });
+  const gateLine = gateCandidate({ frame, state, candidate });
   return { changed, candidate, gateLine, missingLine, removedBlock: removedTestLinesBlock(root, candidate, testPaths(changed)) };
 }
 
@@ -65,18 +68,18 @@ function removedTestLinesBlock(root, { base, candidate }, paths) {
   return removed.length === 0 ? '' : `Removed test lines: ${removed.length}\n${removed.join('\n')}\n`;
 }
 
-export function coverOrDrop({ task, proofs, root, changed, candidate }) {
+export function coverOrDrop({ task, proofs, state, changed, candidate }) {
   try {
-    runCoveringTests(task, proofs.map(({ command }) => command), { root, changed });
+    runCoveringTests(task, proofs.map(({ command }) => command), { root: state.root, changed });
   } catch (error) {
-    dropCandidate(root, candidate);
+    dropCandidate(state, candidate);
     throw error;
   }
 }
 
-export function promoteAndCommit({ task, root, planId, planPath, candidate }) {
-  promoteCandidate({ root, task, planId, candidate });
-  return committedSha(task, { root, planId, planPath, base: candidate.base });
+export function promoteAndCommit({ task, state, planId, planPath, candidate }) {
+  promoteCandidate({ state, task, planId, candidate });
+  return committedSha(task, { root: state.root, planId, planPath, base: candidate.base });
 }
 
 export function taskOf(plan, number) {
@@ -85,12 +88,13 @@ export function taskOf(plan, number) {
   return task;
 }
 
-export function refuseBeforeProof(task, { root, planPath, planId, reportText, reportPath }) {
+export function refuseBeforeProof(task, { state, planPath, planId, reportText, reportPath }) {
+  const { root } = state;
   checkReport(task, reportText, reportPath);
   const outside = changedPaths(root, planPath);
   refuseSecrets(task, root);
   const unlistedLine = unlistedLineOf(task, outside);
-  commitBlockOf({ task, planId, root, unlistedLine });
+  commitBlockOf({ task, planId, root, unlistedLine, state });
   refuseBadCommitText(task.title, root);
   return { outside, unlistedLine };
 }
@@ -150,7 +154,7 @@ function refuseBadCommitText(subject, root) {
 }
 
 export function fixLand({ root, subject, body = null }) {
-  refuseMismatchedToplevel(root);
+  refuseMismatchedToplevel(repoState(root));
   refuseUnfinishedMerge(root);
   refuseBadCommitText(subject, root);
   return locked(root, () => fixLandLocked({ root, subject, body }));
@@ -183,24 +187,28 @@ export function runLandGate(landGate, root) {
   return '';
 }
 
-function dropCandidate(root, { base, candidate }) {
-  return moveHead(root, 'land-task: drop candidate', { target: base, expected: candidate }) || headSha(root) === base;
+function dropCandidate(state, { base, candidate }) {
+  const moved = moveHead(state.root, 'land-task: drop candidate', { target: base, expected: candidate });
+  state.invalidate();
+  return moved || state.head().sha === base;
 }
 
-export function clearStaleCandidate(root, planId) {
-  if (!headMessage(root).split('\n').some((line) => line.startsWith(candidatePrefix(planId)))) return;
-  const candidate = headSha(root);
-  const base = git(root, ['rev-parse', 'HEAD~1']);
+export function clearStaleCandidate(state, planId) {
+  const head = state.head();
+  if (!head.message.split('\n').some((line) => line.startsWith(candidatePrefix(planId)))) return;
+  const base = git(state.root, ['rev-parse', 'HEAD~1']);
   if (base.status !== 0) return;
-  dropCandidate(root, { base: base.stdout.trim(), candidate });
+  dropCandidate(state, { base: base.stdout.trim(), candidate: head.sha });
 }
 
-function commitCandidate({ block, root, task, planId }) {
+function commitCandidate({ block, state, task, planId }) {
+  const { root } = state;
   const trailer = candidateTrailer(planId, task.number);
-  const base = headSha(root);
+  const base = state.head().sha;
   runCommitBlock(block.replace(planTaskTrailer(planId, task.number), trailer), root, task.number);
-  const candidate = headSha(root);
-  if (!headMessage(root).split('\n').includes(trailer)) throw new LandingError(`the commit of Task ${task.number} left no commit carrying "${trailer}"`);
+  state.invalidate();
+  const { sha: candidate, message } = state.head();
+  if (!message.split('\n').includes(trailer)) throw new LandingError(`the commit of Task ${task.number} left no commit carrying "${trailer}"`);
   if (gitText(root, ['rev-parse', `${candidate}~1`]) !== base) throw new LandingError(`the commit of Task ${task.number} did not make exactly one commit on ${shortSha(base)}`);
   return { base, candidate };
 }
@@ -215,14 +223,15 @@ function signsCommits(root) {
   return signing.stdout.trim() === 'true';
 }
 
-function promoteCandidate({ root, task, planId, candidate: { base, candidate } }) {
+function promoteCandidate({ state, task, planId, candidate: { base, candidate } }) {
+  const { root } = state;
   const message = gitText(root, ['log', '-1', '--format=%B', candidate], { trim: false })
     .replace(candidateTrailer(planId, task.number), planTaskTrailer(planId, task.number));
   const signing = signsCommits(root) ? ['-S'] : [];
   const promoted = gitText(root, ['commit-tree', `${candidate}^{tree}`, '-p', base, ...signing, '-F', '-'], { input: message, stdio: 'pipe', env: authorEnvOf(root, candidate) });
-  if (!moveHead(root, 'land-task: promote candidate', { target: promoted, expected: candidate })) {
-    throw new LandingError(`HEAD moved off the candidate ${shortSha(candidate)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
-  }
+  const moved = moveHead(root, 'land-task: promote candidate', { target: promoted, expected: candidate });
+  state.invalidate();
+  if (!moved) throw new LandingError(`HEAD moved off the candidate ${shortSha(candidate)} of Task ${task.number} while the Land gate ran; nothing was rewritten`);
 }
 
 function slotDiffersFromCandidate(root) {
@@ -243,12 +252,13 @@ function gateOnDetachedCandidate({ frame, root, candidate }) {
   }
 }
 
-function gateCandidate({ frame, root, candidate }) {
+function gateCandidate({ frame, state, candidate }) {
+  const { root } = state;
   try {
     if (slotDiffersFromCandidate(root)) return gateOnDetachedCandidate({ frame, root, candidate });
     return runLandGate(frame.landGate, root) ?? '';
   } catch (error) {
-    dropCandidate(root, candidate);
+    dropCandidate(state, candidate);
     throw error;
   }
 }
@@ -260,8 +270,9 @@ function runCommitBlock(block, root, number) {
   throw new LandingError(`the commit of Task ${number} failed:\n${output}`);
 }
 
-function stageOutside(root, paths) {
-  if (paths.length > 0) gitText(root, ['update-index', '--add', '--remove', '--', ...paths]);
+function stageOutside(state, paths) {
+  if (paths.length > 0) gitText(state.root, ['update-index', '--add', '--remove', '--', ...paths]);
+  state.invalidate();
 }
 
 function committedSha(task, { root, planId, planPath, base }) {
@@ -303,15 +314,15 @@ function redGreenLine(task, { proofCommands, root, pending }) {
   throw new LandingError(`Task ${task.number}: Proof ${proofCommands.map((command) => `"${command}"`).join(', ')} passes on ${sha} without the production change, so it proves nothing; tighten the test or add \`Red: none (<reason>)\` to the task`);
 }
 
-export function refuseAlreadyLanded(plan, task, { root, planId }) {
-  if (!landedTasks(plan.tasks, root, planId).includes(task.number)) return;
-  const [sha] = taskCommits(task, root, planId);
+export function refuseAlreadyLanded(plan, task, { state, planId }) {
+  if (!landedTasks(plan.tasks, state.planCommits(), planId).includes(task.number)) return;
+  const [sha] = taskCommits(task, state.planCommits(), planId);
   throw new AlreadyLandedError(`Task ${task.number} is already landed as ${shortSha(sha)}; landing it again would add no change`);
 }
 
-export function refuseMismatchedToplevel(root) {
-  const toplevel = gitText(root, ['rev-parse', '--show-toplevel']);
-  if (realpathSync(toplevel) !== realpathSync(root)) throw new RefusedError(`--root '${root}' is not the checkout toplevel: git rev-parse --show-toplevel there prints '${toplevel}'`);
+export function refuseMismatchedToplevel(state) {
+  const toplevel = state.toplevel();
+  if (realpathSync(toplevel) !== realpathSync(state.root)) throw new RefusedError(`--root '${state.root}' is not the checkout toplevel: git rev-parse --show-toplevel there prints '${toplevel}'`);
 }
 
 export function refuseUnfinishedMerge(root) {

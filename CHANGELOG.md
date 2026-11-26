@@ -9,6 +9,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `lib/repo-state.mjs` gives `repoState(root)`, which reads the plan commits, default base, changed paths and Files lookup once per script run, with `invalidate()` after a git write.
+- `lib/scratch-path.mjs` gives `taskScratchPath`, a scratch path keyed by plan id and task number.
+- The `git-once` check fails a skill-script run that repeats the same git read with no git write between.
+- The `scratch-key` check fails a `scratchPath` call whose name varies unless it uses the keyed form or is allowlisted.
 - `next-task.mjs` with `Next: none` prints the diff stat, the plan's `Plan-task` commits and the `Noticed:` lines of this run's task reports for the end report.
 - `next-task.mjs` prints the `Report:` path of the next task and the fixed `Dispatch:` lines, so the lead no longer runs `scratch-path.mjs` for a report path.
 - `exo:build` ends its report with the input tokens, output tokens and minutes of the run, lead and helpers, from `run-usage.mjs`.
@@ -50,6 +54,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `land-task.mjs` counts a Files directory that `git rm` removed as found and no longer prints a `Files not found:` line for it.
+- `land-task.mjs` reads the git state of a landing once per run instead of once per step.
+- `next-task.mjs` reads the end report's git state once per run.
+- `next-task.mjs` keeps the leading space of the `Diff stat:` first line, and `exo:build` says what `Diff stat: base unknown` means.
+- `next-task.mjs` and `land-stopped.mjs` read a task report and brief by plan and task key, and `next-task.mjs` clears the old report when it dispatches, so a failed attempt's report is never read.
 - `land-task.mjs` lands a task whose Files path matches no file, naming it on a `Files not found:` line, and refuses an ignored untracked Files path by name before the Proof runs.
 - `run-usage.mjs` counts helpers that ran at the same time once in its helper minutes.
 - `next-task.mjs` routes a chain of under two tasks to a plain builder instead of `chain 1`.
