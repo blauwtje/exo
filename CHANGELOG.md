@@ -23,6 +23,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:build` caps parallel subagents and checks each launch, holds the brief-writing row in its Models table, and `exo:watch` asks its researchers for a notes file.
 - `exo:builder` and `exo:researcher` descriptions drop their `<example>` blocks and name every job the skills send them.
 - `exo:watch` and `exo:save` descriptions carry user phrases such as "summarise this video" and "save this session".
+- `exo:ideas` runs every helper on sonnet instead of Fable and Opus, and its Diverge step adds a fourth arm that flips the frame's assumptions.
 - `exo:ideas` and `exo:search` no longer set `disable-model-invocation`, because no route eval or user request justified manual-only.
 - `exo:builder` and `exo:researcher` agents have a `color`.
 - `exo:build` and `exo:diagnose` keep their delegate prompts under `references/`, and `exo:author` says delegate prompts go there.
