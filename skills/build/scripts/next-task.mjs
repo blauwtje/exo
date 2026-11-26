@@ -1,13 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expandHome } from '#basics';
 import { parseFlags, isMain, environmentMs } from '#script-flags';
 import { resolvePlanPath } from '#checkout';
-import { landedTasks, planIdOf, defaultBase } from '#plan-landed';
-import { git, gitText } from '#git';
+import { landedTasks, planIdOf, defaultBase, commitsOf, taskCommits } from '#plan-landed';
+import { git, gitLine, gitText, shortSha } from '#git';
 import { parsePlan } from '#plan-tasks';
 import { frameOf } from '#plan-frame';
 import { scratchPath } from '#scratch-path';
+import { implementerReportPath } from './land-stopped.mjs';
 
 const USAGE = 'usage: next-task.mjs --plan <plan> [--root <checkout>]';
 
@@ -90,6 +92,48 @@ export function nextTaskReport({ planText, planPath, root }) {
   return standing === '' ? task : `${task}\n${standing}`;
 }
 
+function noticedLines({ tasks, commits, root, planId }) {
+  const oldest = commits.at(-1);
+  const startedAt = oldest === undefined ? 0 : Number(gitLine(root, ['log', '-1', '--format=%ct', `${oldest.sha}^`]) ?? 0);
+  return tasks.filter((task) => taskCommits(task, commits, planId).length > 0).flatMap(({ number }) => {
+    const report = implementerReportPath(root, number);
+    if (!fs.existsSync(report) || Math.floor(fs.statSync(report).mtimeMs / 1000) <= startedAt) return [];
+    return fs.readFileSync(report, 'utf8').split('\n')
+      .filter((line) => line.startsWith('Noticed:') && line.trim() !== 'Noticed: none')
+      .map((line) => `Task ${number}: ${line}`);
+  });
+}
+
+export function endReportLines({ root, planText, planPath }) {
+  const { tasks } = parsePlan(planText);
+  const planId = planIdOf(planPath);
+  const base = defaultBase(root);
+  const stat = base === null ? 'Diff stat: base unknown' : `Diff stat:\n${gitText(root, ['diff', '--stat', `${base}...HEAD`])}`;
+  const shas = new Set(tasks.flatMap((task) => taskCommits(task, root, planId)));
+  const commits = commitsOf(root).filter((commit) => shas.has(commit.sha));
+  const commitLines = commits.map((commit) => `${shortSha(commit.sha)} ${commit.subject}`).reverse();
+  const noticed = noticedLines({ tasks, commits, root, planId });
+  return `${stat}\nPlan-task commits:\n${commitLines.join('\n')}\n${noticed.length === 0 ? 'Noticed: none' : `Noticed:\n${noticed.join('\n')}`}\n`;
+}
+
+const PROMPT_PATH = fileURLToPath(new URL('../references/run-task-prompt.md', import.meta.url));
+
+function dispatchLines({ planPath, root, number, brief, report }) {
+  const plan = path.resolve(planPath);
+  const checkout = path.resolve(root);
+  return [
+    `Report: ${report}`,
+    'Dispatch:',
+    `  Plan: ${plan}`,
+    `  Checkout: ${checkout}`,
+    `  Task: ${number}`,
+    `  Read first: ${brief}`,
+    `  Report path: ${report}`,
+    `  Prompt: ${PROMPT_PATH}`,
+    `  Land with: --plan ${plan} --task ${number} --root ${checkout}`
+  ].join('\n');
+}
+
 if (isMain(import.meta.url)) {
   const flags = parseFlags(process.argv.slice(2), { plan: 'value', root: 'value' }, { usage: USAGE });
   const planPath = resolvePlanPath({ plan: flags.plan, root: flags.root });
@@ -98,10 +142,12 @@ if (isMain(import.meta.url)) {
   const report = nextTaskReport({ planText, planPath, root });
   const [landedLine, nextLine, routeText] = report.split('\n');
   if (nextLine === 'Next: none') {
-    process.stdout.write(`${report}${reviewEffortLine(root, planText)}${reviewFocusLines(planText)}`);
+    process.stdout.write(`${report}${reviewEffortLine(root, planText)}${reviewFocusLines(planText)}${endReportLines({ root, planText, planPath })}`);
   } else {
-    const brief = scratchPath(root, `brief-${nextLine.split(' ')[1]}.md`);
+    const number = Number(nextLine.split(' ')[1]);
+    const brief = scratchPath(root, `brief-${number}.md`);
     fs.writeFileSync(brief, report);
-    process.stdout.write(`${landedLine}\n${nextLine}\n${routeText}\nBrief: ${brief}\n`);
+    const dispatch = dispatchLines({ planPath, root, number, brief, report: implementerReportPath(root, number) });
+    process.stdout.write(`${landedLine}\n${nextLine}\n${routeText}\nBrief: ${brief}\n${dispatch}\n`);
   }
 }

@@ -9,6 +9,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `next-task.mjs` with `Next: none` prints the diff stat, the plan's `Plan-task` commits and the `Noticed:` lines of this run's task reports for the end report.
+- `next-task.mjs` prints the `Report:` path of the next task and the fixed `Dispatch:` lines, so the lead no longer runs `scratch-path.mjs` for a report path.
 - `exo:build` ends its report with the input tokens, output tokens and minutes of the run, lead and helpers, from `run-usage.mjs`.
 - `evals/trigger.json` holds near-miss prompts for `exo:ideas` and `exo:search`.
 - The `test timing` check fails a test that reads the clock (`Date.now`, `performance.now`, `hrtime`, `process.uptime`) or waits a fixed time (`setTimeout(resolve`, `sleep(<n>`, `pause(<n>`).
@@ -48,6 +50,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `land-task.mjs` lands a task whose Files path matches no file, naming it on a `Files not found:` line, and refuses an ignored untracked Files path by name before the Proof runs.
 - `run-usage.mjs` counts helpers that ran at the same time once in its helper minutes.
 - `next-task.mjs` routes a chain of under two tasks to a plain builder instead of `chain 1`.
 - Tests no longer depend on timing: they assert the delay a script decides or the order of events instead of measured time, wait on a file, line or signal instead of a fixed sleep, and race a short budget only against a fake that never ends, so a loaded machine gives the same result.

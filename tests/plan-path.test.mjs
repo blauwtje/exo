@@ -3,7 +3,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { test } from 'node:test';
 import { resolvePlanPath } from '../lib/checkout.mjs';
-import { git, run, tempDir } from './harness.mjs';
+import { scratchPath } from '../lib/scratch-path.mjs';
+import { REPOSITORY_ROOT, git, run, tempDir } from './harness.mjs';
 import { nextTaskReport, reviewEffort } from '../skills/build/scripts/next-task.mjs';
 import { landingCheckout, PLAN, SCRIPT as LAND_TASK } from './land-task-fixture.mjs';
 
@@ -68,18 +69,29 @@ test('next-task prints the plan Facts with the next task', async () => {
   assert.match(report, /Facts:\n- `src\/app\.js:1` exports `greet`\./);
 });
 
-test('next-task prints four lines and writes the task text to the Brief file', async () => {
+test('next-task prints the brief, report and dispatch lines and writes the task text to the Brief file', async () => {
   const { root } = await landingCheckout();
   const result = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', root], { cwd: root });
   assert.equal(result.code, 0, result.stderr);
   const lines = result.stdout.trimEnd().split('\n');
-  assert.equal(lines.length, 4, result.stdout);
+  assert.equal(lines.length, 13, result.stdout);
   assert.match(lines[0], /^Landed: /);
   assert.match(lines[1], /^Next: 1 feat\(app\): greet$/);
   assert.match(lines[2], /^Route: (this session|builder|builder chain \d+)$/);
   const briefPath = lines[3].replace(/^Brief: /, '');
   assert.notEqual(briefPath, lines[3]);
   assert.ok(path.isAbsolute(briefPath), briefPath);
+  assert.equal(lines[4], `Report: ${scratchPath(root, 'implementer-1.md')}`);
+  assert.equal(lines[5], 'Dispatch:');
+  assert.deepEqual(lines.slice(6), [
+    `  Plan: ${path.join(root, RELATIVE_PLAN)}`,
+    `  Checkout: ${root}`,
+    '  Task: 1',
+    `  Read first: ${briefPath}`,
+    `  Report path: ${scratchPath(root, 'implementer-1.md')}`,
+    `  Prompt: ${path.join(REPOSITORY_ROOT, 'skills/build/references/run-task-prompt.md')}`,
+    `  Land with: --plan ${path.join(root, RELATIVE_PLAN)} --task 1 --root ${root}`
+  ]);
   const brief = await fs.readFile(briefPath, 'utf8');
   assert.match(brief, /### Task 1: feat\(app\): greet/);
   assert.match(brief, /Non-goals:\n- `src\/other.js` stays as it is\./);
@@ -144,7 +156,7 @@ test('next-task prints the Review Focus bullets after the review effort with Nex
   assert.equal(result.code, 0, result.stderr);
   const lines = result.stdout.trimEnd().split('\n');
   assert.match(lines[2], /^Review effort: /);
-  assert.deepEqual(lines.slice(3), ['Review focus:', '- A list saved before this change must still load.', '- The empty input is handled.']);
+  assert.deepEqual(lines.slice(3, 6), ['Review focus:', '- A list saved before this change must still load.', '- The empty input is handled.']);
 });
 
 test('next-task prints no Review focus line for a plan without the section', async () => {

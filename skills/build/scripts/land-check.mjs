@@ -8,7 +8,7 @@ import { LEGACY_EXO_FOLDER, scratchPath } from '#scratch-path';
 import { LandingError, RefusedError, AlreadyLandedError, UnfinishedMergeError } from './land-errors.mjs';
 import { reportSourceOf } from './land-stopped.mjs';
 import { locked, headMessage, headSha, moveHead } from './land-git.mjs';
-import { commitBlockOf, candidatePrefix, candidateTrailer } from './land-commit-block.mjs';
+import { commitBlockOf, missingFilesLine, candidatePrefix, candidateTrailer } from './land-commit-block.mjs';
 import { changedPaths } from './land-paths.mjs';
 import { runCoveringTests, runProof, runNamedTests } from './land-proof.mjs';
 import { UsageError, environmentMs } from '#script-flags';
@@ -43,12 +43,14 @@ function gateCheckedOnCandidate({ task, frame, root, planId }) {
   return gateLine;
 }
 
-export function stageCandidate({ task, frame, block, outside, root, planId }) {
+export function stageCandidate({ task, frame, unlistedLine, outside, root, planId }) {
   const changed = taskChangedPaths(root);
   stageOutside(root, outside);
+  const block = commitBlockOf({ task, planId, root, unlistedLine });
+  const missingLine = missingFilesLine(task, root);
   const candidate = commitCandidate({ block, root, task, planId });
   const gateLine = gateCandidate({ frame, root, candidate });
-  return { changed, candidate, gateLine, removedBlock: removedTestLinesBlock(root, candidate, testPaths(changed)) };
+  return { changed, candidate, gateLine, missingLine, removedBlock: removedTestLinesBlock(root, candidate, testPaths(changed)) };
 }
 
 function removedTestLinesBlock(root, { base, candidate }, paths) {
@@ -88,9 +90,9 @@ export function refuseBeforeProof(task, { root, planPath, planId, reportText, re
   const outside = changedPaths(root, planPath);
   refuseSecrets(task, root);
   const unlistedLine = unlistedLineOf(task, outside);
-  const block = commitBlockOf({ task, planId, root, unlistedLine });
+  commitBlockOf({ task, planId, root, unlistedLine });
   refuseBadCommitText(task.title, root);
-  return { block, outside, unlistedLine };
+  return { outside, unlistedLine };
 }
 
 function unlistedLineOf(task, changed) {
