@@ -34,7 +34,7 @@ Prove the cause before changing code, because a fix for a guessed cause hides th
 
 ### Delegating
 
-When reading alone does not prove the cause, send a fresh `exo:builder` (model and effort from the Models table of `exo:build`, row "Find a cause") `references/investigator-prompt.md` (Steps 1 to 3) with the report path that `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" debug/<slug>.md` prints, <slug> being the symptom in kebab-case of at most 40 characters. Once its handoff says `Status: proven`, settle where the fix commits as step 1 of `exo:build` does, say where, then send a fresh `exo:builder` `references/fixer-prompt.md` (Steps 4 and 5). On `failed`, send one more fresh `exo:builder` the same prompt with the failed handoff path, once. After `status=fixed`, run the handoff's Repro command yourself as the verdict. Commit the new test alone, then the fix. Read only their status lines and handoff fields.
+When reading alone does not prove the cause, run `node "${CLAUDE_SKILL_DIR}/scripts/dispatch-prep.mjs" --symptom "<symptom>"` (add `--bisect <file>` and `--ruled-out "<text>"` when you have them) and send its prompt (`references/investigator-prompt.md`) to a fresh `exo:builder` (model and effort from the Models table of `exo:build`, row "Find a cause"). Once its handoff says `Status: proven`, settle where the fix commits as step 1 of `exo:build` does, say where, then run the script there with `--handoff <path>` and send that prompt (`references/fixer-prompt.md`) to a fresh `exo:builder`. On `failed`, repeat once with the failed handoff path. After `status=fixed`, run the handoff's Repro command yourself as the verdict. Commit the new test alone, then the fix. Read only their status lines and handoff fields.
 
 ### Report
 
@@ -70,3 +70,4 @@ Next: exo:ship
 | Script | Purpose | Arguments |
 | --- | --- | --- |
 | `bisect.mjs` | Prints the first bad commit of a repro | `--repro "<command>"`, or `--repro "<runner> __FILE__ <failing test>"` |
+| `dispatch-prep.mjs` | Prints the report path and the filled investigator or fixer prompt | `--symptom "<text>" [--bisect <file>] [--ruled-out "<text>"] [--handoff <file>]` |

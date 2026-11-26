@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { SKILL_MAX_LINES } from '#shared-values';
 
-const SKILL_LINE_LIMIT = 500;
+const SKILL_LINE_LIMIT = SKILL_MAX_LINES;
 const NESTED = /references\/[\w-]+\.md|\(\.?\/?[\w-]+\.md\)/;
 
 function skillFolders(skillsRoot) {
@@ -57,6 +58,6 @@ export function checkReferenceSplit(report, repository) {
   report.assert(
     errors.length === 0,
     'skill layout',
-    { pass: 'every SKILL.md is under 500 lines, references sit one level deep and no skill paths into another', fail: errors.join('; ') }
+    { pass: `every SKILL.md is under ${SKILL_MAX_LINES} lines, references sit one level deep and no skill paths into another`, fail: errors.join('; ') }
   );
 }

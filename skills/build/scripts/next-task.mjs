@@ -10,6 +10,7 @@ import { git, gitText, shortSha } from '#git';
 import { parsePlan } from '#plan-tasks';
 import { frameOf } from '#plan-frame';
 import { taskScratchPath } from '#scratch-path';
+import { SELF_BUILD_TASKS, CHAIN_TASKS, PLAN_TASK_TRAILER, STATUS_BLOCKED, STATUS_PLAN_DRIFT } from '#shared-values';
 import { implementerReportPath } from './land-stopped.mjs';
 
 const USAGE = 'usage: next-task.mjs --plan <plan> [--root <checkout>]';
@@ -77,8 +78,8 @@ function reviewFocusLines(planText) {
 function routeLine(tasks, landed) {
   const chained = tasks.every((task, index) => index === 0 || (task.dependsOn.length === 1 && task.dependsOn[0] === tasks[index - 1].number));
   if (!chained) return 'Route: builder\n';
-  if (tasks.length <= environmentMs('EXO_SELF_BUILD_TASKS', 3)) return 'Route: this session\n';
-  const length = Math.min(environmentMs('EXO_CHAIN_TASKS', 4), tasks.length - landed.length);
+  if (tasks.length <= environmentMs('EXO_SELF_BUILD_TASKS', SELF_BUILD_TASKS)) return 'Route: this session\n';
+  const length = Math.min(environmentMs('EXO_CHAIN_TASKS', CHAIN_TASKS), tasks.length - landed.length);
   return length < 2 ? 'Route: builder\n' : `Route: builder chain ${length}\n`;
 }
 
@@ -112,16 +113,21 @@ export function endReportLines({ root, planText, planPath, state = repoState(roo
   const commits = state.planCommits().filter((commit) => shas.has(commit.sha));
   const commitLines = commits.map((commit) => `${shortSha(commit.sha)} ${commit.subject}`).reverse();
   const noticed = noticedLines({ tasks, commits, state, planId });
-  return `${stat}\nPlan-task commits:\n${commitLines.join('\n')}\n${noticed.length === 0 ? 'Noticed: none' : `Noticed:\n${noticed.join('\n')}`}\n`;
+  return `${stat}\n${PLAN_TASK_TRAILER} commits:\n${commitLines.join('\n')}\n${noticed.length === 0 ? 'Noticed: none' : `Noticed:\n${noticed.join('\n')}`}\n`;
 }
 
 const PROMPT_PATH = fileURLToPath(new URL('../references/run-task-prompt.md', import.meta.url));
 
-function dispatchLines({ planPath, root, number, brief, report }) {
+const FAILED_REPORT = new RegExp(`^Task \\d+: (?:${STATUS_BLOCKED}|${STATUS_PLAN_DRIFT})|^Unresolved: (?!none)`, 'm');
+
+const failedReport = (file) => fs.existsSync(file) && FAILED_REPORT.test(fs.readFileSync(file, 'utf8'));
+
+function dispatchLines({ planPath, root, number, brief, report, failed }) {
   const plan = path.resolve(planPath);
   const checkout = path.resolve(root);
   return [
     `Report: ${report}`,
+    ...(failed ? [`Failed report: ${failed}`] : []),
     'Dispatch:',
     `  Plan: ${plan}`,
     `  Checkout: ${checkout}`,
@@ -148,9 +154,12 @@ if (isMain(import.meta.url)) {
     const planId = planIdOf(planPath);
     const brief = taskScratchPath(state, { planId, number }, 'brief.md');
     const reportFile = implementerReportPath(state, planId, number);
+    const failedFile = taskScratchPath(state, { planId, number }, 'failed-report.md');
+    const moved = fs.existsSync(brief) && failedReport(reportFile);
+    if (moved) fs.renameSync(reportFile, failedFile);
     if (!fs.existsSync(brief)) fs.rmSync(reportFile, { force: true });
     fs.writeFileSync(brief, report);
-    const dispatch = dispatchLines({ planPath, root, number, brief, report: reportFile });
+    const dispatch = dispatchLines({ planPath, root, number, brief, report: reportFile, failed: moved ? failedFile : null });
     process.stdout.write(`${landedLine}\n${nextLine}\n${routeText}\nBrief: ${brief}\n${dispatch}\n`);
   }
 }

@@ -4,6 +4,7 @@ import { landedTasks, planIdOf } from '#plan-landed';
 import { frameOf } from '#plan-frame';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { resolvePlanPath } from '#checkout';
+import { PLAN_TASK_TRAILER } from '#shared-values';
 import { repoState } from '#repo-state';
 import { LandingError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';
@@ -44,7 +45,7 @@ function landLocked({ planText, number, root, state, reportText, reportPath, pla
   const task = taskOf(plan, number);
   refuseAlreadyLanded(plan, task, { state, planId });
   const { outside, unlistedLine } = refuseBeforeProof(task, { state, planPath, planId, reportText, reportPath });
-  const { proofs, pending, redLine } = proveTask(task, { root, planPath, reportText, reportPath });
+  const { proofs, pending, redLine } = proveTask(task, { state, planPath, reportText, reportPath });
   const { changed, candidate, gateLine, missingLine, removedBlock } = stageCandidate({ task, frame: frameOf(plan.frame), unlistedLine, outside, state, planId });
   coverOrDrop({ task, proofs, state, changed, candidate });
   const sha = promoteAndCommit({ task, state, planId, planPath, candidate });
@@ -55,7 +56,7 @@ function landLocked({ planText, number, root, state, reportText, reportPath, pla
 const USAGE = [
   'usage: land-task.mjs --plan <plan> --task <n> [--root <dir>] [--report <file>|-] [--check]',
   '       land-task.mjs --fix <subject> [--body <text>] [--root <dir>]',
-  'Lands a plan task from its builder report, or with --check validates it without committing; --fix commits a repair with no Plan-task trailer. Exits 2 on a usage error.'
+  `Lands a plan task from its builder report, or with --check validates it without committing; --fix commits a repair with no ${PLAN_TASK_TRAILER} trailer. Exits 2 on a usage error.`
 ].join('\n');
 
 function main(argv) {

@@ -1,10 +1,11 @@
 import { environmentMs } from "#script-flags";
+import { SEARCH_FETCH_MS } from "#shared-values";
 import { plainText, readBest, searchAll } from "./pick.mjs";
 const api = "https://hn.algolia.com/api/v1";
 const SEARCH_LIMIT = 30;
 
 async function getJson(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(environmentMs("EXO_SEARCH_FETCH_MS", 15000)) });
+  const response = await fetch(url, { signal: AbortSignal.timeout(environmentMs("EXO_SEARCH_FETCH_MS", SEARCH_FETCH_MS)) });
   if (!response.ok) throw new Error(`Hacker News answered ${response.status} for ${url}`);
   return response.json();
 }

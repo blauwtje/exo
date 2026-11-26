@@ -6,6 +6,7 @@ import { parseFlags, UsageError, isMain, environmentMs } from '#script-flags';
 import { RATE_LIMITED_EXIT, INSTALL, formatDuration, isRateLimited, reason, run, ytdlp, ytdlpMissing } from './ytdlp.mjs';
 import { onPath } from '#basics';
 import { scratchPath } from '#scratch-path';
+import { WATCH_SCRATCH } from '#shared-values';
 
 const USAGE = [
   'usage: node transcript.mjs --url <url> [--url <url> ...] [--from <file|->] [--lang <code>] [--model <whisper model>] [--force]',
@@ -180,7 +181,7 @@ async function main(argv) {
     console.error(`missing tool: yt-dlp on PATH; install it with ${INSTALL}, then rerun`);
     return 1;
   }
-  const options = { out: scratchPath(process.cwd(), 'watch'), lang: flags.lang, model: flags.model, force: flags.force };
+  const options = { out: scratchPath(process.cwd(), WATCH_SCRATCH), lang: flags.lang, model: flags.model, force: flags.force };
   const jobs = environmentMs('EXO_WATCH_JOBS', DEFAULT_JOBS);
   const pending = [...urls];
   const limited = [];

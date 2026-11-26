@@ -3,12 +3,12 @@ import path from 'node:path';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { git } from '#git';
-import { handoffFile } from '#handoff-file';
+import { handoffFile, handoffTarget } from '#handoff-file';
 import { defaultBase } from '#plan-landed';
 import { looksLikeRepoPath } from '#repo-path';
 import { isMain, UsageError, USAGE_EXIT } from '#script-flags';
 
-export { handoffFile };
+export { handoffFile, handoffTarget };
 
 const USAGE = 'usage: node handoff.mjs path|facts|stale [--cwd <dir>]\npath prints where the handoff of the current branch sits, inside the repository\'s git directory.\nfacts prints the Written line and the committed and uncommitted paths.\nstale prints the commits, changed paths and missing paths since the handoff was written.';
 const RELATIVE_PATH = /^(?:[\w.-]+(?:\/[\w.-]+)+\/?|\w[\w-]*\.\w+)$/;
@@ -25,13 +25,13 @@ function list(paths) {
   return paths.length === 0 ? 'none' : paths.join(', ');
 }
 
-function facts(cwd) {
+export function facts(cwd, branch = gitOutput(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])) {
   const base = defaultBase(cwd);
   const committed = base === null ? [] : lines(gitOutput(cwd, ['diff', '--name-only', `${base}...HEAD`]));
   const uncommitted = lines(gitOutput(cwd, ['status', '--short'])).map((line) => line.slice(3));
   const date = new Date().toISOString().slice(0, 10);
   return [
-    `Written: ${date}, last commit ${gitOutput(cwd, ['rev-parse', '--short', 'HEAD'])}, branch ${gitOutput(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])}`,
+    `Written: ${date}, last commit ${gitOutput(cwd, ['rev-parse', '--short', 'HEAD'])}, branch ${branch}`,
     `Committed: ${list(committed)}`,
     `Uncommitted: ${list(uncommitted)}`
   ];

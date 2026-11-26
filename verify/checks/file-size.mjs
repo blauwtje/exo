@@ -1,6 +1,7 @@
+import { SCRIPT_MAX_LINES } from '#shared-values';
 import { moduleFiles } from './script-syntax.mjs';
 
-const MAX_LINES = 400;
+const MAX_LINES = SCRIPT_MAX_LINES;
 const COUNTED = /^(lib\/|verify\/|skills\/[^/]+\/scripts\/)/;
 
 export function checkFileSize(report, repository) {

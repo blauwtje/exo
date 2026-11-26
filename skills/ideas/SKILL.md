@@ -23,7 +23,7 @@ Run the steps below in order for the question in `$ARGUMENTS`, else the question
 
 ### Setup
 
-1. Make the run folder `$HOME/.ideas/<YYYY-MM-DD>-<slug>/`, where the slug is the question in ASCII, lowercase, words joined by `-`, at most 40 characters; when the folder exists add `-2` (then `-3`). Call its absolute path `RUN`.
+1. Run `node "${CLAUDE_SKILL_DIR}/scripts/run-init.mjs" --question <the question>`, which makes the run folder `~/.ideas/<YYYY-MM-DD>-<slug>/` and prints `RUN=<absolute path>`. Call that path `RUN`.
 2. Every helper is one fresh agent with the type, model and effort given for it. Its prompt is: `Read <prompt file> and follow it exactly. Fill the placeholders {run} = RUN, {question} = <the question, verbatim>`, plus the extra placeholders named for it. Start helpers of the same step in one message and check every launch result for an error.
 3. A helper writes its files and replies with the path or, for the Judge, with text. Run files are append-only: never edit a file a helper wrote, and write no file yourself. Judge a helper's result from its reply alone, with no file checks. When a helper reports an error or no result, rerun that helper once. When it still fails, stop the run and tell the user which step failed.
 
@@ -68,3 +68,9 @@ Report: ~/.ideas/<YYYY-MM-DD>-<slug>/judge.md
 | --- | --- | --- |
 | A helper reports an error or no result | It failed to run or to write its file | See Setup step 3. |
 | A helper still fails after the rerun | A core step failed | Stop the run and tell the user which step failed. |
+
+## Available Scripts
+
+| Script | Purpose | Arguments |
+| --- | --- | --- |
+| `run-init.mjs` | Makes the run folder with a dated ASCII slug name, `-2` or `-3` when taken, and prints `RUN=<absolute path>` | `--question <text> [--home <dir>]` |

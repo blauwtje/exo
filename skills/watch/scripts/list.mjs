@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import process from 'node:process';
 import { parseFlags, UsageError, isMain } from '#script-flags';
+import { WATCH_LIST_LIMIT } from '#shared-values';
 import { RATE_LIMITED_EXIT, INSTALL, formatDuration, isRateLimited, reason, ytdlp, ytdlpMissing } from './ytdlp.mjs';
 
 const USAGE = [
   'usage: node list.mjs --url <url> [--limit <n>]',
-  'Lists the videos of a profile, channel or playlist (url, title, date, duration, views); downloads nothing. Default --limit 20.',
+  `Lists the videos of a profile, channel or playlist (url, title, date, duration, views); downloads nothing. Default --limit ${WATCH_LIST_LIMIT}.`,
   'Exit codes: 0 listed; 75 rate limited; 1 failed or yt-dlp missing; 2 bad usage.'
 ].join('\n');
 
@@ -24,7 +25,7 @@ function line(entry) {
 async function main(argv) {
   const flags = parseFlags(argv, { url: 'string', limit: 'string' }, { usage: USAGE });
   if (!flags.url) throw new UsageError('give a --url <url>');
-  const limit = Number(flags.limit ?? 20);
+  const limit = Number(flags.limit ?? WATCH_LIST_LIMIT);
   if (!Number.isInteger(limit) || limit < 1) throw new UsageError('--limit needs a positive integer');
   if (await ytdlpMissing()) {
     console.error(`${flags.url}: missing tool: listing needs yt-dlp on PATH; install it with ${INSTALL}, then rerun`);

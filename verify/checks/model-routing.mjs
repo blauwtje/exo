@@ -1,8 +1,9 @@
 import fs from 'node:fs';
+import { ALLOWED_MODEL } from '#shared-values';
 import { listedFiles } from './script-syntax.mjs';
 
 const ROUTED = /^(skills|agents)\//;
-const NAMES_MODEL = /\bmodel:? +(sonnet|opus|haiku|inherit)\b/i;
+const NAMES_MODEL = new RegExp(`\\bmodel:? +(${ALLOWED_MODEL.filter((name) => name !== 'fable').join('|')})\\b`, 'i');
 
 const NAMES_FABLE = /\bfable\b/i;
 

@@ -5,12 +5,13 @@ import process from 'node:process';
 import { parseFlags, UsageError, isMain, USAGE_EXIT } from '#script-flags';
 import { defaultBranch } from '#git';
 import { settingValue } from '#settings-store';
+import { SHIP_WAIT_MS, SHIP_TIMEOUT_EXIT } from '#shared-values';
 
 const USAGE = 'usage: ship.mjs --route <push|open-pr|pr-merge> [--title <t>] [--body <f>] [--issue <n>] [--method <m>] | --merge <n...> | --routes';
 const ROUTES = ['push', 'open-pr', 'pr-merge'];
 const METHODS = ['squash', 'merge', 'rebase'];
-const WAIT_MS = 20 * 60 * 1000;
-const TIMEOUT_EXIT = 124;
+const WAIT_MS = SHIP_WAIT_MS;
+const TIMEOUT_EXIT = SHIP_TIMEOUT_EXIT;
 const MISSING_GH = 'missing tool: gh on PATH; install it from https://cli.github.com';
 
 class StepError extends Error {
@@ -52,7 +53,7 @@ function printRoutes() {
 
 function waitForChecks(number, subject) {
   const result = cli('gh', ['pr', 'checks', String(number), '--watch', '--fail-fast'], WAIT_MS);
-  if (result.timedOut) throw new StepError('wait', 'checks still running after 20 minutes', TIMEOUT_EXIT);
+  if (result.timedOut) throw new StepError('wait', `checks still running after ${WAIT_MS / 60000} minutes`, TIMEOUT_EXIT);
   if (!result.ok) throw new StepError('wait', `checks failed: ${subject}`);
 }
 

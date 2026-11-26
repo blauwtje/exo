@@ -6,10 +6,11 @@ import { configDirectory } from '#config-directory';
 import { git as runGit } from '#git';
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 import { looksLikeRepoPath } from '#repo-path';
+import { LESSON_MAX_NOTES, LESSON_MAX_LINES } from '#shared-values';
 import { projectFolder } from './sessions.mjs';
 
-const MAX_NOTES = 15;
-const MAX_LINES = 12;
+const MAX_NOTES = LESSON_MAX_NOTES;
+const MAX_LINES = LESSON_MAX_LINES;
 const STORE_INDEX = 'index.md';
 const INDEX = 'lessons.md';
 const DATE = /\d{4}-\d{2}-\d{2}/;

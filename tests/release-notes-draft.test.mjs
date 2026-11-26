@@ -26,6 +26,8 @@ test('a breaking commit leads with its upgrade step and the rest group by type w
   const notes = draft(repo);
 
   assert.equal(notes, [
+    'Range: v1.0.0..HEAD',
+    '',
     '### Breaking changes',
     '',
     '- Rename the config key.',
@@ -49,6 +51,29 @@ test('an explicit range replaces the last release tag', async () => {
   const middle = git(repo, 'rev-parse', 'HEAD');
   await commitFiles(repo, { 'b.txt': '1' }, 'fix: second change');
 
-  assert.equal(draft(repo, '--from', middle), '### Fixed\n\n- Second change.');
+  assert.equal(draft(repo, '--from', middle), `Range: ${middle}..HEAD\n\n### Fixed\n\n- Second change.`);
 });
 
+
+test('a breaking entry without a stated upgrade carries the diff stat of its commit', async () => {
+  const repo = await releasedRepository();
+  await commitFiles(repo, { 'a.txt': '1\n2\n' }, 'feat!: drop the old flag');
+  await commitFiles(repo, { 'b.txt': '1' }, 'feat!: rename the key\n\nBREAKING CHANGE: rename "a" to "b".');
+  await commitFiles(repo, { 'c.txt': '1' }, 'feat: add a thing');
+
+  const lines = draft(repo).split('\n');
+
+  assert.deepEqual(lines.slice(2, 5), ['### Breaking changes', '', '- Rename the key.']);
+  assert.equal(lines[5], '  Upgrade: Rename "a" to "b".');
+  assert.equal(lines[6], '- Drop the old flag.');
+  assert.equal(lines[7], '  Upgrade: not stated in the commit.');
+  assert.equal(lines[8], '  1 file changed, 2 insertions(+)');
+  assert.equal(lines[9], '');
+});
+
+test('a repository without a release tag starts the draft with the end ref alone', async () => {
+  const repo = await gitRepository({ 'README.md': 'seed\n' });
+  await commitFiles(repo, { 'a.txt': '1' }, 'feat: first change');
+
+  assert.match(draft(repo), /^Range: HEAD\n\n### Added/);
+});

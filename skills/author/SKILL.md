@@ -25,7 +25,7 @@ Produce a skill or agent where every line changes what the model does.
 
 1. **Prove the need.** Change a skill, agent or check only for a user request or a failure seen in a real session. Grep the session transcripts for the failure, then write the failure down with its count before you edit, because an unrecorded failure cannot show later that the edit worked.
 2. **Pick the home.** A check or test when a machine can tell right from wrong, a script when the steps never vary, a template when only the content varies, and prose last. Prose is the dearest home because it loads every time.
-3. **Write it small.** Delete before you add: remove an overlapping rule before you write a new one. Read `references/instruction-style.md` before you word a rule.
+3. **Write it small.** Delete before you add: remove an overlapping rule before you write a new one. Read `references/instruction-style.md` before you word a rule, then run `node scripts/author-check.mjs --target <file>` for the lines, em dashes, CAPS words and frontmatter keys, and judge the prohibition count and one rule per sentence yourself.
 4. **Run the check.** Run the brief's proof, else the project's static check. On a red check fix the structure; an exemption or allowlist entry only hides the failure. Then replay the recorded failure and show it no longer happens; skip the replay for a subjective change.
 
 ### Shape
@@ -73,3 +73,9 @@ Request: "shorten the learn skill".
 | The static check is red | The skill's structure breaks a rule | Follow step 4. |
 | `## headings are ..., expected ...` | A `##` heading is extra, missing or out of order | Use the headings in Shape, in that order, and move the old sections under `###` in Instructions. |
 | An agent key has no effect | Plugin agents ignore an unknown key silently | Run `claude --debug` once on the new agent. |
+
+## Available Scripts
+
+| Script | Purpose | Arguments |
+| --- | --- | --- |
+| `author-check.mjs` | Prints the line, em dash and CAPS word counts and the frontmatter keys of a skill or agent file | `--target <file>` |

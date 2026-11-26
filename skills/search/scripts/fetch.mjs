@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writ
 import { join } from "node:path";
 import { sleep } from "#basics";
 import { environmentMs, isMain } from "#script-flags";
+import { SEARCH_FETCH_MS, SEARCH_URL_BUDGET_MS } from "#shared-values";
 import { canonicalUrl, claimSource, markQuietly, SUB } from "./claims.mjs";
 
 const RETRIES = 2;
@@ -56,7 +57,7 @@ function takeSlot(slots, staleMs) {
 
 async function withDomainSlot(cacheDir, url, now, run) {
   const gap = environmentMs("EXO_SEARCH_DOMAIN_GAP_MS", 1000);
-  const staleMs = 2 * environmentMs("EXO_SEARCH_FETCH_MS", 15000) + gap;
+  const staleMs = 2 * environmentMs("EXO_SEARCH_FETCH_MS", SEARCH_FETCH_MS) + gap;
   const { locks, slots, last } = lockPaths(cacheDir, new URL(url).hostname);
   mkdirSync(locks, { recursive: true });
   let slot = takeSlot(slots, staleMs);
@@ -84,7 +85,7 @@ async function request(url, { cacheDir, fetchImpl, now, signal }) {
   for (let attempt = 0; ; attempt += 1) {
     signal.throwIfAborted();
     const response = await withDomainSlot(cacheDir, url, now, async () => {
-      const reply = await fetchImpl(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(environmentMs("EXO_SEARCH_FETCH_MS", 15000))]), headers: { "user-agent": "exo-search/1 (research reader)" } });
+      const reply = await fetchImpl(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(environmentMs("EXO_SEARCH_FETCH_MS", SEARCH_FETCH_MS))]), headers: { "user-agent": "exo-search/1 (research reader)" } });
       return { status: reply.status, ok: reply.ok, headers: reply.headers, body: await reply.text() };
     });
     const retryable = response.status === 429 || response.status >= 500;
@@ -146,14 +147,14 @@ export async function fetchPage(url, { cacheDir, fetchImpl = fetch, now = Date.n
   const file = join(cacheDir, `${createHash("sha1").update(canonicalUrl(url)).digest("hex")}.md`);
   if (inflight.has(file)) await inflight.get(file);
   if (existsSync(file)) return cachedPage(url, file);
-  const signal = AbortSignal.timeout(environmentMs("EXO_SEARCH_URL_BUDGET_MS", 45000));
+  const signal = AbortSignal.timeout(environmentMs("EXO_SEARCH_URL_BUDGET_MS", SEARCH_URL_BUDGET_MS));
   const download = withinBudget(url, signal, downloadPage(url, file, { cacheDir, fetchImpl, now, signal })).finally(() => inflight.delete(file));
   inflight.set(file, download);
   return download;
 }
 
 async function fetchClaimed(url, cacheDir, sub) {
-  const leaseMs = environmentMs("EXO_SEARCH_URL_BUDGET_MS", 45000) + environmentMs("EXO_SEARCH_FETCH_MS", 15000);
+  const leaseMs = environmentMs("EXO_SEARCH_URL_BUDGET_MS", SEARCH_URL_BUDGET_MS) + environmentMs("EXO_SEARCH_FETCH_MS", SEARCH_FETCH_MS);
   const claim = claimSource(cacheDir, url, sub, { leaseMs });
   if (claim.taken) {
     console.log(`Taken: ${url} (${claim.taken})`);

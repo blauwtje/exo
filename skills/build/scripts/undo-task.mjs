@@ -4,9 +4,10 @@ import { resolvePlanPath } from '#checkout';
 import { commitsOf, planIdOf, taskCommits } from '#plan-landed';
 import { gitLine, gitText } from '#git';
 import { parsePlan } from '#plan-tasks';
+import { PLAN_TASK_TRAILER } from '#shared-values';
 
 const USAGE = 'usage: undo-task.mjs --plan <plan> [--root <checkout>] <n>';
-const FOOTER = 'Fix commits carry no Plan-task trailer and are not listed.';
+const FOOTER = `Fix commits carry no ${PLAN_TASK_TRAILER} trailer and are not listed.`;
 const IN_PROGRESS = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply'];
 
 function unfinishedOperation(root) {
@@ -37,7 +38,7 @@ export function undoLines({ planText, planPath, root, number }) {
   const commits = commitsOf(root);
   const task = tasks.find((candidate) => candidate.number === number);
   if (task === undefined || taskCommits(task, commits, planId).length === 0) {
-    throw new Error(`task ${number} has no Plan-task commit`);
+    throw new Error(`task ${number} has no ${PLAN_TASK_TRAILER} commit`);
   }
   const shas = new Set(dependents(tasks, number).flatMap((member) => taskCommits(member, commits, planId)));
   const lines = commits.filter((commit) => shas.has(commit.sha)).map((commit) => `git revert --no-commit ${commit.sha}`);

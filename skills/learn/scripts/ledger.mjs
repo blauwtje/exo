@@ -4,6 +4,7 @@ import process from 'node:process';
 import { sleepSync } from '#basics';
 import { configDirectory } from '#config-directory';
 import { scratchPath } from '#scratch-path';
+import { LEARN_SCRATCH } from '#shared-values';
 import { projectFolder } from './sessions.mjs';
 
 export const MAX_ENTRIES = 2000;
@@ -29,7 +30,7 @@ function configLedger(cwd) {
 }
 
 function fallbackLedger(cwd) {
-  return path.join(scratchPath(cwd, 'learn'), ledgerName(cwd));
+  return path.join(scratchPath(cwd, LEARN_SCRATCH), ledgerName(cwd));
 }
 
 export function ledgerFile(cwd) {

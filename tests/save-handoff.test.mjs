@@ -51,3 +51,18 @@ test('stale without a handoff exits 1 with one stderr line', async () => {
   assert.equal(result.code, 1);
   assert.equal(result.stderr.trim().split('\n').length, 1);
 });
+
+test('handoff-write saves the body with the facts inserted at the facts line', async () => {
+  const root = await gitRepository({ 'a.txt': 'a\n' });
+  git(root, 'checkout', '-q', '-b', 'feature');
+  fs.writeFileSync(path.join(root, 'c.txt'), 'c\n');
+  const body = path.join(root, 'body.md');
+  fs.writeFileSync(body, 'Work stands here.\n<facts>\n\n## Goal\nx\n');
+  const writer = path.join(REPOSITORY_ROOT, 'skills/save/scripts/handoff-write.mjs');
+  const printed = (await run(SCRIPT, ['path', '--cwd', root])).stdout.trim();
+  const result = await run(writer, ['--body', body, '--cwd', root]);
+  assert.equal(result.stdout.trim(), `Saved to ${printed}`);
+  const text = fs.readFileSync(printed, 'utf8');
+  assert.match(text, /^Work stands here\.\nWritten: \d{4}-\d{2}-\d{2}, last commit [0-9a-f]+, branch feature\nCommitted: none\nUncommitted: .*c\.txt\n\n## Goal/);
+  assert.doesNotMatch(text, /<facts>/);
+});

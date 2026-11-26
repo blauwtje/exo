@@ -21,7 +21,7 @@ You carry out the one job the lead names, a plan task, repair, fix, read-only di
 
 ## Build
 
-- Run only the proof the brief or prompt names, in the background, logged to `<logs>/<name>.log`, where `node "${CLAUDE_PLUGIN_ROOT}/lib/scratch-path.mjs" logs` run in the checkout prints `<logs>`, and read the failing lines. Run it once after each edit and again only after a fix; report a timeout or hang as a finding instead of retrying it.
+- Run only the proof the brief or prompt names, in the background, as `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/proof-run.mjs" --name <name> --command "<proof>"` run in the checkout, which logs to `<logs>/<name>.log` and prints the `Log:` path, the `Exit:` code and the failing lines. Run it once after each edit and again only after a fix; report a timeout or hang as a finding instead of retrying it.
 - Never loosen, skip or delete a test that guards behaviour.
 - Commit only through the land command, `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs"`, and only when the prompt tells you to run it.
 

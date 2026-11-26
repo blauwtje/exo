@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { environmentMs } from "#script-flags";
+import { SEARCH_FETCH_MS } from "#shared-values";
 import { readBest, searchAll } from "./pick.mjs";
 
 const run = promisify(execFile);
@@ -12,7 +13,7 @@ const ISSUE_FIELDS = "title,url,body,commentsCount,createdAt,repository";
 
 async function gh(args) {
   try {
-    const { stdout } = await run("gh", args, { maxBuffer: MAX_BUFFER, timeout: environmentMs("EXO_SEARCH_FETCH_MS", 15000) });
+    const { stdout } = await run("gh", args, { maxBuffer: MAX_BUFFER, timeout: environmentMs("EXO_SEARCH_FETCH_MS", SEARCH_FETCH_MS) });
     return stdout;
   } catch (error) {
     throw new Error(`gh ${args.slice(0, 2).join(" ")} failed: ${(error.stderr || error.message).trim()}`);

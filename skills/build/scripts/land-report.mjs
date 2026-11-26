@@ -1,6 +1,7 @@
 import { mcpToolCall } from '#mcp-tool-call';
 import { LandingError, ReportMissingError } from './land-errors.mjs';
 import { escapeRegExp } from '#basics';
+import { SUCCESS_SECTION } from '#shared-values';
 
 const ANY_OUTCOME_LINE = /^\s*(?:[-*]\s+)?(?:`([^`]+)`|(.+)):\s*(.*?)\s*$/;
 const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved']);
@@ -48,7 +49,7 @@ function expectedLayout(task, reportPath, command = null) {
 
 function reportLinesOf(task, reportText, reportPath) {
   if (reportText === null) {
-    const wanted = task.proof === null ? 'a test for the Success criterion' : `"${task.proof}"`;
+    const wanted = task.proof === null ? `a test for the ${SUCCESS_SECTION}` : `"${task.proof}"`;
     throw new ReportMissingError(`Task ${task.number}: no build report at '${reportPath}' to prove ${wanted}${expectedLayout(task, reportPath)}\nWrite the report with that layout.`);
   }
   const lines = reportText.replace(/\r\n/g, '\n').split('\n');

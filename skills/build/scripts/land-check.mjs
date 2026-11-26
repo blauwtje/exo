@@ -92,8 +92,8 @@ export function taskOf(plan, number) {
 export function refuseBeforeProof(task, { state, planPath, planId, reportText, reportPath }) {
   const { root } = state;
   checkReport(task, reportText, reportPath);
-  const outside = changedPaths(root, planPath);
-  refuseSecrets(task, root);
+  const outside = changedPaths(state, planPath);
+  refuseSecrets(task, state);
   const unlistedLine = unlistedLineOf(task, outside);
   commitBlockOf({ task, planId, root, unlistedLine, state });
   refuseBadCommitText(task.title, root);
@@ -112,7 +112,8 @@ const SECRET_PATTERNS = [
   ['Anthropic key', /sk-ant-[A-Za-z0-9_-]{20,}/]
 ];
 
-function addedLinesOf(root) {
+function addedLinesOf(state) {
+  const { root } = state;
   const added = [];
   let file = null;
   let inHeader = false;
@@ -124,7 +125,7 @@ function addedLinesOf(root) {
     else if (inHeader) continue;
     else if (line.startsWith('+')) added.push({ file, text: line.slice(1) });
   }
-  const untracked = gitText(root, ['ls-files', '--others', '--exclude-standard', '-z'], { trim: false }).split('\0').filter((name) => name !== '' && !name.startsWith(`${LEGACY_EXO_FOLDER}/`));
+  const untracked = state.untrackedPaths().filter((name) => !name.startsWith(`${LEGACY_EXO_FOLDER}/`));
   for (const name of untracked) {
     const full = path.join(root, name);
     if (!fs.lstatSync(full).isFile()) continue;
@@ -133,18 +134,19 @@ function addedLinesOf(root) {
   return added;
 }
 
-function refuseSecrets(task, root) {
-  for (const { file, text } of addedLinesOf(root)) {
+function refuseSecrets(task, state) {
+  for (const { file, text } of addedLinesOf(state)) {
     const [name] = SECRET_PATTERNS.find(([, pattern]) => pattern.test(text)) ?? [];
     if (name !== undefined) throw new LandingError(`Task ${task.number} adds ${file} matching the pattern "${name}"; remove it and use an environment variable or a secret store`);
   }
 }
 
-export function proveTask(task, { root, planPath, reportText, reportPath }) {
+export function proveTask(task, { state, planPath, reportText, reportPath }) {
+  const { root } = state;
   const { proofCommand, pending } = checkReport(task, reportText, reportPath);
   const proofCommands = proofCommand === null ? [] : [proofCommand];
   const proofs = proofCommands.map((command) => runProof(task, command, { root }));
-  runNamedTests(task, proofCommands, { root, planPath });
+  runNamedTests(task, proofCommands, { state, planPath });
   const { line } = redGreenLine(task, { proofCommands, root, pending });
   return { proofs, pending, redLine: line };
 }

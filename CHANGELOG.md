@@ -24,6 +24,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 - CONTRIBUTING.md has a Codemap section naming the folders and the import and size rules.
 - The `model routing` check fails a `general-purpose` dispatch in skill or agent text that names no model, the word Fable in skill or agent text, and a script that starts `claude -p` without `--model`.
 - `evals/model-usage.mjs` reports tool calls and tokens per session kind, model family and agent type from session files.
+- `lib/shared-values.mjs` (`#shared-values`) holds the values that stand in two or more files as plain named exports, read by scripts, checks and hooks.
+- The `shared literals` check fails a code file that types a shared value outside the module, with a reasoned baseline in `verify/checks/shared-literals-baseline.json`.
+- The `shared mentions` check fails a registered prose mention that no longer matches its file or differs from its value; `node verify/checks/shared-mentions.mjs --write` rewrites each mention from the module.
+- `proof-run.mjs` runs a build proof to a log and prints the failing lines or the last 40 lines, and `build-dispatch.mjs` prints the next task's dispatch fields.
+- `handoff-write.mjs` writes the save handoff file, and `learn-step.mjs` records a numbered pick as keep and reject.
+- `run-init.mjs` makes the ideas run folder, `pack.mjs` packs the transcript lines into researcher batches, and `plan-template.mjs` chains the definition-of-done commands.
 
 ### Changed
 
@@ -52,9 +58,15 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:build` builders follow structure rules: one-way imports, one owner and one meaning per helper and name, deep modules, a new function instead of one more flag on shared code, a current codemap and file and function size as a smell, against the project's lint limit first.
 - The `exo:build` end-of-run review checks the diff against the structure rules, and an `exo:spec` Review Focus bullet may name a structure fault such as import direction.
 - `exo:ideas` starts 4 helpers instead of about 15 (a scout and two generators side by side, then one judge that rewrites near misses once), has no second round, and counts an idea as strong only at 16/20 or more, not `exists` in prior art, and beating the best existing answer in both orders.
+- The `search` scripts (`fetch`, `pick`, `plan`, `search`, `reddit`, `github`, `hn`) read their shared values from `lib/shared-values.mjs`, and each `EXO_*_MS` variable still overrides a duration.
+- The `watch` scripts (`list`, `pack`, `transcript`) and the `learn` scripts (`ledger`, `lessons`) read their shared limits from `lib/shared-values.mjs`.
+- The `build` scripts (`build-dispatch`, `land-task`, `next-task`, `undo-task`), `ship.mjs` and `brief-place.mjs` read their shared values from `lib/shared-values.mjs`.
 
 ### Fixed
 
+- `next-task.mjs` moves a failed report to `failed-report.md` and prints its `Failed report:` path when it dispatches the task again, so the new attempt starts with no stale report.
+- `land-task.mjs` lists untracked files once per run and reads the git common dir once, through the repo state and `commonDir`.
+- A `Files:` glob covers a staged deletion it names, and a glob that names only an ignored file is refused by name.
 - `land-task.mjs` finds and stages a `Files:` entry written as `./path` or as a glob, instead of naming it on `Files not found:` or `Outside Files:`.
 - `land-task.mjs` refuses a `--root` outside a git repository by name, instead of failing with an `ENOENT` error on `/null`.
 - `next-task.mjs` keeps a task report written before the land when it runs again for the same task.

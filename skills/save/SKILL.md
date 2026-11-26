@@ -28,15 +28,14 @@ Freeze what this session knows and the next one cannot rebuild. Point to files a
 
 ### Write the file
 
-1. Run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` for the location, create its parent directories, and write the file whole, replacing an older handoff.
-2. Run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" facts` and copy its `Written:` line and its path lists into the file. Write plain words in the user's language, with these sections in order:
-   - One line on where the work stands and the first thing to do next, then the `Written:` line.
+1. Write the body to a temp file in plain words in the user's language, then run `node "${CLAUDE_SKILL_DIR}/scripts/handoff-write.mjs" --body <file>`. It replaces the body's `<facts>` line with the `Written:` line and the path lists, writes the handoff whole over an older one and prints `Saved to <path>`. The body has these sections in order:
+   - One line on where the work stands and the first thing to do next, then a line holding only `<facts>`.
    - `## Goal`: what the work is for, and what it will not do.
    - `## Progress`: from `git status --short`, not memory. Open with the plan path and task number when a plan runs. List what is committed, then every uncommitted path in full, because a next session that cannot tell them apart discards working-tree edits. Add each decision as "<decision>, decided by <the user or this session>".
    - `## Evidence`: what is proven, as claim, command and result, and what is unproven, with what is open and who can answer.
    - `## Ruled out`: each approach already tried and dropped, one line each with why it failed.
    - `## Next step`: the first action, then each later step with its full command. For a run, say how to wait, what to do on failure and where to stop.
-3. End the turn by naming the written path and telling the user to run `/clear`, then say "continue from the handoff". Continue no work.
+2. End the turn by naming the written path and telling the user to run `/clear`, then say "continue from the handoff". Continue no work.
 
 ### Continue from a handoff
 
@@ -67,3 +66,4 @@ Saved to <handoff path>. Run /clear, then say "continue from the handoff".
 | Script | Purpose | Arguments |
 | --- | --- | --- |
 | `handoff.mjs` | Prints where the handoff of the current branch sits | `path, facts or stale, each with [--cwd <dir>]` |
+| `handoff-write.mjs` | Writes the handoff file from a body file with the Written line and path lists inserted, and prints `Saved to <path>` | `--body <file> [--cwd <dir>]` |

@@ -11,18 +11,18 @@ export function nestedWorktrees(root) {
   )));
 }
 
-function untrackedPaths(root) {
-  const worktrees = nestedWorktrees(root);
-  const top = realpathSync(root);
-  return gitText(root, ['ls-files', '--others', '--exclude-standard'], { trim: false }).split('\n')
-    .filter((file) => file === '' || !worktrees.has(path.join(top, file.replace(/\/$/, ''))));
+function untrackedPaths(state) {
+  const worktrees = nestedWorktrees(state.root);
+  const top = realpathSync(state.root);
+  return state.untrackedPaths().filter((file) => !worktrees.has(path.join(top, file.replace(/\/$/, ''))));
 }
 
-export function changedPaths(root, planPath) {
+export function changedPaths(state, planPath) {
+  const { root } = state;
   const tracked = gitText(root, ['diff', '--name-only', 'HEAD'], { trim: false });
   const legacyPrefix = `${LEGACY_EXO_FOLDER}/`;
   const exempt = planPath === undefined ? [] : [path.relative(path.resolve(root), path.resolve(planPath))];
-  return [...new Set([...tracked.split('\n'), ...untrackedPaths(root)])]
+  return [...new Set([...tracked.split('\n'), ...untrackedPaths(state)])]
     .filter((line) => line !== '' && !line.startsWith(legacyPrefix) && !exempt.includes(line));
 }
 

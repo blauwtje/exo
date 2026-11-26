@@ -9,6 +9,7 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 ## Codemap
 
 - `lib/`: shared modules for every script; code outside `lib/` imports it through a `#` alias, and `lib/` files import each other by relative path.
+- `lib/shared-values.mjs` (`#shared-values`): the values that stand in two or more files, as plain named exports with no file or process access.
 - `skills/`: one folder per skill, with its body, references and `scripts/`.
 - `agents/`: the delegate prompts.
 - `hooks/`: the hook scripts and `hooks.json`.
@@ -19,6 +20,8 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 
 The `import direction` check fails a `lib/` file that imports a skill, a skill that imports another skill, and code outside `lib/` that reaches `lib/` by a relative path instead of a `#` alias from `package.json`.
 The `file size` check fails a script under `lib/`, `skills/*/scripts/` or `verify/` over 400 lines.
+The `shared literals` check fails a code file that types the literal of a shared value outside the module, except for a baseline entry with a reason in `verify/checks/shared-literals-baseline.json`.
+The `shared mentions` check fails a prose mention registered in `verify/checks/shared-mentions.json` that no longer matches its file or differs from its value; `node verify/checks/shared-mentions.mjs --write` rewrites each mention from the module.
 
 ## Checks
 
@@ -27,7 +30,7 @@ The `file size` check fails a script under `lib/`, `skills/*/scripts/` or `verif
 | Command | What it runs |
 |---|---|
 | `npm run check` | The gate before any commit: `node verify.mjs`, the static checks, the script tests and the plugin version check. It ends with `SUMMARY PASS=n FAIL=n WARN=n UNRUN=n`. |
-| `npm run validate:static` | The static checks only: `claude plugin validate --strict`, skill frontmatter, local Markdown links, skill layout, JavaScript syntax, the hook set, principle page citations, silent catch blocks, invisible Unicode, personal paths, import direction and file size. |
+| `npm run validate:static` | The static checks only: `claude plugin validate --strict`, skill frontmatter, local Markdown links, skill layout, JavaScript syntax, the hook set, principle page citations, silent catch blocks, invisible Unicode, personal paths, import direction, file size, shared literals and shared mentions. |
 | `npm run validate` | `npm run validate:static` and then `npm test`. |
 
 The skill layout check fails a skill body over 500 lines, a reference its skill body does not name, a reference that points to another reference, and a skill file that paths into another skill's folder. The hook set check fails a `hooks.json` beyond `SessionStart` and `UserPromptSubmit`, each with one command hook. The principle citations check fails a path after `exo:` in a principle page that does not exist. The silent catch check fails a script with more `catch {` blocks than its baseline. The invisible Unicode check fails a tracked file that holds a zero width, bidi control, soft hyphen, byte order mark or tag character, and skips a file with a NUL byte. The personal paths check fails a tracked file that holds a `/Users/`, `/home/` or drive `Users` path whose name is not a placeholder such as `user` or `you`. The plugin version check fails manifests that disagree on the version, and a branch that changes the tree with nothing under `## Unreleased` in `CHANGELOG.md`. The `script options` check fails when a script declares more options than at the merge-base with `origin/main`, or a new script more than 5. The `positional literals` check fails on a `$1`-style literal in a skill, agent or output-style file. The `test timing` check fails a line in `tests/**/*.mjs` that reads the clock or uses a fixed sleep as sync.

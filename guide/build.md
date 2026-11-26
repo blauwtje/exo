@@ -1,6 +1,6 @@
 # build
 
-Runs a plan, one task per fresh builder; a long chain lands up to four tasks per fresh builder. Without a plan, it builds a decided change in this session.
+Runs a plan, one task per fresh builder; a long chain lands up to 4 tasks per fresh builder. Without a plan, it builds a decided change in this session.
 
 ## When it runs
 

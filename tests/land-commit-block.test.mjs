@@ -80,3 +80,20 @@ test('an ignored untracked Files path is refused by name before the Proof runs',
   assert.match(landed.stderr, /Files path build\/out\.txt is ignored by git/);
   assert.equal(fs.existsSync(marker), false);
 });
+
+test('a Files glob covers a file removed with git rm and refuses an ignored file it names', async () => {
+  const { root, planPath } = await compactCheckout(planWith(['src/app.js', 'lib/*.js']));
+  fs.mkdirSync(path.join(root, 'lib'));
+  fs.writeFileSync(path.join(root, 'lib/old.js'), 'x\n');
+  git(root, 'add', 'lib');
+  git(root, 'commit', '-q', '-m', 'add lib');
+  git(root, 'rm', '-q', 'lib/old.js');
+  const landed = await land(root, planPath);
+  assert.equal(landed.code, 0, landed.stderr);
+  assert.doesNotMatch(landed.stdout, /Files not found|Outside Files/);
+  fs.mkdirSync(path.join(root, 'lib'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.gitignore'), 'lib/gen.js\n');
+  fs.writeFileSync(path.join(root, 'lib/gen.js'), 'x\n');
+  const task = { number: 1, title: 'feat(app): greet', files: [{ path: 'lib/*.js' }] };
+  assert.throws(() => commitBlockOf({ task, planId: 'p', root }), /ignored by git/);
+});

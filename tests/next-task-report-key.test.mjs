@@ -43,3 +43,18 @@ test('a second run before the land keeps the report the builder wrote for the pr
   assert.equal(second.code, 0, second.stderr);
   assert.equal(fs.existsSync(report), true);
 });
+
+test('a dispatch after a failed attempt moves the blocked report the earlier attempt left to failed-report.md', async () => {
+  const { root } = await landingCheckout();
+  const report = reportFile(root, 'fixture', 1);
+  const first = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', root], { cwd: root });
+  assert.equal(first.code, 0, first.stderr);
+  const blocked = 'Landed: none\nUnresolved: BLOCKED proof did not fail first\n';
+  const failed = report.replace('implementer.md', 'failed-report.md');
+  fs.writeFileSync(report, blocked);
+  const second = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', root], { cwd: root });
+  assert.equal(second.code, 0, second.stderr);
+  assert.equal(fs.existsSync(report), false);
+  assert.equal(fs.readFileSync(failed, 'utf8'), blocked);
+  assert.ok(second.stdout.split('\n').includes(`Failed report: ${failed}`));
+});

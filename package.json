@@ -25,7 +25,8 @@
     "#run-check": "./lib/run-check.mjs",
     "#scratch-path": "./lib/scratch-path.mjs",
     "#script-flags": "./lib/script-flags.mjs",
-    "#settings-store": "./lib/settings-store.mjs"
+    "#settings-store": "./lib/settings-store.mjs",
+    "#shared-values": "./lib/shared-values.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {

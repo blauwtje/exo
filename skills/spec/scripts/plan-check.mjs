@@ -5,13 +5,14 @@ import { git } from '#git';
 import { parseFlags, UsageError, isMain } from '#script-flags';
 import { parsePlan, PlanError } from '#plan-tasks';
 import { frameOf, openPoints } from '#plan-frame';
+import { SUCCESS_SECTION } from '#shared-values';
 
-const REQUIRED_SECTIONS = ['Goal', 'Plan basis', 'Success criterion'];
+const REQUIRED_SECTIONS = ['Goal', 'Plan basis', SUCCESS_SECTION];
 
 function frameProblems(plan, planText) {
   const problems = REQUIRED_SECTIONS.filter((name) => !plan.frame[name]).map((name) => `the plan has no '## ${name}' section`);
-  const criterion = plan.frame['Success criterion'] ?? '';
-  if (criterion && !/`[^`]+`/.test(criterion)) problems.push("the Success criterion holds no backticked command");
+  const criterion = plan.frame[SUCCESS_SECTION] ?? '';
+  if (criterion && !/`[^`]+`/.test(criterion)) problems.push(`the ${SUCCESS_SECTION} holds no backticked command`);
   const basis = plan.frame['Plan basis'] ?? '';
   for (const label of ['Repository', 'Branch', 'Land gate']) {
     if (basis && !new RegExp(`^${label}: .+$`, 'm').test(basis)) problems.push(`the Plan basis has no '${label}:' line`);
@@ -59,8 +60,10 @@ function consumesProblems(tasks) {
     .map(({ task: source }) => `Task ${task.number} consumes Task ${source} but Task ${task.number} does not depend on Task ${source}`));
 }
 
+const ACCEPTANCE_CITE = new RegExp(`\\bTask \\d+\\b|\\bData:|${SUCCESS_SECTION}|Manual check`, 'i');
+
 function cites(item, plan) {
-  if (/\bTask \d+\b|\bData:|Success criterion|Manual check/i.test(item)) return true;
+  if (ACCEPTANCE_CITE.test(item)) return true;
   return [...item.matchAll(/`([^`]+)`/g)].some((span) => plan.tasks.some((task) => task.data?.includes(span[1])));
 }
 
@@ -68,7 +71,7 @@ function acceptanceProblems(plan) {
   return (plan.frame.Acceptance ?? '').split('\n')
     .flatMap((line) => line.match(/^\s*(?:[-*]|\d+\.)\s+(.+)$/)?.[1] ?? [])
     .filter((item) => !cites(item, plan))
-    .map((item) => `the Acceptance item '${item}' cites no task number, 'Data:' segment or the Success criterion; cite one or move it to Manual checks`);
+    .map((item) => `the Acceptance item '${item}' cites no task number, 'Data:' segment or the ${SUCCESS_SECTION}; cite one or move it to Manual checks`);
 }
 
 function reviewFocusProblems(plan) {

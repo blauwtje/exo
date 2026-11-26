@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { environmentMs, isMain, parseFlags, UsageError, USAGE_EXIT } from "#script-flags";
+import { SEARCH_DEADLINE_MS, SEARCH_MAX_DEADLINE_MS } from "#shared-values";
 import { killChildren } from "./pick.mjs";
 import { SUB } from "./claims.mjs";
 import * as arxiv from "./arxiv.mjs";
@@ -23,12 +24,11 @@ const SUBREDDIT = /^[A-Za-z0-9_]{2,21}$/;
 const SITE = /^[a-z][a-z.]*$/;
 const TOPIC = /^[a-z0-9][a-z0-9-]*$/;
 const MAX_FAILURES = 2;
-const MAX_DEADLINE_MS = 290000;
 const SCRIPT = fileURLToPath(import.meta.url);
 const RUNS_DIR = join(tmpdir(), "search-runs");
 
 export function deadlineMs() {
-  return Math.min(environmentMs("EXO_SEARCH_DEADLINE_MS", 240000), MAX_DEADLINE_MS);
+  return Math.min(environmentMs("EXO_SEARCH_DEADLINE_MS", SEARCH_DEADLINE_MS), SEARCH_MAX_DEADLINE_MS);
 }
 
 function requireReads(reads) {

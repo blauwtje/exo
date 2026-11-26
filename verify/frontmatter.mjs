@@ -1,5 +1,4 @@
-const ALLOWED_EFFORT = ['low', 'medium', 'high', 'xhigh', 'max'];
-const ALLOWED_MODEL = ['sonnet', 'opus', 'haiku', 'fable', 'inherit'];
+import { ALLOWED_EFFORT, ALLOWED_MODEL } from '#shared-values';
 
 const KEY_LINE = /^(?<key>name|description|effort|model|allowed-tools|argument-hint|disable-model-invocation|shell|license|compatibility|user-invocable|disallowed-tools|context|agent): +(?<value>.+)$/;
 const BOOLEAN_KEYS = ['disable-model-invocation', 'user-invocable'];

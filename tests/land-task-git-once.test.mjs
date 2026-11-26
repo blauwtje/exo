@@ -18,6 +18,17 @@ function readsOf(starts, wanted) {
   return most;
 }
 
+function untrackedListingsBetweenWrites(starts) {
+  let streak = 0;
+  let most = 0;
+  for (const { argv } of starts) {
+    const verb = argv.find((word, index) => argv[index - 1] !== '-C' && index > 0 && word !== '-C');
+    if (WRITES.has(verb)) streak = 0;
+    else if (verb === 'ls-files' && argv.includes('--others') && !argv.includes('--ignored')) most = Math.max(most, ++streak);
+  }
+  return most;
+}
+
 test('a landing reads the staged deletions and the toplevel once between git writes', async () => {
   const { root, planPath } = await landingCheckout();
   await editApp(root);
@@ -27,6 +38,17 @@ test('a landing reads the staged deletions and the toplevel once between git wri
   const starts = gitStarts(traces);
   assert.ok(readsOf(starts, 'diff --cached --name-only --no-renames --diff-filter=D') <= 1);
   assert.ok(readsOf(starts, 'rev-parse --show-toplevel') <= 1);
+  assert.ok(readsOf(starts, 'rev-parse --path-format=absolute --git-common-dir') <= 1);
   const planLogs = starts.filter(({ argv }) => argv.includes('log') && argv.includes('--grep=^Plan-task: '));
   assert.equal(planLogs.length, 2);
+});
+
+test('a landing lists the untracked files once between git writes', async () => {
+  const { root, planPath } = await landingCheckout();
+  await editApp(root);
+  const traces = tempDir('git-once-untracked-');
+  const landed = await run(SCRIPT, ['--plan', planPath, '--task', '1', '--root', root], { cwd: root, env: { GIT_TRACE2_EVENT: traces } });
+  assert.equal(landed.code, 0, landed.stderr + landed.stdout);
+  const starts = gitStarts(traces);
+  assert.ok(untrackedListingsBetweenWrites(starts) <= 1);
 });

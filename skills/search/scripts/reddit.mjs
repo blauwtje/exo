@@ -6,6 +6,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { sleep } from "#basics";
 import { environmentMs, isMain } from "#script-flags";
+import { SEARCH_CHROME_START_MS, SEARCH_LOCK_MS, SEARCH_REDDIT_GAP_MS } from "#shared-values";
 import { readBest, searchAll } from "./pick.mjs";
 
 const home = process.env.SEARCH_REDDIT_HOME ?? join(homedir(), ".search-reddit");
@@ -51,7 +52,7 @@ function stopChrome(child) {
 async function connect(visible) {
   const { chromium } = loadPlaywright();
   const child = launch(visible);
-  const deadline = Date.now() + environmentMs("EXO_SEARCH_CHROME_START_MS", 10000);
+  const deadline = Date.now() + environmentMs("EXO_SEARCH_CHROME_START_MS", SEARCH_CHROME_START_MS);
   let lastError;
   while (!child.spawnError && Date.now() < deadline) {
     try {
@@ -112,7 +113,7 @@ async function takeLock(lockPort, deadline) {
 }
 
 export async function withLock(lockPort, task) {
-  const server = await takeLock(lockPort, Date.now() + environmentMs("EXO_SEARCH_LOCK_MS", 60000));
+  const server = await takeLock(lockPort, Date.now() + environmentMs("EXO_SEARCH_LOCK_MS", SEARCH_LOCK_MS));
   try {
     return await task();
   } finally {
@@ -286,9 +287,8 @@ export function paced(gap, wait = sleep) {
   };
 }
 
-const gapMs = environmentMs("EXO_SEARCH_REDDIT_GAP_MS", 2000);
 const queue = paced(() => {
-  const wait = nextGapMs(gapMs, hold, callDeadlineAt, Date.now());
+  const wait = nextGapMs(environmentMs("EXO_SEARCH_REDDIT_GAP_MS", SEARCH_REDDIT_GAP_MS), hold, callDeadlineAt, Date.now());
   hold = 0;
   return wait;
 });

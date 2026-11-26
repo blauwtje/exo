@@ -21,7 +21,7 @@ function sentence(text) {
   return /[.!?]$/.test(capital) ? capital : `${capital}.`;
 }
 
-function entryOf({ subject, body }) {
+function entryOf({ hash, subject, body }) {
   const match = SUBJECT.exec(subject);
   if (match === null) return null;
   const [, type, bang, description] = match;
@@ -29,24 +29,30 @@ function entryOf({ subject, body }) {
   const breaking = bang === '!' || footer !== null;
   const section = SECTION_OF_TYPE[type];
   if (!section && !breaking) return null;
-  return { text: sentence(description), section: section ?? 'Changed', breaking, upgrade: footer ? sentence(footer[1]) : 'not stated in the commit.' };
+  return { hash, text: sentence(description), section: section ?? 'Changed', breaking, upgrade: footer ? sentence(footer[1]) : 'not stated in the commit.' };
+}
+
+function statOf(repo, entry) {
+  if (!entry.upgrade.startsWith('not stated')) return [];
+  return [`  ${git(repo, ['show', '--shortstat', '--format=', entry.hash])}`];
 }
 
 function draft(repo, { from, to = 'HEAD' }) {
   const start = from ?? runGit(repo, ['describe', '--tags', '--abbrev=0', '--match', 'v*', to]).stdout.trim();
   const range = start ? `${start}..${to}` : to;
-  const log = git(repo, ['log', '--no-merges', `--format=${RECORD}%s${FIELD}%b`, range]);
+  const log = git(repo, ['log', '--no-merges', `--format=${RECORD}%h${FIELD}%s${FIELD}%b`, range]);
   const entries = log.split(RECORD).filter(Boolean).map((record) => {
-    const [subject, body] = record.split(FIELD);
-    return entryOf({ subject, body });
+    const [hash, subject, body] = record.split(FIELD);
+    return entryOf({ hash, subject, body });
   }).filter(Boolean);
   const breaking = entries.filter((entry) => entry.breaking);
-  const blocks = breaking.length > 0 ? [['### Breaking changes', '', ...breaking.flatMap((entry) => [`- ${entry.text}`, `  Upgrade: ${entry.upgrade}`])]] : [];
+  const blocks = breaking.length > 0 ? [['### Breaking changes', '', ...breaking.flatMap((entry) => [`- ${entry.text}`, `  Upgrade: ${entry.upgrade}`, ...statOf(repo, entry)])]] : [];
   for (const section of SECTIONS) {
     const inSection = entries.filter((entry) => !entry.breaking && entry.section === section);
     if (inSection.length > 0) blocks.push([`### ${section}`, '', ...inSection.map((entry) => `- ${entry.text}`)]);
   }
-  return blocks.length === 0 ? `No user-facing commits in ${range}.` : blocks.map((block) => block.join('\n')).join('\n\n');
+  if (blocks.length === 0) return `No user-facing commits in ${range}.`;
+  return [`Range: ${range}`, ...blocks.map((block) => block.join('\n'))].join('\n\n');
 }
 
 const { values } = parseArgs({ options: { repo: { type: 'string', default: process.cwd() }, from: { type: 'string' }, to: { type: 'string' } } });

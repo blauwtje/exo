@@ -24,6 +24,8 @@ import { checkImportDirection } from './verify/checks/import-direction.mjs';
 import { checkFileSize } from './verify/checks/file-size.mjs';
 import { checkScratchKey } from './verify/checks/scratch-key.mjs';
 import { checkModelRouting } from './verify/checks/model-routing.mjs';
+import { checkSharedLiterals } from './verify/checks/shared-literals.mjs';
+import { checkSharedMentions } from './verify/checks/shared-mentions.mjs';
 import { checkGitOnce } from './verify/checks/git-once.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 
@@ -70,6 +72,8 @@ checkImportDirection(report, repository);
 checkFileSize(report, repository);
 checkScratchKey(report, repository);
 checkModelRouting(report, repository);
+checkSharedLiterals(report, repository);
+await checkSharedMentions(report, repository);
 const outcome = behavior ? await behavior : null;
 if (outcome) report.result(outcome.status, outcome.name, outcome.detail);
 if (!values.static) {

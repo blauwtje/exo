@@ -42,8 +42,9 @@ export function runProof(task, command, options) {
 
 const TEST_FILE = /^tests\/[\w.-]+\.test\.mjs$/;
 
-function namedTestFiles(task, proofCommands, { root, planPath }) {
-  const named = [...changedPaths(root, planPath), ...task.files.map((file) => file.path)];
+function namedTestFiles(task, proofCommands, { state, planPath }) {
+  const { root } = state;
+  const named = [...changedPaths(state, planPath), ...task.files.map((file) => file.path)];
   return [...new Set(named)].filter((file) => TEST_FILE.test(file)
     && fs.existsSync(path.join(root, file))
     && !proofCommands.some((command) => command.includes(file)));
@@ -67,7 +68,7 @@ function testFileFailure(file, { root }) {
 
 export function runNamedTests(task, proofCommands, options) {
   for (const file of namedTestFiles(task, proofCommands, options)) {
-    const failure = testFileFailure(file, options);
+    const failure = testFileFailure(file, options.state);
     if (failure !== null) throw new LandingError(`Task ${task.number}: the test file ${failure}`);
   }
 }

@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { environmentMs } from "#script-flags";
+import { SEARCH_FETCH_MS, SEARCH_URL_BUDGET_MS, SEARCH_PICK_MODEL } from "#shared-values";
 import { canonicalUrl, claimSource, markQuietly } from "./claims.mjs";
 
 function pickInput(prompt, plan, header, items) {
@@ -29,7 +30,7 @@ export function plainText(html) {
 }
 
 export async function fetchOk(name, url, fetcher, headers = {}) {
-  const response = await fetcher(url, { headers, signal: AbortSignal.timeout(environmentMs("EXO_SEARCH_FETCH_MS", 15000)) });
+  const response = await fetcher(url, { headers, signal: AbortSignal.timeout(environmentMs("EXO_SEARCH_FETCH_MS", SEARCH_FETCH_MS)) });
   if (!response.ok) throw new Error(`${name} answered ${response.status} for ${url}`);
   return response;
 }
@@ -101,7 +102,7 @@ function parseBodyPick(text) {
 
 export async function pick(prompt, plan, header, items) {
   const system = await readFile(new URL(`../references/${prompt}.md`, import.meta.url), "utf8");
-  const result = await ask({ model: "haiku", system }, pickInput(prompt, plan, header, items));
+  const result = await ask({ model: SEARCH_PICK_MODEL, system }, pickInput(prompt, plan, header, items));
   const picks = bodyOnly(items) ? parseBodyPick(result) : parsePicks(result, new Set(items.map((item) => item.id)));
   if (!picks.length && result.trim()) throw new Error(`claude answered no pick line for the ${prompt}: ${result.slice(0, 200)}`);
   return picks;
@@ -177,7 +178,7 @@ async function judgeNext(plan, choose, state, result) {
 
 async function readClaimed({ run, sub }, { url }, read) {
   if (run === undefined || sub === undefined) return read();
-  const leaseMs = environmentMs("EXO_SEARCH_URL_BUDGET_MS", 45000) + environmentMs("EXO_SEARCH_FETCH_MS", 15000);
+  const leaseMs = environmentMs("EXO_SEARCH_URL_BUDGET_MS", SEARCH_URL_BUDGET_MS) + environmentMs("EXO_SEARCH_FETCH_MS", SEARCH_FETCH_MS);
   if (claimSource(run, url, sub, { leaseMs }).taken) return null;
   let value;
   try {
