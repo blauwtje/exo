@@ -22,6 +22,7 @@ import { checkPositionalLiterals } from './verify/checks/positional-literals.mjs
 import { checkTestTiming } from './verify/checks/test-timing.mjs';
 import { checkImportDirection } from './verify/checks/import-direction.mjs';
 import { checkFileSize } from './verify/checks/file-size.mjs';
+import { checkModelRouting } from './verify/checks/model-routing.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
@@ -65,6 +66,7 @@ checkPositionalLiterals(report, repository);
 checkTestTiming(report, repository);
 checkImportDirection(report, repository);
 checkFileSize(report, repository);
+checkModelRouting(report, repository);
 if (behavior) {
   const outcome = await behavior;
   report.result(outcome.status, outcome.name, outcome.detail);

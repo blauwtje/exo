@@ -15,6 +15,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `import direction` check fails when lib/ imports a skill, a skill imports another skill, or code outside lib/ imports lib/ by a relative path.
 - The `file size` check fails a script under lib/, skills/*/scripts/ or verify/ over 400 lines.
 - CONTRIBUTING.md has a Codemap section naming the folders and the import and size rules.
+- The `model routing` check fails a `general-purpose` dispatch in skill or agent text that names no model, the word Fable in skill or agent text, and a script that starts `claude -p` without `--model`.
+- `evals/model-usage.mjs` reports tool calls and tokens per session kind, model family and agent type from session files.
 
 ### Changed
 
