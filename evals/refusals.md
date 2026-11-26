@@ -5,7 +5,6 @@ Counted: sessions in ~/.claude/projects (not the exo project) with a tool result
 | Refusal | Sessions | Basis |
 |---|---|---|
 | unlisted paths | 16 | guess (plan Files: list) |
-| proof flaky | 14 | seen run |
 | land gate failed | 10 | seen run |
 | proof command failed | 8 | seen run |
 | land gate exit0 | 7 | seen run |

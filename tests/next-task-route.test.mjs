@@ -28,12 +28,21 @@ test('a one-task plan routes to this session', async () => {
   assert.equal(await routeOf(planOf(['none'])), 'Route: this session');
 });
 
-test('a chain of four tasks routes to a builder', async () => {
-  assert.equal(await routeOf(planOf(['none', 'Task 1', 'Task 2', 'Task 3'])), 'Route: builder');
+test('a chain of four tasks routes to a builder chain of four', async () => {
+  assert.equal(await routeOf(planOf(['none', 'Task 1', 'Task 2', 'Task 3'])), 'Route: builder chain 4');
 });
 
 test('independent tasks route to a builder', async () => {
   assert.equal(await routeOf(planOf(['none', 'none'])), 'Route: builder');
+});
+
+test('EXO_CHAIN_TASKS of 1 routes a long chain to a builder', async () => {
+  process.env.EXO_CHAIN_TASKS = '1';
+  try {
+    assert.equal(await routeOf(planOf(['none', 'Task 1', 'Task 2', 'Task 3'])), 'Route: builder');
+  } finally {
+    delete process.env.EXO_CHAIN_TASKS;
+  }
 });
 
 test('EXO_SELF_BUILD_TASKS raises the task limit', async () => {

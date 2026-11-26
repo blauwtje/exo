@@ -20,5 +20,5 @@ test('a file renamed into the Moved dest counts as moved, not as changed', async
   git(root, 'add', '-A');
   git(root, 'commit', '-q', '-m', 'feat: rename');
   const plan = `# Plan: x\n\n## Plan basis\nRepository: /tmp/x\nBranch: feat/rename\nMoved: ${source} -> skills/app\n\n## Tasks\n`;
-  assert.equal(reviewEffortLine(root, plan), 'Review effort: low (2 changed lines, 0 moved)\n');
+  assert.equal(reviewEffortLine(root, plan), 'Review effort: medium (2 changed lines, 0 moved)\n');
 });

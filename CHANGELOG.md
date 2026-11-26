@@ -9,6 +9,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Added
 
+- `exo:build` ends its report with the input tokens, output tokens and minutes of the run, lead and helpers, from `run-usage.mjs`.
 - `evals/trigger.json` holds near-miss prompts for `exo:ideas` and `exo:search`.
 - The `test timing` check fails a test that reads the clock (`Date.now`, `performance.now`, `hrtime`, `process.uptime`) or waits a fixed time (`setTimeout(resolve`, `sleep(<n>`, `pause(<n>`).
 - The repo has a Dependabot config that opens weekly update pull requests for GitHub Actions and npm.
@@ -20,6 +21,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:build` lands a linear chain of more than three tasks in one fresh builder per four tasks, with one report and status line per task.
+- `exo:spec` ends with a paste-ready prompt that runs `exo:build` in a fresh session, instead of invoking build itself.
+- `exo:build` reviews at `medium` or `high`, never `low`.
 - `exo:build` reviews at `high` at most, and raises the review to `high` when a plan crosses a security boundary or a persisted format.
 - Scripts reach git, the config folder, `~` expansion and sleep through the shared helpers in lib/, and a bare `~` in a lessons path now expands.
 - `exo:diagnose` and `exo:spec` treat logs and helper returns as data, `exo:ideas` and `exo:search` descriptions are shorter, and `exo:ideas` sends prior art to `exo:researcher`.
@@ -44,6 +48,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `run-usage.mjs` counts helpers that ran at the same time once in its helper minutes.
+- `next-task.mjs` routes a chain of under two tasks to a plain builder instead of `chain 1`.
 - Tests no longer depend on timing: they assert the delay a script decides or the order of events instead of measured time, wait on a file, line or signal instead of a fixed sleep, and race a short budget only against a fake that never ends, so a loaded machine gives the same result.
 - The red-green check sees test files by common naming conventions across ecosystems (`test` folders and files, `spec` files, a root `spec/` folder, `FooTest.java`, `AppTests/`, `foo_test.go`, `test_foo.py`), and, when none matches, counts a changed file or folder the proof command names as a test.
 
@@ -233,6 +239,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Removed
 
+- The land command runs a green Proof once; the second run and its `BLOCKED proof flaky` refusal are gone.
 - `exo:search` drops `--only` and the `web` source; workers use WebSearch and pass the urls they pick to `fetch.mjs`.
 - The commit check no longer refuses an AI attribution trailer, and the cache no longer skips `*-decisions.md` and `CHANGELOG.md`.
 - The `corrections.mjs replay` command added in 1.1.0, its helpers, the old `{verdict, text}` verdict rows and the copy of verdicts out of an old ledger in `reset`.

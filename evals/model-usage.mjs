@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -27,7 +28,7 @@ function inWindow(timestamp, { since, until }) {
   return (since === undefined || day >= since) && (until === undefined || day <= until);
 }
 
-function jsonlFiles(directory) {
+export function jsonlFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const full = path.join(directory, entry.name);
     if (entry.isDirectory()) return jsonlFiles(full);
@@ -35,7 +36,7 @@ function jsonlFiles(directory) {
   });
 }
 
-async function* entriesOf(file) {
+export async function* entriesOf(file) {
   const lines = readline.createInterface({ input: fs.createReadStream(file, 'utf8'), crlfDelay: Infinity });
   for await (const line of lines) {
     try {
@@ -60,6 +61,16 @@ function blocksOf(entry) {
   return Array.isArray(content) ? content : [];
 }
 
+export function messageUsage(entry) {
+  if (entry.type !== 'assistant' || !entry.message) return null;
+  const { id, usage } = entry.message;
+  return {
+    key: id ?? entry.uuid ?? `unkeyed-${randomUUID()}`,
+    input: (usage?.input_tokens ?? 0) + (usage?.cache_creation_input_tokens ?? 0) + (usage?.cache_read_input_tokens ?? 0),
+    output: usage?.output_tokens ?? 0,
+  };
+}
+
 async function scanFile(file, window, agentCalls) {
   const scan = {
     subagent: file.includes(`${path.sep}subagents${path.sep}`),
@@ -69,20 +80,18 @@ async function scanFile(file, window, agentCalls) {
   };
   for await (const entry of entriesOf(file)) {
     if (entry.entrypoint === 'sdk-cli') scan.headless = true;
-    if (entry.type !== 'assistant' || !entry.message) continue;
+    const used = messageUsage(entry);
+    if (!used) continue;
     for (const block of blocksOf(entry)) {
       if (block.type === 'tool_use' && AGENT_TOOLS.has(block.name)) {
         agentCalls.set(block.id, { agentType: block.input?.subagent_type, model: block.input?.model });
       }
     }
-    const { id, model, usage } = entry.message;
+    const { model } = entry.message;
     if (!inWindow(entry.timestamp, window) || !model || model === SYNTHETIC) continue;
     const family = familyOf(model);
-    const input = (usage?.input_tokens ?? 0) + (usage?.cache_creation_input_tokens ?? 0) + (usage?.cache_read_input_tokens ?? 0);
-    const output = usage?.output_tokens ?? 0;
-    const key = id ?? entry.uuid ?? `unkeyed-${scan.messages.size}`;
-    const seen = scan.messages.get(key) ?? { family, input: 0, output: 0 };
-    scan.messages.set(key, { family, input: Math.max(seen.input, input), output: Math.max(seen.output, output) });
+    const seen = scan.messages.get(used.key) ?? { family, input: 0, output: 0 };
+    scan.messages.set(used.key, { family, input: Math.max(seen.input, used.input), output: Math.max(seen.output, used.output) });
     for (const block of blocksOf(entry)) {
       if (block.type === 'tool_use') scan.tools.set(block.id, { family, name: block.name, command: block.input?.command });
     }

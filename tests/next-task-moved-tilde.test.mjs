@@ -23,5 +23,5 @@ test('a Moved source written with ~ is expanded and found', async () => {
 process.stdout.write(reviewEffortLine(process.argv[1], process.argv[2]));`;
   const { spawnSync } = await import('node:child_process');
   const run = spawnSync(process.execPath, ['--input-type=module', '-e', script, root, plan], { env: { ...process.env, HOME: home, USERPROFILE: home }, encoding: 'utf8' });
-  assert.equal(run.stdout, 'Review effort: low (2 changed lines, 98 moved)\n');
+  assert.equal(run.stdout, 'Review effort: medium (2 changed lines, 98 moved)\n');
 });

@@ -76,7 +76,7 @@ test('next-task prints four lines and writes the task text to the Brief file', a
   assert.equal(lines.length, 4, result.stdout);
   assert.match(lines[0], /^Landed: /);
   assert.match(lines[1], /^Next: 1 feat\(app\): greet$/);
-  assert.match(lines[2], /^Route: (this session|builder)$/);
+  assert.match(lines[2], /^Route: (this session|builder|builder chain \d+)$/);
   const briefPath = lines[3].replace(/^Brief: /, '');
   assert.notEqual(briefPath, lines[3]);
   assert.ok(path.isAbsolute(briefPath), briefPath);
@@ -86,7 +86,7 @@ test('next-task prints four lines and writes the task text to the Brief file', a
 });
 
 test('reviewEffort climbs at one and four times the base and stops at high', () => {
-  assert.equal(reviewEffort(149, 150), 'low');
+  assert.equal(reviewEffort(149, 150), 'medium');
   assert.equal(reviewEffort(150, 150), 'medium');
   assert.equal(reviewEffort(599, 150), 'medium');
   assert.equal(reviewEffort(600, 150), 'high');
@@ -111,7 +111,7 @@ test('next-task prints the review effort after Next: none', async () => {
   assert.equal(result.code, 0, result.stderr);
   const lines = result.stdout.trimEnd().split('\n');
   assert.equal(lines[1], 'Next: none');
-  assert.match(lines[2], /^Review effort: low \(\d+ changed lines\)$/);
+  assert.match(lines[2], /^Review effort: medium \(\d+ changed lines\)$/);
 });
 
 test('EXO_REVIEW_LINES moves the base of the review effort', async () => {

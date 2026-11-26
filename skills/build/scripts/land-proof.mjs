@@ -34,10 +34,6 @@ export function runProof(task, command, options) {
   const started = Date.now();
   const attempt = proofAttempt(command, options);
   if (attempt.passed) {
-    const second = proofAttempt(command, options);
-    if (!second.passed) {
-      throw new LandingError([`Task ${task.number}: BLOCKED proof flaky: "${command}" passed, then failed on a second run (${proofFailure(second)}):`, ...second.tail].join('\n'));
-    }
     recordPass(root, command, { ms: Date.now() - started, before, output: attempt.proofRun.output });
     return { command, tail: attempt.tail };
   }

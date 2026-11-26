@@ -27,16 +27,16 @@ const planWith = (moved) => `# Plan: x\n\n## Plan basis\nRepository: /tmp/x\nBra
 test('lines copied from the moved source are counted apart', async () => {
   const { root, source } = await movedBranch();
   const line = reviewEffortLine(root, planWith(`Moved: ${source} -> skills/app\n`));
-  assert.equal(line, 'Review effort: low (12 changed lines, 98 moved)\n');
+  assert.equal(line, 'Review effort: medium (12 changed lines, 98 moved)\n');
 });
 
 test('without a Moved line every added line counts', async () => {
   const { root } = await movedBranch();
-  assert.equal(reviewEffortLine(root, planWith('')), 'Review effort: low (110 changed lines)\n');
+  assert.equal(reviewEffortLine(root, planWith('')), 'Review effort: medium (110 changed lines)\n');
 });
 
 test('a missing source keeps the full count and names the source', async () => {
   const { root } = await movedBranch();
   const line = reviewEffortLine(root, planWith('Moved: /nonexistent/old -> skills/app\n'));
-  assert.equal(line, 'Review effort: low (110 changed lines, 0 moved, moved source missing: /nonexistent/old)\n');
+  assert.equal(line, 'Review effort: medium (110 changed lines, 0 moved, moved source missing: /nonexistent/old)\n');
 });

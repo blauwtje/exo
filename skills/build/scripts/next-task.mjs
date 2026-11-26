@@ -21,7 +21,6 @@ function standingText(frame) {
 }
 
 export function reviewEffort(changedLines, base) {
-  if (changedLines < base) return 'low';
   if (changedLines < 4 * base) return 'medium';
   return 'high';
 }
@@ -72,10 +71,12 @@ function reviewFocusLines(planText) {
   return bullets.length === 0 ? '' : `Review focus:\n${bullets.join('\n')}\n`;
 }
 
-function routeLine(tasks) {
+function routeLine(tasks, landed) {
   const chained = tasks.every((task, index) => index === 0 || (task.dependsOn.length === 1 && task.dependsOn[0] === tasks[index - 1].number));
-  const small = tasks.length <= environmentMs('EXO_SELF_BUILD_TASKS', 3);
-  return `Route: ${chained && small ? 'this session' : 'builder'}\n`;
+  if (!chained) return 'Route: builder\n';
+  if (tasks.length <= environmentMs('EXO_SELF_BUILD_TASKS', 3)) return 'Route: this session\n';
+  const length = Math.min(environmentMs('EXO_CHAIN_TASKS', 4), tasks.length - landed.length);
+  return length < 2 ? 'Route: builder\n' : `Route: builder chain ${length}\n`;
 }
 
 export function nextTaskReport({ planText, planPath, root }) {
@@ -85,7 +86,7 @@ export function nextTaskReport({ planText, planPath, root }) {
   const landedLine = `Landed: ${landed.length === 0 ? 'none' : landed.join(', ')}\n`;
   if (next === undefined) return `${landedLine}Next: none\n`;
   const standing = standingText(frame);
-  const task = `${landedLine}Next: ${next.number} ${next.title}\n${routeLine(tasks)}\n${next.section.trim()}\n`;
+  const task = `${landedLine}Next: ${next.number} ${next.title}\n${routeLine(tasks, landed)}\n${next.section.trim()}\n`;
   return standing === '' ? task : `${task}\n${standing}`;
 }
 
