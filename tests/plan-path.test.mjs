@@ -85,13 +85,13 @@ test('next-task prints four lines and writes the task text to the Brief file', a
   assert.match(brief, /Non-goals:\n- `src\/other.js` stays as it is\./);
 });
 
-test('reviewEffort climbs at one, four and sixteen times the base', () => {
+test('reviewEffort climbs at one and four times the base and stops at high', () => {
   assert.equal(reviewEffort(149, 150), 'low');
   assert.equal(reviewEffort(150, 150), 'medium');
   assert.equal(reviewEffort(599, 150), 'medium');
   assert.equal(reviewEffort(600, 150), 'high');
   assert.equal(reviewEffort(2399, 150), 'high');
-  assert.equal(reviewEffort(2400, 150), 'xhigh');
+  assert.equal(reviewEffort(2400, 150), 'high');
 });
 
 async function featureBranchWithChange(lines) {

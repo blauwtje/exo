@@ -23,7 +23,7 @@ function standingText(frame) {
 export function reviewEffort(changedLines, base) {
   if (changedLines < base) return 'low';
   if (changedLines < 4 * base) return 'medium';
-  return changedLines < 16 * base ? 'high' : 'xhigh';
+  return 'high';
 }
 
 const newPath = (file) => file.includes('{')

@@ -20,6 +20,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- `exo:build` reviews at `high` at most, and raises the review to `high` when a plan crosses a security boundary or a persisted format.
 - Scripts reach git, the config folder, `~` expansion and sleep through the shared helpers in lib/, and a bare `~` in a lessons path now expands.
 - `exo:diagnose` and `exo:spec` treat logs and helper returns as data, `exo:ideas` and `exo:search` descriptions are shorter, and `exo:ideas` sends prior art to `exo:researcher`.
 - `exo:build` caps parallel subagents and checks each launch, holds the brief-writing row in its Models table, and `exo:watch` asks its researchers for a notes file.
