@@ -40,6 +40,14 @@ test('FAIL when the same git read starts twice with no write between', () => {
   assert.equal(answer.detail, 'land-task.mjs runs "git status --short" 2 times with no git write between');
 });
 
+test('the same git read in two -C directories is no repeat, in one directory it is', () => {
+  const other = ['-C', '/work/other', 'status', '--short'];
+  assert.equal(resultOf(fixture({ 'land-task.mjs-abc123': [STATUS, other] })).status, 'PASS');
+  assert.equal(resultOf(fixture({ 'land-task.mjs-abc123': [STATUS, other, other] })).status, 'FAIL');
+  const mixed = resultOf(fixture({ 'land-task.mjs-abc123': [STATUS, STATUS, STATUS, other, other] }));
+  assert.equal(mixed.detail, 'land-task.mjs runs "git status --short" 3 times with no git write between');
+});
+
 test('PASS when a git write sits between the two reads', () => {
   const answer = resultOf(fixture({ 'land-task.mjs-abc123': [STATUS, ['-C', '/work/repo', 'commit', '-m', 'x'], STATUS] }));
   assert.equal(answer.status, 'PASS');

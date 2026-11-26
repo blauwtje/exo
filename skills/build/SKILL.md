@@ -31,7 +31,7 @@ A plan path runs this loop. With no path and no decided change, run step 2's scr
    - `PLAN DRIFT`: append a `## Log` line to the plan, then stop and hand the plan back to `exo:spec` with the builder's reason; when the reason makes a landed task wrong, add the lines that `node "${CLAUDE_SKILL_DIR}/scripts/undo-task.mjs" --plan <path> --root <checkout> <n>` prints.
    - A builder that returns no status line: read `git status` of its checkout and its report file before sending a fresh builder, and pass both in that builder's prompt.
    - `BLOCKED <reason>`: append a `## Log` line to the plan before you report it.
-   - A build that fails once, a self-built task included, goes back to a fresh `exo:builder` with the first dispatch's `Report:` path in its prompt, on the second-attempt row of the Models table that fits its report; run next-task again only after the retry read that report, because a new `Next:` dispatch of the task clears it.
+   - A build that fails once, a self-built task included, goes back to a fresh `exo:builder` with the first dispatch's `Report:` path in its prompt, on the second-attempt row of the Models table that fits its report.
    - `BLOCKED proof <command> did not fail first`: `land-task` refused the task: its proof passes without the change. Send a fresh `exo:builder` to tighten that test, or hand the plan to `exo:spec` for a `Red: none (<reason>)`, and name the task in the final report.
    - A build that fails twice, or a repair that must change a module outside the task's `Files:`: stop, report both and hand it to `exo:diagnose`.
    - A repair names the rule the code broke and fixes the hits the finding names; one guard that fails on a new instance, at most one new test per cause.

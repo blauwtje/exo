@@ -33,6 +33,27 @@ test('a Files path that matches nothing is named and the task still lands', asyn
   assert.equal(commitCount(root), before + 1);
 });
 
+test('a Files path written as ./path or a glob is found and staged', async () => {
+  const { root, planPath } = await compactCheckout(planWith(['src/app.js', './gone.txt', 'lib/*.js', 'new/*.txt']));
+  fs.mkdirSync(path.join(root, 'lib'));
+  fs.writeFileSync(path.join(root, 'lib/a.js'), 'x\n');
+  fs.writeFileSync(path.join(root, 'gone.txt'), 'x\n');
+  git(root, 'add', 'lib', 'gone.txt');
+  git(root, 'commit', '-q', '-m', 'add lib');
+  fs.rmSync(path.join(root, 'gone.txt'));
+  fs.writeFileSync(path.join(root, 'lib/a.js'), 'changed\n');
+  fs.mkdirSync(path.join(root, 'new'));
+  fs.writeFileSync(path.join(root, 'new/b.txt'), 'brand new\n');
+  const task = { number: 1, title: 'feat(app): greet', files: [{ path: 'new/*.txt' }] };
+  assert.match(commitBlockOf({ task, planId: 'p', root }), /git add -- 'new\/\*\.txt'/);
+  const landed = await land(root, planPath);
+  assert.equal(landed.code, 0, landed.stderr);
+  assert.doesNotMatch(landed.stdout, /Files not found|Outside Files/);
+  assert.match(git(root, 'show', '--name-status', '--format=', 'HEAD'), /^D\tgone\.txt$/m);
+  assert.match(git(root, 'show', '--name-status', '--format=', 'HEAD'), /^M\tlib\/a\.js$/m);
+  assert.match(git(root, 'show', '--name-status', '--format=', 'HEAD'), /^A\tnew\/b\.txt$/m);
+});
+
 test('a Files directory that the change removed with git rm lands', async () => {
   const { root, planPath } = await compactCheckout(planWith(['src/app.js', 'old/']));
   fs.mkdirSync(path.join(root, 'old'));

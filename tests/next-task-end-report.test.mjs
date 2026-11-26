@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
+import { endReportLines } from '../skills/build/scripts/next-task.mjs';
 import { git, run } from './harness.mjs';
 import { landingCheckout, reportFile } from './land-task-fixture.mjs';
 
@@ -31,6 +32,16 @@ test('Next: none prints the diff stat, the Plan-task commits and the Noticed lin
   assert.match(out, /^Diff stat:\n src\/app\.js\s+\|.*\n\s*src\/note\.md\s+\|/m);
   assert.match(out, /^Plan-task commits:\n[0-9a-f]{7} feat\(app\): greet\n[0-9a-f]{7} feat\(app\): two files\n/m);
   assert.match(out, /^Noticed:\nTask 1: Noticed: the helper at src\/app\.js:1 is dead\n$/m);
+});
+
+test('Next: none leaves out the Noticed lines of a task without a Plan-task commit', async () => {
+  const root = await landedFixture();
+  git(root, 'reset', '-q', '--hard', 'HEAD~1');
+  setReport(root, 1, 'Landed: x\nNoticed: the helper at src/app.js:1 is dead\n');
+  setReport(root, 4, 'Landed: y\nNoticed: the note at src/note.md:1 is stale\n');
+  const planPath = path.join(root, RELATIVE_PLAN);
+  const out = endReportLines({ root, planText: fsSync.readFileSync(planPath, 'utf8'), planPath });
+  assert.match(out, /^Task 1: Noticed:/m);
   assert.doesNotMatch(out, /Task 4:/);
 });
 

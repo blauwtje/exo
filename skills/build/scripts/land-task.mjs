@@ -7,7 +7,8 @@ import { resolvePlanPath } from '#checkout';
 import { repoState } from '#repo-state';
 import { LandingError } from './land-errors.mjs';
 import { locked } from './land-git.mjs';
-import { checkTask, fixLand, refuseAlreadyLanded, refuseUnfinishedMerge, refuseMismatchedToplevel, taskOf, refuseBeforeProof, proveTask, clearStaleCandidate, stageCandidate, coverOrDrop, promoteAndCommit } from './land-check.mjs';
+import { checkTask, fixLand, refuseAlreadyLanded, refuseUnfinishedMerge, refuseMismatchedToplevel, taskOf, refuseBeforeProof, proveTask, stageCandidate, coverOrDrop, promoteAndCommit } from './land-check.mjs';
+import { clearStaleCandidate } from './land-candidate.mjs';
 import { reportFlagOf, reportSourceOf } from './land-stopped.mjs';
 
 const PROOF_TAIL = /^ {2}/;

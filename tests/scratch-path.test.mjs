@@ -64,6 +64,24 @@ test('a scratch call removes sibling folders older than the keep limit', async (
   assert.equal(fs.existsSync(current), true);
 });
 
+test('a checkout folder with a recent task scratch file survives a prune from another checkout', async (t) => {
+  const previous = process.env.TMPDIR;
+  process.env.TMPDIR = await tempDir();
+  t.after(() => {
+    if (previous === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previous;
+  });
+  const longRunning = await gitRepository({ 'a.txt': 'a\n' });
+  const target = taskScratchPath(repoState(longRunning), { planId: 'p', number: 1 }, 'brief.md');
+  fs.writeFileSync(target, 'brief\n');
+  const longAgo = new Date(0);
+  fs.utimesSync(scratchPath(longRunning, ''), longAgo, longAgo);
+  taskScratchPath(repoState(longRunning), { planId: 'p', number: 1 }, 'report.md');
+  const other = await gitRepository({ 'b.txt': 'b\n' });
+  scratchPath(other, '');
+  assert.equal(fs.existsSync(target), true);
+});
+
 test('a scratch root that is a symlink is refused', { skip: process.platform === 'win32' }, async (t) => {
   const previous = process.env.TMPDIR;
   const isolated = await tempDir();

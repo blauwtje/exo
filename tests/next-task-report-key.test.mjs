@@ -32,3 +32,14 @@ test('a dispatch of a task removes a report already at its keyed path', async ()
   assert.match(result.stdout, new RegExp(`^Report: ${report.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'm'));
   assert.equal(fs.existsSync(report), false);
 });
+
+test('a second run before the land keeps the report the builder wrote for the printed task', async () => {
+  const { root } = await landingCheckout();
+  const report = reportFile(root, 'fixture', 1);
+  const first = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', root], { cwd: root });
+  assert.equal(first.code, 0, first.stderr);
+  fs.writeFileSync(report, 'Landed: x\nNoticed: none\n');
+  const second = await run(NEXT_TASK, ['--plan', RELATIVE_PLAN, '--root', root], { cwd: root });
+  assert.equal(second.code, 0, second.stderr);
+  assert.equal(fs.existsSync(report), true);
+});

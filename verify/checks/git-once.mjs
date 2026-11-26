@@ -15,6 +15,10 @@ const WRITES = new Set([
   'switch', 'tag', 'update-index', 'update-ref', 'worktree', 'write-tree'
 ]);
 
+function directoryOf(argv) {
+  return argv[1] === '-C' ? argv[2] : '';
+}
+
 function argsOf(argv) {
   const rest = argv.slice(1);
   return rest[0] === '-C' ? rest.slice(2) : rest;
@@ -55,9 +59,10 @@ function repeatsOf(directory, prefixes) {
       continue;
     }
     const key = `${script}: git ${normalized(args, prefixes)}`;
-    const times = (counts.get(key) ?? 0) + 1;
-    counts.set(key, times);
-    if (times > 1) repeats.set(key, times);
+    const countKey = `${directoryOf(argv)}\0${key}`;
+    const times = (counts.get(countKey) ?? 0) + 1;
+    counts.set(countKey, times);
+    if (times > 1) repeats.set(key, Math.max(repeats.get(key) ?? 0, times));
   }
   return repeats;
 }

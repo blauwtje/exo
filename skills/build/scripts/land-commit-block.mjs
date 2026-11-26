@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { repoState } from '#repo-state';
 import { planTaskTrailer } from '#plan-landed';
+import { isListedIn } from '#plan-tasks';
 import { shellQuote } from '#basics';
 import { LandingError } from './land-errors.mjs';
 
@@ -22,13 +23,13 @@ function filesOf(task, state) {
   const removed = state.stagedDeletions();
   const tracked = state.trackedPaths(files);
   const ignored = state.ignoredPaths(files);
+  const untracked = state.untrackedPaths();
   const present = [];
   const missing = [];
   for (const file of files) {
     if (file.endsWith('/') ? [...removed].some((gone) => gone.startsWith(file)) : removed.has(file)) continue;
     const exists = fs.existsSync(path.join(state.root, file));
-    const prefix = file.endsWith('/') ? file : `${file}/`;
-    const listed = tracked.some((entry) => entry === file || entry.startsWith(prefix));
+    const listed = tracked.some((entry) => isListedIn(file, entry)) || untracked.some((entry) => isListedIn(file, entry));
     if (!exists && !listed) missing.push(file);
     else if (exists && !listed && ignored.has(file)) {
       throw new LandingError(`Task ${task.number}: Files path ${file} is ignored by git; remove it from Files: or from .gitignore`);

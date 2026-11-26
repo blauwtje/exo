@@ -27,6 +27,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The candidate commit steps of `land-check.mjs` live in `land-candidate.mjs`, which leaves `land-check.mjs` at 348 lines, under the 400-line limit.
 - `exo:build` lands a linear chain of more than three tasks in one fresh builder per four tasks, with one report and status line per task.
 - `exo:spec` ends with a paste-ready prompt that runs `exo:build` in a fresh session, instead of invoking build itself.
 - `exo:build` reviews at `medium` or `high`, never `low`.
@@ -54,6 +55,11 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `land-task.mjs` finds and stages a `Files:` entry written as `./path` or as a glob, instead of naming it on `Files not found:` or `Outside Files:`.
+- `land-task.mjs` refuses a `--root` outside a git repository by name, instead of failing with an `ENOENT` error on `/null`.
+- `next-task.mjs` keeps a task report written before the land when it runs again for the same task.
+- A task scratch call touches its checkout folder, so the 7-day prune from another checkout no longer removes the briefs and reports of a running plan.
+- The `git-once` check counts a repeated git read per `-C` directory, so the same read in the root and in a worktree is no repeat.
 - `land-task.mjs` counts a Files directory that `git rm` removed as found and no longer prints a `Files not found:` line for it.
 - `land-task.mjs` reads the git state of a landing once per run instead of once per step.
 - `next-task.mjs` reads the end report's git state once per run.

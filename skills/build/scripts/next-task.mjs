@@ -147,9 +147,9 @@ if (isMain(import.meta.url)) {
     const number = Number(nextLine.split(' ')[1]);
     const planId = planIdOf(planPath);
     const brief = taskScratchPath(state, { planId, number }, 'brief.md');
-    fs.writeFileSync(brief, report);
     const reportFile = implementerReportPath(state, planId, number);
-    fs.rmSync(reportFile, { force: true });
+    if (!fs.existsSync(brief)) fs.rmSync(reportFile, { force: true });
+    fs.writeFileSync(brief, report);
     const dispatch = dispatchLines({ planPath, root, number, brief, report: reportFile });
     process.stdout.write(`${landedLine}\n${nextLine}\n${routeText}\nBrief: ${brief}\n${dispatch}\n`);
   }
