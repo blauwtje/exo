@@ -31,7 +31,7 @@ function skillProblems(repository, skill) {
     if (opener === -1 || !body[opener].startsWith('**')) problems.push(`${name} does not open its first paragraph with a bold rule`);
   }
   if (!FENCE.test(text)) problems.push(`${name} holds no example in a code block`);
-  if (text.includes('BASE.md')) problems.push(`${name} names BASE.md, which the SessionStart hook already loads`);
+  if (!text.includes('${CLAUDE_PLUGIN_ROOT}/BASE.md')) problems.push(`${name} does not read \${CLAUDE_PLUGIN_ROOT}/BASE.md`);
   for (const reference of repository.walk(path.join(folder, 'references'), (full) => full.endsWith('.md'))) {
     const link = path.relative(folder, reference).split(path.sep).join('/');
     if (!text.includes(`(${link})`)) problems.push(`${repository.relative(reference)} is not linked from ${name}`);
@@ -47,14 +47,6 @@ function agentProblems(repository, file) {
   return problems;
 }
 
-function hookProblems(repository) {
-  const file = repository.join('hooks', 'hooks.json');
-  if (!fs.existsSync(file)) return ['hooks/hooks.json is missing'];
-  const entries = JSON.parse(repository.text(file)).hooks?.SessionStart ?? [];
-  const commands = entries.flatMap((entry) => entry.hooks ?? []).map((hook) => hook.command ?? '');
-  return commands.some((command) => command.includes('BASE.md')) ? [] : ['hooks/hooks.json runs no SessionStart command that prints BASE.md'];
-}
-
 export function checkPluginShape(report, repository) {
   const skills = fs.existsSync(repository.skillsRoot)
     ? fs.readdirSync(repository.skillsRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort()
@@ -62,12 +54,11 @@ export function checkPluginShape(report, repository) {
   const agents = repository.walk(repository.join('agents'), (full) => full.endsWith('.md'));
   const problems = [
     ...skills.flatMap((skill) => skillProblems(repository, skill)),
-    ...agents.flatMap((file) => agentProblems(repository, file)),
-    ...hookProblems(repository)
+    ...agents.flatMap((file) => agentProblems(repository, file))
   ];
   report.assert(
     problems.length === 0,
     'plugin shape',
-    { pass: 'every skill opens with a title and a bold rule and holds an example, every agent shows a report, and the SessionStart hook prints BASE.md', fail: problems.join('; ') }
+    { pass: 'every skill opens with a title and a bold rule, holds an example and reads BASE.md, and every agent shows a report', fail: problems.join('; ') }
   );
 }

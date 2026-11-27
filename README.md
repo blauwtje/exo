@@ -91,7 +91,7 @@ A typo or a one-line edit needs no skill.
 
 ## Inside
 
-At the start of every session, a hook adds [BASE.md](BASE.md), one page of shared rules, to the context. Each skill is one Markdown file of at most 500 lines, with longer layouts in a `references/` folder beside it. Code rules are in [CODE.md](CODE.md).
+Each skill and agent first reads [BASE.md](BASE.md), one page of shared rules. Each skill is one Markdown file of at most 500 lines, with longer layouts in a `references/` folder beside it. Code rules are in [CODE.md](CODE.md).
 
 <details>
 <summary>Status line (optional)</summary>

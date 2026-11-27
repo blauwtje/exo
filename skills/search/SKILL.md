@@ -8,6 +8,8 @@ argument-hint: "question"
 
 **No claim without a quote from a page you read in this run.** A claim without its source cannot be checked, and your memory of a page is not the page. Your job is to split the question, send researchers out, keep their raw pages out of your context, and write a report in which every claim carries a link and a word-for-word quote.
 
+Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
+
 ## Look first
 
 Search `docs/research` and `docs/specs` with `rg` for the topic and read each match. When one answers the whole question and the user did not ask for a fresh run, reply with its answer, path and date, and stop. Otherwise ask only what those files leave open.

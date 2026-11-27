@@ -9,8 +9,7 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 ## Codemap
 
 - `CODE.md`: the code principles, read by the builder before it writes code.
-- `BASE.md`: the shared rules on one page. `hooks/hooks.json` prints it into the context at the start of every session, and each agent reads it first.
-- `hooks/`: `hooks.json`, the one SessionStart hook.
+- `BASE.md`: the shared rules on one page. Each skill and agent reads it first.
 - `skills/`: one folder per skill, holding its skill file and, when a layout is too long for it, a `references/` folder.
 - `agents/`: the `builder` and `researcher` prompts.
 - `lib/`: the status line and the modules it imports, plus the helpers the checks use.
@@ -32,10 +31,14 @@ CI runs `npm run check` on Node 22 and 24 on Ubuntu for every push to `main` and
 
 ## The standard
 
-exo reads and works like the best-known Claude Code plugins and the engineers who set the pattern: obra/superpowers, Matt Pocock's skills, Addy Osmani's agent-skills, caveman, ponytail, Andrej Karpathy's coding guidelines, Lauren Tan's skills and Anthropic's skill-authoring guidance. That holds after every refactor, addition or removal, in two layers:
+exo reads and works like the best-known Claude Code plugins and skill-authoring guides. That holds after every refactor, addition or removal, in two layers:
 
-- **Mechanics, checked.** The `plugin shape` check (`verify/checks/plugin-shape.mjs`) fails a skill that does not open with a `#` title and a bold rule, holds no example in a code block, names `BASE.md` or leaves a reference file unlinked; an agent with no title or no report example; and a missing SessionStart hook. The frontmatter and size checks hold the 35-word description and the 500-line limit.
-- **Voice, reviewed.** Before a change to a skill, an agent, `BASE.md`, `CODE.md`, the hook or the README lands, a fresh reviewer that did not write it compares the changed files with the references above, and the proven gaps are fixed in one pass.
+- **Mechanics, checked.** The `plugin shape` check (`verify/checks/plugin-shape.mjs`) fails a skill that does not open with a `#` title and a bold rule, holds no example in a code block, does not read `${CLAUDE_PLUGIN_ROOT}/BASE.md` or leaves a reference file unlinked; and an agent with no title or no report example. The frontmatter and size checks hold the 35-word description and the 500-line limit.
+- **Voice, reviewed.** Before a change to a skill, an agent, `BASE.md`, `CODE.md` or the README lands, a fresh reviewer that did not write it compares the changed files with this standard, and the proven gaps are fixed in one pass.
+
+## Hooks
+
+exo ships no hooks. A hook is the last resort: encode a rule first as a check in `verify/`, a test or a script, and add a hook only when none of those can do the job. A hook does mechanical work only. Delete the instruction a hook replaces in the same change, because a text rule is often skipped while the hook runs anyway.
 
 ## Editing a skill
 

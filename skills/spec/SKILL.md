@@ -8,6 +8,8 @@ argument-hint: "outcome to shape"
 
 **Every task gets a command that fails today and passes when the task is done.** A plan without that is a wish list. Your job is to find what only the user can decide, get those decisions, and write tasks that `exo:build` can prove one by one. You write no code: the brief is the hand-off.
 
+Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
+
 **Look first.** Before you ask anything, look for an earlier brief or research on the same outcome: run `rg -il -e <word> docs/specs docs/research` and `rg --files docs/specs docs/research | rg -i <word>`. Edit a brief for the same outcome in place. When one already covers the request, say so and stop.
 
 **Decide whether to plan at all.** Give a verdict, `go`, `clarify` or `stop`, plus the likeliest way this change fails. `clarify` asks the one question that makes it `go`. A small change with a known proof skips the interview and becomes one task.

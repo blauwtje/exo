@@ -10,6 +10,8 @@ effort: medium
 
 **Answer from the transcript, and cite the moment.** The user checks a claim by jumping to that second of the video, so every claim gets the stamp of the line where it is said, one fact per stamp. Read the transcript from disk in parts: pasted whole, it crowds out the answer.
 
+Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
+
 ## Get the transcript
 
 Put every url in single quotes, because zsh reads `?` as a glob.

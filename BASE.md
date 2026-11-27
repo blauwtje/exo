@@ -14,7 +14,7 @@ The loop: `spec` turns a request into tasks that each carry a proof, `build` mak
 ## Scope
 
 - Make the smallest change that does the task, in the style already there. Report other problems instead of fixing them on the side.
-- Code rules live in [CODE.md](CODE.md), in the exo plugin folder; read it before you write code.
+- Code rules live in [CODE.md](CODE.md), next to this file; read it before you write code.
 
 ## When it goes wrong
 

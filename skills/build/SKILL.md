@@ -8,6 +8,8 @@ argument-hint: "[plan path] [--land]"
 
 **Red, green, commit: one task at a time.** A task is done when its proof failed before your change and passes after it. Nothing else counts: not a builder's summary, not a clean compile, not "should work".
 
+Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
+
 A typo or a one-line edit needs no plan: make it and run the check.
 
 ## Before the first task

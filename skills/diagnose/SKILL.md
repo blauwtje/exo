@@ -10,6 +10,8 @@ effort: medium
 
 **No fix without a reproduction.** A fix for a guessed cause hides the bug and often adds a second one. Your job is to turn "it is broken" into one command that shows the failure, then into a cause that predicts what you see, and only then into a fix.
 
+Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
+
 ## 1. Build the feedback loop
 
 This is most of the work, so spend your effort here. Find one command that goes red on *this* bug: a failing test, a curl against the dev server, a CLI run on a fixture, a script that replays a captured input. Make it fast and make it give the same answer every run. Send long output to a file in `<scratch>` and read the end.

@@ -8,6 +8,8 @@ argument-hint: "[what the next session must not lose]"
 
 **Write down only what the next session cannot rebuild.** A fresh session reads every line you leave, so a pasted diff, log or transcript costs it context and goes stale. Point to files and commands instead. Build the progress list from git, not from memory: a next session that cannot tell committed from uncommitted work throws edits away.
 
+Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
+
 Saving is not shipping: push nothing and open no pull request.
 
 ## Save

@@ -6,19 +6,17 @@ import { REPOSITORY_ROOT } from './harness.mjs';
 import { checkOutcome, tree } from './check-outcome.mjs';
 
 const skill = (body) => `---\nname: a\ndescription: "Does a. Use when a."\n---\n\n${body}\n`;
-const GOOD_SKILL = skill('# A\n\n**One rule.** Why it holds.\n\n| You think | Do instead |\n|---|---|\n| x | y |\n\nMore in [references/more.md](references/more.md).\n\n```text\nexample\n```');
+const GOOD_SKILL = skill('# A\n\n**One rule.** Why it holds.\n\nRead `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.\n\n| You think | Do instead |\n|---|---|\n| x | y |\n\nMore in [references/more.md](references/more.md).\n\n```text\nexample\n```');
 const GOOD_AGENT = '---\nname: helper\n---\n\n# Helper\n\nYou are a helper.\n\n```text\nDONE\n```\n';
-const GOOD_HOOK = JSON.stringify({ hooks: { SessionStart: [{ hooks: [{ type: 'command', command: 'cat "${CLAUDE_PLUGIN_ROOT}/BASE.md"' }] }] } });
 const GOOD = {
   'skills/a/SKILL.md': GOOD_SKILL,
   'skills/a/references/more.md': '# More',
-  'agents/helper.md': GOOD_AGENT,
-  'hooks/hooks.json': GOOD_HOOK
+  'agents/helper.md': GOOD_AGENT
 };
 
 const run = (changes) => checkOutcome(checkPluginShape, createRepository(tree({ ...GOOD, ...changes })));
 
-test('a skill, agent and hook in the standard shape pass', () => {
+test('a skill and agent in the standard shape pass', () => {
   const result = run({});
   assert.equal(result.ok, true, result.detail);
 });
@@ -43,20 +41,15 @@ test('a reference file the skill does not link fails', () => {
   assert.match(result.detail, /skills\/a\/references\/other\.md is not linked from skills\/a\/SKILL\.md/);
 });
 
-test('a skill that names BASE.md fails', () => {
-  const result = run({ 'skills/a/SKILL.md': GOOD_SKILL + '\n1. Read BASE.md.\n' });
-  assert.match(result.detail, /skills\/a\/SKILL\.md names BASE\.md/);
+test('a skill that does not read BASE.md fails', () => {
+  const result = run({ 'skills/a/SKILL.md': GOOD_SKILL.replace('Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.\n\n', '') });
+  assert.match(result.detail, /skills\/a\/SKILL\.md does not read \$\{CLAUDE_PLUGIN_ROOT\}\/BASE\.md/);
 });
 
 test('an agent with no title or report example fails', () => {
   const result = run({ 'agents/helper.md': '---\nname: helper\n---\n\nYou are a helper.\n' });
   assert.match(result.detail, /agents\/helper\.md does not open with a # title/);
   assert.match(result.detail, /agents\/helper\.md holds no report example/);
-});
-
-test('a missing SessionStart hook fails', () => {
-  const result = run({ 'hooks/hooks.json': JSON.stringify({ hooks: {} }) });
-  assert.match(result.detail, /hooks\/hooks\.json runs no SessionStart command that prints BASE\.md/);
 });
 
 test('the real repository passes', () => {

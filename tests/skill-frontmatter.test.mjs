@@ -82,10 +82,10 @@ test('rejects a non-boolean user-invocable', () => {
   assert.equal(frontmatterResult(null, ['user-invocable: maybe']).passed, false);
 });
 
-test('rejects hooks and names hooks/hooks.json', () => {
+test('rejects hooks and points to CONTRIBUTING.md', () => {
   const outcome = frontmatterResult(null, ['hooks: {}']);
   assert.equal(outcome.passed, false);
-  assert.match(outcome.detail, /hooks\/hooks\.json/);
+  assert.match(outcome.detail, /CONTRIBUTING\.md/);
 });
 
 test('rejects a non-boolean background', () => {

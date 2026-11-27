@@ -1,5 +1,5 @@
 name: Bug report
-description: A skill, hook or command does something wrong.
+description: A skill or agent does something wrong.
 labels: ["bug"]
 body:
   - type: textarea

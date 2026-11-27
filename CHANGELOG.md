@@ -8,8 +8,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ## Unreleased
 
 ### Added
-- The `plugin shape` check fails a skill without a `#` title, a bold rule or an example in a code block, a skill that names `BASE.md`, an unlinked reference file, an agent without a report example, and a missing SessionStart hook.
-- `hooks/hooks.json`: a SessionStart hook prints `BASE.md` into every session, so skills no longer read it in step 1.
+- The `plugin shape` check fails a skill without a `#` title, a bold rule, an example in a code block or a read of `${CLAUDE_PLUGIN_ROOT}/BASE.md`, an unlinked reference file, and an agent without a report example.
 - `skills/spec/references/brief.md`, `skills/search/references/report.md` and `skills/ideas/references/judging.md` hold the layouts their skills point to.
 - `CODE.md`: the code principles (scope, design, readability, errors, tests), each with its reason, read by the builder before it writes code.
 
@@ -271,7 +270,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `spec` triggers on design options for a change only; ideas on any other question go to `exo:ideas`.
 - `build` lands a plan of at most 3 chained tasks itself on `Route: this session` instead of one builder per task (`EXO_SELF_BUILD_TASKS` sets the limit), and `ship` runs on Sonnet.
-- Skills, agents, the adhd style and the repo docs follow pstack's authoring rules: text a check enforces, repeated rules and reasons that change no decision are gone, and author proves an edit by replaying the recorded failure.
+- Skills, agents, the adhd style and the repo docs follow stricter authoring rules: text a check enforces, repeated rules and reasons that change no decision are gone, and author proves an edit by replaying the recorded failure.
 - The adhd style has the agent run every check itself and test a suspected wrong assumption before it asks.
 - watch picks the transcript language itself, and ship takes a reversible design choice instead of asking.
 - The learn hook lines say what to do instead of what learn is.
@@ -569,7 +568,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The commit-evidence note now shows on every commit with a bad Evidence line, not only the first in a session.
 - An aborted `--base-style` quick run keeps `baseStyle` in its error record, and `--base-style` refuses a file whose front matter has no `name: adhd`.
 - The adhd case `choice-plan-split` expects a **No** reply instead of a closing question, and `report-nine-changes` asks two full facts and seven name-level facts that fit five bullets and an `Also:` list.
-- The quick adhd score keeps every answer and the `--ablate` value, refuses `--ablate` with `--arm caveman`, calls its power-line MDE a lower bound and scales the default cost limit by `--answers`.
+- The quick adhd score keeps every answer and the `--ablate` value, refuses `--ablate` with a rival-plugin arm, calls its power-line MDE a lower bound and scales the default cost limit by `--answers`.
 - The quick `adhd-score` run measures visible tokens against the concise arm and prints billed tokens apart, takes `--answers <n>` per case with a paired interval and power line, allows `--ablate`, stores the concise arm per model and names agent-made judge labels; `benchmarks/results/2026-11-12-adhd-style-measure.md` records the `claude-fable-5-2` baseline of the `adhd` style, which stays unedited.
 - The `adhd` output style hands a choice the source leaves open to the user and ends on the question, and its figure rule shows the bold label and bold result figure; the quick `adhd-score` run caps spend at $0.04 per case instead of a fixed $0.30, so a 12-case run no longer stops on its own projection.
 - The sleep note fires only on a foreground wait loop; `Monitor` and a background wait loop pass with no note.

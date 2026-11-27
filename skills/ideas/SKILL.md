@@ -8,6 +8,8 @@ argument-hint: "question"
 
 **Generate first, judge apart, and beat what already exists.** An author who scores their own ideas flatters them, and an idea that already exists is not new. So you split the work: a scout maps what exists, two generators write ideas without seeing each other, and a judge who wrote none of them scores the ideas against the best existing answer.
 
+Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
+
 The run is automatic: after the question, ask nothing.
 
 ## Run

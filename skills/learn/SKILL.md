@@ -8,6 +8,8 @@ argument-hint: "[capture | mine | prune]"
 
 **A correction the user had to make twice becomes a check that fails.** A note can be skipped; a failing test or lint rule cannot. Write a note only when no check fits, and only for a lesson that would hold on a different task, because every note costs context in every session.
 
+Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
+
 Pick the mode from the request: a repeated correction or "remember this" is **capture**, a request to search past sessions is **mine**, and a request to clean up CLAUDE.md is **prune**.
 
 ## Capture

@@ -31,7 +31,7 @@ function parseQuoted(key, valueText) {
 }
 
 function parseLine(line, values) {
-  if (HOOKS_LINE.test(line)) return { error: 'hooks is not allowed in a skill: exo ships hooks only through hooks/hooks.json' };
+  if (HOOKS_LINE.test(line)) return { error: 'hooks is not allowed in a skill: CONTRIBUTING.md ## Hooks says when a hook may be added' };
   const match = KEY_LINE.exec(line);
   if (!match) return { error: `unsupported frontmatter line: ${line}` };
   const { key, value } = match.groups;

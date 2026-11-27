@@ -10,6 +10,8 @@ effort: medium
 
 **Nothing leaves the machine without a yes.** A push, a pull request and a merge cannot be taken back, and each one shows your work to other people. Ask for each one, then carry it through until the pull request passes its checks, has every comment answered and merges cleanly, or until you reach something only the user can decide.
 
+Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
+
 ## Ask
 
 Confirm the target is the one the user named. Then give three lines, what changed, what you verified and what is left, and offer the routes: push, open a pull request, or merge. File no follow-up issue before a yes.
