@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf 'exo plugin folder: %s\\n\\n' \"${CLAUDE_PLUGIN_ROOT}\" && cat \"${CLAUDE_PLUGIN_ROOT}/BASE.md\""
+          }
+        ]
+      }
+    ]
+  }
+}

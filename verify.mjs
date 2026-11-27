@@ -14,6 +14,7 @@ import { checkInvisibleUnicode } from './verify/checks/invisible-unicode.mjs';
 import { checkPersonalPaths } from './verify/checks/personal-paths.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
 import { checkSkillSize } from './verify/checks/skill-size.mjs';
+import { checkPluginShape } from './verify/checks/plugin-shape.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
 
@@ -47,6 +48,7 @@ checkScriptSyntax(report, repository);
 checkInvisibleUnicode(report, repository);
 checkPersonalPaths(report, repository);
 checkSkillSize(report, repository);
+checkPluginShape(report, repository);
 if (!values.static) {
   checkPluginVersion(report, repository);
 }

@@ -1,30 +1,73 @@
 ---
 name: diagnose
-description: "Finds the proven cause of wrong behavior from a reproduction, then fixes it with a test seen red before green. Use when the user reports a bug, error, crash, regression or slowdown ('why does X fail', 'this broke', 'debug this'). Not for a missing feature or a failing pull request check."
+description: "Finds a bug's proven root cause, then fixes it with a test seen red first. Use when something fails, crashes or slows down ('why does X fail', 'this broke', 'debug this'). Not for missing features."
 argument-hint: "symptom, failing command or error"
 model: opus
 effort: medium
 ---
 
-## Principles
+# Diagnose
 
-- Prove the cause before changing code, because a fix for a guessed cause hides the bug.
-- Proven means a causal line plus a mechanism that predicts the symptom.
-- Never revert or stash to show red, and ask before any destructive step, because both can lose work.
-- After 3 messages reporting the same breakage, stop changing code and test the likeliest wrong assumption with a command, because repeated fixes on a wrong assumption add noise.
+**No fix without a reproduction.** A fix for a guessed cause hides the bug and often adds a second one. Your job is to turn "it is broken" into one command that shows the failure, then into a cause that predicts what you see, and only then into a fix.
 
-## Steps
+## 1. Build the feedback loop
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/BASE.md`.
-2. Reproduce: find one command that shows the failure. Send long output to `<scratch>/repro.log` and read its `tail -n 40`.
-   - No repro: report the evidence and fix nothing.
-   - It worked before: run `git bisect run` with the repro on a known good commit. The first bad commit's hunks are the first suspects.
-   - It fails only after another test: bisect over the test files, with the failing test last, to find the one that pollutes it.
-   - Slowdown: time the reported path five times and record the median and spread, because one run cannot separate a fix from noise.
-3. Instrument: keep two hypotheses and observe once where they diverge.
-4. Isolate: when a sibling input or code path works, list every difference from the failing one, then remove inputs or branches until one more clears the symptom. Stop after two rounds with no change.
-5. When reading alone does not prove the cause, send a fresh `exo:researcher` to investigate. Name in its prompt the symptom, the repro, what is ruled out and the result file `<scratch>/diagnose-<topic>.md`, and read only its cause.
-6. Predict, then fix: state the causal line and the output the fix changes, and change only that. Write a test that fails for the cause, and quote its failure before the fix and its pass after. A slowdown fix stays only when the median beats the spread.
-7. Prove: rerun the repro, the isolated case and the suite. A fix that must change a second module goes back to step 2. An intermittent repro counts as fixed after five green runs in a row.
-8. When the fix changes over two files, adds a dependency, changes a public signature or crosses a persisted format or security boundary, run `code-review` at level `low` and fix its findings.
-9. Report the cause, whether the fix is proven and the next step, usually `exo:ship`, labelling each claim measured, inferred or guess. When unproven, give the repro, expected, actual and hypotheses.
+This is most of the work, so spend your effort here. Find one command that goes red on *this* bug: a failing test, a curl against the dev server, a CLI run on a fixture, a script that replays a captured input. Make it fast and make it give the same answer every run. Send long output to a file in `<scratch>` and read the end.
+
+- **It worked before:** run `git bisect run <repro>` from a known good commit. The first bad commit's diff holds your first suspects.
+- **It fails only after another test:** bisect the test files, with the failing test last, to find the one that leaves state behind.
+- **It fails only sometimes:** raise the failure rate before you hunt. Loop the repro, narrow the input, pin the clock, seed the random generator. A bug that shows once in a hundred runs cannot be fixed with confidence.
+- **It is slow:** time the path at least five times and keep the median and the spread. One run cannot tell a fix from noise.
+- **No loop at all:** stop and say so. List what you tried and ask for access, a captured artifact or permission to add logging. Do not guess your way forward.
+
+The loop is ready when:
+
+- [ ] one command shows the failure
+- [ ] it gives the same answer every run
+- [ ] it runs in seconds
+- [ ] you quoted its failing output
+
+## 2. Find the cause
+
+Keep two hypotheses alive and look once at the place where they predict different things. When a similar input or code path works, list every difference from the failing one and remove them one by one until the symptom clears.
+
+A cause is proven when you can name the line and the mechanism, and the mechanism predicts the symptom you saw. "This looks wrong" is not a cause.
+
+When reading code alone does not get you there, send a fresh `exo:researcher` with the symptom, the repro, what you ruled out and a result file in `<scratch>`. Read only its conclusion.
+
+## 3. Fix it and prove it
+
+1. **Predict.** Write down the cause and which output the fix will change.
+2. **Red.** Write a test that fails for that cause, and quote its failure.
+3. **Fix.** Change only what the cause needs. Search for the same pattern with `rg` and fix every instance of this cause in the same change. A fix that must touch a second module for any other reason means the cause is not found yet: go back to step 2.
+4. **Green.** Quote the test passing, then rerun the original repro and the suite. A flaky bug is fixed when the loop that failed before passes five runs in a row. A speed fix stays only when the new median beats the old spread.
+5. **Review.** When the fix touches more than two files, adds a dependency, changes a public signature or crosses a stored format or a security boundary, run the `code-review` skill at level `low` and fix what it finds.
+
+Never revert or stash the user's work to show red, and ask before anything destructive.
+
+```text
+Bad:  skip the header when page > 1. The symptom goes; the loop still writes it.
+Good: move the header write out of the page loop at src/export.rs:88. The cause goes.
+```
+
+## Excuses
+
+| You think | Do instead |
+|---|---|
+| "I can see the bug, no need to reproduce it." | Then the repro takes a minute. Write it; it becomes the test. |
+| "Let me try this fix and see." | A fix is an experiment only when you predicted its result first. |
+| "Third fix, almost there." | Two fixes on one theory failed. Name what both assumed and test that instead. |
+| "It passes now." | Once? Run the loop that used to fail. |
+| "The test is wrong." | Maybe. Tell the user; do not edit it to pass. |
+
+## Report
+
+```text
+Cause: src/export.rs:88 writes the header inside the page loop, so every page after the first repeats it. (measured)
+Proof: `cargo test one_header` failed with 3 headers before the fix and passes after; repro and suite pass.
+Open: exports over 10,000 rows not tried.
+```
+
+Label each claim measured, inferred or guess. When the cause is not proven, report the repro, what you expected, what happened and your hypotheses, and change no code.
+
+Next: `exo:ship`, when the user wants the fix pushed.

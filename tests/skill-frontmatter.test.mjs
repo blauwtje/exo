@@ -51,6 +51,20 @@ for (const line of ACCEPTED_KEYS) {
   });
 }
 
+test('accepts a description of 35 words and rejects 36', () => {
+  const filler = (count) => Array.from({ length: count }, (_, index) => `w${index}`).join(' ');
+  const run = (count) => {
+    const lines = ['---', 'name: demo', `description: Use when testing. Not for real skills. ${filler(count - 7)}`, '---', 'Body.'];
+    const results = [];
+    checkSkillFrontmatter(collectingReport(results), fakeRepository('/skills/demo/SKILL.md', lines));
+    return results.find((entry) => entry.name === 'YAML frontmatter');
+  };
+  assert.equal(run(35).passed, true, run(35).detail);
+  const outcome = run(36);
+  assert.equal(outcome.passed, false);
+  assert.match(outcome.detail, /36 words, over 35/);
+});
+
 test('rejects a name holding claude', () => {
   assert.equal(frontmatterResult('claude-x', []).passed, false);
 });

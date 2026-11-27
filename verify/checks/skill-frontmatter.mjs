@@ -5,6 +5,7 @@ const SKILL_NAME_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const RESERVED_NAME = /anthropic|claude/;
 const COMPATIBILITY_LIMIT = 500;
 const LISTING_LIMIT = 1536;
+const DESCRIPTION_WORD_LIMIT = 35;
 
 function skillErrors(file, relative, values) {
   const errors = [];
@@ -21,6 +22,10 @@ function skillErrors(file, relative, values) {
   }
   if (description.length + (values.get('when_to_use') ?? '').length > LISTING_LIMIT) {
     errors.push(`${relative}: description and when_to_use exceed ${LISTING_LIMIT} characters`);
+  }
+  const descriptionWords = description.trim().split(/\s+/).filter(Boolean).length;
+  if (descriptionWords > DESCRIPTION_WORD_LIMIT) {
+    errors.push(`${relative}: description holds ${descriptionWords} words, over ${DESCRIPTION_WORD_LIMIT}`);
   }
   if (!/\bUse (when|for|at|only)\b/.test(description)) {
     errors.push(`${relative}: description lacks a Use clause`);

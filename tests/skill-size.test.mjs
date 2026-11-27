@@ -5,31 +5,31 @@ import { createRepository } from '../verify/repository.mjs';
 import { REPOSITORY_ROOT } from './harness.mjs';
 import { checkOutcome, tree } from './check-outcome.mjs';
 
-const words = (count) => Array.from({ length: count }, (_, index) => `w${index}`).join(' ');
+const lines = (count) => Array.from({ length: count }, (_, index) => `line ${index}`).join('\n');
 
 function run(files) {
   return checkOutcome(checkSkillSize, createRepository(tree(files)));
 }
 
-test('a skill of 500 words passes', () => {
-  const result = run({ 'skills/a/SKILL.md': words(500) });
+test('a SKILL.md of 500 lines passes', () => {
+  const result = run({ 'skills/a/SKILL.md': lines(500) });
   assert.equal(result.ok, true, result.detail);
 });
 
-test('a skill of 501 words fails and names its count', () => {
-  const result = run({ 'skills/a/SKILL.md': words(501) });
+test('a SKILL.md of 501 lines fails and names its count', () => {
+  const result = run({ 'skills/a/SKILL.md': lines(501) });
   assert.equal(result.ok, false);
-  assert.match(result.detail, /a holds 501 words/);
+  assert.match(result.detail, /skills\/a\/SKILL\.md holds 501 lines/);
 });
 
-test('the words of every .md file in the folder add up', () => {
-  const result = run({ 'skills/a/SKILL.md': words(300), 'skills/a/more.md': words(201) });
-  assert.match(result.detail, /a holds 501 words/);
+test('a reference file beside SKILL.md is allowed and not counted', () => {
+  const result = run({ 'skills/a/SKILL.md': lines(400), 'skills/a/references/more.md': lines(400) });
+  assert.equal(result.ok, true, result.detail);
 });
 
-test('a skill naming x.mjs fails', () => {
-  const result = run({ 'skills/a/SKILL.md': 'run x.mjs now' });
-  assert.match(result.detail, /skills\/a\/SKILL\.md names the script x\.mjs/);
+test('a skill naming x.mjs fails, in a reference file too', () => {
+  const result = run({ 'skills/a/SKILL.md': 'text', 'skills/a/references/more.md': 'run x.mjs now' });
+  assert.match(result.detail, /skills\/a\/references\/more\.md names the script x\.mjs/);
 });
 
 test('a non-markdown file in a skill folder fails', () => {

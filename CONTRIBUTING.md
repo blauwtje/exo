@@ -9,8 +9,9 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 ## Codemap
 
 - `CODE.md`: the code principles, read by the builder before it writes code.
-- `BASE.md`: the shared principles, each with a one-line reason, at most 450 words. Step 1 of every skill reads `${CLAUDE_PLUGIN_ROOT}/BASE.md`.
-- `skills/`: one folder per skill, each holding only its skill file.
+- `BASE.md`: the shared rules on one page. `hooks/hooks.json` prints it into the context at the start of every session, and each agent reads it first.
+- `hooks/`: `hooks.json`, the one SessionStart hook.
+- `skills/`: one folder per skill, holding its skill file and, when a layout is too long for it, a `references/` folder.
 - `agents/`: the `builder` and `researcher` prompts.
 - `lib/`: the status line and the modules it imports, plus the helpers the checks use.
 - `verify/`: the static checks that `verify.mjs` runs.
@@ -29,16 +30,33 @@ CI runs `npm run check` on Node 22 and 24 on Ubuntu for every push to `main` and
 
 `npm test` loads `tests/clean-run-env.mjs` first, which strips the run variables so a test sees a clean environment.
 
+## The standard
+
+exo reads and works like the best-known Claude Code plugins and the engineers who set the pattern: obra/superpowers, Matt Pocock's skills, Addy Osmani's agent-skills, caveman, ponytail, Andrej Karpathy's coding guidelines, Lauren Tan's skills and Anthropic's skill-authoring guidance. That holds after every refactor, addition or removal, in two layers:
+
+- **Mechanics, checked.** The `plugin shape` check (`verify/checks/plugin-shape.mjs`) fails a skill that does not open with a `#` title and a bold rule, holds no example in a code block, names `BASE.md` or leaves a reference file unlinked; an agent with no title or no report example; and a missing SessionStart hook. The frontmatter and size checks hold the 35-word description and the 500-line limit.
+- **Voice, reviewed.** Before a change to a skill, an agent, `BASE.md`, `CODE.md`, the hook or the README lands, a fresh reviewer that did not write it compares the changed files with the references above, and the proven gaps are fixed in one pass.
+
 ## Editing a skill
 
-A skill is one Markdown file inside `skills/<name>/` and nothing else. Its frontmatter keeps `name`, `description`, `argument-hint`, `model` and `effort` where it needs them. Its body is `## Principles`, each with its reason, then `## Steps`, numbered, with step 1 reading `BASE.md`.
+A skill is `skills/<name>/SKILL.md`, plus `references/*.md` for a layout too long to keep in it. Its frontmatter keeps `name`, `description`, `argument-hint`, `model` and `effort` where it needs them.
+
+A skill reads like a page from an engineer who has done the job many times, not like a form:
+
+- `# Title`, then one paragraph in the second person that opens with the skill's one rule in bold and says why it holds.
+- Sections named after the parts of the job, such as `## Find the cause` or `## Watch`, not a fixed `## Steps`.
+- An `## Excuses` table (You think, Do instead) where a shortcut tempts, and a `## When stuck` table (Situation, Do) where the work can stall.
+- One example in a code block: a report, a file layout, or a Good and Bad pair.
+- A `Next:` line naming the skill that usually follows, when one does.
+- A reason only where a rule is not obvious. A rule `BASE.md` already states is not repeated.
+- Full sentences with one idea each, and plain words over coined ones.
 
 The `skill size` check (`verify/checks/skill-size.mjs`) enforces two rules:
 
-- Rule 4: the `.md` files of a skill folder hold at most 500 words together, counted as `wc -w` counts them.
+- Rule 4: a skill file holds at most 500 lines. Other `.md` files in the folder, such as `references/`, are allowed and not counted.
 - Rule 5: a skill folder holds only `.md` files, and its text names no file ending in `.mjs`, `.cjs`, `.js`, `.ts`, `.py`, `.sh`, `.bash`, `.rb`, `.go` or `.ps1`, unless the skill and file pair is on the exception list in `skill-size.mjs` with a reason. The list starts empty. Plain commands such as `git`, `gh`, `rg` and `curl` stay allowed.
 
-A skill's description names the words the user says and keeps `Use when ` and `Not for` clauses, because a trigger on a fact nobody knows when the request arrives leaves the model to guess.
+A skill's description holds at most 35 words, names the words the user says, and keeps a `Use when ` clause and, where a neighbour skill is close, a `Not for` clause, because a trigger on a fact nobody knows when the request arrives leaves the model to guess. The frontmatter check enforces the word limit.
 
 A skill whose work leaves the machine (a push, pull request or merge) runs only on the authorization its body names. `ship` asks before each push, pull request or merge.
 
@@ -47,8 +65,9 @@ Change a skill only after a real session that went wrong, and then remove someth
 ## How a skill dispatches work
 
 - Two roles are plugin agents under `agents/`, `builder` and `researcher`, because an agent file fixes a tool list, a model, an effort and a turn limit. The lead sends one fresh agent per separate job with file paths in the prompt, and runs jobs in parallel only when they share no file.
-- Every scratch file lives in `$TMPDIR/exo/<repo folder name>/`, and the lead names the file in each agent prompt.
-- A subagent takes its model and effort from its agent file's frontmatter, and a dispatch passes the Agent tool's `model` or `effort` only for a job in the Models table of the build skill.
+- Every scratch file lives in `<scratch>`, defined in `BASE.md`, and the lead names the file in each agent prompt.
+- A subagent takes its model and effort from its agent file's frontmatter. A dispatch passes the Agent tool's `model` or `effort` only where a skill says so, such as the second attempt in `build`.
+- The builder's report starts with one status, `DONE`, `BLOCKED`, `NEEDS ANSWER` or `PLAN WRONG`, defined once in `agents/builder.md`.
 - Each agent sets `maxTurns` in its frontmatter, and the harness ends a delegate at that turn.
 
 `docs/` is gitignored and holds only plans and research.

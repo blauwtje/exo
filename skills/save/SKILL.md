@@ -1,32 +1,54 @@
 ---
 name: save
-description: "Writes a handoff file for unfinished work and reads it back in a fresh session. Use when the user asks to save, pause or hand off this session, or to continue from a saved handoff ('save this session', 'pause this session', 'continue where I left off'). Not for finished work."
+description: "Writes a handoff for unfinished work and resumes it in a fresh session. Use when the user asks to save, pause or hand off, or says 'continue where I left off'. Not for finished work."
 argument-hint: "[what the next session must not lose]"
 ---
 
-## Principles
+# Save
 
-- Freeze only what this session knows and the next cannot rebuild, because a fresh session pays again for every pasted line.
-- Point to files and commands, never paste a transcript, diff or log, because a paste goes stale.
-- Build the progress list from `git status --short`, not memory, because a next session that cannot tell committed from uncommitted work discards edits.
-- Push nothing and open no pull request, because saving is not shipping.
+**Write down only what the next session cannot rebuild.** A fresh session reads every line you leave, so a pasted diff, log or transcript costs it context and goes stale. Point to files and commands instead. Build the progress list from git, not from memory: a next session that cannot tell committed from uncommitted work throws edits away.
 
-## Steps
+Saving is not shipping: push nothing and open no pull request.
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/BASE.md`.
-2. Finish or undo the step in progress; start no new work.
-3. Pick the handoff file `<scratch>/handoff-<topic>.md`, with a short kebab-case `<topic>`, and create its folder.
-4. On a plan's run branch, commit nothing: save the partial work of the task in progress with `git diff > <scratch>/handoff-<topic>-task<n>.patch` and list the patch under Progress.
-5. On any other non-default branch, commit every uncommitted edit as one `chore: wip <topic>` commit, and say in its body if the tree is broken.
-6. On the default branch, leave edits uncommitted and list them under Progress.
-7. Write the file whole over an older one, in plain words in the user's language, with these parts in order:
-   - One line on where the work stands and the first thing to do next, then a line `Written: <date>, branch <branch>, commit <short sha>`.
-   - `## Goal`: what the work is for, and what it will not do.
-   - `## Progress`: open with the plan path and task number when a plan runs. List what is committed, then every uncommitted path in full. Add each decision with who decided it.
-   - `## Evidence`: what is proven, as claim, command and result, and what is unproven or open.
-   - `## Ruled out`: each approach dropped, with why it failed.
-   - `## Next step`: the first action, then each later step with its full command.
-8. End the turn by naming the written path and telling the user to run `/clear`, then say "continue from the handoff". Continue no work.
-9. To continue, read `<scratch>/handoff-<topic>.md`, the newest `handoff-*.md` there when no topic is named. With no file, say so and write nothing.
-10. Run `git log --oneline <Written commit>..HEAD` and `git status --short`, and name what changed since the handoff before relying on any claim in it.
-11. Name the resume point from what the handoff lists as next, and repeat no step it records as proven. Verify an inherited claim against the real artifact, because a prior report is not proof.
+## Save
+
+1. Finish or undo the step in progress. Start no new work.
+2. Pick `<scratch>/handoff-<topic>.md`, with a short kebab-case topic.
+3. Keep the edits safe, by branch:
+   - **A plan's run branch:** commit nothing. Save the task in progress with `git diff > <scratch>/handoff-<topic>-task<n>.patch`, and list the patch under Progress.
+   - **Another branch that is not the default:** commit every edit as one `chore: wip <topic>` commit, and say in its body when the tree is broken.
+   - **The default branch:** leave the edits uncommitted and list them under Progress.
+4. Write the file whole, over an older one, in the user's language, in this layout:
+
+```markdown
+Task 3 of 5 is half done; next, make the header test pass.
+Written: 2026-11-27, branch feat/csv-export, commit a1b2c3d
+
+## Goal
+CSV export of orders. Not: Excel files.
+
+## Progress
+Plan docs/specs/csv-export.md, task 3. Committed: tasks 1 and 2.
+Uncommitted: src/export.rs, saved in handoff-csv-export-task3.patch.
+Decided by the user: semicolon delimiter.
+
+## Evidence
+Proven: cargo test export passes for tasks 1 and 2.
+Open: cargo test one_header still fails with 3 headers.
+
+## Ruled out
+Writing the header after the loop: rows stream out before the loop ends.
+
+## Next step
+1. git apply <scratch>/handoff-csv-export-task3.patch
+2. cargo test one_header
+3. Run `exo:build` from task 3.
+```
+
+5. Name the path, and tell the user to run `/clear` and then say "continue from the handoff". Do no more work.
+
+## Resume
+
+1. Read `<scratch>/handoff-<topic>.md`, or the newest `handoff-*.md` there when no topic is named. With no file, say so and write nothing.
+2. Run `git log --oneline <written commit>..HEAD` and `git status --short`, and name what changed since the handoff before you rely on it.
+3. Start from its next step, and repeat no step it records as proven. Check an inherited claim on the real artifact before you build on it: a report from the last session is not proof.

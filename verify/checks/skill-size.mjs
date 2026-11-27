@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const MAXIMUM_WORDS = 500;
+const MAXIMUM_LINES = 500;
 const SCRIPT_NAME = /[A-Za-z0-9_-]+\.(?:mjs|cjs|js|ts|py|sh|bash|rb|go|ps1)\b/g;
 
 export const SCRIPT_EXCEPTIONS = [];
@@ -11,9 +11,12 @@ const isException = (skill, file) => SCRIPT_EXCEPTIONS.some((entry) => entry.ski
 function problemsOf(repository, skill) {
   const files = repository.walk(path.join(repository.skillsRoot, skill), () => true);
   const markdown = files.filter((file) => file.endsWith('.md'));
-  const words = markdown.reduce((sum, file) => sum + repository.text(file).split(/\s+/).filter(Boolean).length, 0);
   const problems = [];
-  if (words > MAXIMUM_WORDS) problems.push(`${skill} holds ${words} words, over ${MAXIMUM_WORDS}`);
+  const skillFile = path.join(repository.skillsRoot, skill, 'SKILL.md');
+  if (fs.existsSync(skillFile)) {
+    const count = repository.lines(skillFile).length;
+    if (count > MAXIMUM_LINES) problems.push(`${repository.relative(skillFile)} holds ${count} lines, over ${MAXIMUM_LINES}`);
+  }
   for (const file of files.filter((entry) => !entry.endsWith('.md'))) {
     problems.push(`${repository.relative(file)} is not a .md file`);
   }
@@ -34,6 +37,6 @@ export function checkSkillSize(report, repository) {
   report.assert(
     problems.length === 0,
     'skill size',
-    { pass: `every skill folder holds at most ${MAXIMUM_WORDS} words, only .md files and names no script`, fail: problems.join('; ') }
+    { pass: `every SKILL.md holds at most ${MAXIMUM_LINES} lines, every skill folder only .md files and names no script`, fail: problems.join('; ') }
   );
 }

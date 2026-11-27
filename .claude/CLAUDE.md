@@ -16,12 +16,13 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 
 - Run one test file with `node --import ./tests/clean-run-env.mjs --test tests/<name>.test.mjs`, the import `npm test` uses in package.json, because one file answers faster than `npm run check`.
 - `npm run check` gates every commit, and a clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
-- Plan tasks use `Land gate: npm run validate:static`, and `npm run check` runs once as the Success criterion.
+- Plan tasks use `Commit check: npm run validate:static`, and `npm run check` runs once as the Success criterion.
 - Change a skill only after a real session that went wrong, and then remove something rather than add something.
 
 ## Editing
 
 - Before you design or change a skill, agent or check, read `BASE.md`.
+- Before a change to a skill, agent, `BASE.md`, `CODE.md`, the hook or the README lands, have a fresh reviewer compare it with the references under `## The standard` in `CONTRIBUTING.md`, and fix the proven gaps in one pass.
 - Scripts do mechanical work only: count, match, parse, store, run. Code that judges meaning, like a word list per language, breaks on other languages.
 - Skills and agents keep the judgment and run plain commands, because the model reads every language and phrasing; a skill ships a script only when the exception list in `verify/checks/skill-size.mjs` names it with a reason.
 - A bare skill name in a skill or prompt body means `exo:<name>`.

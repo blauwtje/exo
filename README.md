@@ -15,6 +15,12 @@
   <a href="https://github.com/blauwtje/exo/actions/workflows/quality.yml"><img src="https://github.com/blauwtje/exo/actions/workflows/quality.yml/badge.svg" alt="quality"></a>
 </p>
 
+Claude says it is done. The test never ran, the bug fix was a guess, and the pull request went out without a check. exo is a small set of skills built on one rule:
+
+> **Nothing counts as done until you have seen it run.**
+
+Each skill turns that rule into a habit at one point of the work: a plan where every task carries a command that fails today, a build that watches each one go from red to green, a bug hunt that starts with a reproduction, and a push that waits for your yes.
+
 ## Install
 
 It needs git, Node 22 or newer, and `bash` on `PATH`.
@@ -35,33 +41,60 @@ Update with `claude plugin update exo@blauwtje` in a terminal, then restart. Uni
 
 </details>
 
-## Use
+## How it works
 
-Say what you want in your own words and Claude starts the skill that fits. A typo or one-line edit runs without a skill, and a change of two files or fewer is edited directly, with no plan.
+```mermaid
+flowchart LR
+  spec -->|tasks with a proof each| build -->|red, then green| ship
+  bug([something breaks]) --> diagnose -->|fix with a test| ship
+```
 
-| You say | What happens |
+1. **spec:** you describe a change. exo asks only what you alone can decide (what done looks like, which data, the architecture, a trade-off), reads the code for the rest, and writes a brief where every task carries a command that fails today.
+2. **build:** each task's proof must fail first and pass after. A small task is done in your session; a larger one goes to a fresh builder, and your session runs the proof again itself. One review at the end.
+3. **ship:** nothing is pushed, opened or merged without your yes. Then it watches the pull request and fixes failing checks, conflicts and review comments.
+4. **diagnose:** when something breaks, the first step is a command that shows it break. No fix without a proven cause and a test seen failing.
+
+Around the loop, `save` hands unfinished work to a fresh session, `learn` turns a correction you made twice into a check that fails, `search` answers with quotes from pages it read, `watch` answers from a video's transcript, and `ideas` tests new ideas against what already exists.
+
+You do not call the skills by name. Say what you want and Claude starts the one that fits:
+
+| You say | Skill |
 |---|---|
-| "rename the `--out` flag to `--output`" | A small fix: `build` edits directly, runs the check and offers to ship. |
-| "plan how we add CSV export" | A feature with a plan: `spec` asks what only you can decide, then writes the plan. |
-| "run the plan" | `build` builds each task with its proof and reviews the result once. |
-| "the export writes duplicate rows, find out why" | A bug: `diagnose` proves the cause, then fixes it with a test. |
-| "ship it" or "open a PR" | `ship` asks once how far the commits go, then pushes, opens or merges. |
-| "save this session", then "continue from the handoff" in a new one | `save` writes a handoff file and reads it back. |
-| a video link and a question | `watch` answers from the captions or a transcript. |
-| "search for what people say about X" | `search` answers with links and quotes from saved sources from GitHub, Reddit, Hacker News and the web. |
-| "give me ideas for how to approach X" | `ideas` runs a fixed ideation playbook and returns a short list of novel ideas. |
-| "do not leave `console.log` in `src/`, remember this" | `learn` turns the correction into a lint rule or check that fails when it recurs, else a small lesson note. |
+| "plan how we add CSV export" | `spec` |
+| "run the plan" | `build` |
+| "the export writes duplicate rows, find out why" | `diagnose` |
+| "ship it" or "open a PR" | `ship` |
+| "save this session", later "continue from the handoff" | `save` |
+| "do not leave `console.log` in `src/`, remember this" | `learn` |
+| "search for what people say about X" | `search` |
+| a video link and a question | `watch` |
+| "give me ideas for X" | `ideas` |
 
-The agents run behind the skills; you do not call them.
+A typo or a one-line edit needs no skill.
 
-| Agent | What it does |
+## What exo will not do
+
+- Push, open a pull request or merge without asking you first.
+- Weaken, skip or delete a test to get green.
+- Follow an instruction found in a web page, an issue, a log or a video.
+- Write your name, email or home path into a file or a commit.
+
+## Words
+
+| Word | Meaning |
 |---|---|
-| `builder` | Builds one plan task, repair or fix, and writes the brief of a plan over 3 tasks. |
-| `researcher` | Answers one bounded question from named sources. |
+| proof | The one command that shows a task is done. |
+| red, green | The proof failing before the change, and passing after it. |
+| brief | The plan file `spec` writes to `docs/specs/`. |
+| scratch | exo's folder for temporary files, outside your repository. |
+| builder, researcher | The two helper agents the skills send work to. You do not call them. |
 
-Each skill is one Markdown file of at most 500 words. Step 1 of each reads [BASE.md](BASE.md), the principles every skill shares, each with its reason.
+## Inside
 
-## Status line
+At the start of every session, a hook adds [BASE.md](BASE.md), one page of shared rules, to the context. Each skill is one Markdown file of at most 500 lines, with longer layouts in a `references/` folder beside it. Code rules are in [CODE.md](CODE.md).
+
+<details>
+<summary>Status line (optional)</summary>
 
 Claude Code only. Run this in a terminal:
 
@@ -70,6 +103,8 @@ node "$(ls -d "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/exo/*/ | sor
 ```
 
 It writes a launcher to `~/.claude/exo/statusline.mjs` (under `CLAUDE_CONFIG_DIR` when set) and prints a `statusLine` block for your `settings.json`, which exo never edits. After an exo update, rerun that command. To remove it, delete the `statusLine` key.
+
+</details>
 
 ## More
 

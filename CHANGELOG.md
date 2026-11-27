@@ -8,6 +8,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 ## Unreleased
 
 ### Added
+- The `plugin shape` check fails a skill without a `#` title, a bold rule or an example in a code block, a skill that names `BASE.md`, an unlinked reference file, an agent without a report example, and a missing SessionStart hook.
+- `hooks/hooks.json`: a SessionStart hook prints `BASE.md` into every session, so skills no longer read it in step 1.
+- `skills/spec/references/brief.md`, `skills/search/references/report.md` and `skills/ideas/references/judging.md` hold the layouts their skills point to.
 - `CODE.md`: the code principles (scope, design, readability, errors, tests), each with its reason, read by the builder before it writes code.
 
 - The `spec-earlier-brief` eval case fails a spec run that writes a second brief beside an existing one.
@@ -43,7 +46,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The build code rules tell a builder to pick fixture values that a wrong implementation cannot satisfy by accident: non-zero, non-empty, one value reused.
 - The builder prompt runs a long or paid Proof first on one input or one iteration, then whole.
 - The builder report lists every url fetched and package installed during the job, or `none`.
-- The builder report starts with a `Ran:` line naming the model and effort it ran on, and `exo:build` compares it with the Models row; `land-report.mjs` reads `Ran` as a report field, not as the proof command.
+- The builder report starts with a `Ran:` line naming the model and effort it ran on; `land-report.mjs` reads `Ran` as a report field, not as the proof command.
 - `exo:document` writes a short `MAP.md` per directory, one line per file, for agents to read before they search.
 - The `eval cases` check fails a case whose `prompt.md` tags hold not exactly one of `tune` or `holdout`, and every case is tagged; tuning runs `--tag tune` before a release, and the release suite runs are the only holdout runs.
 - The `eval cases` check fails a case prompt line of 20 or more characters that appears in `skills/`, `agents/` or `principles/`.
@@ -53,12 +56,21 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Each threshold in `exo:build` and `exo:spec` has a session count and its source in `evals/failures.md`.
 - `guide/settings.md` says when to pick Fable yourself and how to turn on the advisor.
 
-- `BASE.md` at the plugin root holds the shared principles that each kept skill reads at step 1.
-- The `skill-size` check fails a skill folder over 500 words or naming a script file, and `npm run check` runs it.
+- `BASE.md` at the plugin root holds the shared principles.
+- The `skill-size` check fails a skill file over 500 lines, and `npm run check` runs it.
 
 ### Changed
+- Every skill is rewritten as a short page: its one rule in bold, sections named after its job, an excuse or When stuck table where it fits, one example and a `Next:` line.
+- A `SKILL.md` may hold 500 lines and keep longer layouts in `references/`, and a skill description holds at most 35 words.
+- Plans name the per-task check `Commit check:` instead of `Land gate:`, and the builder's statuses are `DONE`, `BLOCKED`, `NEEDS ANSWER` and `PLAN WRONG`, defined once in `agents/builder.md`.
+- `exo:build` does a one-file task itself, resumes at the first task with no `Plan-task:` commit, and drops its model table with the researcher rows: a task's `Model:` field sets the builder's model, and a second attempt after a failed proof runs on Opus, high.
+- `BASE.md` says which skill goes first when two fit, and to write `<REDACTED>` in place of a secret.
+- Skill descriptions quote the user's trigger phrases, `exo:diagnose` checks its loop with a checklist and fixes every instance of a cause, and `exo:build` checks each commit with a checklist.
+- The builder and researcher open with their role and end with a report example.
+- `CODE.md` is rewritten in plain voice with a Good and Bad example, and drops the lines `BASE.md` already holds.
+- The README opens with the one rule and the loop, and adds what exo will not do and a list of its words.
 
-- The nine kept skills (`build`, `diagnose`, `ideas`, `learn`, `save`, `search`, `ship`, `spec`, `watch`) use a Principles and Steps layout, read BASE.md and call no script.
+- The nine kept skills (`build`, `diagnose`, `ideas`, `learn`, `save`, `search`, `ship`, `spec`, `watch`) call no script.
 - The `builder` and `researcher` agents are shorter and name no script file.
 - `npm run check` runs the kept checks and then `npm test`.
 - The eval budget in `evals/value.mjs` is 42 USD instead of 40, so the `spec` part, with its third case, is measured with the other nine.

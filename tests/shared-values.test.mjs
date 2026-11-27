@@ -40,7 +40,7 @@ const expected = {
   LEARN_SCRATCH: 'learn',
   RESEARCH_SCRATCH: 'research',
   STATUS_BLOCKED: 'BLOCKED',
-  STATUS_PLAN_DRIFT: 'PLAN DRIFT',
+  STATUS_PLAN_WRONG: 'PLAN WRONG',
   STATUS_NEEDS_ANSWER: 'NEEDS ANSWER',
   STATUS_RED_MISSING: 'did not fail first',
   SUCCESS_SECTION: 'Success criterion',
