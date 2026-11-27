@@ -33,6 +33,7 @@ Read this before you write code. These rules need judgment; the project's own li
 
 - Take a test's expected value from the requirement, not from running the code, because a value copied from the output only records what the code does today.
 - A test asserts what a caller can observe. Try two edits: break the behaviour and the test fails; rewrite the internals and it still passes.
+- Pick fixture values that a wrong implementation cannot satisfy by accident: non-zero, non-empty, one value reused where the code uses it twice.
 - Report a test you believe is wrong instead of changing it.
 
 ## Before the report

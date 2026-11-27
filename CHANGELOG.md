@@ -36,6 +36,17 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `evals/route-none-typo` has a scaffold that writes the README and a `regex` grader on the fixed word.
 - Seven eval cases replay failures from `evals/failures.md`: `build-no-scratch-files`, `build-no-third-flag`, `document-release-notes`, `log-injection-ignored`, `route-author-other-repo`, `route-none-first-correction` and `watch-quotes-url`.
 - `plan.mjs` prints a `Run deadline:` line for a deep search run and `rank.mjs` prints `Run deadline passed` after it, so a script holds the 20-minute limit.
+- The build code rules tell a builder to pick fixture values that a wrong implementation cannot satisfy by accident: non-zero, non-empty, one value reused.
+- The builder prompt runs a long or paid Proof first on one input or one iteration, then whole.
+- The builder report lists every url fetched and package installed during the job, or `none`.
+- The builder report starts with a `Ran:` line naming the model and effort it ran on, and `exo:build` compares it with the Models row; `land-report.mjs` reads `Ran` as a report field, not as the proof command.
+- `exo:document` writes a short `MAP.md` per directory, one line per file, for agents to read before they search.
+- The `eval cases` check fails a case whose `prompt.md` tags hold not exactly one of `tune` or `holdout`, and every case is tagged; tuning runs `--tag tune` before a release, and the release suite runs are the only holdout runs.
+- The `eval cases` check fails a case prompt line of 20 or more characters that appears in `skills/`, `agents/` or `principles/`.
+- `evals/scorecard.md` has a `format` column (`list` or `free`) and compares rows only within one format.
+- `evals/scorecard.md` names the chance score, the without-plugin score of the same run, beside each with-plugin score.
+- `evals/scorecard.md` has a pending strip-parts row: at the next release eval each skill and hook runs without itself, and a part that changes no pass rate is deleted.
+- Each threshold in `exo:build` and `exo:spec` has a session count and its source in `evals/failures.md`.
 
 ### Changed
 
@@ -81,6 +92,13 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `exo:spec` and `exo:learn` descriptions drop the exclusions that no seen failure backs.
 - `guide/search.md` gives no size for `playwright-core`.
 - `exo:spec` also fires when the user is unsure how to build or change something and asks for help deciding, and its question ends on the recommendation line with no later question or list after it.
+- The diagnose investigator reads the exact prompt and files a failing agent or skill run was given before any hypothesis about the model.
+- The review brief asks for each finding's evidence before its verdict, with the status line last.
+- The review brief asks to list every default, fallback or filled-in value the diff adds and the input that makes it fire.
+- `exo:diagnose` counts a repro that failed on some runs as fixed only after five green runs in a row.
+- On a list question the search gap round compares the items found with a second route, such as an index or table, and reports the difference under Gaps, with one second-route worker even when no sub-question is uncovered.
+- `exo:learn` offers a check instead of a reword when a lesson note was seen on 3 or more dates.
+- The instruction style guide asks for two differing examples when an output has a free order or length.
 
 ### Fixed
 
@@ -307,6 +325,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `corrections.mjs replay` command added in 1.1.0, its helpers, the old `{verdict, text}` verdict rows and the copy of verdicts out of an old ledger in `reset`.
 - The `sessions.mjs` command line.
 - The eval case `diagnose-repatch`, which asked to commit a ready patch and never called the skill in 12 of 12 runs.
+- `exo:spec` no longer fixes the fast-route file count ("under three files"), the four-researcher cap or the 3-question round, because no file gave them a source; researchers stay at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` at once.
 
 ## 1.1.0 - 2026-11-16
 

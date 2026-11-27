@@ -4,7 +4,7 @@ import { escapeRegExp } from '#basics';
 import { SUCCESS_SECTION } from '#shared-values';
 
 const ANY_OUTCOME_LINE = /^\s*(?:[-*]\s+)?(?:`([^`]+)`|(.+)):\s*(.*?)\s*$/;
-const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved']);
+const REPORT_FIELDS = new Set(['Landed', 'Proof', 'Unresolved', 'Ran']);
 export const PROOF_TIMEOUT_MS = 540_000;
 export const PROOF_TAIL_LINES = 20;
 const RED_FIELD_LINE = /^\s*(?:[-*]\s+)?(?:Test first|Red):/;

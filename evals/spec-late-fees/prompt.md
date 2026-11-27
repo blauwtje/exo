@@ -1,5 +1,6 @@
 ---
 max_turns: 40
+tags: [tune]
 allowed_tools: [Read, Glob, Grep, Skill, Bash, Edit, Write, Task, Agent]
 ---
 

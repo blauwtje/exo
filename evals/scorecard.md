@@ -9,10 +9,12 @@ Each release appends one row and no row is rewritten. The releasing session runs
 - always-on tokens: `claude plugin details exo`
 - tokens per use of `build`, `gate`, `spec`, `diagnose` and `ship`: `claude -p "/skill-doctor"`, 7-day tokens divided by uses
 - eval score with and without the plugin, cost ratio and time ratio: `claude plugin eval . --trust-plugin --scaffold --allow-tools Bash Edit Write --json --judge-model sonnet --no-publish --max-cost-usd 38`
+- chance score: the score of the same cases without the plugin, read from the same run as the with score; a case whose with score does not clear it shows nothing
+- format: `list` when the run shows the candidates and the answer picks one, `free` when the answer is written from nothing; compare rows only within one format
 - model and effort: the setting of that eval run; a second row records the same eval with `--model` set to another model
 
-| date | commit | tracked files | check modules | test files | check seconds | always-on tokens | build | gate | spec | diagnose | ship | eval score with / without | cost ratio | time ratio | model | effort |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| date | commit | tracked files | check modules | test files | check seconds | always-on tokens | build | gate | spec | diagnose | ship | eval score with / without | cost ratio | time ratio | model | effort | format |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-11-13 | 720b6cb3e | 2744 | 79 | 455 | 110 | 836 | 0.40M | 3.2M | 0.18M | 0.07M | 0.03M | | | | | |
 | 2026-11-13 | 209aac095 | 1086 | 40 | 310 | 82 | 836 | 0.40M | 3.3M | 0.18M | 0.07M | 0.03M | 0.36 / 0.29, onvolledig: 14/20, Opus 5.5 effort medium | 2.17 | 1.99 | | |
 | 2026-11-13 | gate-small | | | | | | | | | | | gate eval: pending, run by the lead | | | | |
@@ -30,3 +32,4 @@ Each release appends one row and no row is rewritten. The releasing session runs
 | 2026-11-25 | structure-rules | | | | | | | | | | | structure rules eval: pending, run by the lead: copy the plugin to two temp folders, set skills/build/references/code-rules.md in one to its 98e6f877c text, run one build case on a small repo whose task adds a third copy of a helper, a call into another feature and a new folder, with --runs 6 and --max-cost-usd 5 on both copies, and compare paired pass rates on import direction, helper reuse and codemap update; one manual run per side on 2026-11-25 showed no difference | | | | |
 | 2026-11-25 | structure-rules | | | | | | | | | | | structure rules eval: measured with subagents, not claude plugin eval: 6 Sonnet runs per rules text on one fixture (a shared formatter with a flag per caller, a 297-line file, a new feature folder); a file taken past 300 lines named on a Noticed line: old text 0 of 6, new text 12 of 12; a flag added to the shared formatter: old 6 of 6, first new text 6 of 6, final text 0 of 6; import through the feature's exports and codemap updated: 18 of 18 on every text | | | | |
 | 2026-11-25 | structure-rules | | | | | | | | | | | structure rules eval, second fixture in Python: measured with subagents, not claude plugin eval: 6 Sonnet runs per rules text; the task named the orders store module, whose package exported one function; imported through the feature's exports: old text 2 of 6, new text 6 of 6; codemap updated and the shared weight formatter reused: 6 of 6 on both texts | | | | |
+| 2026-11-27 | strip-parts | | | | | | | | | | | strip parts eval: pending, run at the next release eval: for each skill and each hook, copy the plugin to a temp folder without that one part, run the cases that cover it with `--runs 6` and compare paired pass rates against the full plugin; delete a part whose removal changes no pass rate beyond the spread, and record each result here | | | | | |

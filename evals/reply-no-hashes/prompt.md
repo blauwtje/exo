@@ -1,5 +1,6 @@
 ---
 max_turns: 10
+tags: [holdout]
 allowed_tools: [Read, Glob, Grep, Bash]
 append_system_prompt: |
   Write short, plain replies for a reader who scans: the answer first, bold labels and figures, and every fact from the source (the tool output or helper result you report on) kept exact.

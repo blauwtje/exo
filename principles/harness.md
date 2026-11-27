@@ -8,7 +8,7 @@ Read it when: you design a run loop, a hook, a subagent hand-off or a check that
 - **A context reset with a handoff is an option beside compaction.** Auto compaction still covers the context target. [1][2] exo: `skills/build/SKILL.md`, `skills/save/SKILL.md`
 - **Keep a progress file and git history.** [2] exo: `skills/build/SKILL.md`
 - **Never let an agent remove or edit tests.** Keep the scorer frozen in one place outside its scope, with one implementation of each rule. [2][10][11] exo: `agents/builder.md`, decided: an agent may rewrite a test that passes without the behaviour it claims to guard; it never loosens or deletes a test that guards behaviour
-- **Strip harness parts one at a time.** Keep only what the model cannot do alone. [1][9] exo: gap
+- **Strip harness parts one at a time.** Keep only what the model cannot do alone. [1][9] exo: gap, queued as the pending strip-parts row in `evals/scorecard.md`
 - **Use hooks for what must happen every time.** CLAUDE.md is advisory, hooks are deterministic. [3] exo: gap
 - **Use prompt or agent hooks only where judgment is needed.** [3] exo: gap, ships two command hooks (`hooks/hooks.json`) and no prompt or agent hook
 - **Guard Stop hooks against loops.** Check `stop_hook_active`. [3] exo: gap, no Stop hook

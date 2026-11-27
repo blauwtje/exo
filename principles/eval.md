@@ -7,7 +7,7 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 - **Start with 20-50 tasks from real failures.** [1] exo: `evals/`
 - **Write unambiguous tasks with reference solutions.** [1] exo: gap
 - **Report SEM and 95% CI with every score; cluster standard errors on the unit of randomisation.** [3] exo: gap
-- **Compare to baseline as paired differences on shared tasks.** [3] exo: gap
+- **Compare to baseline as paired differences on shared tasks.** [3] exo: `evals/scorecard.md`, the chance score of the without-plugin run sits beside each with-plugin score; paired differences are a gap
 - **Compute task count before a paid run, and run each stage alone with a cheap limit before the paid whole.** [3][8] exo: `CONTRIBUTING.md`
 - **Give each run a fixed time budget; count aborted or timed-out runs as failures, or exclude and report them; never fill a default; an over-budget or broken run is a failure row, never a score; the human sets only the goal and the budget.** [4][7][9] exo: `evals/value.mjs`, decided: a run the cost or time cap cut is a failure row, and the count of such rows is printed with the result; no run is dropped without a count
 - **Fix the seed.** [6] exo: gap
@@ -19,14 +19,14 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 - **Give a scored judge one example for the low end and one for the high end of its scale, because without anchors it scores almost everything at the top.** [15] exo: gap
 - **Make a judge write its reason before its score, because a score written first steers the reason.** [15] exo: gap
 - **Grade each dimension with an isolated judge, calibrated against humans.** [1][5] exo: gap, decided: one blinded judge scores both arms of a comparison in one pass on one scale
-- **Hold out tasks the change was not tuned on.** [5] exo: gap
+- **Hold out tasks the change was not tuned on.** [5] exo: `verify/checks/eval-cases.mjs` fails a case not tagged `tune` or `holdout`; `CONTRIBUTING.md` runs `holdout` once per release
 - **Run free regression evals on every change.** [5] exo: `verify.mjs`
-- **Blind the candidate: an organic user prompt, no eval word in any file or prompt it sees, no hint that other candidates exist.** [12] exo: gap
+- **Blind the candidate: an organic user prompt, no eval word in any file or prompt it sees, no hint that other candidates exist.** [12] exo: `verify/checks/eval-cases.mjs` fails a case prompt line found in `skills/`, `agents/` or `principles/`; the other parts are a gap
 - **Grade a chain of steps from the files the run really opened, not from its own claim.** [12] exo: gap
 - **Have one blinded judge score both variants in one pass on one scale, and read every output yourself; a disagreement means a biased judge or an ambiguous rubric.** [12] exo: gap
 - **Write the decision the result would change and the noise floor before the run; stop when the spread is larger than the effect.** [13] exo: gap
 - **Ask why the number is not twice as good: name the limiter from a profile or counters, and rule out errors, skipped or cached work, code that never ran and an untuned side.** [13] exo: gap
-- **Keep the run count, spread and limiter with the number.** [13] exo: gap
+- **Keep the run count, spread and limiter with the number.** [13] exo: gap for run count, spread and limiter; `evals/scorecard.md` format column compares rows within one format
 - **Fix one metric, its direction and a stop target with a floor on attempts; freeze the harness, prove it separates a hard case from an easy one, and have it print its error count.** [14] exo: gap
 - **Log one row per attempt, kept or reverted, and revert a change that only "might help" in full.** [14] exo: gap
 

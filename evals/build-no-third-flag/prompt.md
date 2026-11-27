@@ -1,5 +1,6 @@
 ---
 max_turns: 15
+tags: [holdout]
 allowed_tools: [Read, Glob, Grep, Skill, Edit, Write, Bash]
 ---
 

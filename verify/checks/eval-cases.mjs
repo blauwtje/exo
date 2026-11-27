@@ -11,6 +11,9 @@ const CASE_KEYS = ['schema_version', 'name', 'context'];
 const GRADER_TYPES = ['llm', 'baseline', 'regex', 'file_exists', 'tool_used', 'tool_order'];
 const JUDGED_TYPES = ['llm', 'baseline'];
 const SMOKE_TAG = 'smoke';
+const SPLIT_TAGS = ['tune', 'holdout'];
+const LEAK_ROOTS = ['skills', 'agents', 'principles'];
+const MIN_LEAK_LENGTH = 20;
 const FIELD_LINE = /^(?<key>[A-Za-z][\w-]*):(?: +(?<value>.*))?$/;
 const SCAFFOLD_LINE = /^ +scaffold_script: *(?<value>\S+)\s*$/;
 
@@ -23,6 +26,18 @@ function frontmatter(lines) {
     if (match) fields.set(match.groups.key, (match.groups.value ?? '').trim().replace(/^(["'])(.*)\1$/, '$2'));
   }
   return fields;
+}
+
+function tagsOf(fields) {
+  return (fields.get('tags') ?? '').replace(/^\[|\]$/g, '').split(',').map((tag) => tag.trim().replace(/^['"]|['"]$/g, ''));
+}
+
+function bodyLines(lines) {
+  return lines.slice(lines.indexOf('---', 1) + 1).map((line) => line.trim()).filter((line) => line.length >= MIN_LEAK_LENGTH);
+}
+
+function leakErrors(lines, corpus) {
+  return bodyLines(lines).filter((line) => corpus.some((text) => text.includes(line))).map((line) => `prompt line "${line}" appears in skills/, agents/ or principles/`);
 }
 
 function graderErrors(fields) {
@@ -45,7 +60,7 @@ function caseYamlErrors(folder, lines) {
   return errors;
 }
 
-function caseReport(repository, folder) {
+function caseReport(repository, folder, corpus) {
   const promptFile = path.join(folder, 'prompt.md');
   const yamlFile = path.join(folder, 'case.yaml');
   const errors = [];
@@ -56,7 +71,10 @@ function caseReport(repository, folder) {
     if (!fields) errors.push('prompt.md frontmatter must open on line 1 and close with ---');
     else {
       errors.push(...[...fields.keys()].filter((key) => !PROMPT_KEYS.includes(key)).map((key) => `prompt.md has unknown key ${key}`));
-      smoke = (fields.get('tags') ?? '').replace(/^\[|\]$/g, '').split(',').some((tag) => tag.trim().replace(/^['"]|['"]$/g, '') === SMOKE_TAG);
+      const tags = tagsOf(fields);
+      smoke = tags.includes(SMOKE_TAG);
+      if (tags.filter((tag) => SPLIT_TAGS.includes(tag)).length !== 1) errors.push('prompt.md tags must hold exactly one of tune or holdout');
+      errors.push(...leakErrors(repository.lines(promptFile), corpus).map((message) => `prompt.md ${message}`));
     }
   } else errors.push('prompt.md is missing');
   if (isFile(yamlFile)) errors.push(...caseYamlErrors(folder, repository.lines(yamlFile)));
@@ -77,7 +95,8 @@ export function checkEvalCases(report, repository) {
     ? fs.readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => path.join(root, entry.name))
     : [];
   const cases = folders.filter((folder) => isFile(path.join(folder, 'prompt.md')) || isFile(path.join(folder, 'case.yaml')));
-  const reports = cases.map((folder) => ({ folder, ...caseReport(repository, folder) }));
+  const corpus = LEAK_ROOTS.flatMap((name) => repository.walk(repository.join(name), () => true)).map((file) => repository.text(file));
+  const reports = cases.map((folder) => ({ folder, ...caseReport(repository, folder, corpus) }));
   const errors = reports.flatMap(({ folder, errors: found }) => found.map((message) => `${repository.relative(folder)}: ${message}`));
   if (reports.length > 0 && !reports.some((entry) => entry.smoke)) errors.push('evals: no case is tagged smoke');
   report.assert(

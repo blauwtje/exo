@@ -35,3 +35,4 @@ You carry out the one job the lead names, a plan task, repair, fix, read-only di
 ## Report
 
 - Write the report in the layout the prompt gives and reply with its path and the status line. After a second failure, add a `Premise:` line naming what both attempts assumed. Done means proof on the real product, else `skipped`.
+- Start the report with a `Ran:` line naming the model and effort you ran on, and list every url fetched and package installed during the job, or `none`.

@@ -11,7 +11,7 @@ Applies to `CLAUDE.md`, rules, skills, agents and output styles.
 - Keep the words that set a boundary: `not`, `only`, `except`, `unless`, `each`, `every`, `at most`, `before`, `after`, numbers, paths and commands. Use a number or exact command instead of an adjective, and give the reason for each number.
 - Use one term per concept; define a coined term once where it first appears, or use the plain word.
 - Use no em dashes. Show a Good and a Bad example only for a rule that shapes an output.
-- Give each output-shaping skill one concrete input and its output as an example.
+- Give each output-shaping skill one concrete input and its output as an example, or two that differ in order or length when the output has a free order or length, because the model copies the one shape a single example shows.
 
 ## Cut
 

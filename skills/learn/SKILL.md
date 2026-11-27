@@ -33,7 +33,7 @@ Take the first step that fits and report which one, with why each higher step di
 
 1. A check (Capture step 1). It takes the lesson over, so delete the note and its index line.
 2. A path rule when the lesson names files (Notes). It takes the lesson over, so delete the old note and its index line.
-3. Else reword the note: the rule first, then one line showing the mistake as it happened. Add today to `seen` and make its index line name the mistake too.
+3. Else, when `seen` already holds 3 or more dates, the note has failed repeatedly: offer a check as one line (what it tests, where it runs). On yes, build it as in step 1; on no, reword the note as below. Otherwise reword the note: the rule first, then one line showing the mistake as it happened, and make its index line name the mistake too. In both cases add today to `seen`.
 
 Then run `node "${CLAUDE_SKILL_DIR}/scripts/corrections.mjs" keep <id>` with the id at the end of the hook line.
 

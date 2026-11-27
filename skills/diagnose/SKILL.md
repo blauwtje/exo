@@ -41,6 +41,7 @@ Prove the cause before changing code, because a fix for a guessed cause hides th
    - Write a test that fails for the cause. Quote its failure before the fix and its pass after.
    - A slowdown fix stays only when the median improves by more than the spread, because a smaller gain is noise.
 5. **Prove.** Rerun the repro, the isolated case and the suite. A fix that must change a second module, beyond the one holding the cause, goes back to step 1.
+   - A repro that failed on some runs and passed on others counts as fixed after five green runs in a row, because an intermittent failure can pass once by luck.
 6. **Review.** When the fix changes over two source, test or config files, adds a dependency, changes a public signature or crosses a persisted format or security boundary, run `code-review` at level `low` and fix its findings under step 5.
 
 ### Delegating

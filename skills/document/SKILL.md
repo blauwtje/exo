@@ -1,6 +1,6 @@
 ---
 name: document
-description: "Writes and edits prose read later: README, doc page, PR body, changelog line, release notes. Use when the user asks for one. Not for chat replies or code comments."
+description: "Writes and edits prose read later: README, doc page, PR body, changelog line, release notes, directory map. Use when the user asks for one. Not for chat replies or code comments."
 argument-hint: "the document or text to write or edit"
 model: sonnet
 effort: medium
@@ -39,6 +39,14 @@ Prose for a reader who was not in the session says who does what, by which mecha
 - Chat traces: "Here is...", praise, "I hope this helps", "That's it!", a section that describes itself, a summary repeating the list above it.
 - Hedges stacked ("could potentially"), filler ("in order to", "it is worth noting"), aphorisms, abstract metaphors (backbone, guardrail), and "feels smoother" where a mechanism belongs.
 - A passive verb with no actor, a pronoun with two possible referents, a noun stack, a semicolon joining sentences.
+
+### Directory map
+
+When the user asks for a map of a directory or codebase, write `<directory>/MAP.md` so an agent reads it before it searches:
+
+1. List the directory's own files and subdirectories with `git ls-tree --name-only HEAD <directory>/`, so the map names only tracked entries, one level deep.
+2. Write one line per file, `path: what it does`, from the file's first lines, and group subdirectories under one line each that points to their own `<directory>/MAP.md`.
+3. Keep the map short, one line per file.
 
 ### Release notes
 

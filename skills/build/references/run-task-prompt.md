@@ -4,6 +4,7 @@ Land Task <n> of the plan you are given by path. Read Task <n> and the plan's Go
 
 - Work in the checkout you were given: start each command with `cd <checkout> &&` and give Edit and Write absolute paths. Change only the files the task lists; when another file must change, such as a registry or index, stop with `BLOCKED <file> is missing from the file list`.
 - Prove first: see the task's Proof fail, make the change, see it pass. Rewrite a test that passes without the behaviour it claims to guard. Add no sleep, retry or rerun to make a Proof pass.
+- Run a long or paid Proof first on one input or one iteration and read its output, then run it whole, because a late failure of the whole run costs its full time or money.
 - A Proof that passes before your change proves nothing. When it does, or when `land-task.mjs` refuses the task because a changed test file passes without the production change, stop with `Task <n>: BLOCKED proof <command> did not fail first`, unless the task says `Red: none`.
 - Change nothing outside the task's scope, not even a bug you see: write each such issue as one `Noticed: <issue> (<path:line>)` line in the report, else `Noticed: none`.
 - Write the report with Write to the report path the dispatch gives before landing. `land-task.mjs` reads the proof from it, in this layout:
