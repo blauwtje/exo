@@ -14,7 +14,7 @@ Not for a clear goal, a bug, or visual-only work.
 - One question at a time, with lettered options and a recommendation. Reply with a letter, or `ok` to take the recommendation. Spec takes no default of its own: it asks each choice that code or the web cannot prove, and looks up the rest.
 - After the draft brief, a read-only agent (`exo:researcher`, skipped for a plan of at most 3 tasks) reads it as a builder who cannot ask. Each point it proves goes under `## Facts` with its `path:line` or URL; you are asked the rest.
 - A question you leave unanswered, or any beyond the first 3, stays under `## Open points`, and build refuses the brief until it is answered.
-- A brief with a task list, each task carrying its exact interface and a proof command, stored where the `specs` setting says: `docs/specs/`, a GitHub issue, or both. New wishes for existing work update the existing brief.
+- A brief with a task list, each task carrying its exact interface and a proof command, stored where the `specs` setting says: `docs/specs/`, a GitHub issue, or both. New wishes for existing work update the existing brief. Spec looks under `docs/specs` and `docs/research` for an earlier brief or report on the topic before its verdict.
 - A repo's docs/plans/definition-of-done.md file is chained onto the Success criterion once.
 - A closing prompt in one code block that runs `exo:build` on the brief in a fresh session, with the model and effort to use. Spec starts no build itself.
 

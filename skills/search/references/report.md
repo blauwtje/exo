@@ -4,6 +4,7 @@ Write `docs/research/<topic>.md` in the user's language, in the project the user
 
 ```
 # <question>
+Earlier: <path> (<date>)
 
 ## Answer
 <the direct answer in a few sentences, each claim ending on its [E<n>]>
@@ -37,3 +38,4 @@ Run: <tier>, <workers> workers, <n> sources read, <minutes> minutes
 - Put each link on its own line, as the item holds it. Merge items that say the same thing into one finding with several ids.
 - The quality score is the item's `score` from `ranked.json`. Do not round a score to hide a difference.
 - A finding backed by only one source, or only by non-primary sources, is low or medium confidence.
+- Write one `<path> (<date>)` per earlier report or brief the report builds on, separated by a comma and a space, and leave the line out when the report builds on no earlier file. It holds no link and no `[E<n>]` id, because `verify.mjs` checks those; the date is the one in the file's name, else a date the file states for itself, else the day the file was last changed, written as `YYYY-MM-DD`.

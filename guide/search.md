@@ -12,6 +12,7 @@ Not for this repo's code, a video url (`exo:watch`) or ideas (`exo:ideas`).
 
 ## What you get
 
+- Before a worker starts, the skill looks under `docs/research` and `docs/specs` for an earlier report or brief on the topic. One that answers the question comes back as the answer, with its path and date, and no run starts; ask for a fresh run to research again. Otherwise the new report names the earlier files it builds on in an `Earlier:` line.
 - The skill sizes the run to the question: quick (1 worker), standard (4 to 5) or deep (8 to 15). Each worker takes one sub-question, searches, fetches the best pages with `skills/search/scripts/fetch.mjs` and writes word-for-word evidence; the API sources run through `search.mjs`.
 - `rank.mjs` merges the evidence by relevance, quality and diversity and lists each `Uncovered` sub-question, which gets one more worker.
 - The report goes to `docs/research/`, with an evidence id, a link and a quote per claim. `verify.mjs` checks that each quote and link is in a saved page, and a fresh reviewer checks that each quote supports its claim.

@@ -51,3 +51,10 @@ test("the docs tell workers and the lead about claims, Taken and hosts", () => {
   assert.match(skill, /claims\.mjs/);
   assert.match(skill, /fetch\.mjs.*Q<n>/);
 });
+
+test("step 1 searches the earlier research and specs, and the report shape has an Earlier line", () => {
+  const step1 = skill.split("\n").find((line) => line.startsWith("1. "));
+  assert.ok(step1.includes("docs/research") && step1.includes("docs/specs"));
+  const report = readFileSync(`${skillDir}references/report.md`, "utf8");
+  assert.match(report, /^Earlier: /m);
+});
