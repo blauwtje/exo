@@ -53,6 +53,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Changed
 
+- The eval budget in `evals/value.mjs` is 42 USD instead of 40, so the `spec` part, with its third case, is measured with the other nine.
 - `exo:spec` looks under `docs/specs` and `docs/research` for an earlier brief or report on the topic before its verdict.
 - `exo:search` looks under `docs/research` and `docs/specs` for an earlier report or brief on the topic before a worker starts: it answers from one that covers the question, and a new report names the ones it builds on in an `Earlier:` line.
 - `exo:watch` writes a transcript as 30-second paragraphs with one stamp each, counts `tokens=` from the written text, cuts chunk files by tokens and ends the `transcript.mjs` output with `next=read` or `next=pack`.
@@ -111,6 +112,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `exo:spec` finds an earlier brief by file name and by each topic word, and no longer lists the docs folders with `ls | head`.
 - `build-dispatch.mjs` ends with a usage error on an `--attempt` that is not a whole number of 1 or more, where `--attempt two` picked the second-attempt model.
 - The `lib/` files import `shared-values.mjs` by relative path.
 - The `shared mentions` check reports a malformed entry as a FAIL naming the entry instead of crashing.

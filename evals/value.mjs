@@ -9,7 +9,7 @@ import { isMain } from '#script-flags';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const TABLE = path.join(ROOT, 'evals', 'value.md');
-const BUDGET_USD = 40;
+const BUDGET_USD = 42;
 const CASE_USD = 1.9;
 const COLUMNS = ['part', 'cases', 'share', 'order', 'paths', 'with', 'without', 'cost with', 'cost without', 'date', 'verdict'];
 const USAGE = 'usage: value.mjs --plan | --run [part]';

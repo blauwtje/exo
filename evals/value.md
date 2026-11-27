@@ -1,6 +1,6 @@
 # Value
 
-One row per part: the cases it is measured by, its share of the 40 USD budget (cases times 1.90 USD), the order of the runs, the files only it uses, and the figures of `node evals/value.mjs --run` once measured: cases passed with and without exo, cost with and without, date, and the verdict (better, same, worse or not sure yet). The table is evidence, not a removal list.
+One row per part: the cases it is measured by, its share of the 42 USD budget (cases times 1.90 USD), the order of the runs, the files only it uses, and the figures of `node evals/value.mjs --run` once measured: cases passed with and without exo, cost with and without, date, and the verdict (better, same, worse or not sure yet). The table is evidence, not a removal list.
 
 | part | cases | share | order | paths | with | without | cost with | cost without | date | verdict |
 |---|---|---|---|---|---|---|---|---|---|---|
