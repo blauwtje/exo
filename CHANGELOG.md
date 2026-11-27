@@ -65,7 +65,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The repo map marks an export that 3 or more other files use as `name•N`.
 
 ### Changed
-- Every change is reviewed in rounds by a fresh Claude subagent and two opencode models until a round finds nothing.
 - `CONTRIBUTING.md` and `.claude/CLAUDE.md` say each statement once.
 - The README follows the shared layout: Install, How it works, Skills, Philosophy, Contributing and License.
 - CI installs Claude Code, so `claude plugin validate --strict` runs on every push.
