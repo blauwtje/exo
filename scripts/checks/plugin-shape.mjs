@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { listedFiles } from './script-syntax.mjs';
 
 const FENCE = /^```/m;
+const SCRIPT = /\.(mjs|js|cjs)$/;
+const SCRIPT_FOLDER = /^(scripts|tests)\//;
 
 function bodyOf(lines) {
   if (lines[0] !== '---') return lines;
@@ -52,13 +55,23 @@ export function checkPluginShape(report, repository) {
     ? fs.readdirSync(repository.skillsRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort()
     : [];
   const agents = repository.walk(repository.join('agents'), (full) => full.endsWith('.md'));
+  const stray = listedFiles(repository, (entry) => SCRIPT.test(entry) && !SCRIPT_FOLDER.test(entry)).map((file) => `${repository.relative(file)} is a script outside scripts/ and tests/`);
+  const readme = fs.existsSync(repository.join('README.md')) ? repository.text(repository.join('README.md')) : '';
+  const linkable = [
+    ...skills.map((skill) => `skills/${skill}/SKILL.md`),
+    ...agents.map((file) => repository.relative(file)),
+    ...repository.walk(repository.join('output-styles'), (full) => full.endsWith('.md')).map((file) => repository.relative(file))
+  ];
+  const unlinked = linkable.filter((file) => !readme.includes(`](${file})`)).map((file) => `README.md does not link ${file}`);
   const problems = [
     ...skills.flatMap((skill) => skillProblems(repository, skill)),
-    ...agents.flatMap((file) => agentProblems(repository, file))
+    ...agents.flatMap((file) => agentProblems(repository, file)),
+    ...unlinked,
+    ...stray
   ];
   report.assert(
     problems.length === 0,
     'plugin shape',
-    { pass: 'every skill opens with a title and a bold rule, holds an example and reads BASE.md, and every agent shows a report', fail: problems.join('; ') }
+    { pass: 'every skill opens with a title and a bold rule, holds an example and reads BASE.md, every agent shows a report, README.md links every skill, agent and output style, and every script sits under scripts/ or tests/', fail: problems.join('; ') }
   );
 }

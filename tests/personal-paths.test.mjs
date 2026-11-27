@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkPersonalPaths } from '../verify/checks/personal-paths.mjs';
-import { createRepository } from '../verify/repository.mjs';
+import { checkPersonalPaths } from '../scripts/checks/personal-paths.mjs';
+import { createRepository } from '../scripts/lib/repository.mjs';
 import { checkOutcome, tree } from './check-outcome.mjs';
 
 const unixPath = (root, segment) => ['', root, segment, 'code'].join('/');

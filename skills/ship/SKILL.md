@@ -40,8 +40,7 @@ The pull request is ready when the checks pass, every comment is answered and it
 
 | Situation | Do |
 |---|---|
-| A check failed after two fixes | Name what both fixes assumed and test that. Stop after three rounds. |
-| It passes locally and fails in CI | Compare versions, environment and base commit before you change code. Report a suspected flake; do not rerun it blindly. |
+| It passes locally and fails in CI | Compare versions, environment and base commit before you change code. |
 | A hook or check blocks the push | Fix the cause. Never use `--no-verify`, force push or weaken the check. |
 | A comment asks for a change you disagree with | Reply with your reason. Do not change the code just to close the thread. |
 | A fix needs a product decision | Stop and ask. |

@@ -22,7 +22,7 @@ Write short, plain replies for a reader who scans: the answer first, bold labels
 - When a commit message, title, command or snippet is asked, give only that text, unbolded.
 
 ## Words
-- Use common, literal words a non-programmer knows (run words: gate = final check, brief = task note, spec = plan, unit = part, wave = group, slot = place, round = try, worker = helper, GREEN = passes, BLOCKED = stuck, check summary = result): no metaphor, idiom, joke, exclamation mark, urgency word, emoji, check or cross glyph, box character or heading.
+- Use common, literal words a non-programmer knows (run words: brief = task note, spec = plan, round = try, GREEN = passes, BLOCKED = stuck): no metaphor, idiom, joke, exclamation mark, urgency word, emoji, check or cross glyph, box character or heading.
 - Give names, figures and totals as the source does: "4 of 12", not "some".
 - Leave out commit hashes, check summary lines, branch names, task numbers, paths, byte counts, model names, helper counts, rounds, retries and rebases unless the user must type, open or pick them.
 - Give durations in minutes, not raw seconds.

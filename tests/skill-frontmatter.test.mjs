@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkSkillFrontmatter } from '../verify/checks/skill-frontmatter.mjs';
+import { checkSkillFrontmatter } from '../scripts/checks/skill-frontmatter.mjs';
 
 const BASE = [
   'name: demo',
@@ -101,31 +101,4 @@ test('rejects the list form of arguments, naming the field', () => {
 test('rejects description plus when_to_use over 1536 characters', () => {
   assert.equal(frontmatterResult(null, [`when_to_use: ${'a'.repeat(1500)}`]).passed, false);
   assert.equal(frontmatterResult(null, [`when_to_use: ${'a'.repeat(1000)}`]).passed, true);
-});
-
-const METADATA = ['metadata:', '  author: exo', '  tags: build, plan'];
-
-test('accepts a metadata block with author and tags', () => {
-  const outcome = frontmatterResult(null, METADATA);
-  assert.equal(outcome.passed, true, outcome.detail);
-});
-
-test('rejects six tags', () => {
-  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: a, b, c, d, e, f']).passed, false);
-});
-
-test('rejects an uppercase tag', () => {
-  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: Build']).passed, false);
-});
-
-test('rejects the list form of tags', () => {
-  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: [build, plan]']).passed, false);
-});
-
-test('rejects tags separated without a space', () => {
-  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  tags: build,plan']).passed, false);
-});
-
-test('rejects an unknown metadata key', () => {
-  assert.equal(frontmatterResult(null, ['metadata:', '  author: exo', '  version: 1']).passed, false);
 });

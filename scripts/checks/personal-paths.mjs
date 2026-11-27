@@ -1,4 +1,4 @@
-import { textHits } from '../text-hits.mjs';
+import { textHits } from '../lib/text-hits.mjs';
 
 const SEPARATOR = String.raw`(?:\\\\|\\|/)`;
 const PERSONAL_PATH = new RegExp(

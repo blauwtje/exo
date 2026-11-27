@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { releaseLevel, sectionBody, UNRELEASED_HEADING } from './verify/changelog.mjs';
+import { releaseLevel, sectionBody, UNRELEASED_HEADING } from './lib/changelog.mjs';
 
 const MANIFESTS = ['package.json', '.claude-plugin/plugin.json', '.claude-plugin/marketplace.json'];
 const LOCKFILE = 'package-lock.json';
@@ -27,7 +27,7 @@ if (!RELEASES.includes(requested)) {
   process.exit(1);
 }
 
-const root = import.meta.dirname;
+const root = path.resolve(import.meta.dirname, '..');
 const current = JSON.parse(fs.readFileSync(path.join(root, PLUGIN_MANIFEST), 'utf8')).version;
 
 const changelog = fs.readFileSync(path.join(root, CHANGELOG), 'utf8');

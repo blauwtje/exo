@@ -4,7 +4,7 @@ import path from 'node:path';
 const MAXIMUM_LINES = 500;
 const SCRIPT_NAME = /[A-Za-z0-9_-]+\.(?:mjs|cjs|js|ts|py|sh|bash|rb|go|ps1)\b/g;
 
-export const SCRIPT_EXCEPTIONS = [];
+const SCRIPT_EXCEPTIONS = [];
 
 const isException = (skill, file) => SCRIPT_EXCEPTIONS.some((entry) => entry.skill === skill && entry.file === file);
 

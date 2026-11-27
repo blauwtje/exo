@@ -1,12 +1,7 @@
-
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
-
-const RUN_VARIABLES = ['EXO_RUN', 'EXO_RUN_DIR', 'EXO_RUN_TASK', 'EXO_RUN_SESSION'];
-
-for (const name of RUN_VARIABLES) delete process.env[name];
 
 const INHERITED_GIT_VARIABLE = /^(GIT_CONFIG_(COUNT|KEY_\d+|VALUE_\d+|PARAMETERS)|GIT_(DIR|WORK_TREE|INDEX_FILE|PREFIX|COMMON_DIR|OBJECT_DIRECTORY|NAMESPACE)|GIT_(AUTHOR|COMMITTER)_\w+)$/;
 

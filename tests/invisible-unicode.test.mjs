@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkInvisibleUnicode } from '../verify/checks/invisible-unicode.mjs';
-import { createRepository } from '../verify/repository.mjs';
+import { checkInvisibleUnicode } from '../scripts/checks/invisible-unicode.mjs';
+import { createRepository } from '../scripts/lib/repository.mjs';
 import { checkOutcome, tree } from './check-outcome.mjs';
 
 function run(files) {

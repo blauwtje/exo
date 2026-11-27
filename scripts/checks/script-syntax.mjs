@@ -5,7 +5,7 @@ import process from 'node:process';
 import vm from 'node:vm';
 import { git } from '#git';
 import { isMain } from '#script-flags';
-import { isFile } from '../repository.mjs';
+import { isFile } from '../lib/repository.mjs';
 
 const PARSER = import.meta.filename;
 const FLAGS = ['--experimental-vm-modules', '--disable-warning=ExperimentalWarning'];
@@ -38,7 +38,7 @@ export function listedFiles(repository, keep) {
     .filter(isFile);
 }
 
-export const moduleFiles = (repository) => listedFiles(repository, (entry) => entry.endsWith('.mjs'));
+const moduleFiles = (repository) => listedFiles(repository, (entry) => entry.endsWith('.mjs'));
 
 export function checkScriptSyntax(report, repository) {
   const files = moduleFiles(repository);

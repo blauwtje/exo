@@ -6,24 +6,21 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#basics": "./lib/basics.mjs",
-    "#checkout": "./lib/checkout.mjs",
-    "#config-directory": "./lib/config-directory.mjs",
-    "#git": "./lib/git.mjs",
-    "#script-flags": "./lib/script-flags.mjs",
-    "#shared-values": "./lib/shared-values.mjs"
+    "#basics": "./scripts/lib/basics.mjs",
+    "#git": "./scripts/lib/git.mjs",
+    "#script-flags": "./scripts/lib/script-flags.mjs",
+    "#shared-values": "./scripts/lib/shared-values.mjs"
   },
   "repository": "https://github.com/blauwtje/exo",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "validate": "npm run validate:static && npm test",
-    "validate:static": "node verify.mjs --static",
+    "validate:static": "node scripts/verify.mjs --static",
     "test": "node --import ./tests/clean-run-env.mjs --test --test-concurrency=2 \"tests/*.test.mjs\"",
-    "check": "npm test && node verify.mjs",
-    "bump": "node bump.mjs",
-    "release-pending": "node release-pending.mjs",
-    "release-notes": "node release-notes.mjs"
+    "check": "npm test && node scripts/verify.mjs",
+    "bump": "node scripts/bump.mjs",
+    "release-pending": "node scripts/release-pending.mjs",
+    "release-notes": "node scripts/release-notes.mjs"
   }
 }

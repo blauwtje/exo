@@ -1,5 +1,5 @@
-import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';
-import { isFile } from '../repository.mjs';
+import { markdownTargets, resolveMarkdownTarget } from '../lib/markdown.mjs';
+import { isFile } from '../lib/repository.mjs';
 
 const DOC_FILES = ['README.md', 'CONTRIBUTING.md', 'BASE.md'];
 

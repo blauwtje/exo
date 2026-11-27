@@ -1,3 +1,1 @@
-# Hooks and scripts are read by bash; a CRLF in a shebang makes a hook fail
-# silently, so the working tree keeps LF on Windows too.
 * text=auto eol=lf

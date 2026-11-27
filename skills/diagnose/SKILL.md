@@ -41,11 +41,11 @@ When reading code alone does not get you there, send a fresh `exo:researcher` wi
 
 1. **Predict.** Write down the cause and which output the fix will change.
 2. **Red.** Write a test that fails for that cause, and quote its failure.
-3. **Fix.** Change only what the cause needs. Search for the same pattern with `rg` and fix every instance of this cause in the same change. A fix that must touch a second module for any other reason means the cause is not found yet: go back to step 2.
+3. **Fix.** Search for the same pattern with `rg` and fix every instance of this cause in the same change. A fix that must touch a second module for any other reason means the cause is not found yet: go back to step 2.
 4. **Green.** Quote the test passing, then rerun the original repro and the suite. A flaky bug is fixed when the loop that failed before passes five runs in a row. A speed fix stays only when the new median beats the old spread.
 5. **Review.** When the fix touches more than two files, adds a dependency, changes a public signature or crosses a stored format or a security boundary, run the `code-review` skill at level `low` and fix what it finds.
 
-Never revert or stash the user's work to show red, and ask before anything destructive.
+Never revert or stash the user's work to show red.
 
 ```text
 Bad:  skip the header when page > 1. The symptom goes; the loop still writes it.
@@ -58,9 +58,7 @@ Good: move the header write out of the page loop at src/export.rs:88. The cause 
 |---|---|
 | "I can see the bug, no need to reproduce it." | Then the repro takes a minute. Write it; it becomes the test. |
 | "Let me try this fix and see." | A fix is an experiment only when you predicted its result first. |
-| "Third fix, almost there." | Two fixes on one theory failed. Name what both assumed and test that instead. |
 | "It passes now." | Once? Run the loop that used to fail. |
-| "The test is wrong." | Maybe. Tell the user; do not edit it to pass. |
 
 ## Report
 

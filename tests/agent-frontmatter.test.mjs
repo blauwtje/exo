@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkAgentFrontmatter } from '../verify/checks/agent-frontmatter.mjs';
-import { createRepository } from '../verify/repository.mjs';
+import { checkAgentFrontmatter } from '../scripts/checks/agent-frontmatter.mjs';
+import { createRepository } from '../scripts/lib/repository.mjs';
 import { checkOutcome, tree } from './check-outcome.mjs';
 
 const GOOD = {

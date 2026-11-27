@@ -1,12 +1,12 @@
 import fs from 'node:fs';
-import { releaseHeading, sectionBody, UNRELEASED_HEADING } from '../changelog.mjs';
+import { releaseHeading, sectionBody, UNRELEASED_HEADING } from '../lib/changelog.mjs';
 import { git } from '#git';
 
 const PACKAGE_FILE = 'package.json';
 export const PLUGIN_FILE = '.claude-plugin/plugin.json';
 const MARKETPLACE_FILE = '.claude-plugin/marketplace.json';
 const CHANGELOG_FILE = 'CHANGELOG.md';
-export const BASE_REF = 'origin/main';
+const BASE_REF = 'origin/main';
 const THREE_FIELDS = /^\d+\.\d+\.\d+$/;
 
 function compareVersions(left, right) {

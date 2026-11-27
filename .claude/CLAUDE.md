@@ -1,6 +1,6 @@
 # exo
 
-This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; commands, internals and the plan loop are in `CONTRIBUTING.md`.
+This is the source of the Claude Code plugin `exo`. Layout, commands and internals are in `CONTRIBUTING.md`.
 
 ## Workflow
 
@@ -22,9 +22,9 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 ## Editing
 
 - Before you design or change a skill, agent or check, read `BASE.md`.
-- Before a change to a skill, agent, `BASE.md`, `CODE.md` or the README lands, have a fresh reviewer compare it with `## The standard` in `CONTRIBUTING.md`, and fix the proven gaps in one pass.
+- Review every change before it lands, in rounds with one prompt to three reviewers: a fresh Claude subagent that compares it with `## The standard` in `CONTRIBUTING.md`, `opencode run -m opencode-go/gemini-4-argon#high --agent plan --archived` and `opencode run -m opencode-go/deepseek-v4.1-flash#high --agent plan --archived`, both given the diff, and the brief when there is one, with `-f`. Output holding `Error:` is a failed run. Show each finding on the real file, fix the shown ones in one pass, run `npm run check` and start the next round, until a round has no shown finding; a finding back after two fixes goes to the user, and a Go usage-limit message stops the loop.
 - Scripts do mechanical work only: count, match, parse, store, run. Code that judges meaning, like a word list per language, breaks on other languages.
-- Skills and agents keep the judgment and run plain commands, because the model reads every language and phrasing; a skill ships a script only when the exception list in `verify/checks/skill-size.mjs` names it with a reason.
+- Skills and agents keep the judgment and run plain commands, because the model reads every language and phrasing.
 - A bare skill name in a skill or prompt body means `exo:<name>`.
 - Keep skills model-invoked, and make one manual only when the user asks.
 

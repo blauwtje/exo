@@ -1,16 +1,6 @@
-.worktrees/
 .claude/*
 !.claude/CLAUDE.md
 !.claude/landing.md
 node_modules/
 .DS_Store
 docs/
-benchmarks/fixtures/
-benchmarks/runs/
-benchmarks/replay/**/runs/
-/runs/
-/tmp
-__pycache__/
-benchmarks/results/*.runs/
-*.cpuprofile
-evals/results/

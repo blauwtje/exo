@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { readFrontmatter } from '../frontmatter.mjs';
+import { readFrontmatter } from '../lib/frontmatter.mjs';
 
 const SKILL_NAME_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const RESERVED_NAME = /anthropic|claude/;

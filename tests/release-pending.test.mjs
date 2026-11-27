@@ -7,12 +7,12 @@ import { REPOSITORY_ROOT as REPO, tempDir } from './harness.mjs';
 
 function pending(changelog) {
   const root = tempDir('release-pending-');
-  for (const file of ['release-pending.mjs', 'verify/changelog.mjs']) {
+  for (const file of ['scripts/release-pending.mjs', 'scripts/lib/changelog.mjs']) {
     fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     fs.copyFileSync(path.join(REPO, file), path.join(root, file));
   }
   fs.writeFileSync(path.join(root, 'CHANGELOG.md'), changelog);
-  return spawnSync(process.execPath, [path.join(root, 'release-pending.mjs')], { encoding: 'utf8' }).stdout;
+  return spawnSync(process.execPath, [path.join(root, 'scripts/release-pending.mjs')], { encoding: 'utf8' }).stdout;
 }
 
 test('release-pending prints yes when Unreleased holds an entry', () => {

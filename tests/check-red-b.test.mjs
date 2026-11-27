@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkMarkdownReferences } from '../verify/checks/markdown-references.mjs';
-import { checkPluginVersion } from '../verify/checks/plugin-version.mjs';
+import { checkMarkdownReferences } from '../scripts/checks/markdown-references.mjs';
+import { checkPluginVersion } from '../scripts/checks/plugin-version.mjs';
 import { failures, tree } from './check-outcome.mjs';
 
 test('markdown references fails on a path that does not resolve', () => {

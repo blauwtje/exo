@@ -1,12 +1,12 @@
 ---
 name: build
 description: "Builds a planned change task by task, each proof seen failing then passing, and reviews it once. Use when the user says 'build this', 'implement X' or 'run the plan'. Not for unknown bugs."
-argument-hint: "[plan path] [--land]"
+argument-hint: "[plan path]"
 ---
 
 # Build
 
-**Red, green, commit: one task at a time.** A task is done when its proof failed before your change and passes after it. Nothing else counts: not a builder's summary, not a clean compile, not "should work".
+**Red, green, commit: one task at a time.** A task is done when its proof failed before your change and passes after it.
 
 Read `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.
 
@@ -62,4 +62,4 @@ Review: 2 findings, both reproduced and fixed.
 Not run: the manual check of the download button.
 ```
 
-Next: `exo:ship`, unless the user ruled out a push. Pass `--land` on.
+Next: `exo:ship`, unless the user ruled out a push.

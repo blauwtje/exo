@@ -1,4 +1,4 @@
-import { textHits } from '../text-hits.mjs';
+import { textHits } from '../lib/text-hits.mjs';
 
 const INVISIBLE = /[\u00AD\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF\u{E0000}-\u{E007F}]/u;
 

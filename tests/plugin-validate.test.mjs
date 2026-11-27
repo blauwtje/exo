@@ -2,9 +2,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { test } from 'node:test';
-import { createReport } from '../verify/report.mjs';
-import { createRepository } from '../verify/repository.mjs';
-import { checkPluginValidate } from '../verify/checks/plugin-validate.mjs';
+import { createReport } from '../scripts/lib/report.mjs';
+import { createRepository } from '../scripts/lib/repository.mjs';
+import { checkPluginValidate } from '../scripts/checks/plugin-validate.mjs';
 import { tempDir } from './harness.mjs';
 
 const FAKE_CLAUDE = `#!/bin/sh

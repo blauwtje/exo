@@ -12,7 +12,7 @@ function copy(root, file, text) {
 
 function checkout(lockVersion) {
   const root = tempDir('bump-');
-  for (const file of ['bump.mjs', 'verify/changelog.mjs']) {
+  for (const file of ['scripts/bump.mjs', 'scripts/lib/changelog.mjs']) {
     copy(root, file, fs.readFileSync(path.join(REPO, file), 'utf8'));
   }
   const json = (version) => `{\n  "name": "exo",\n  "version": "${version}"\n}\n`;
@@ -30,7 +30,7 @@ function checkout(lockVersion) {
 
 test('bump sets both lockfile versions, even when the lockfile lags', () => {
   const root = checkout('0.22.2');
-  const run = spawnSync(process.execPath, [path.join(root, 'bump.mjs'), 'patch'], { encoding: 'utf8' });
+  const run = spawnSync(process.execPath, [path.join(root, 'scripts/bump.mjs'), 'patch'], { encoding: 'utf8' });
   assert.equal(run.status, 0, run.stderr);
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));
   assert.equal(lock.version, '1.2.4');
@@ -43,7 +43,7 @@ test('bump sets both lockfile versions, even when the lockfile lags', () => {
 test('bump fails and writes nothing when the lockfile has no version fields', () => {
   const root = checkout('1.2.3');
   fs.writeFileSync(path.join(root, 'package-lock.json'), '{}\n');
-  const run = spawnSync(process.execPath, [path.join(root, 'bump.mjs'), 'patch'], { encoding: 'utf8' });
+  const run = spawnSync(process.execPath, [path.join(root, 'scripts/bump.mjs'), 'patch'], { encoding: 'utf8' });
   assert.notEqual(run.status, 0);
   assert.equal(JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8')).version, '1.2.3');
 });

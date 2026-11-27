@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkPluginShape } from '../verify/checks/plugin-shape.mjs';
-import { createRepository } from '../verify/repository.mjs';
+import { checkPluginShape } from '../scripts/checks/plugin-shape.mjs';
+import { createRepository } from '../scripts/lib/repository.mjs';
 import { REPOSITORY_ROOT } from './harness.mjs';
 import { checkOutcome, tree } from './check-outcome.mjs';
 
@@ -9,6 +9,7 @@ const skill = (body) => `---\nname: a\ndescription: "Does a. Use when a."\n---\n
 const GOOD_SKILL = skill('# A\n\n**One rule.** Why it holds.\n\nRead `${CLAUDE_PLUGIN_ROOT}/BASE.md` first.\n\n| You think | Do instead |\n|---|---|\n| x | y |\n\nMore in [references/more.md](references/more.md).\n\n```text\nexample\n```');
 const GOOD_AGENT = '---\nname: helper\n---\n\n# Helper\n\nYou are a helper.\n\n```text\nDONE\n```\n';
 const GOOD = {
+  'README.md': '# R\n\n[a](skills/a/SKILL.md) and [helper](agents/helper.md)\n',
   'skills/a/SKILL.md': GOOD_SKILL,
   'skills/a/references/more.md': '# More',
   'agents/helper.md': GOOD_AGENT
@@ -52,7 +53,22 @@ test('an agent with no title or report example fails', () => {
   assert.match(result.detail, /agents\/helper\.md holds no report example/);
 });
 
+test('a skill the README does not link fails', () => {
+  const result = run({ 'README.md': '# R\n\n[helper](agents/helper.md)\n' });
+  assert.match(result.detail, /README\.md does not link skills\/a\/SKILL\.md/);
+});
+
+test('a path only in a code span does not count as a link', () => {
+  const result = run({ 'README.md': '# R\n\n`skills/a/SKILL.md` and [helper](agents/helper.md)\n' });
+  assert.match(result.detail, /README\.md does not link skills\/a\/SKILL\.md/);
+});
+
 test('the real repository passes', () => {
   const result = checkOutcome(checkPluginShape, createRepository(REPOSITORY_ROOT));
   assert.equal(result.ok, true, result.detail);
+});
+
+test('a script outside scripts/ and tests/ fails', () => {
+  const result = run({ 'src/bad.mjs': 'export const a = 1;\n' });
+  assert.match(result.detail, /src\/bad\.mjs is a script outside scripts\/ and tests\//);
 });

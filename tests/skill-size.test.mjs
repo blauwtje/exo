@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkSkillSize } from '../verify/checks/skill-size.mjs';
-import { createRepository } from '../verify/repository.mjs';
+import { checkSkillSize } from '../scripts/checks/skill-size.mjs';
+import { createRepository } from '../scripts/lib/repository.mjs';
 import { REPOSITORY_ROOT } from './harness.mjs';
 import { checkOutcome, tree } from './check-outcome.mjs';
 

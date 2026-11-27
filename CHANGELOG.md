@@ -8,57 +8,68 @@ release, and a body rewrite that keeps the trigger is a patch.
 ## Unreleased
 
 ### Added
+- The `plugin shape` check fails a README that does not link every skill, agent and output style.
+- The `plugin shape` check fails a script outside `scripts/` and `tests/`.
+- The `unused exports` check fails an export that no other file imports, where a test file counts only as a reader of test helpers.
 - The `plugin shape` check fails a skill without a `#` title, a bold rule, an example in a code block or a read of `${CLAUDE_PLUGIN_ROOT}/BASE.md`, an unlinked reference file, and an agent without a report example.
 - `skills/spec/references/brief.md`, `skills/search/references/report.md` and `skills/ideas/references/judging.md` hold the layouts their skills point to.
 - `CODE.md`: the code principles (scope, design, readability, errors, tests), each with its reason, read by the builder before it writes code.
-
-- The `spec-earlier-brief` eval case fails a spec run that writes a second brief beside an existing one.
-- `skills/watch/scripts/check-stamps.mjs` checks the stamps of an answer, and the stamps and quotes of a helper notes file, against the kept transcript.
-- `evals/watch-bench-run.mjs` runs `exo:watch` on fixed videos, and `evals/watch-bench.mjs` prints what it measured (tool order, shared stamps, minutes, tokens, yt-dlp calls, stamp checks, judged claims and coverage) and compares a pass with the baseline through `--compare baseline`.
-- `lib/repo-state.mjs` gives `repoState(root)`, which reads the plan commits, default base, changed paths and Files lookup once per script run, with `invalidate()` after a git write.
 - `lib/scratch-path.mjs` gives `taskScratchPath`, a scratch path keyed by plan id and task number.
-- The `git-once` check fails a skill-script run that repeats the same git read with no git write between.
-- The `scratch-key` check fails a `scratchPath` call whose name varies unless it uses the keyed form or is allowlisted.
 - `next-task.mjs` with `Next: none` prints the diff stat, the plan's `Plan-task` commits and the `Noticed:` lines of this run's task reports for the end report.
 - `next-task.mjs` prints the `Report:` path of the next task and the fixed `Dispatch:` lines, so the lead no longer runs `scratch-path.mjs` for a report path.
-- `exo:build` ends its report with the input tokens, output tokens and minutes of the run, lead and helpers, from `run-usage.mjs`.
-- `evals/trigger.json` holds near-miss prompts for `exo:ideas` and `exo:search`.
-- The `test timing` check fails a test that reads the clock (`Date.now`, `performance.now`, `hrtime`, `process.uptime`) or waits a fixed time (`setTimeout(resolve`, `sleep(<n>`, `pause(<n>`).
 - The repo has a Dependabot config that opens weekly update pull requests for GitHub Actions and npm.
-- The `import direction` check fails when lib/ imports a skill, a skill imports another skill, or code outside lib/ imports lib/ by a relative path.
-- The `file size` check fails a script under lib/, skills/*/scripts/ or verify/ over 400 lines.
 - CONTRIBUTING.md has a Codemap section naming the folders and the import and size rules.
-- The `model routing` check fails a `general-purpose` dispatch in skill or agent text that names no model, the word Fable in skill or agent text, and a script that starts `claude -p` without `--model`.
-- `evals/model-usage.mjs` reports tool calls and tokens per session kind, model family and agent type from session files.
 - `lib/shared-values.mjs` (`#shared-values`) holds the values that stand in two or more files as plain named exports, read by scripts, checks and hooks.
-- The `shared literals` check fails a code file that types a shared value outside the module, with a reasoned baseline in `verify/checks/shared-literals-baseline.json`.
-- The `shared mentions` check fails a registered prose mention that no longer matches its file or differs from its value; `node verify/checks/shared-mentions.mjs --write` rewrites each mention from the module.
-- `proof-run.mjs` runs a build proof to a log and prints the failing lines or the last 40 lines, and `build-dispatch.mjs` prints the next task's dispatch fields.
-- `handoff-write.mjs` writes the save handoff file, and `learn-step.mjs` records a numbered pick as keep and reject.
-- `run-init.mjs` makes the ideas run folder, `pack.mjs` packs the transcript lines into researcher batches, and `plan-template.mjs` chains the definition-of-done commands.
 - The `agent frontmatter` check fails an agent whose frontmatter leaves Anthropic's documented fields, models, efforts or colors, and an output style with an undocumented key.
 - The `eval cases` check fails an eval case without `prompt.md` and a grader file, with an undocumented key or grader type, a `Skill` grader with no `input_match`, or a `smoke` case that holds a judge grader.
-- `skills/author/references/anthropic-format.md` lists the Anthropic format rules that no check enforces, and a principle refresh re-reads its sources.
 - `evals/route-none-typo` has a scaffold that writes the README and a `regex` grader on the fixed word.
-- Seven eval cases replay failures from `evals/failures.md`: `build-no-scratch-files`, `build-no-third-flag`, `document-release-notes`, `log-injection-ignored`, `route-author-other-repo`, `route-none-first-correction` and `watch-quotes-url`.
-- `plan.mjs` prints a `Run deadline:` line for a deep search run and `rank.mjs` prints `Run deadline passed` after it, so a script holds the 20-minute limit.
 - The build code rules tell a builder to pick fixture values that a wrong implementation cannot satisfy by accident: non-zero, non-empty, one value reused.
 - The builder prompt runs a long or paid Proof first on one input or one iteration, then whole.
 - The builder report lists every url fetched and package installed during the job, or `none`.
 - The builder report starts with a `Ran:` line naming the model and effort it ran on; `land-report.mjs` reads `Ran` as a report field, not as the proof command.
-- `exo:document` writes a short `MAP.md` per directory, one line per file, for agents to read before they search.
 - The `eval cases` check fails a case whose `prompt.md` tags hold not exactly one of `tune` or `holdout`, and every case is tagged; tuning runs `--tag tune` before a release, and the release suite runs are the only holdout runs.
 - The `eval cases` check fails a case prompt line of 20 or more characters that appears in `skills/`, `agents/` or `principles/`.
-- `evals/scorecard.md` has a `format` column (`list` or `free`) and compares rows only within one format.
-- `evals/scorecard.md` names the chance score, the without-plugin score of the same run, beside each with-plugin score.
-- `evals/scorecard.md` has a pending strip-parts row: at the next release eval each skill and hook runs without itself, and a part that changes no pass rate is deleted.
-- Each threshold in `exo:build` and `exo:spec` has a session count and its source in `evals/failures.md`.
-- `guide/settings.md` says when to pick Fable yourself and how to turn on the advisor.
-
 - `BASE.md` at the plugin root holds the shared principles.
 - The `skill-size` check fails a skill file over 500 lines, and `npm run check` runs it.
+- After a compaction, the SessionStart hook prints the newest plan, spec notes file and handoff path, so the lead reads them again.
+- `exo:spec` plan check refuses a `## Facts` line with no `path:line` or URL, and warns when a cited file or line is missing.
+- `exo:search` answers a question with links and word-for-word quotes checked against saved evidence from GitHub, Reddit, Hacker News and the web; it moved in from the separate `/search` skill.
+- `exo:ideas` turns one question on any subject into a short list of novel ideas by running a fixed playbook as fresh subagents; it moved in from the separate `/ideas` skill.
+- `validate:static` fails a skill whose `SKILL.md` leaves the NVIDIA SkillEvaluator format: the `##` sections Purpose, Prerequisites, Instructions, Examples, Limitations, Troubleshooting and Available Scripts in that order, `metadata.author` and `metadata.tags`, and a scripts table with a row for each script the skill runs.
+- Builders write scratch and repro files to the temp folder and delete the ones they created before the report.
+- A builder's `NEEDS ANSWER` question carries 2 to 3 options and a recommendation, and the build lead asks the user with them.
+- A builder writes an unrelated issue as a `Noticed:` report line instead of fixing it, the end report lists them, and the build lead runs the Land gate once before the first task so a red already there goes to `diagnose`.
+- `plan-check.mjs` fails a task whose `Consumes` field names a task missing from its `Depends on`.
+- The principle pages carry community rules beside first-party ones, with a new code page, a refresh by pinned commit, and project rules that read them before any change.
+- `validate:static` fails a `hooks.json` that holds more than the two shipped hooks.
+- `validate:static` fails a principle page that cites an exo path that no longer exists.
+- `validate:static` fails a script whose count of bindingless `catch {` blocks goes above its baseline.
+- `validate:static` fails a shipped file that holds an invisible or bidi Unicode character.
+- `validate:static` fails a shipped file that holds a personal absolute path such as `/Users/<name>` or `/home/<name>`.
+- A test runs every eval fixture script in an empty folder and fails when one exits non-zero.
+- The scorecard records the eval of the two model rows as void: `diagnose-repatch` never called the skill in 12 of 12 runs, so the cause search's model line never ran.
+- The scorecard records the learn list, the diagnose route and the two model rows as measured or as unmeasured with the reason.
+- `land-task.mjs` refuses a task whose diff adds an AWS key, a private key block, a GitHub token or a Slack token.
+- `validate:static` fails a shipped hook whose command names a missing script or whose timeout is not a number.
+- `evals/value.mjs` prints `regressed: <part> was <n>, now <m>` and exits non-zero when a case's with-skill count drops from the last row.
+- The eval case `build-red-suite` grades each clause with its own grader, and `CONTRIBUTING.md` says when a case gets one `criteria` grader and when one per clause.
+- `script options` check: a script may not gain an option, and a new script holds at most 5.
+- `positional literals` check: no `$1`-style literal in a skill, agent or output-style file.
+- `evals/value.md` has a `verdict` column: better, same, worse or not sure yet.
+- A plan task may name its builder with `Model: <model> <effort>`.
+- A plan may hold a Review Focus section of at most 5 bullets for the end review.
+- `handoff.mjs facts` and `handoff.mjs stale` gather the git facts of a handoff and what changed since.
+- `bisect.mjs` finds the test file that pollutes another test when `--repro` holds `__FILE__`.
+- learn mines tool calls that fail in 3 sessions, counts their later clean runs and marks a cluster seen in 2 projects as global.
+- `lessons.mjs check` prints `stale:` lines for notes.
+- The repo map marks an export that 3 or more other files use as `name•N`.
 
 ### Changed
+- Every change is reviewed in rounds by a fresh Claude subagent and two opencode models until a round finds nothing.
+- `CONTRIBUTING.md` and `.claude/CLAUDE.md` say each statement once.
+- The README follows the shared layout: Install, How it works, Skills, Philosophy, Contributing and License.
+- CI installs Claude Code, so `claude plugin validate --strict` runs on every push.
+- The scripts and checks move under `scripts/`: the root scripts to `scripts/`, the checks to `scripts/checks/` and the shared modules to `scripts/lib/`.
 - Every skill is rewritten as a short page: its one rule in bold, sections named after its job, an excuse or When stuck table where it fits, one example and a `Next:` line.
 - A `SKILL.md` may hold 500 lines and keep longer layouts in `references/`, and a skill description holds at most 35 words.
 - Plans name the per-task check `Commit check:` instead of `Land gate:`, and the builder's statuses are `DONE`, `BLOCKED`, `NEEDS ANSWER` and `PLAN WRONG`, defined once in `agents/builder.md`.
@@ -68,7 +79,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The builder and researcher open with their role and end with a report example.
 - `CODE.md` is rewritten in plain voice with a Good and Bad example, and drops the lines `BASE.md` already holds.
 - The README opens with the one rule and the loop, and adds what exo will not do and a list of its words.
-
 - The nine kept skills (`build`, `diagnose`, `ideas`, `learn`, `save`, `search`, `ship`, `spec`, `watch`) call no script.
 - The `builder` and `researcher` agents are shorter and name no script file.
 - `npm run check` runs the kept checks and then `npm test`.
@@ -78,12 +88,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:watch` writes a transcript as 30-second paragraphs with one stamp each, counts `tokens=` from the written text, cuts chunk files by tokens and ends the `transcript.mjs` output with `next=read` or `next=pack`.
 - `exo:watch` keeps fetched transcripts under the config directory, so a second request for a video makes no yt-dlp call; `--force`, `--lang` and `--model` fetch again.
 - `exo:watch` packs the chunk files of a long video together up to the batch limit.
-- `exo:watch` helpers add a short quote to each note, and the lead leaves out a note whose stamp or quote `check-stamps.mjs` does not find.
-- The `skill sections` check no longer fails a skill for a missing, extra or reordered `##` section or a script with no table row, and the `skill frontmatter` check no longer needs a `Not for` clause, as Anthropic's own skills have neither rule.
 - `exo:build`, `exo:spec` and `exo:diagnose` have their long steps split into short ones with a reason per judgment rule; the no-plan route, the `Route: this session` steps and the review brief of `exo:build` live in `skills/build/references/`.
 - The evals gain the negative case `evals/route-none-typo`, `tags: [smoke]` on `route-save` and `route-watch`, `--no-publish` in the documented eval commands, and a looser grader rule: one grader on the result and one on the steps.
 - The `builder` agent uses the documented color `purple`.
-- The candidate commit steps of `land-check.mjs` live in `land-candidate.mjs`, which leaves `land-check.mjs` at 348 lines, under the 400-line limit.
 - `exo:build` lands a linear chain of more than three tasks in one fresh builder per four tasks, with one report and status line per task.
 - `exo:spec` ends with a paste-ready prompt that runs `exo:build` in a fresh session, instead of invoking build itself.
 - `exo:build` reviews at `medium` or `high`, never `low`.
@@ -99,27 +106,22 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:build` and `exo:diagnose` keep their delegate prompts under `references/`, and `exo:author` says delegate prompts go there.
 - `land-task` writes the `Outside Files:` line into the commit body of a task that changed paths outside its `Files:`, so git keeps the trace.
 - `land-task` no longer refuses a task for changed paths outside its `Files:`; it lands them and prints an `Outside Files:` line naming them.
-- `handoffFile` lives in `lib/handoff-file.mjs`, and every script reaches lib/ through a `#` alias.
 - `exo:diagnose` polluter search names a test file by the shared `isTestPath` only, so a test in a test folder without a `.test.`/`test_` name is found too.
 - `exo:diagnose` bisect and the `exo:spec` repo map use the shared git wrapper, so git output over 1 MiB no longer fails them.
 - `exo:search` names its JSON plan parser `parseSearchPlan`.
-- `exo:learn` splits `corrections.mjs` into `ledger.mjs` and `clusters.mjs`, with the same commands and output.
 - `exo:build` lands a task with `Red: skipped: no test file seen` instead of refusing it when no changed file is recognised as a test.
 - `exo:build` builders follow structure rules: one-way imports, one owner and one meaning per helper and name, deep modules, a new function instead of one more flag on shared code, a current codemap and file and function size as a smell, against the project's lint limit first.
 - The `exo:build` end-of-run review checks the diff against the structure rules, and an `exo:spec` Review Focus bullet may name a structure fault such as import direction.
 - `exo:ideas` starts 4 helpers instead of about 15 (a scout and two generators side by side, then one judge that rewrites near misses once), has no second round, and counts an idea as strong only at 16/20 or more, not `exists` in prior art, and beating the best existing answer in both orders.
 - The `search` scripts (`fetch`, `pick`, `plan`, `search`, `reddit`, `github`, `hn`) read their shared values from `lib/shared-values.mjs`, and each `EXO_*_MS` variable still overrides a duration.
 - The `watch` scripts (`list`, `pack`, `transcript`) and the `learn` scripts (`ledger`, `lessons`) read their shared limits from `lib/shared-values.mjs`.
-- The `build` scripts (`build-dispatch`, `land-task`, `next-task`, `undo-task`), `ship.mjs` and `brief-place.mjs` read their shared values from `lib/shared-values.mjs`.
 - Skill `metadata.tags` is a plain string such as `tags: spec, plan, brief`, because the Agent Skills spec makes metadata a map of strings.
 - Every eval case is `prompt.md` with `graders/`, each `Skill` grader names its skill in `input_match`, and the `smoke` tag sits on a case with no judge.
-- The eval commands in CONTRIBUTING.md and `evals/scorecard.md` carry `--trust-plugin`, `--scaffold`, `--allow-tools`, `--judge-model` and `--no-publish`.
 - `exo:spec` names the build model as `Sonnet, medium`, without a version.
 - Skill bodies drop the Troubleshooting rows that only restate a step, split their longest steps, and move the search environment variables, the save continue text and the watch batch brief to references.
 - The author skill asks for a reason with every judgment rule and number, and for one concrete example per output-shaping skill.
 - The skill frontmatter check accepts the documented fields `when_to_use`, `arguments`, `background` and `paths`, and fails a `description` plus `when_to_use` over 1,536 characters.
 - The `exo:spec` and `exo:learn` descriptions drop the exclusions that no seen failure backs.
-- `guide/search.md` gives no size for `playwright-core`.
 - `exo:spec` also fires when the user is unsure how to build or change something and asks for help deciding, and its question ends on the recommendation line with no later question or list after it.
 - The diagnose investigator reads the exact prompt and files a failing agent or skill run was given before any hypothesis about the model.
 - The review brief asks for each finding's evidence before its verdict, with the status line last.
@@ -134,72 +136,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:builder` gives the reason for keeping guard tests and reports a test that looks wrong instead of working around it.
 - The build code rules give the reason scratch files stay out of the checkout.
 - The `exo:search` report rules give the reason the lead does not count sources by hand.
-
-### Fixed
-
-- `node evals/watch-bench.mjs --compare baseline --label <new>` reads the new rows from the given label instead of only `after`.
-- `check-stamps.mjs --notes` prints each kept note as a `keep:` line, and the batch brief merges from those lines and joins no two notes under one stamp, so a batch answer keeps its stamps.
-- `exo:watch` asks for one fact per claim under the stamp of the line where it is said, because claims of three sentences passed the judge 1 of 31 times.
-- `exo:spec` finds an earlier brief by file name and by each topic word, and no longer lists the docs folders with `ls | head`.
-- `build-dispatch.mjs` ends with a usage error on an `--attempt` that is not a whole number of 1 or more, where `--attempt two` picked the second-attempt model.
-- The `lib/` files import `shared-values.mjs` by relative path.
-- The `shared mentions` check reports a malformed entry as a FAIL naming the entry instead of crashing.
-- The `shared literals` check matches a shared number only as a whole token and reads the values under `--repository-root`.
-- `dispatch-prep.mjs` gives each symptom its own report file, where two symptoms with the same first 40 characters shared one.
-- `learn-step.mjs` exits 1 on a subprocess failure and lists the ids already saved.
-- `next-task.mjs` moves a failed report to `failed-report.md` and prints its `Failed report:` path when it dispatches the task again, so the new attempt starts with no stale report.
-- `land-task.mjs` lists untracked files once per run and reads the git common dir once, through the repo state and `commonDir`.
-- A `Files:` glob covers a staged deletion it names, and a glob that names only an ignored file is refused by name.
-- `land-task.mjs` finds and stages a `Files:` entry written as `./path` or as a glob, instead of naming it on `Files not found:` or `Outside Files:`.
-- `land-task.mjs` refuses a `--root` outside a git repository by name, instead of failing with an `ENOENT` error on `/null`.
-- `next-task.mjs` keeps a task report written before the land when it runs again for the same task.
-- A task scratch call touches its checkout folder, so the 7-day prune from another checkout no longer removes the briefs and reports of a running plan.
-- The `git-once` check counts a repeated git read per `-C` directory, so the same read in the root and in a worktree is no repeat.
-- `land-task.mjs` counts a Files directory that `git rm` removed as found and no longer prints a `Files not found:` line for it.
-- `land-task.mjs` reads the git state of a landing once per run instead of once per step.
-- `next-task.mjs` reads the end report's git state once per run.
-- `next-task.mjs` keeps the leading space of the `Diff stat:` first line, and `exo:build` says what `Diff stat: base unknown` means.
-- `next-task.mjs` and `land-stopped.mjs` read a task report and brief by plan and task key, and `next-task.mjs` clears the old report when it dispatches, so a failed attempt's report is never read.
-- `land-task.mjs` lands a task whose Files path matches no file, naming it on a `Files not found:` line, and refuses an ignored untracked Files path by name before the Proof runs.
-- `run-usage.mjs` counts helpers that ran at the same time once in its helper minutes.
-- `next-task.mjs` routes a chain of under two tasks to a plain builder instead of `chain 1`.
-- Tests no longer depend on timing: they assert the delay a script decides or the order of events instead of measured time, wait on a file, line or signal instead of a fixed sleep, and race a short budget only against a fake that never ends, so a loaded machine gives the same result.
-- The red-green check sees test files by common naming conventions across ecosystems (`test` folders and files, `spec` files, a root `spec/` folder, `FooTest.java`, `AppTests/`, `foo_test.go`, `test_foo.py`), and, when none matches, counts a changed file or folder the proof command names as a test.
-
-- `exo:search` workers write a WebFetch-read page into their evidence file as an empty-quote summary item, so a sub-question read only through WebFetch is no longer left without evidence.
-- `exo:search` checks indented quote lines (`  > `) in `verify.mjs`, so a report in the report shape no longer passes with a quote that is not on its page.
-- `exo:search` takes the run line's sources read count from the `Sources read:` line that `rank.mjs` prints, so the lead no longer overstates it.
-- `exo:search` sends 4 to 5 workers for the standard tier instead of 3 to 5, so a comparison reads the 20 sources its eval asks for.
-- `exo:search` drops `utm_*` parameters from a source url, so one page tagged two ways counts as one source.
-- `exo:search` claims a hit before it reads the page and gives that claim a lease, so a hit another sub-question holds costs no read and a worker that dies mid-read frees the page.
-- `exo:search` keeps a read or fetched page when marking its claim fails, skips a corrupt claim record, and rejects a bad sub-question token in `claims.mjs`.
-- `exo:search` orders evidence files by sub-question number, so `evidence-10.jsonl` no longer comes before `evidence-2.jsonl`, and `verify.mjs` reports a link that is missing and outside the plan hosts once.
-- `exo:search` keeps its source for the run when one request or one judge batch fails, so only that request or batch is lost.
-- `exo:watch` converts the audio to a 16 kHz wav with `ffmpeg` before `whisper-cli`, which reads no webm, so a caption-less YouTube video no longer fails with `1 input file(s) failed`.
-- `exo:search` runs its pick helper calls with `--no-session-persistence`, so they leave no session files for `exo:learn` to mine.
-- `exo:watch` takes a YouTube video's original caption track (`en-orig`) instead of the auto-translated one (`en`) that YouTube answers with `HTTP Error 429`, and uses a translated track only when `--lang` names a language with no other track, so a batch no longer stops after the first auto-captioned video.
-- `exo:watch` treats YouTube's bot check (`Sign in to confirm you’re not a bot`) like a rate limit: it exits 75 with the restart line instead of 1.
-- `exo:watch` says a ggml model file is missing, with `--model` or `EXO_WHISPER_MODEL`, when `whisper-cli` is installed, instead of asking to install whisper.cpp.
-- `exo:watch` tells the lead not to sleep or retry after a rate limit but to answer from the finished transcripts and give the restart command, and shows every url in single quotes so zsh does not glob the `?`.
-- `exo:ideas` lists open questions in its frame instead of stating its own assumptions.
-- `exo:spec` plan-check no longer reads a version or ratio like `1.5:1` in a Fact as a `path:line` citation.
-- `exo:build` commits the plan file on its branch before the first task, moving it out of the main checkout when spec wrote it there and the build runs in another worktree, so no uncommitted copy of the plan stays on `main`.
-- `exo:search` limits the GitHub issue search to issues created inside the plan's date range, and lets the body of an issue or post be picked when it has comments, so an issue whose only comment is "Thanks" keeps its body.
-- `exo:spec` keeps a notes file while it plans a change of more than 3 tasks, reads only the researchers' short returns, and lets one builder write the brief, so the lead's window stays small and a compaction goes on from the notes without new fact checks.
-- `exo:build` commits the plan file in `docs/specs/` on its branch at the end of the run, and `exo:ship` puts it in the same pull request without asking, instead of leaving it uncommitted.
-- `exo:search` searches each Reddit term once over all named subreddits joined as `r/A+B+C`, so a run with 8 sub-questions, 2 terms and 5 subreddits plans 24 searches instead of 48 and drops none.
-- `exo:search` waits out a Reddit 429 by its `Retry-After`, else `x-ratelimit-reset`, else `EXO_SEARCH_REDDIT_BACKOFF_MS`, retries twice, and fails a request whose wait would pass the call deadline, instead of losing the threads of the rest of the run.
-- `exo:search` cuts the wait after a Reddit reply with `x-ratelimit-remaining` below 1 at the call deadline, and prints the `Continue:` line only after the last round of a call.
-- `exo:build` ends git's options with `--` before the untracked task files it stages, so a task file whose name starts with `-` is committed instead of read as a git option.
-- The criteria graders of `route-author`, `route-save` and `route-watch` no longer ask the judge whether a skill loaded, which it cannot see.
-- The `skill sections` check no longer prints a pass text that names a section format it stopped checking.
-- The session start hook also runs in a forked session.
-- The eval cases `adhd-short-reply` and `reply-no-hashes` carry the text of `output-styles/adhd.md` as `append_system_prompt`, because the eval runner cannot switch on an output style, and `tests/eval-style-text.test.mjs` fails when a copy differs.
-- The eval cases `ship-branch-push` and `spec-tide-export` check the reply shape with a `regex` grader and the forbidden steps with `tool_used` graders, and `ship-set-route` and `spec-late-fees` no longer ask for what their skill does not.
-- The eval cases `build-red-suite` and `build-no-third-flag` name `exo:build` in the request, so they test the build rules; on a plain request the skill fired in 0 of 2 runs per case.
-
-### Changed
-
+- Skills and the builder no longer repeat rules that `BASE.md` holds.
 - `exo:search` sizes a run to the question, sends parallel researcher workers that pick their own sources, ranks evidence by relevance and quality, and writes `docs/research/<topic>.md`.
 - The build lead runs the first `Land gate:` in the background to a log and reads only the failing lines, and `exo:researcher` sends a long command's output to a file and reads its end, so less command output grows their context.
 - Prompts lose duplicated rules, word limits move to the adhd output style, script-enforced caps leave the prose, and background runs now send a one-line update when a part lands, fails or needs an answer.
@@ -209,10 +146,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:ideas` runs its prior-art lookups on Sonnet instead of Opus and its revise step on Opus instead of Fable.
 - `exo:watch` launches at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` (20 by default) researchers at once and relaunches the ones whose result holds an `error`, so a batch over 20 videos leaves none without notes.
 - `principles/eval.md` asks a scored judge for one low and one high example and for its reason before its score.
-- `evals/failures.md` lines can carry `open: <model>` for a task no model does yet, and the release step reruns each such task on the new model.
 - `exo:watch` fetches up to 3 videos at once (`EXO_WATCH_JOBS`), and hands one researcher several short videos up to 40000 tokens together.
 - `exo:watch` `list.mjs` prints a date for each video of a channel, from yt-dlp's approximate date, so recent videos can be picked by date.
-- `evals/failures.md` lines name the model a failure was seen on (`model: <id>`), and the release eval reruns the cases of lines seen on an older model without their rule and drops the rule when the case still passes.
 - spec-late-fees grades that spec takes no default of its own and asks or lists each open choice.
 - `exo:spec` takes no default of its own: it asks each choice that code or web cannot prove, one at a time and at most 3 per round, writes proven facts under `## Facts` with their `path:line` or URL, and drops the `(exo decided)` mark and the code/assume/user sort.
 - `exo:build` hands a plan's `## Facts` to each builder with its Decisions and Non-goals in place of `## Assumptions`.
@@ -220,54 +155,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `exo:search` repeats rounds inside one call while time is left for another and sends one helper for the whole `Continue:` loop instead of one per call.
 - `exo:search` starts Chrome and takes its lock once per search process, loads Reddit threads with `fetch` in one shared page, and paces every Reddit request through one queue.
 - `exo:ideas` and `exo:search` are user-only with `disable-model-invocation: true`, so Claude no longer starts them; type `/exo:ideas` or `/exo:search` to run one, and the routing eval drops their prompts.
-
-### Added
-
-- `exo:search` adds `fetch.mjs` and the keyless `wikipedia`, `arxiv` and `stackexchange` sources.
-- After a compaction, the SessionStart hook prints the newest plan, spec notes file and handoff path, so the lead reads them again.
-- `exo:spec` plan check refuses a `## Facts` line with no `path:line` or URL, and warns when a cited file or line is missing.
-- `exo:search` answers a question with links and word-for-word quotes checked against saved evidence from GitHub, Reddit, Hacker News and the web; it moved in from the separate `/search` skill.
-- `exo:ideas` turns one question on any subject into a short list of novel ideas by running a fixed playbook as fresh subagents; it moved in from the separate `/ideas` skill.
-- `validate:static` fails a skill whose `SKILL.md` leaves the NVIDIA SkillEvaluator format: the `##` sections Purpose, Prerequisites, Instructions, Examples, Limitations, Troubleshooting and Available Scripts in that order, `metadata.author` and `metadata.tags`, and a scripts table with a row for each script the skill runs.
-- Builders write scratch and repro files to the temp folder and delete the ones they created before the report.
-- A builder's `NEEDS ANSWER` question carries 2 to 3 options and a recommendation, and the build lead asks the user with them.
-- A builder writes an unrelated issue as a `Noticed:` report line instead of fixing it, the end report lists them, and the build lead runs the Land gate once before the first task so a red already there goes to `diagnose`.
-- `evals/failures.md` records the spec research findings as failure rows, and the scorecard records the layout A/B of brief task fields as inconclusive: all three arms scored 0.94 or higher on 10 runs each.
-- `plan-check.mjs` fails a task whose `Consumes` field names a task missing from its `Depends on`.
-- The principle pages carry community rules beside first-party ones, with a new code page, a refresh by pinned commit, and project rules that read them before any change.
-- `validate:static` fails a `hooks.json` that holds more than the two shipped hooks.
-- `validate:static` fails a principle page that cites an exo path that no longer exists.
-- `validate:static` fails a script whose count of bindingless `catch {` blocks goes above its baseline.
-- `validate:static` fails a shipped file that holds an invisible or bidi Unicode character.
-- `validate:static` fails a shipped file that holds a personal absolute path such as `/Users/<name>` or `/home/<name>`.
-- A test runs every eval fixture script in an empty folder and fails when one exits non-zero.
-- The scorecard records the eval of the two model rows as void: `diagnose-repatch` never called the skill in 12 of 12 runs, so the cause search's model line never ran.
-- The eval case `diagnose-stale-rate` reports a plain bug whose first suspect is the wrong one; the skill fired in 9 of 9 runs.
-- The eval case `spec-late-fees` carries a plan request with every decision given, so `spec` reaches its open-points pass; the researcher ran on high effort in 4 of 4 runs.
-- The scorecard records the learn list, the diagnose route and the two model rows as measured or as unmeasured with the reason.
-- `land-task.mjs` refuses a task whose diff adds an AWS key, a private key block, a GitHub token or a Slack token.
-- `validate:static` fails a shipped hook whose command names a missing script or whose timeout is not a number.
-- `evals/value.mjs` prints `regressed: <part> was <n>, now <m>` and exits non-zero when a case's with-skill count drops from the last row.
-- The eval case `route-author` checks that `author` fires for a skill-writing request, with its own row in the value table.
-- The eval case `build-red-suite` grades each clause with its own grader, and `CONTRIBUTING.md` says when a case gets one `criteria` grader and when one per clause.
-- `evals/failures.md` records the failures behind the eight blog points, and each line links to the case or commit that covers it.
-- `script options` check: a script may not gain an option, and a new script holds at most 5.
-- `positional literals` check: no `$1`-style literal in a skill, agent or output-style file.
-- `evals/trigger.mjs` and `evals/trigger.json`: near-miss prompts that must not trigger a skill.
-- `evals/skill-corrections.mjs`: sessions with a repeated correction after a skill ran.
-- `evals/value.md` has a `verdict` column: better, same, worse or not sure yet.
-- `undo-task.mjs` prints the revert commands for a landed task.
-- A plan task may name its builder with `Model: <model> <effort>`.
-- A plan may hold a Review Focus section of at most 5 bullets for the end review.
-- `handoff.mjs facts` and `handoff.mjs stale` gather the git facts of a handoff and what changed since.
-- `bisect.mjs` finds the test file that pollutes another test when `--repro` holds `__FILE__`.
-- learn mines tool calls that fail in 3 sessions, counts their later clean runs and marks a cluster seen in 2 projects as global.
-- `lessons.mjs check` prints `stale:` lines for notes.
-- The repo map marks an export that 3 or more other files use as `name•N`.
-- `exo:search` workers in one run never share a source: `fetch.mjs`, `claims.mjs summary` and the search.mjs plan claim each url once per sub and answer `Taken:`, and verify.mjs flags links outside the `"hosts"` of plan.json.
-
-### Changed
-
 - `spec` triggers on design options for a change only; ideas on any other question go to `exo:ideas`.
 - `build` lands a plan of at most 3 chained tasks itself on `Route: this session` instead of one builder per task (`EXO_SELF_BUILD_TASKS` sets the limit), and `ship` runs on Sonnet.
 - Skills, agents, the adhd style and the repo docs follow stricter authoring rules: text a check enforces, repeated rules and reasons that change no decision are gone, and author proves an edit by replaying the recorded failure.
@@ -281,7 +168,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `argument-hint` of author, diagnose, document, spec and watch has no angle brackets, and the description of learn is 383 characters instead of 546 and names each trigger in fewer words.
 - `exo:build` end-of-run code review reads test-file diffs first, names every changed assertion, looks for what a passing Proof hides and tags findings Important, Nit or Pre-existing; only Important ones go to repro builders and the rest are listed in the report.
 - build: `land-task` runs the green proof twice and refuses a flaky one with `BLOCKED proof flaky`.
-- `spec` keeps the field rules in `references/field-rules.md`, and the example plan and the rules prefer vertical slices.
 - `spec` skips the research step for a plan of at most 3 tasks.
 - `spec` replans on `PLAN DRIFT` or a Decision proven wrong, editing only the tasks not yet committed, and `build` appends a `## Log` line to the plan on `PLAN DRIFT` or `BLOCKED`.
 - Each rule has one home: the project rules drop the check-over-note and rule-reason bullets, and the principle pages drop eight bullets and two sentences that repeated another bullet.
@@ -311,7 +197,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The diagnose investigator runs on Opus at high effort and the open-points reader of `spec` at high effort.
 - The value table measures `diagnose` on `diagnose-stale-rate` and lists `spec-late-fees` under `spec`.
 - `spec` sends its open-points researcher at the agent's own effort: low, medium and high effort each found 33 of 36 planted points in 6 runs, and high took 36 s per run against 20 s at medium.
-- The eval case `spec-late-fees` no longer grades the effort setting or a task count in the final message, which the skill does not ask for.
 - `ship` ends its ask step on the route menu as printed, translated only for a reader in another language, and names the follow-up in the line on what is left.
 - `spec` states its verdict and an objection of at most 15 words with no file path on one line before the question, outside the question's 60-word limit.
 - The route-document, spec-tide-export and adhd-short-reply evals judge the final message by the skill's and the output style's own rules, and ship-set-route sets its push route through the run's shell profile.
@@ -329,8 +214,67 @@ release, and a body rewrite that keeps the trigger is a patch.
 - author accepts a description edit only on held-out prompts.
 - The builder guards its context.
 
-### Fixed
+### Removed
+- The untracked leftovers of earlier versions are archived and removed, and `.gitignore` lists only what the repository still needs.
+- `assets/icon.svg`, `assets/icon-512.png`, the social preview, `CODE_OF_CONDUCT.md` and `SECURITY.md`, which nothing reads, are removed.
+- The unused `--land` flag, the `Ran:` and `Fetched or installed:` lines of the builder report, six unused glosses in the output style, the hook note in `.gitattributes` and the plan loop pointer in `.claude/CLAUDE.md` are removed.
+- Code no file reads is removed: the checkout helpers, the `EXO_RUN` leftovers, the frontmatter `metadata` parser and the `validate` npm script.
+- exo no longer ships a status line or its install command.
+- The land command runs a green Proof once; the second run and its `BLOCKED proof flaky` refusal are gone.
+- The commit check no longer refuses an AI attribution trailer, and the cache no longer skips `*-decisions.md` and `CHANGELOG.md`.
+- The skills `author` and `document`, `hooks/`, the `userConfig` settings in the manifest, `evals/`, `benchmarks/`, `principles/`, `guide/` and `ABOUT.md` are removed.
+- The checks and `lib/` modules that only the removed parts used are removed.
+- The `corrections.mjs replay` command added in 1.1.0, its helpers, the old `{verdict, text}` verdict rows and the copy of verdicts out of an old ledger in `reset`.
+- The `sessions.mjs` command line.
+- The eval case `diagnose-repatch`, which asked to commit a ready patch and never called the skill in 12 of 12 runs.
+- `exo:spec` no longer fixes the fast-route file count ("under three files"), the four-researcher cap or the 3-question round, because no file gave them a source; researchers stay at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` at once.
+- `exo:ship` no longer starts on finished commits alone; it starts when the user asks to push, ship, open, watch or merge.
 
+### Fixed
+- `exo:watch` asks for one fact per claim under the stamp of the line where it is said, because claims of three sentences passed the judge 1 of 31 times.
+- `exo:spec` finds an earlier brief by file name and by each topic word, and no longer lists the docs folders with `ls | head`.
+- The `lib/` files import `shared-values.mjs` by relative path.
+- `land-task.mjs` lists untracked files once per run and reads the git common dir once, through the repo state and `commonDir`.
+- A `Files:` glob covers a staged deletion it names, and a glob that names only an ignored file is refused by name.
+- `land-task.mjs` finds and stages a `Files:` entry written as `./path` or as a glob, instead of naming it on `Files not found:` or `Outside Files:`.
+- `land-task.mjs` refuses a `--root` outside a git repository by name, instead of failing with an `ENOENT` error on `/null`.
+- `next-task.mjs` keeps a task report written before the land when it runs again for the same task.
+- A task scratch call touches its checkout folder, so the 7-day prune from another checkout no longer removes the briefs and reports of a running plan.
+- `land-task.mjs` counts a Files directory that `git rm` removed as found and no longer prints a `Files not found:` line for it.
+- `land-task.mjs` reads the git state of a landing once per run instead of once per step.
+- `next-task.mjs` reads the end report's git state once per run.
+- `next-task.mjs` keeps the leading space of the `Diff stat:` first line, and `exo:build` says what `Diff stat: base unknown` means.
+- `next-task.mjs` and `land-stopped.mjs` read a task report and brief by plan and task key, and `next-task.mjs` clears the old report when it dispatches, so a failed attempt's report is never read.
+- `land-task.mjs` lands a task whose Files path matches no file, naming it on a `Files not found:` line, and refuses an ignored untracked Files path by name before the Proof runs.
+- `next-task.mjs` routes a chain of under two tasks to a plain builder instead of `chain 1`.
+- Tests no longer depend on timing: they assert the delay a script decides or the order of events instead of measured time, wait on a file, line or signal instead of a fixed sleep, and race a short budget only against a fake that never ends, so a loaded machine gives the same result.
+- `exo:search` workers write a WebFetch-read page into their evidence file as an empty-quote summary item, so a sub-question read only through WebFetch is no longer left without evidence.
+- `exo:search` checks indented quote lines (`  > `) in `verify.mjs`, so a report in the report shape no longer passes with a quote that is not on its page.
+- `exo:search` sends 4 to 5 workers for the standard tier instead of 3 to 5, so a comparison reads the 20 sources its eval asks for.
+- `exo:search` drops `utm_*` parameters from a source url, so one page tagged two ways counts as one source.
+- `exo:search` claims a hit before it reads the page and gives that claim a lease, so a hit another sub-question holds costs no read and a worker that dies mid-read frees the page.
+- `exo:search` orders evidence files by sub-question number, so `evidence-10.jsonl` no longer comes before `evidence-2.jsonl`, and `verify.mjs` reports a link that is missing and outside the plan hosts once.
+- `exo:search` keeps its source for the run when one request or one judge batch fails, so only that request or batch is lost.
+- `exo:watch` converts the audio to a 16 kHz wav with `ffmpeg` before `whisper-cli`, which reads no webm, so a caption-less YouTube video no longer fails with `1 input file(s) failed`.
+- `exo:search` runs its pick helper calls with `--no-session-persistence`, so they leave no session files for `exo:learn` to mine.
+- `exo:watch` takes a YouTube video's original caption track (`en-orig`) instead of the auto-translated one (`en`) that YouTube answers with `HTTP Error 429`, and uses a translated track only when `--lang` names a language with no other track, so a batch no longer stops after the first auto-captioned video.
+- `exo:watch` treats YouTube's bot check (`Sign in to confirm you’re not a bot`) like a rate limit: it exits 75 with the restart line instead of 1.
+- `exo:watch` says a ggml model file is missing, with `--model` or `EXO_WHISPER_MODEL`, when `whisper-cli` is installed, instead of asking to install whisper.cpp.
+- `exo:watch` tells the lead not to sleep or retry after a rate limit but to answer from the finished transcripts and give the restart command, and shows every url in single quotes so zsh does not glob the `?`.
+- `exo:ideas` lists open questions in its frame instead of stating its own assumptions.
+- `exo:spec` plan-check no longer reads a version or ratio like `1.5:1` in a Fact as a `path:line` citation.
+- `exo:build` commits the plan file on its branch before the first task, moving it out of the main checkout when spec wrote it there and the build runs in another worktree, so no uncommitted copy of the plan stays on `main`.
+- `exo:search` limits the GitHub issue search to issues created inside the plan's date range, and lets the body of an issue or post be picked when it has comments, so an issue whose only comment is "Thanks" keeps its body.
+- `exo:spec` keeps a notes file while it plans a change of more than 3 tasks, reads only the researchers' short returns, and lets one builder write the brief, so the lead's window stays small and a compaction goes on from the notes without new fact checks.
+- `exo:build` commits the plan file in `docs/specs/` on its branch at the end of the run, and `exo:ship` puts it in the same pull request without asking, instead of leaving it uncommitted.
+- `exo:search` searches each Reddit term once over all named subreddits joined as `r/A+B+C`, so a run with 8 sub-questions, 2 terms and 5 subreddits plans 24 searches instead of 48 and drops none.
+- `exo:search` waits out a Reddit 429 by its `Retry-After`, else `x-ratelimit-reset`, else `EXO_SEARCH_REDDIT_BACKOFF_MS`, retries twice, and fails a request whose wait would pass the call deadline, instead of losing the threads of the rest of the run.
+- `exo:search` cuts the wait after a Reddit reply with `x-ratelimit-remaining` below 1 at the call deadline, and prints the `Continue:` line only after the last round of a call.
+- `exo:build` ends git's options with `--` before the untracked task files it stages, so a task file whose name starts with `-` is committed instead of read as a git option.
+- The criteria graders of `route-author`, `route-save` and `route-watch` no longer ask the judge whether a skill loaded, which it cannot see.
+- The session start hook also runs in a forked session.
+- The eval cases `ship-branch-push` and `spec-tide-export` check the reply shape with a `regex` grader and the forbidden steps with `tool_used` graders, and `ship-set-route` and `spec-late-fees` no longer ask for what their skill does not.
+- The eval cases `build-red-suite` and `build-no-third-flag` name `exo:build` in the request, so they test the build rules; on a plain request the skill fired in 0 of 2 runs per case.
 - The review effort counts a file renamed into a `Moved:` dest as moved instead of as changed lines.
 - `exo:search` Reddit gives each Chrome connect attempt only the time left of `EXO_SEARCH_CHROME_START_MS`, so a hanging attempt no longer holds the wait past it.
 - `exo:search` Reddit now stops at once and names `CHROME_PATH` when Chrome cannot be spawned, and its wait for Chrome never runs past `EXO_SEARCH_CHROME_START_MS`.
@@ -355,19 +299,6 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `learn` writes lesson notes, index lines and memory edits with the Write and Edit tools, so a kept personal lesson reaches the personal store in a session with the sandbox on.
 - `scratch-path.mjs` refuses a scratch root that is a symlink, not a folder or owned by another user, and narrows the user's own root to mode 0700.
 - document no longer names the `--uncovered` option, which `release-notes-draft.mjs` rejects.
-
-### Removed
-
-- The land command runs a green Proof once; the second run and its `BLOCKED proof flaky` refusal are gone.
-- `exo:search` drops `--only` and the `web` source; workers use WebSearch and pass the urls they pick to `fetch.mjs`.
-- The commit check no longer refuses an AI attribution trailer, and the cache no longer skips `*-decisions.md` and `CHANGELOG.md`.
-- The skills `author` and `document`, `hooks/`, the `userConfig` settings in the manifest, `evals/`, `benchmarks/`, `principles/`, `guide/` and `ABOUT.md` are removed.
-- The checks and `lib/` modules that only the removed parts used are removed.
-- The `corrections.mjs replay` command added in 1.1.0, its helpers, the old `{verdict, text}` verdict rows and the copy of verdicts out of an old ledger in `reset`.
-- The `sessions.mjs` command line.
-- The eval case `diagnose-repatch`, which asked to commit a ready patch and never called the skill in 12 of 12 runs.
-- `exo:spec` no longer fixes the fast-route file count ("under three files"), the four-researcher cap or the 3-question round, because no file gave them a source; researchers stay at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` at once.
-- `exo:ship` no longer starts on finished commits alone; it starts when the user asks to push, ship, open, watch or merge.
 
 ## 1.1.0 - 2026-11-16
 

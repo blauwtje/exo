@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { gitText } from '#git';
-import { releaseHeading, sectionBody } from './verify/changelog.mjs';
+import { releaseHeading, sectionBody } from './lib/changelog.mjs';
 
 const ORDER = ['Highlights', 'Added', 'Changed', 'Fixed', 'Removed'];
 const TITLES = new Map([
@@ -16,7 +16,7 @@ const TITLES = new Map([
 const SQUASH_SUBJECT = /\(#(\d+)\)$/;
 const PULL_REQUEST_MERGE = /^Merge pull request #(\d+) from /;
 const BRANCH_MERGE = /^Merge branch '([^']+)'/;
-const root = import.meta.dirname;
+const root = path.resolve(import.meta.dirname, '..');
 const plugin = JSON.parse(fs.readFileSync(path.join(root, '.claude-plugin/plugin.json'), 'utf8'));
 const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const version = process.argv[2] ?? plugin.version;

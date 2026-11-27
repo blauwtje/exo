@@ -53,4 +53,4 @@ Writing the header after the loop: rows stream out before the loop ends.
 
 1. Read `<scratch>/handoff-<topic>.md`, or the newest `handoff-*.md` there when no topic is named. With no file, say so and write nothing.
 2. Run `git log --oneline <written commit>..HEAD` and `git status --short`, and name what changed since the handoff before you rely on it.
-3. Start from its next step, and repeat no step it records as proven. Check an inherited claim on the real artifact before you build on it: a report from the last session is not proof.
+3. Start from its next step, and repeat no step it records as proven. Check an inherited claim on the real artifact before you build on it.

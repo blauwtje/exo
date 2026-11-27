@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { listedFiles } from './checks/script-syntax.mjs';
+import { listedFiles } from '../checks/script-syntax.mjs';
 
 function hitsInFile(repository, file, hitsOfLine) {
   const text = fs.readFileSync(file, 'utf8');

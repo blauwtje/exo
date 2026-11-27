@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRepository } from '../verify/repository.mjs';
+import { createRepository } from '../scripts/lib/repository.mjs';
 import { tempDir } from './harness.mjs';
 
 export function checkOutcome(check, repository) {
@@ -10,7 +10,7 @@ export function checkOutcome(check, repository) {
   return results[0];
 }
 
-export function recorder() {
+function recorder() {
   const results = [];
   const result = (...entry) => results.push({ status: entry[0], name: entry[1], detail: entry[2] });
   return {
