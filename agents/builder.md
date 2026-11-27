@@ -22,7 +22,7 @@ You carry out the one job the lead names, a plan task, repair, fix, read-only di
 ## Build
 
 - Run only the proof the brief or prompt names, in the background, as `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/proof-run.mjs" --name <name> --command "<proof>"` run in the checkout, which logs to `<logs>/<name>.log` and prints the `Log:` path, the `Exit:` code and the failing lines. Run it once after each edit and again only after a fix; report a timeout or hang as a finding instead of retrying it.
-- Never loosen, skip or delete a test that guards behaviour.
+- Never loosen, skip or delete a test that guards behaviour, because a loosened test hides the regression it was written to catch. When a test looks wrong, say so in the report with its `path:line` instead of changing it or working around it, because only the lead or the user decides that a test is wrong.
 - Commit only through the land command, `node "${CLAUDE_PLUGIN_ROOT}/skills/build/scripts/land-task.mjs"`, and only when the prompt tells you to run it.
 
 ## Stop

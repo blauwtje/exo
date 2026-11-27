@@ -21,12 +21,13 @@ Read it when: you design, grade or change an eval, benchmark, regression check o
 - **Grade each dimension with an isolated judge, calibrated against humans.** [1][5] exo: gap, decided: one blinded judge scores both arms of a comparison in one pass on one scale
 - **Hold out tasks the change was not tuned on.** [5] exo: `verify/checks/eval-cases.mjs` fails a case not tagged `tune` or `holdout`; `CONTRIBUTING.md` runs `holdout` once per release
 - **Run free regression evals on every change.** [5] exo: `verify.mjs`
+- **Let a capability case with a high pass rate graduate to the regression suite, because then it guards against a drop instead of measuring a gain.** [1] exo: gap
 - **Blind the candidate: an organic user prompt, no eval word in any file or prompt it sees, no hint that other candidates exist.** [12] exo: `verify/checks/eval-cases.mjs` fails a case prompt line found in `skills/`, `agents/` or `principles/`; the other parts are a gap
 - **Grade a chain of steps from the files the run really opened, not from its own claim.** [12] exo: gap
 - **Have one blinded judge score both variants in one pass on one scale, and read every output yourself; a disagreement means a biased judge or an ambiguous rubric.** [12] exo: gap
 - **Write the decision the result would change and the noise floor before the run; stop when the spread is larger than the effect.** [13] exo: gap
 - **Ask why the number is not twice as good: name the limiter from a profile or counters, and rule out errors, skipped or cached work, code that never ran and an untuned side.** [13] exo: gap
-- **Keep the run count, spread and limiter with the number.** [13] exo: gap for run count, spread and limiter; `evals/scorecard.md` format column compares rows within one format
+- **Keep the run count, spread and limiter, and the model, effort and time cap of the run, with the number, because a different setup changes the score.** [4][13] exo: gap for run count, spread, limiter and time cap; `evals/scorecard.md` keeps model and effort in its columns and its format column compares rows within one format
 - **Fix one metric, its direction and a stop target with a floor on attempts; freeze the harness, prove it separates a hard case from an easy one, and have it print its error count.** [14] exo: gap
 - **Log one row per attempt, kept or reverted, and revert a change that only "might help" in full.** [14] exo: gap
 

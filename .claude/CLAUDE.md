@@ -5,8 +5,8 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 ## Workflow
 
 - Keep the main checkout on `main` and run every edit in a worktree under `.claude/worktrees/`, because exo loads in place from this checkout.
-- The lead (main session) only orchestrates: it plans, sends each job and each bounded question to a fresh subagent, and reads a named file itself.
-- Send every edit, fix and failed-check repair to a worktree subagent, one concern each, and run independent parts in parallel.
+- The lead (main session) plans, reads a named file itself and makes a one-file, one-concern edit itself in a worktree, because a subagent for small work costs more tokens and time than the edit.
+- Send parallel parts, work that needs a fresh context and every review to a fresh subagent, a worktree subagent for an edit, one concern each, because parallel work and a reader who did not write the change are what a subagent adds.
 - Before the start-of-run cleanup, a squash, a worktree removal, a branch delete or a session push, read `.claude/landing.md`.
 - Outside a run, only the lead writes `CHANGELOG.md`.
 - Ask nothing about where to commit or whether to open a pull request: work lands on `main` as `.claude/landing.md` says.
@@ -14,6 +14,7 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 
 ## Checks
 
+- Run one test file with `node --import ./tests/clean-run-env.mjs --test tests/<name>.test.mjs`, the import `npm test` uses in package.json, because one file answers faster than `npm run check`.
 - `npm run check` gates every commit, and a clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
 - The lead runs `node lib/run-check.mjs npm run check` once, in the background, to a log, and a delegate runs only its proof.
 - Plan tasks use `Land gate: npm run validate:static`, and `npm run check` runs once as the Success criterion.

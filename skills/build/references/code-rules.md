@@ -38,7 +38,7 @@ Read this before you write code. These rules need judgment; the project's own li
 
 ## Before the report
 
-Write scratch and repro files to the path that the `scratch-path.mjs` command from your agent or skill text prints when you pass it `<name>`, never in the checkout. Read `git status` and your own diff once, delete each file you created that the task does not need, and remove:
+Write scratch and repro files to the path that the `scratch-path.mjs` command from your agent or skill text prints when you pass it `<name>`, never in the checkout, because a file left in the checkout can land in the commit. Read `git status` and your own diff once, delete each file you created that the task does not need, and remove:
 
 - comments that narrate what the code does
 - guards for states that cannot happen

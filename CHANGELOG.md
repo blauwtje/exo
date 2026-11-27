@@ -50,6 +50,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - `evals/scorecard.md` names the chance score, the without-plugin score of the same run, beside each with-plugin score.
 - `evals/scorecard.md` has a pending strip-parts row: at the next release eval each skill and hook runs without itself, and a part that changes no pass rate is deleted.
 - Each threshold in `exo:build` and `exo:spec` has a session count and its source in `evals/failures.md`.
+- `guide/settings.md` says when to pick Fable yourself and how to turn on the advisor.
 
 ### Changed
 
@@ -109,6 +110,12 @@ release, and a body rewrite that keeps the trigger is a patch.
 - On a list question the search gap round compares the items found with a second route, such as an index or table, and reports the difference under Gaps, with one second-route worker even when no sub-question is uncovered.
 - `exo:learn` offers a check instead of a reword when a lesson note was seen on 3 or more dates.
 - The instruction style guide asks for two differing examples when an output has a free order or length.
+- The `exo:build` review brief asks the reviewer to skip style and formatting.
+- `.claude/CLAUDE.md` names the one-test-file command and lets the lead make a one-file, one-concern edit itself.
+- `principles/eval.md` graduates a capability case with a high pass rate to the regression suite and keeps the model, effort and time cap with a number.
+- `exo:builder` gives the reason for keeping guard tests and reports a test that looks wrong instead of working around it.
+- The build code rules give the reason scratch files stay out of the checkout.
+- The `exo:search` report rules give the reason the lead does not count sources by hand.
 
 ### Fixed
 
@@ -340,6 +347,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The `sessions.mjs` command line.
 - The eval case `diagnose-repatch`, which asked to commit a ready patch and never called the skill in 12 of 12 runs.
 - `exo:spec` no longer fixes the fast-route file count ("under three files"), the four-researcher cap or the 3-question round, because no file gave them a source; researchers stay at most `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` at once.
+- `exo:ship` no longer starts on finished commits alone; it starts when the user asks to push, ship, open, watch or merge.
 
 ## 1.1.0 - 2026-11-16
 
