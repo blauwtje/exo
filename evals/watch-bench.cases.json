@@ -1,0 +1,177 @@
+{
+  "budgets": {
+    "batchUsd": 1.45,
+    "judgeUsd": 0.2
+  },
+  "cases": [
+    {
+      "name": "BBPQYtR7oUk",
+      "split": "tune",
+      "request": "Summarise https://www.youtube.com/watch?v=BBPQYtR7oUk with the main point of each part.",
+      "ids": [
+        "BBPQYtR7oUk"
+      ],
+      "runs": 3,
+      "sessionUsd": 0.15,
+      "durationSeconds": 605,
+      "chapters": [
+        0,
+        47,
+        99,
+        138,
+        178,
+        256,
+        302,
+        420,
+        428,
+        470,
+        514,
+        554,
+        590
+      ]
+    },
+    {
+      "name": "qyLutqZ7Lqw",
+      "split": "tune",
+      "request": "Summarise https://www.youtube.com/watch?v=qyLutqZ7Lqw with the main point of each part.",
+      "ids": [
+        "qyLutqZ7Lqw"
+      ],
+      "runs": 3,
+      "sessionUsd": 0.25,
+      "durationSeconds": 1474,
+      "chapters": [
+        0,
+        48,
+        102,
+        150,
+        308,
+        324,
+        391,
+        432,
+        516,
+        577,
+        681,
+        762,
+        827,
+        876,
+        933,
+        979,
+        1021,
+        1078,
+        1123,
+        1168,
+        1243,
+        1293,
+        1333,
+        1356,
+        1381,
+        1406
+      ]
+    },
+    {
+      "name": "zjkBMFhNj_g",
+      "split": "tune",
+      "request": "Summarise https://www.youtube.com/watch?v=zjkBMFhNj_g with the main point of each part.",
+      "ids": [
+        "zjkBMFhNj_g"
+      ],
+      "runs": 3,
+      "sessionUsd": 0.55,
+      "durationSeconds": 3588,
+      "chapters": [
+        0,
+        20,
+        257,
+        538,
+        682,
+        854,
+        1072,
+        1265,
+        1543,
+        1663,
+        2012,
+        2100,
+        2282,
+        2445,
+        2535,
+        2743,
+        2774,
+        3090,
+        3383,
+        3517,
+        3563
+      ]
+    },
+    {
+      "name": "t3YJ5hKiMQ0",
+      "split": "holdout",
+      "request": "Summarise https://www.youtube.com/watch?v=t3YJ5hKiMQ0 with the main point of each part.",
+      "ids": [
+        "t3YJ5hKiMQ0"
+      ],
+      "runs": 3,
+      "sessionUsd": 0.55,
+      "durationSeconds": 3381,
+      "chapters": [
+        0,
+        100,
+        416,
+        556,
+        1031,
+        1173,
+        1195,
+        1296,
+        2261,
+        2330,
+        2721,
+        2767,
+        2818,
+        2864,
+        3094,
+        3148,
+        3257,
+        3326
+      ]
+    },
+    {
+      "name": "batch",
+      "split": "tune",
+      "request": "What are the main ideas in these videos? Name the video for each idea.\nhttps://www.youtube.com/watch?v=bFcob2p6u3A\nhttps://www.youtube.com/watch?v=1S4hx3wgvBE\nhttps://www.youtube.com/watch?v=wrfbI5eyLAI\nhttps://www.youtube.com/watch?v=Xyb1Bn_L2U4\nhttps://www.youtube.com/watch?v=TvsF67C2F54\nhttps://www.youtube.com/watch?v=SRhXgeNluIk\nhttps://www.youtube.com/watch?v=-NFMsM2y0Vk\nhttps://www.youtube.com/watch?v=JNexz3Tbiu8\nhttps://www.youtube.com/watch?v=MDI81OaZAD4\nhttps://www.youtube.com/watch?v=0LeT996Hz3E\nhttps://www.youtube.com/watch?v=xRJMiaUoD_8\nhttps://www.youtube.com/watch?v=pZWPq_ZAmM4\nhttps://www.youtube.com/watch?v=fTHByDwTxGM\nhttps://www.youtube.com/watch?v=U92J5mCDLMc\nhttps://www.youtube.com/watch?v=9RKrSF9d2SE\nhttps://www.youtube.com/watch?v=UCL4K36SHp0\nhttps://www.youtube.com/watch?v=Cyt3LU8TyNc\nhttps://www.youtube.com/watch?v=O_zcc6Xl12g\nhttps://www.youtube.com/watch?v=vlfCjWuv4es\nhttps://www.youtube.com/watch?v=yzx4IuEh_tU\nhttps://www.youtube.com/watch?v=D_4Rn6uLdQM\nhttps://www.youtube.com/watch?v=oeknLUsN_GE\nhttps://www.youtube.com/watch?v=iK9gmxXyBR0\nhttps://www.youtube.com/watch?v=DxP5aW4VknQ\nhttps://www.youtube.com/watch?v=fTUinMqA1XQ\nhttps://www.youtube.com/watch?v=gbeuC0ud1p4\nhttps://www.youtube.com/watch?v=vg3JdjGuJwM\nhttps://www.youtube.com/watch?v=rS36lYuvXQ8\nhttps://www.youtube.com/watch?v=_NBx2NNOuA4\nhttps://www.youtube.com/watch?v=_7P580m4kPY",
+      "ids": [
+        "bFcob2p6u3A",
+        "1S4hx3wgvBE",
+        "wrfbI5eyLAI",
+        "Xyb1Bn_L2U4",
+        "TvsF67C2F54",
+        "SRhXgeNluIk",
+        "-NFMsM2y0Vk",
+        "JNexz3Tbiu8",
+        "MDI81OaZAD4",
+        "0LeT996Hz3E",
+        "xRJMiaUoD_8",
+        "pZWPq_ZAmM4",
+        "fTHByDwTxGM",
+        "U92J5mCDLMc",
+        "9RKrSF9d2SE",
+        "UCL4K36SHp0",
+        "Cyt3LU8TyNc",
+        "O_zcc6Xl12g",
+        "vlfCjWuv4es",
+        "yzx4IuEh_tU",
+        "D_4Rn6uLdQM",
+        "oeknLUsN_GE",
+        "iK9gmxXyBR0",
+        "DxP5aW4VknQ",
+        "fTUinMqA1XQ",
+        "gbeuC0ud1p4",
+        "vg3JdjGuJwM",
+        "rS36lYuvXQ8",
+        "_NBx2NNOuA4",
+        "_7P580m4kPY"
+      ],
+      "runs": 1,
+      "chapters": []
+    }
+  ]
+}

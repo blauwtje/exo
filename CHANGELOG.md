@@ -10,6 +10,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 ### Added
 
 - The `spec-earlier-brief` eval case fails a spec run that writes a second brief beside an existing one.
+- `skills/watch/scripts/check-stamps.mjs` checks the stamps of an answer, and the stamps and quotes of a helper notes file, against the kept transcript.
+- `evals/watch-bench-run.mjs` runs `exo:watch` on fixed videos, and `evals/watch-bench.mjs` prints what it measured (tool order, shared stamps, minutes, tokens, yt-dlp calls, stamp checks, judged claims and coverage) and compares a pass with the baseline through `--compare baseline`.
 - `lib/repo-state.mjs` gives `repoState(root)`, which reads the plan commits, default base, changed paths and Files lookup once per script run, with `invalidate()` after a git write.
 - `lib/scratch-path.mjs` gives `taskScratchPath`, a scratch path keyed by plan id and task number.
 - The `git-once` check fails a skill-script run that repeats the same git read with no git write between.
@@ -53,6 +55,10 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 - `exo:spec` looks under `docs/specs` and `docs/research` for an earlier brief or report on the topic before its verdict.
 - `exo:search` looks under `docs/research` and `docs/specs` for an earlier report or brief on the topic before a worker starts: it answers from one that covers the question, and a new report names the ones it builds on in an `Earlier:` line.
+- `exo:watch` writes a transcript as 30-second paragraphs with one stamp each, counts `tokens=` from the written text, cuts chunk files by tokens and ends the `transcript.mjs` output with `next=read` or `next=pack`.
+- `exo:watch` keeps fetched transcripts under the config directory, so a second request for a video makes no yt-dlp call; `--force`, `--lang` and `--model` fetch again.
+- `exo:watch` packs the chunk files of a long video together up to the batch limit.
+- `exo:watch` helpers add a short quote to each note, and the lead leaves out a note whose stamp or quote `check-stamps.mjs` does not find.
 - The `skill sections` check no longer fails a skill for a missing, extra or reordered `##` section or a script with no table row, and the `skill frontmatter` check no longer needs a `Not for` clause, as Anthropic's own skills have neither rule.
 - `exo:build`, `exo:spec` and `exo:diagnose` have their long steps split into short ones with a reason per judgment rule; the no-plan route, the `Route: this session` steps and the review brief of `exo:build` live in `skills/build/references/`.
 - The evals gain the negative case `evals/route-none-typo`, `tags: [smoke]` on `route-save` and `route-watch`, `--no-publish` in the documented eval commands, and a looser grader rule: one grader on the result and one on the steps.

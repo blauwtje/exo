@@ -3,10 +3,11 @@ import fs from 'node:fs';
 import process from 'node:process';
 import { isMain, parseFlags, UsageError, USAGE_EXIT } from '#script-flags';
 import { WATCH_BATCH_TOKENS } from '#shared-values';
+import { tokensOf } from './transcript.mjs';
 
 const USAGE = [
   'usage: node pack.mjs --lines <file>',
-  `Packs the transcript.mjs output lines into one batch per researcher: each file of a chunks folder alone, a video over ${WATCH_BATCH_TOKENS} tokens alone, short videos together up to ${WATCH_BATCH_TOKENS} tokens.`
+  `Packs the transcript.mjs output lines into one batch per researcher: each chunk file and each short video as one item, a video over ${WATCH_BATCH_TOKENS} tokens alone, items together up to ${WATCH_BATCH_TOKENS} tokens.`
 ].join('\n');
 const CHUNKS = / chunks=(.+) \(\d+ files\)$/;
 const FIELD = /(\w+)=("(?:[^"\\]|\\.)*"|\S+)/g;
@@ -27,17 +28,21 @@ export function pack(lines) {
     shared = [];
     sharedTokens = 0;
   };
-  for (const video of lines.map(videoOf)) {
-    if (video.chunks) {
-      const files = fs.readdirSync(video.chunks).sort();
-      batches.push(...files.map((name) => [`${video.chunks}/${name}`]));
-    } else if (video.tokens > WATCH_BATCH_TOKENS) {
-      batches.push([video.transcript]);
-    } else {
-      if (sharedTokens + video.tokens > WATCH_BATCH_TOKENS) closeShared();
-      shared.push(video.transcript);
-      sharedTokens += video.tokens;
+  const items = lines.map(videoOf).flatMap((video) => {
+    if (!video.chunks) return [{ file: video.transcript, tokens: video.tokens }];
+    return fs.readdirSync(video.chunks).sort().map((name) => {
+      const file = `${video.chunks}/${name}`;
+      return { file, tokens: tokensOf(fs.readFileSync(file, 'utf8')) };
+    });
+  });
+  for (const item of items) {
+    if (item.tokens > WATCH_BATCH_TOKENS) {
+      batches.push([item.file]);
+      continue;
     }
+    if (sharedTokens + item.tokens > WATCH_BATCH_TOKENS) closeShared();
+    shared.push(item.file);
+    sharedTokens += item.tokens;
   }
   closeShared();
   return batches;

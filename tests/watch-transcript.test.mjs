@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import { scratchPath } from '../lib/scratch-path.mjs';
-import { parseVtt } from '../skills/watch/scripts/transcript.mjs';
+import { parseVtt, tokensOf } from '../skills/watch/scripts/transcript.mjs';
 import { run, tempDir } from './harness.mjs';
 
 const SCRIPT = path.resolve('skills/watch/scripts/transcript.mjs');
@@ -48,7 +48,7 @@ esac
 `, { mode: 0o755 });
   const cwd = fs.realpathSync(tempDir('watch-cwd-'));
   const temp = fs.realpathSync(tempDir('watch-tmp-'));
-  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp } });
+  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp, EXO_WATCH_STORE: tempDir('watch-store-') } });
   assert.equal(result.code ?? 0, 0, result.stderr);
   assert.match(result.stdout, /id=abcdefghijk .*captions=manual/);
   const outerTmpdir = process.env.TMPDIR;
@@ -72,7 +72,7 @@ esac
 `, { mode: 0o755 });
   const cwd = fs.realpathSync(tempDir('watch-cwd-'));
   const temp = fs.realpathSync(tempDir('watch-tmp-'));
-  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp } });
+  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp, EXO_WATCH_STORE: tempDir('watch-store-') } });
   assert.equal(result.code ?? 0, 0, result.stderr);
   assert.match(result.stdout, /captions=auto/);
   assert.equal(fs.readFileSync(asked, 'utf8').trim(), 'en-orig');
@@ -90,7 +90,7 @@ esac
 `, { mode: 0o755 });
   const cwd = fs.realpathSync(tempDir('watch-cwd-'));
   const temp = fs.realpathSync(tempDir('watch-tmp-'));
-  const result = await run(SCRIPT, ['--url', 'https://www.facebook.com/watch/?v=123456'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp } });
+  const result = await run(SCRIPT, ['--url', 'https://www.facebook.com/watch/?v=123456'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp, EXO_WATCH_STORE: tempDir('watch-store-') } });
   assert.equal(result.code ?? 0, 0, result.stderr);
   assert.match(result.stdout, /captions=auto/);
 });
@@ -106,7 +106,7 @@ esac
 `, { mode: 0o755 });
   const cwd = fs.realpathSync(tempDir('watch-cwd-'));
   const temp = fs.realpathSync(tempDir('watch-tmp-'));
-  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp } });
+  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp, EXO_WATCH_STORE: tempDir('watch-store-') } });
   assert.equal(result.code, 75, result.stderr);
   assert.match(result.stderr, /rate-limited, retry later: https:\/\/youtu\.be\/abcdefghijk/);
 });
@@ -131,8 +131,143 @@ case "$input" in *.wav) printf '%b' '${VTT.replaceAll('\n', '\\n')}' > "$out.vtt
 `, { mode: 0o755 });
   const cwd = fs.realpathSync(tempDir('watch-cwd-'));
   const temp = fs.realpathSync(tempDir('watch-tmp-'));
-  const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, EXO_YTDLP: ytdlp, EXO_WHISPER_MODEL: 'model.bin', TMPDIR: temp, TMP: temp, TEMP: temp };
+  const env = { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, EXO_YTDLP: ytdlp, EXO_WHISPER_MODEL: 'model.bin', TMPDIR: temp, TMP: temp, TEMP: temp, EXO_WATCH_STORE: tempDir('watch-store-') };
   const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env });
   assert.equal(result.code ?? 0, 0, result.stderr);
   assert.match(result.stdout, /id=abcdefghijk .*speech:whisper-cli/);
+});
+
+test('cues are written as 30-second paragraphs with one stamp each', async () => {
+  const cues = Array.from({ length: 100 }, (_, index) => {
+    const start = index * 2;
+    const clock = `00:${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}.000`;
+    return cue(clock, clock, `word${index}`);
+  }).join('');
+  const vtt = `WEBVTT\n\n${cues}`;
+  const bin = tempDir('watch-bin-');
+  const stub = path.join(bin, 'yt-dlp');
+  const source = path.join(bin, 'source.vtt');
+  fs.writeFileSync(source, vtt);
+  fs.writeFileSync(stub, `#!/bin/sh
+case "$*" in
+  *--version*) echo 1;;
+  *--dump-json*) echo '{"title":"T","duration":200,"subtitles":{"en":[{}]},"extractor":"youtube"}';;
+  *) while [ $# -gt 0 ]; do [ "$1" = "-P" ] && dir="$2"; shift; done; cp '${source}' "$dir/captions.en.vtt";;
+esac
+`, { mode: 0o755 });
+  const cwd = fs.realpathSync(tempDir('watch-cwd-'));
+  const temp = fs.realpathSync(tempDir('watch-tmp-'));
+  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp, EXO_WATCH_STORE: tempDir('watch-store-') } });
+  assert.equal(result.code ?? 0, 0, result.stderr);
+  assert.match(result.stdout, /words=100 /);
+  const outerTmpdir = process.env.TMPDIR;
+  process.env.TMPDIR = temp;
+  const folder = scratchPath(cwd, 'watch/abcdefghijk');
+  process.env.TMPDIR = outerTmpdir;
+  const lines = fs.readFileSync(path.join(folder, 'transcript.txt'), 'utf8').trim().split('\n');
+  assert.equal(lines.length, 7);
+  assert.deepEqual(lines.map((line) => line.match(/^\[(\d+:\d{2})\]/)[1]), ['0:00', '0:30', '1:00', '1:30', '2:00', '2:30', '3:00']);
+  assert.match(lines[0], /^\[0:00\]\(https:\/\/youtu\.be\/abcdefghijk\?t=0\) word0 word1 /);
+});
+
+async function fetchCaptions(cueCount, wordsPerCue) {
+  const cues = Array.from({ length: cueCount }, (_, index) => {
+    const start = index * 2;
+    const clock = `00:${String(Math.floor(start / 60)).padStart(2, '0')}:${String(start % 60).padStart(2, '0')}.000`;
+    return cue(clock, clock, `w${index} ${'x'.repeat(wordsPerCue)}`);
+  }).join('');
+  const bin = tempDir('watch-bin-');
+  const stub = path.join(bin, 'yt-dlp');
+  const source = path.join(bin, 'source.vtt');
+  fs.writeFileSync(source, `WEBVTT\n\n${cues}`);
+  fs.writeFileSync(stub, `#!/bin/sh
+case "$*" in
+  *--version*) echo 1;;
+  *--dump-json*) echo '{"title":"T","duration":200,"subtitles":{"en":[{}]},"extractor":"youtube"}';;
+  *) while [ $# -gt 0 ]; do [ "$1" = "-P" ] && dir="$2"; shift; done; cp '${source}' "$dir/captions.en.vtt";;
+esac
+`, { mode: 0o755 });
+  const cwd = fs.realpathSync(tempDir('watch-cwd-'));
+  const temp = fs.realpathSync(tempDir('watch-tmp-'));
+  const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk'], { cwd, env: { ...process.env, EXO_YTDLP: stub, TMPDIR: temp, TMP: temp, TEMP: temp, EXO_WATCH_STORE: tempDir('watch-store-') } });
+  assert.equal(result.code ?? 0, 0, result.stderr);
+  const outerTmpdir = process.env.TMPDIR;
+  process.env.TMPDIR = temp;
+  const folder = scratchPath(cwd, 'watch/abcdefghijk');
+  process.env.TMPDIR = outerTmpdir;
+  return { stdout: result.stdout, folder };
+}
+
+test('tokens count the written text at three characters each and a short video says next=read', async () => {
+  const { stdout, folder } = await fetchCaptions(10, 5);
+  const text = fs.readFileSync(path.join(folder, 'transcript.txt'), 'utf8');
+  assert.equal(tokensOf('abcd'), 2);
+  assert.match(stdout, new RegExp(` tokens=${tokensOf(text)} `));
+  assert.doesNotMatch(stdout, /chunks=/);
+  assert.equal(stdout.trim().split('\n').at(-1), 'next=read');
+});
+
+test('a transcript over 20000 tokens is cut at line ends into files that each fit one Read, and says next=pack', async () => {
+  const { stdout, folder } = await fetchCaptions(100, 1300);
+  const text = fs.readFileSync(path.join(folder, 'transcript.txt'), 'utf8');
+  const files = fs.readdirSync(path.join(folder, 'chunks')).sort().map((name) => fs.readFileSync(path.join(folder, 'chunks', name), 'utf8'));
+  assert.match(stdout, /chunks=\S+ \(3 files\)/);
+  assert.ok(files.every((file) => tokensOf(file) <= 20000));
+  assert.equal(files.join(''), text);
+  assert.equal(stdout.trim().split('\n').at(-1), 'next=pack');
+});
+
+function keptSetup() {
+  const bin = tempDir('watch-bin-');
+  const stub = path.join(bin, 'yt-dlp');
+  const calls = path.join(bin, 'calls.txt');
+  fs.writeFileSync(stub, `#!/bin/sh
+case "$*" in
+  *--version*) echo 1;;
+  *--dump-json*) echo call >> '${calls}'; echo '{"title":"T","duration":10,"subtitles":{"en":[{}]},"extractor":"youtube"}';;
+  *) echo call >> '${calls}'; while [ $# -gt 0 ]; do [ "$1" = "-P" ] && dir="$2"; shift; done; printf '%b' '${VTT.replaceAll('\n', '\\n')}' > "$dir/captions.en.vtt";;
+esac
+`, { mode: 0o755 });
+  const store = fs.realpathSync(tempDir('watch-store-'));
+  const count = () => (fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').split('\n').filter(Boolean).length : 0);
+  const go = async (extra = []) => {
+    const cwd = fs.realpathSync(tempDir('watch-cwd-'));
+    const temp = fs.realpathSync(tempDir('watch-tmp-'));
+    const result = await run(SCRIPT, ['--url', 'https://youtu.be/abcdefghijk', ...extra], { cwd, env: { ...process.env, EXO_YTDLP: stub, EXO_WATCH_STORE: store, TMPDIR: temp, TMP: temp, TEMP: temp } });
+    assert.equal(result.code ?? 0, 0, result.stderr);
+    return result.stdout;
+  };
+  return { store, count, go };
+}
+
+test('a kept transcript is read again with no yt-dlp call, in another temp folder', async () => {
+  const { store, count, go } = keptSetup();
+  const first = await go();
+  assert.equal(count(), 2);
+  assert.ok(fs.existsSync(path.join(store, 'abcdefghijk', 'transcript.txt')));
+  const second = await go();
+  assert.equal(count(), 2);
+  const fields = (out) => out.split('\n')[0].replace(/ transcript=.*/, '');
+  assert.equal(fields(second), fields(first));
+  const scratchTranscript = second.match(/ transcript=(\S+)/)[1];
+  assert.equal(fs.readFileSync(scratchTranscript, 'utf8'), fs.readFileSync(path.join(store, 'abcdefghijk', 'transcript.txt'), 'utf8'));
+  assert.equal(second.trim().split('\n').at(-1), 'next=read');
+});
+
+test('a kept line without its transcript is fetched again', async () => {
+  const { store, count, go } = keptSetup();
+  await go();
+  fs.rmSync(path.join(store, 'abcdefghijk', 'transcript.txt'));
+  await go();
+  assert.equal(count(), 4);
+  assert.ok(fs.existsSync(path.join(store, 'abcdefghijk', 'transcript.txt')));
+});
+
+test('--force and --lang fetch a kept transcript again', async () => {
+  const { count, go } = keptSetup();
+  await go();
+  await go(['--force']);
+  assert.equal(count(), 4);
+  await go(['--lang', 'en']);
+  assert.equal(count(), 6);
 });

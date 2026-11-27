@@ -6,16 +6,19 @@ import { parseFlags, UsageError, isMain, environmentMs } from '#script-flags';
 import { RATE_LIMITED_EXIT, INSTALL, formatDuration, isRateLimited, reason, run, ytdlp, ytdlpMissing } from './ytdlp.mjs';
 import { onPath } from '#basics';
 import { scratchPath } from '#scratch-path';
-import { WATCH_SCRATCH } from '#shared-values';
+import { WATCH_BATCH_TOKENS, WATCH_SCRATCH } from '#shared-values';
+import { storeFolder } from './store.mjs';
 
 const USAGE = [
   'usage: node transcript.mjs --url <url> [--url <url> ...] [--from <file|->] [--lang <code>] [--model <whisper model>] [--force]',
   'Reads captions, or transcribes the audio locally when there are none, and writes <temp folder>/exo-<user>/<checkout>/watch/<id>/transcript.txt; prints one line per video.',
+  'A fetched transcript is kept in <config directory>/exo/watch/<id>/ (or in EXO_WATCH_STORE) and is not fetched again; --force, --lang and --model fetch again.',
   'Exit codes: 0 done; 75 rate limited; 1 every video failed; 2 bad usage.'
 ].join('\n');
 
-const CHUNK_SECONDS = 900;
-const TOKENS_PER_WORD = 1.3;
+const CHARS_PER_TOKEN = 3;
+const CHUNK_TOKENS = 20000;
+const PARAGRAPH_SECONDS = 30;
 const DEFAULT_JOBS = 3;
 const TIME = /(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3}) --> /;
 
@@ -43,17 +46,29 @@ export function parseVtt(text) {
   return cues;
 }
 
+export const tokensOf = (text) => Math.ceil(text.length / CHARS_PER_TOKEN);
+
 function stamp(seconds, id, youtube) {
   const label = formatDuration(seconds);
   return youtube ? `[${label}](https://youtu.be/${id}?t=${Math.floor(seconds)})` : `[${label}]`;
 }
 
-function render(cues, id, youtube) {
-  return cues.map((cue) => `${stamp(cue.start, id, youtube)} ${cue.text}`).join('\n') + '\n';
+function paragraphs(cues) {
+  const lines = [];
+  for (const cue of cues) {
+    const current = lines.at(-1);
+    if (current && cue.start - current.start < PARAGRAPH_SECONDS) current.texts.push(cue.text);
+    else lines.push({ start: cue.start, texts: [cue.text] });
+  }
+  return lines;
+}
+
+function render(lines, id, youtube) {
+  return lines.map((line) => `${stamp(line.start, id, youtube)} ${line.texts.join(' ')}`).join('\n') + '\n';
 }
 
 function idOf(url) {
-  return url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{11})/)?.[1] ?? url.match(/[\w-]+(?=\/?(?:\?.*)?$)/)?.[0] ?? 'video';
+  return url.match(/(?:v=|youtu\.be\/|shorts\/)([\w-]{11})/)?.[1] ?? url.match(/[?&]v=([\w-]+)/)?.[1] ?? url.match(/[\w-]+(?=\/?(?:\?.*)?$)/)?.[0] ?? 'video';
 }
 
 const baseOf = (code) => code.replace('-orig', '').split('-')[0];
@@ -80,12 +95,22 @@ function pickLanguage(info, wanted) {
   return { none: true };
 }
 
-function chunk(dir, cues, id, youtube) {
+function chunk(dir, text) {
   const folder = path.join(dir, 'chunks');
+  fs.rmSync(folder, { recursive: true, force: true });
   fs.mkdirSync(folder, { recursive: true });
-  const parts = Map.groupBy(cues, (cue) => Math.floor(cue.start / CHUNK_SECONDS));
-  [...parts.values()].forEach((part, index) => fs.writeFileSync(path.join(folder, `${String(index + 1).padStart(2, '0')}.txt`), render(part, id, youtube)));
-  return `${folder} (${parts.size} files)`;
+  const parts = [];
+  let part = [];
+  for (const line of text.trimEnd().split('\n')) {
+    if (part.length > 0 && tokensOf(`${[...part, line].join('\n')}\n`) > CHUNK_TOKENS) {
+      parts.push(part);
+      part = [];
+    }
+    part.push(line);
+  }
+  parts.push(part);
+  parts.forEach((lot, index) => fs.writeFileSync(path.join(folder, `${String(index + 1).padStart(2, '0')}.txt`), `${lot.join('\n')}\n`));
+  return `${folder} (${parts.length} files)`;
 }
 
 async function captionsOf(url, dir, code) {
@@ -134,8 +159,18 @@ async function one(url, options) {
   const id = idOf(url);
   const dir = path.join(options.out, id);
   const transcript = path.join(dir, 'transcript.txt');
-  const done = path.join(dir, 'line.txt');
-  if (!options.force && fs.existsSync(done)) return { line: fs.readFileSync(done, 'utf8').trim() };
+  const kept = path.join(options.store, id);
+  const keptTranscript = path.join(kept, 'transcript.txt');
+  const keptLine = path.join(kept, 'line.txt');
+  const refetch = options.force || options.lang !== undefined || options.model !== undefined;
+  if (!refetch && fs.existsSync(keptTranscript) && fs.existsSync(keptLine)) {
+    const text = fs.readFileSync(keptTranscript, 'utf8');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(transcript, text);
+    const fields = [fs.readFileSync(keptLine, 'utf8').trim(), `transcript=${transcript}`];
+    if (tokensOf(text) > CHUNK_TOKENS) fields.push(`chunks=${chunk(dir, text)}`);
+    return { line: fields.join(' ') };
+  }
   const info = await ytdlp(['--dump-json', '--no-playlist', '--', url]);
   if (info.error) return { failure: `${url}: ${reason(info)}`, rateLimited: isRateLimited(info) };
   const meta = JSON.parse(info.stdout);
@@ -159,13 +194,21 @@ async function one(url, options) {
   const cues = parseVtt(vtt);
   if (cues.length === 0) return { failure: `${url}: no transcript: no speech in this video` };
   const youtube = /youtu/.test(meta.extractor ?? '') || /youtu/.test(url);
-  fs.writeFileSync(transcript, render(cues, id, youtube));
+  const lines = paragraphs(cues);
+  const text = render(lines, id, youtube);
+  fs.writeFileSync(transcript, text);
   const words = cues.reduce((sum, cue) => sum + cue.text.split(' ').length, 0);
-  const fields = { id, title: JSON.stringify(meta.title ?? ''), duration: formatDuration(meta.duration ?? cues.at(-1).start), captions: source, words, tokens: Math.round(words * TOKENS_PER_WORD), transcript };
-  if ((meta.duration ?? 0) > CHUNK_SECONDS * 2) fields.chunks = chunk(dir, cues, id, youtube);
-  const line = Object.entries(fields).map(([key, value]) => `${key}=${value}`).join(' ');
-  fs.writeFileSync(done, `${line}\n`);
-  return { line };
+  const fields = { id, title: JSON.stringify(meta.title ?? ''), duration: formatDuration(meta.duration ?? cues.at(-1).start), captions: source, words, tokens: tokensOf(text), transcript };
+  if (fields.tokens > CHUNK_TOKENS) fields.chunks = chunk(dir, text);
+  const keptFields = Object.entries(fields).filter(([key]) => key !== 'transcript' && key !== 'chunks');
+  try {
+    fs.mkdirSync(kept, { recursive: true });
+    fs.writeFileSync(keptTranscript, text);
+    fs.writeFileSync(keptLine, `${keptFields.map(([key, value]) => `${key}=${value}`).join(' ')}\n`);
+  } catch (error) {
+    console.error(`${url}: could not keep the transcript: ${error.message}`);
+  }
+  return { line: Object.entries(fields).map(([key, value]) => `${key}=${value}`).join(' ') };
 }
 
 function urlsOf(flags) {
@@ -181,16 +224,22 @@ async function main(argv) {
     console.error(`missing tool: yt-dlp on PATH; install it with ${INSTALL}, then rerun`);
     return 1;
   }
-  const options = { out: scratchPath(process.cwd(), WATCH_SCRATCH), lang: flags.lang, model: flags.model, force: flags.force };
+  const options = { out: scratchPath(process.cwd(), WATCH_SCRATCH), store: storeFolder(), lang: flags.lang, model: flags.model, force: flags.force };
   const jobs = environmentMs('EXO_WATCH_JOBS', DEFAULT_JOBS);
   const pending = [...urls];
   const limited = [];
   let failed = 0;
+  let tokens = 0;
+  let printed = 0;
   const worker = async () => {
     while (limited.length === 0 && pending.length > 0) {
       const url = pending.shift();
       const result = await one(url, options);
-      if (result.line) console.log(result.line);
+      if (result.line) {
+        console.log(result.line);
+        tokens += Number(result.line.match(/ tokens=(\d+) transcript=/)?.[1] ?? 0);
+        printed += 1;
+      }
       if (!result.failure) continue;
       failed += 1;
       console.error(result.failure);
@@ -198,6 +247,7 @@ async function main(argv) {
     }
   };
   await Promise.all(Array.from({ length: Math.min(jobs, urls.length) }, worker));
+  if (printed > 0) console.log(`next=${limited.length === 0 && tokens <= WATCH_BATCH_TOKENS ? 'read' : 'pack'}`);
   if (limited.length > 0) {
     console.error(`rate-limited, retry later: ${[...limited, ...pending].join(' ')}`);
     return RATE_LIMITED_EXIT;

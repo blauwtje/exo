@@ -35,11 +35,11 @@ test('a video over WATCH_BATCH_TOKENS without chunks goes alone', async () => {
   assert.deepEqual(batches.find((batch) => batch.length === 2), ['Reads: /t/a/transcript.txt', 'Reads: /t/c/transcript.txt']);
 });
 
-test('each file of a chunks folder goes alone in name order', async () => {
+test('chunk files share a batch up to WATCH_BATCH_TOKENS and a third opens the next', async () => {
   const folder = tempDir();
-  for (const name of ['02.txt', '01.txt', '10.txt']) fs.writeFileSync(path.join(folder, name), 'x');
+  for (const name of ['02.txt', '01.txt', '03.txt']) fs.writeFileSync(path.join(folder, name), 'x'.repeat(15000 * 3));
   const { batches } = await pack([line('long', WATCH_BATCH_TOKENS * 3, ` chunks=${folder} (3 files)`)]);
-  assert.deepEqual(batches, ['01.txt', '02.txt', '10.txt'].map((name) => [`Reads: ${path.join(folder, name)}`]));
+  assert.deepEqual(batches, [['01.txt', '02.txt'].map((name) => `Reads: ${path.join(folder, name)}`), [`Reads: ${path.join(folder, '03.txt')}`]]);
 });
 
 test('a title with spaces and quotes does not break the fields', async () => {
