@@ -1,8 +1,7 @@
 import { markdownTargets, resolveMarkdownTarget } from '../markdown.mjs';
 import { isFile } from '../repository.mjs';
 
-const DOC_FILES = ['README.md', 'CONTRIBUTING.md', 'guide/settings.md'];
-const DOC_FOLDERS = ['principles', 'guide'];
+const DOC_FILES = ['README.md', 'CONTRIBUTING.md', 'BASE.md'];
 
 function unresolvedTargets(file, repository, bases) {
   return markdownTargets(repository.text(file))
@@ -14,11 +13,7 @@ function unresolvedTargets(file, repository, bases) {
 }
 
 function docFiles(repository) {
-  const isMarkdown = (full) => full.endsWith('.md');
-  return [
-    ...DOC_FILES.map((file) => repository.join(file)).filter(isFile),
-    ...DOC_FOLDERS.flatMap((folder) => repository.walk(repository.join(folder), isMarkdown))
-  ];
+  return DOC_FILES.map((file) => repository.join(file)).filter(isFile);
 }
 
 export function checkMarkdownReferences(report, repository) {

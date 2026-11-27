@@ -18,3 +18,14 @@ test('the preload removes every temp folder its process creates', () => {
   assert.equal(r.status, 0, r.stderr);
   assert.deepEqual(fs.readdirSync(base), []);
 });
+
+test('the preload points the Claude config folder at an empty folder', () => {
+  const developer = tempDir('clean-run-env-config-');
+  fs.writeFileSync(path.join(developer, 'settings.json'), JSON.stringify({ pluginConfigs: { exo: { options: { specs: 'issues' } } } }));
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: developer };
+  delete env.EXO_TEST_TMP_ROOT;
+  const code = `console.log(process.env.CLAUDE_CONFIG_DIR)`;
+  const r = spawnSync(process.execPath, ['--import', preload, '--input-type=module', '-e', code], { env, encoding: 'utf8' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.notEqual(r.stdout.trim(), developer);
+});

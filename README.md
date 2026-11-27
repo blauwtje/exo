@@ -48,10 +48,9 @@ Say what you want in your own words and Claude starts the skill that fits. A typ
 | "ship it" or "open a PR" | `ship` asks once how far the commits go, then pushes, opens or merges. |
 | "save this session", then "continue from the handoff" in a new one | `save` writes a handoff file and reads it back. |
 | a video link and a question | `watch` answers from the captions or a transcript. |
-| "search for what people say about X" | `search` answers with links and quotes checked against saved sources from GitHub, Reddit, Hacker News and the web. |
+| "search for what people say about X" | `search` answers with links and quotes from saved sources from GitHub, Reddit, Hacker News and the web. |
 | "give me ideas for how to approach X" | `ideas` runs a fixed ideation playbook and returns a short list of novel ideas. |
-| "do not leave `console.log` in `src/`, remember this" | `learn` turns the correction into a lint rule or check that fails when it recurs, else a small lesson note, and starts by itself when you repeat a request. |
-| "write a README for this" | `document` writes prose that is read later. |
+| "do not leave `console.log` in `src/`, remember this" | `learn` turns the correction into a lint rule or check that fails when it recurs, else a small lesson note. |
 
 The agents run behind the skills; you do not call them.
 
@@ -60,21 +59,21 @@ The agents run behind the skills; you do not call them.
 | `builder` | Builds one plan task, repair or fix, and writes the brief of a plan over 3 tasks. |
 | `researcher` | Answers one bounded question from named sources. |
 
-[guide/](guide/) has a page for every skill. [guide/settings.md](guide/settings.md) covers the settings, including shorter replies and the status line.
+Each skill is one Markdown file of at most 500 words. Step 1 of each reads [BASE.md](BASE.md), the principles every skill shares, each with its reason.
 
-## Before and after
+## Status line
 
-Each "before" is plain Claude Code. Nothing here compares exo with other plugins.
+Claude Code only. Run this in a terminal:
 
-| Before | After | Test |
-|---|---|---|
-| A task lands once Claude says the tests pass, even if the proof never failed. | `land-task.mjs` runs the proof before the change too. When it passes there, the script refuses the task and the builder reports it `BLOCKED`. | [tests/red-bound.test.mjs](tests/red-bound.test.mjs) |
-| A task lands even when the project's own check is red. | A failing Land gate is refused before anything commits. | [tests/land-task-land-gate.test.mjs](tests/land-task-land-gate.test.mjs) |
+```sh
+node "$(ls -d "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/cache/*/exo/*/ | sort -V | tail -n 1)lib/statusline-install.mjs"
+```
+
+It writes a launcher to `~/.claude/exo/statusline.mjs` (under `CLAUDE_CONFIG_DIR` when set) and prints a `statusLine` block for your `settings.json`, which exo never edits. After an exo update, rerun that command. To remove it, delete the `statusLine` key.
 
 ## More
 
 - [CONTRIBUTING.md](CONTRIBUTING.md): working on exo.
-- [ABOUT.md](ABOUT.md): the words exo uses for its own parts.
 - [CHANGELOG.md](CHANGELOG.md): what changed in each release.
 
 [MIT](LICENSE) licensed.

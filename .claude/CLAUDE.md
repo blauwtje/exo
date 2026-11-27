@@ -16,19 +16,16 @@ This is the source of the Claude Code plugin `exo`. Layout is in `README.md`; co
 
 - Run one test file with `node --import ./tests/clean-run-env.mjs --test tests/<name>.test.mjs`, the import `npm test` uses in package.json, because one file answers faster than `npm run check`.
 - `npm run check` gates every commit, and a clean run ends `SUMMARY` with `FAIL=0 WARN=0 UNRUN=0`.
-- The lead runs `node lib/run-check.mjs npm run check` once, in the background, to a log, and a delegate runs only its proof.
 - Plan tasks use `Land gate: npm run validate:static`, and `npm run check` runs once as the Success criterion.
-- Change a skill, agent, hook or check only for a user request or a failure seen in a real session, and add that failure to `evals/failures.md` first, after you count the session files that hold it with `rg -l -g '*.jsonl' -e '<regex>' ~/.claude/projects | wc -l` and record that count.
+- Change a skill only after a real session that went wrong, and then remove something rather than add something.
 
 ## Editing
 
-- Before you design or change a prompt, context, agent, skill, hook, script, test, tool, harness, eval, benchmark or code, read `principles/README.md` and open only the page it names.
-- Hooks and scripts do mechanical work only: count, match, parse, store, run. Code that judges meaning, like a word list per language, breaks on other languages.
-- Skills and agents give that mechanical part to a script and keep the judgment, because the model reads every language and phrasing.
-- Run `claude plugin eval` only before a release, always with `--max-cost-usd`.
+- Before you design or change a skill, agent or check, read `BASE.md`.
+- Scripts do mechanical work only: count, match, parse, store, run. Code that judges meaning, like a word list per language, breaks on other languages.
+- Skills and agents keep the judgment and run plain commands, because the model reads every language and phrasing; a skill ships a script only when the exception list in `verify/checks/skill-size.mjs` names it with a reason.
 - A bare skill name in a skill or prompt body means `exo:<name>`.
-- Keep skills model-invoked, and make one manual only when its route eval shows it fires at the wrong time or when the user asks.
-- Derive a new value from the repo, or use one overridable default or an `EXO_*_MS` var via `environmentMs`.
+- Keep skills model-invoked, and make one manual only when the user asks.
 
 ## Release
 

@@ -2,60 +2,31 @@
 name: save
 description: "Writes a handoff file for unfinished work and reads it back in a fresh session. Use when the user asks to save, pause or hand off this session, or to continue from a saved handoff ('save this session', 'pause this session', 'continue where I left off'). Not for finished work."
 argument-hint: "[what the next session must not lose]"
-metadata:
-  author: exo
-  tags: handoff, session, resume
 ---
 
-# Save
+## Principles
 
-## Purpose
+- Freeze only what this session knows and the next cannot rebuild, because a fresh session pays again for every pasted line.
+- Point to files and commands, never paste a transcript, diff or log, because a paste goes stale.
+- Build the progress list from `git status --short`, not memory, because a next session that cannot tell committed from uncommitted work discards edits.
+- Push nothing and open no pull request, because saving is not shipping.
 
-Freeze what this session knows and the next one cannot rebuild. Point to files and commands, never paste the transcript, a diff or a log, because the fresh session would pay again for that context.
+## Steps
 
-## Prerequisites
-
-`node` and `git`.
-
-## Instructions
-
-### Before writing
-
-- Finish or undo the step in progress and start no new work.
-- On a plan's run branch, commit nothing: run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path` first, create its parent folder, save the partial work of the task in progress with `git diff > <handoff path with .md replaced by -task<n>.patch>` and list the patch under Progress.
-- On any other non-default branch, commit every uncommitted edit as one `chore: wip <topic>` commit, and say in its body if the tree is broken.
-- On the default branch, leave edits uncommitted and list them under Progress.
-
-### Write the file
-
-1. Write the body to a temp file in plain words in the user's language, then run `node "${CLAUDE_SKILL_DIR}/scripts/handoff-write.mjs" --body <file>`. It replaces the body's `<facts>` line with the `Written:` line and the path lists, writes the handoff whole over an older one and prints `Saved to <path>`. The body has these sections in order:
-   - One line on where the work stands and the first thing to do next, then a line holding only `<facts>`.
+1. Read `${CLAUDE_PLUGIN_ROOT}/BASE.md`.
+2. Finish or undo the step in progress; start no new work.
+3. Pick the handoff file `<scratch>/handoff-<topic>.md`, with a short kebab-case `<topic>`, and create its folder.
+4. On a plan's run branch, commit nothing: save the partial work of the task in progress with `git diff > <scratch>/handoff-<topic>-task<n>.patch` and list the patch under Progress.
+5. On any other non-default branch, commit every uncommitted edit as one `chore: wip <topic>` commit, and say in its body if the tree is broken.
+6. On the default branch, leave edits uncommitted and list them under Progress.
+7. Write the file whole over an older one, in plain words in the user's language, with these parts in order:
+   - One line on where the work stands and the first thing to do next, then a line `Written: <date>, branch <branch>, commit <short sha>`.
    - `## Goal`: what the work is for, and what it will not do.
-   - `## Progress`: from `git status --short`, not memory. Open with the plan path and task number when a plan runs. List what is committed, then every uncommitted path in full, because a next session that cannot tell them apart discards working-tree edits. Add each decision as "<decision>, decided by <the user or this session>".
-   - `## Evidence`: what is proven, as claim, command and result, and what is unproven, with what is open and who can answer.
-   - `## Ruled out`: each approach already tried and dropped, one line each with why it failed.
-   - `## Next step`: the first action, then each later step with its full command. For a run, say how to wait, what to do on failure and where to stop.
-2. End the turn by naming the written path and telling the user to run `/clear`, then say "continue from the handoff". Continue no work.
-
-### Continue from a handoff
-
-When the user asks to continue saved work, run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" path`, read the file it prints, run `node "${CLAUDE_SKILL_DIR}/scripts/handoff.mjs" stale`, then say the text in `references/continue.md` once. Open it when the user asks to continue. With no file there, say which branch has none and write nothing.
-
-## Examples
-
-The user says "save this, I continue tomorrow" on branch `feature-x`. The skill commits the edits as `chore: wip <topic>`, writes the handoff and ends with:
-
-```
-Saved to <handoff path>. Run /clear, then say "continue from the handoff".
-```
-
-## Limitations
-
-- Push nothing and open no pull request.
-
-## Available Scripts
-
-| Script | Purpose | Arguments |
-| --- | --- | --- |
-| `handoff.mjs` | Prints where the handoff of the current branch sits | `path, facts or stale, each with [--cwd <dir>]` |
-| `handoff-write.mjs` | Writes the handoff file from a body file with the Written line and path lists inserted, and prints `Saved to <path>` | `--body <file> [--cwd <dir>]` |
+   - `## Progress`: open with the plan path and task number when a plan runs. List what is committed, then every uncommitted path in full. Add each decision with who decided it.
+   - `## Evidence`: what is proven, as claim, command and result, and what is unproven or open.
+   - `## Ruled out`: each approach dropped, with why it failed.
+   - `## Next step`: the first action, then each later step with its full command.
+8. End the turn by naming the written path and telling the user to run `/clear`, then say "continue from the handoff". Continue no work.
+9. To continue, read `<scratch>/handoff-<topic>.md`, the newest `handoff-*.md` there when no topic is named. With no file, say so and write nothing.
+10. Run `git log --oneline <Written commit>..HEAD` and `git status --short`, and name what changed since the handoff before relying on any claim in it.
+11. Name the resume point from what the handoff lists as next, and repeat no step it records as proven. Verify an inherited claim against the real artifact, because a prior report is not proof.

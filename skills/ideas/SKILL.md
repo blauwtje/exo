@@ -2,66 +2,22 @@
 name: ideas
 description: "Turns one question on any subject into a short list of novel, useful and well-reasoned ideas as a ranked report. Use when the user says 'give me ideas', 'what are my options' or 'how could I approach' a problem. Not for design options for a code change (exo:spec) or sourced research (exo:search)."
 argument-hint: "<question>"
-metadata:
-  author: exo
-  tags: ideas, brainstorm, ideation
 ---
 
-# Ideas
+## Principles
 
-## Purpose
+- Ask nothing after the question, because the run is automatic.
+- Generate apart from judging, because an author who scores its own ideas flatters them.
+- Count an idea as strong only at 16 of 20 or more, a prior-art verdict other than `exists`, and a win over the best existing answer in both orders of a pairwise comparison, because one order favours an option.
+- Never edit a helper's file, because the files are the evidence.
 
-Turn one question into a ranked top 3 of ideas with a score, a prior-art verdict, a reason each could fail and a first test, written as one report in a run folder. An idea counts as strong only when its total is at least 16 out of 20, its prior-art verdict is not `exists`, and it beats the best existing answer in both orders of a pairwise comparison.
+## Steps
 
-## Prerequisites
-
-The Agent tool. A run starts 4 helpers, every helper runs on sonnet, and a run uses a noticeable part of the subscription limit. The helpers write under `~/.ideas/`, outside the project, so a permission rule `Edit(~/.ideas/**)` lets them save their files. The prompts the helpers read are the three files in `references/`, named in the steps below.
-
-## Instructions
-
-Run the steps below in order for the question in `$ARGUMENTS`, else the question in the user's request in this conversation. When neither holds a question, ask the user for it once, then ask nothing more during the run.
-
-### Setup
-
-1. Run `node "${CLAUDE_SKILL_DIR}/scripts/run-init.mjs" --question <the question>`, which makes the run folder `~/.ideas/<YYYY-MM-DD>-<slug>/` and prints `RUN=<absolute path>`. Call that path `RUN`.
-2. Every helper is one fresh agent with the type, model and effort given for it. Its prompt is: `Read <prompt file> and follow it exactly. Fill the placeholders {run} = RUN, {question} = <the question, verbatim>`, plus the extra placeholders named for it. Start helpers of the same step in one message and check every launch result for an error.
-3. A helper writes its files and replies with the path or, for the Judge, with text. Run files are append-only: never edit a file a helper wrote, and write no file yourself. Judge a helper's result from its reply alone, with no file checks. When a helper reports an error or no result, rerun that helper once. When it still fails, stop the run and tell the user which step failed.
-
-### Step 1: Scout and Generate
-
-Start three helpers in one message, side by side, because none needs another's file.
-
-1. Scout: `exo:researcher`, prompt line `Sources: web` first, `${CLAUDE_SKILL_DIR}/references/scout.md`, model sonnet, effort medium. Writes existing.md: the goal, the constraints, what makes an idea good, what already exists and the best existing answer.
-2. Generate A: `general-purpose`, `${CLAUDE_SKILL_DIR}/references/generate.md`, model sonnet, effort high, with {lenses} = `wide brainstorm` and `unrelated domain`, {ids} = `I1 to I3`, {file} = ideas-a.md.
-3. Generate B: `general-purpose`, `${CLAUDE_SKILL_DIR}/references/generate.md`, model sonnet, effort high, with {lenses} = `invert assumptions` and `avoid the obvious`, {ids} = `I4 to I6`, {file} = ideas-b.md.
-
-### Step 2: Judge
-
-Start the Judge as soon as all three helpers have returned: `exo:researcher`, prompt line `Sources: web` first, `${CLAUDE_SKILL_DIR}/references/judge.md`, model sonnet, effort high. It screens the ideas, improves the near misses once, compares the promising ones with the best existing answer in both orders, ranks them, and writes judge.md only. It replies with text: the `Strong: <n> of <m>` line and the top 3, one line each.
-
-### Reply
-
-From the Judge's reply, give the top 3 (title, score, strong yes or no, one line each) and the path of judge.md. Read no file.
-
-## Examples
-
-Request: "ideas for getting more people to read our newsletter". The skill makes `~/.ideas/<YYYY-MM-DD>-ideas-for-getting-more-people-to-read-ou/`, runs the steps, and replies:
-
-```
-1. <title>, 17/20, strong yes: <one line>
-2. <title>, 16/20, strong no: <one line>
-3. <title>, 14/20, strong no: <one line>
-Report: ~/.ideas/<YYYY-MM-DD>-<slug>/judge.md
-```
-
-## Limitations
-
-- The run is fully automatic: it asks nothing after the question.
-- Ideas rest on the helpers' knowledge and a web check for prior art, not on a sourced search; use `exo:search` for sources.
-- Run files are append-only, and a run folder is never reused: a second run of the same question gets `-2`.
-
-## Available Scripts
-
-| Script | Purpose | Arguments |
-| --- | --- | --- |
-| `run-init.mjs` | Makes the run folder with a dated ASCII slug name, `-2` or `-3` when taken, and prints `RUN=<absolute path>` | `--question <text> [--home <dir>]` |
+1. Read `${CLAUDE_PLUGIN_ROOT}/BASE.md`.
+2. Take the question from `$ARGUMENTS` or the request, else ask once. Set the folder `RUN=<scratch>/ideas-<short ascii slug of the question>`.
+3. In one message start three fresh agents on sonnet, each given the question verbatim, `RUN` and its file, and replying with the path only.
+   - Scout (`exo:researcher`, medium, `Sources: web` first): do not answer the question. Write `existing` with the sections Goal, Constraints, What makes an idea good here (3 to 5 criteria), What already exists (one line and link each, from 3 or more searches) and Best existing answer.
+   - Generate A and B (`general-purpose`, high): write `ideas-a` and `ideas-b`, each with `## Scaffold` and `## Ideas`. Scaffold holds the 10 obvious ideas, 5 assumptions, 8 candidates per lens, the drops with reasons and the 3 kept, each with its strongest objection and one rewrite. Ideas holds the 3 rewrites as `### <ID> <title>` with two or three sentences, naming no lens. A uses the lenses wide brainstorm and unrelated domain with IDs I1 to I3; B uses invert assumptions and avoid the obvious with IDs I4 to I6.
+4. When all three return, start the Judge (`exo:researcher`, high, `Sources: web` first). It reads `existing` and only the `## Ideas` sections, and writes only `judge`. It gives each idea a verdict (`exists`, `variant` or `new`), where it breaks, and Novelty, Usefulness, Feasibility and Survival from 0 to 5 with their total out of 20. It searches the web once per idea at 12 or more, rewrites each at 12 to 15 once, then compares each idea at 16 or more with the best existing answer in both orders. It ranks strong ideas first and gives each of the top 3 a first test with `Pass if`, `Fail if` and `Cost`. It writes the top 3, a table, a section per idea and `Strong: <n> of <m>`, and replies with both.
+5. Rerun a failed helper once; if it fails again, stop and name the step.
+6. Reply with the top 3 (title, score, strong yes or no, one line each) and the path of `judge`. Read no file.

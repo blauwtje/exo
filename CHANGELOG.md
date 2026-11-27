@@ -8,6 +8,7 @@ release, and a body rewrite that keeps the trigger is a patch.
 ## Unreleased
 
 ### Added
+- `CODE.md`: the code principles (scope, design, readability, errors, tests), each with its reason, read by the builder before it writes code.
 
 - The `spec-earlier-brief` eval case fails a spec run that writes a second brief beside an existing one.
 - `skills/watch/scripts/check-stamps.mjs` checks the stamps of an answer, and the stamps and quotes of a helper notes file, against the kept transcript.
@@ -52,8 +53,14 @@ release, and a body rewrite that keeps the trigger is a patch.
 - Each threshold in `exo:build` and `exo:spec` has a session count and its source in `evals/failures.md`.
 - `guide/settings.md` says when to pick Fable yourself and how to turn on the advisor.
 
+- `BASE.md` at the plugin root holds the shared principles that each kept skill reads at step 1.
+- The `skill-size` check fails a skill folder over 500 words or naming a script file, and `npm run check` runs it.
+
 ### Changed
 
+- The nine kept skills (`build`, `diagnose`, `ideas`, `learn`, `save`, `search`, `ship`, `spec`, `watch`) use a Principles and Steps layout, read BASE.md and call no script.
+- The `builder` and `researcher` agents are shorter and name no script file.
+- `npm run check` runs the kept checks and then `npm test`.
 - The eval budget in `evals/value.mjs` is 42 USD instead of 40, so the `spec` part, with its third case, is measured with the other nine.
 - `exo:spec` looks under `docs/specs` and `docs/research` for an earlier brief or report on the topic before its verdict.
 - `exo:search` looks under `docs/research` and `docs/specs` for an earlier report or brief on the topic before a worker starts: it answers from one that covers the question, and a new report names the ones it builds on in an `Earlier:` line.
@@ -343,6 +350,8 @@ release, and a body rewrite that keeps the trigger is a patch.
 - The land command runs a green Proof once; the second run and its `BLOCKED proof flaky` refusal are gone.
 - `exo:search` drops `--only` and the `web` source; workers use WebSearch and pass the urls they pick to `fetch.mjs`.
 - The commit check no longer refuses an AI attribution trailer, and the cache no longer skips `*-decisions.md` and `CHANGELOG.md`.
+- The skills `author` and `document`, `hooks/`, the `userConfig` settings in the manifest, `evals/`, `benchmarks/`, `principles/`, `guide/` and `ABOUT.md` are removed.
+- The checks and `lib/` modules that only the removed parts used are removed.
 - The `corrections.mjs replay` command added in 1.1.0, its helpers, the old `{verdict, text}` verdict rows and the copy of verdicts out of an old ledger in `reset`.
 - The `sessions.mjs` command line.
 - The eval case `diagnose-repatch`, which asked to commit a ready patch and never called the skill in 12 of 12 runs.

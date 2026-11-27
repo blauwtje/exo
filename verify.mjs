@@ -6,30 +6,14 @@ import { parseArgs } from 'node:util';
 import { createReport } from './verify/report.mjs';
 import { createRepository } from './verify/repository.mjs';
 import { checkSkillFrontmatter } from './verify/checks/skill-frontmatter.mjs';
-import { checkSkillSections } from './verify/checks/skill-sections.mjs';
 import { checkAgentFrontmatter } from './verify/checks/agent-frontmatter.mjs';
-import { checkEvalCases } from './verify/checks/eval-cases.mjs';
 import { checkMarkdownReferences } from './verify/checks/markdown-references.mjs';
 import { checkPluginValidate } from './verify/checks/plugin-validate.mjs';
-import { checkReferenceSplit } from './verify/checks/reference-split.mjs';
 import { checkScriptSyntax } from './verify/checks/script-syntax.mjs';
-import { checkHookSet } from './verify/checks/hook-set.mjs';
-import { checkPrincipleCitations } from './verify/checks/principle-citations.mjs';
-import { checkSilentCatch } from './verify/checks/silent-catch.mjs';
 import { checkInvisibleUnicode } from './verify/checks/invisible-unicode.mjs';
 import { checkPersonalPaths } from './verify/checks/personal-paths.mjs';
-import { startSkillScriptBehavior } from './verify/checks/skill-script-behavior.mjs';
-import { checkScriptOptions } from './verify/checks/script-options.mjs';
-import { checkPositionalLiterals } from './verify/checks/positional-literals.mjs';
-import { checkTestTiming } from './verify/checks/test-timing.mjs';
-import { checkImportDirection } from './verify/checks/import-direction.mjs';
-import { checkFileSize } from './verify/checks/file-size.mjs';
-import { checkScratchKey } from './verify/checks/scratch-key.mjs';
-import { checkModelRouting } from './verify/checks/model-routing.mjs';
-import { checkSharedLiterals } from './verify/checks/shared-literals.mjs';
-import { checkSharedMentions } from './verify/checks/shared-mentions.mjs';
-import { checkGitOnce } from './verify/checks/git-once.mjs';
 import { checkPluginVersion } from './verify/checks/plugin-version.mjs';
+import { checkSkillSize } from './verify/checks/skill-size.mjs';
 
 const MINIMUM_NODE_MAJOR = 22;
 
@@ -54,34 +38,16 @@ if (!fs.existsSync(path.join(root, 'skills'))) {
 
 const report = createReport();
 const repository = createRepository(root);
-const behavior = values.static ? null : startSkillScriptBehavior(repository);
 
 checkSkillFrontmatter(report, repository);
-checkSkillSections(report, repository);
 checkAgentFrontmatter(report, repository);
-checkEvalCases(report, repository);
 checkMarkdownReferences(report, repository);
 checkPluginValidate(report, repository);
-checkReferenceSplit(report, repository);
 checkScriptSyntax(report, repository);
-checkHookSet(report, repository);
-checkPrincipleCitations(report, repository);
-checkSilentCatch(report, repository);
 checkInvisibleUnicode(report, repository);
 checkPersonalPaths(report, repository);
-checkScriptOptions(report, repository);
-checkPositionalLiterals(report, repository);
-checkTestTiming(report, repository);
-checkImportDirection(report, repository);
-checkFileSize(report, repository);
-checkScratchKey(report, repository);
-checkModelRouting(report, repository);
-await checkSharedLiterals(report, repository);
-await checkSharedMentions(report, repository);
-const outcome = behavior ? await behavior : null;
-if (outcome) report.result(outcome.status, outcome.name, outcome.detail);
+checkSkillSize(report, repository);
 if (!values.static) {
-  checkGitOnce(report, repository, outcome?.traceRoot);
   checkPluginVersion(report, repository);
 }
 

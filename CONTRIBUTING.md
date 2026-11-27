@@ -8,119 +8,50 @@ A marketplace added from `blauwtje/exo` on GitHub installs a cache copy, so an e
 
 ## Codemap
 
-- `lib/`: shared modules for every script; code outside `lib/` imports it through a `#` alias, and `lib/` files import each other by relative path.
-- `lib/shared-values.mjs` (`#shared-values`): the values that stand in two or more files, as plain named exports with no file or process access.
-- `skills/`: one folder per skill, with its body, references and `scripts/`.
-- `agents/`: the delegate prompts.
-- `hooks/`: the hook scripts and `hooks.json`.
+- `CODE.md`: the code principles, read by the builder before it writes code.
+- `BASE.md`: the shared principles, each with a one-line reason, at most 450 words. Step 1 of every skill reads `${CLAUDE_PLUGIN_ROOT}/BASE.md`.
+- `skills/`: one folder per skill, each holding only its skill file.
+- `agents/`: the `builder` and `researcher` prompts.
+- `lib/`: the status line and the modules it imports, plus the helpers the checks use.
 - `verify/`: the static checks that `verify.mjs` runs.
-- `tests/`: the script tests, which reach into any module by path.
-- `evals/`: the route and value evals, harness code that may import skill scripts by path.
+- `tests/`: the tests of the kept files, which reach into any module by path.
 - `docs/`: specs and plans.
-
-The `import direction` check fails a `lib/` file that imports a skill, a skill that imports another skill, and code outside `lib/` that reaches `lib/` by a relative path instead of a `#` alias from `package.json`.
-The `file size` check fails a script under `lib/`, `skills/*/scripts/` or `verify/` over 400 lines.
-The `shared literals` check fails a code file that types the literal of a shared value outside the module, except for a baseline entry with a reason in `verify/checks/shared-literals-baseline.json`.
-The `shared mentions` check fails a prose mention registered in `verify/checks/shared-mentions.json` that no longer matches its file or differs from its value; `node verify/checks/shared-mentions.mjs --write` rewrites each mention from the module.
 
 ## Checks
 
-### Gate
-
 | Command | What it runs |
 |---|---|
-| `npm run check` | The gate before any commit: `node verify.mjs`, the static checks, the script tests and the plugin version check. It ends with `SUMMARY PASS=n FAIL=n WARN=n UNRUN=n`. |
-| `npm run validate:static` | The static checks only: `claude plugin validate --strict`, skill frontmatter, agent and output style frontmatter, eval case format, local Markdown links, skill layout, JavaScript syntax, the hook set, principle page citations, silent catch blocks, invisible Unicode, personal paths, import direction, file size, shared literals and shared mentions. |
-| `npm run validate` | `npm run validate:static` and then `npm test`. |
-
-The agent frontmatter check fails an `agents/*.md` file with a key outside Anthropic's plugin-agent fields, no name or description, a name over 256 characters, with a colon or starting with `-`, a model that is not `sonnet`, `opus`, `haiku`, `fable`, `inherit` or a `claude-` id, an effort outside `low` to `max`, a color outside the eight documented ones, or a `maxTurns` that is not a positive integer, and an `output-styles/*.md` file with a key outside `name`, `description`, `keep-coding-instructions` and `force-for-plugin`. The eval case check fails a case folder under `evals/` with no prompt file or no grader file, a prompt frontmatter key or a `case.yaml` key outside the ones `claude plugin eval` accepts, a `scaffold_script` that names no file, a grader `type` outside `llm`, `baseline`, `regex`, `file_exists`, `tool_used` and `tool_order`, a `tool_used` grader on `Skill` with neither `max: 0` nor an `input_match`, a `smoke` case with an `llm` or `baseline` grader, and a suite with no `smoke` case. The skill frontmatter check takes `metadata.tags` only as a plain string of 1 to 5 lowercase words separated by `, `, as in `tags: spec, plan, brief`, because the Agent Skills spec makes metadata a map of strings. The skill layout check fails a skill body over 500 lines, a reference its skill body does not name, a reference that points to another reference, and a skill file that paths into another skill's folder. The hook set check fails a `hooks.json` beyond `SessionStart` and `UserPromptSubmit`, each with one command hook. The principle citations check fails a path after `exo:` in a principle page that does not exist. The silent catch check fails a script with more `catch {` blocks than its baseline. The invisible Unicode check fails a tracked file that holds a zero width, bidi control, soft hyphen, byte order mark or tag character, and skips a file with a NUL byte. The personal paths check fails a tracked file that holds a `/Users/`, `/home/` or drive `Users` path whose name is not a placeholder such as `user` or `you`. The plugin version check fails manifests that disagree on the version, and a branch that changes the tree with nothing under `## Unreleased` in `CHANGELOG.md`. The `script options` check fails when a script declares more options than at the merge-base with `origin/main`, or a new script more than 5. The `positional literals` check fails on a `$1`-style literal in a skill, agent or output-style file. The `test timing` check fails a line in `tests/**/*.mjs` that reads the clock or uses a fixed sleep as sync.
-
-### Tests
-
-| Command | What it runs |
-|---|---|
-| `npm test` | The script tests under `tests/`. |
-| `claude plugin validate .` | The harness's own manifest check. |
+| `npm run check` | The gate before any commit: `npm test`, then `node verify.mjs`. It ends with `SUMMARY PASS=n FAIL=n WARN=n UNRUN=n`. |
+| `npm run validate:static` | The static checks only: `claude plugin validate --strict`, skill and agent frontmatter, local Markdown links, skill size, JavaScript syntax, invisible Unicode and personal paths. |
+| `npm test` | The tests under `tests/`. |
 
 CI runs `npm run check` on Node 22 and 24 on Ubuntu for every push to `main` and every pull request.
 
-`npm test` prints Node's spec reporter, which marks a failure with `✖`. `npm run check` runs the same tests through TAP, so its failure line names each failing test as `not ok`. Both load `tests/clean-run-env.mjs` first, which strips the run variables `EXO_RUN`, `EXO_RUN_DIR`, `EXO_RUN_TASK` and `EXO_RUN_SESSION`. It also drops every `CLAUDE_PLUGIN_OPTION_*` variable and points `CLAUDE_PROJECT_DIR` at an empty folder, so no test reads the developer's exo settings.
+`npm test` loads `tests/clean-run-env.mjs` first, which strips the run variables so a test sees a clean environment.
 
 ## Editing a skill
 
-Load the `author` skill before any skill or delegate-prompt edit; it holds the shape and size rules the verifier enforces.
+A skill is one Markdown file inside `skills/<name>/` and nothing else. Its frontmatter keeps `name`, `description`, `argument-hint`, `model` and `effort` where it needs them. Its body is `## Principles`, each with its reason, then `## Steps`, numbered, with step 1 reading `BASE.md`.
 
-A skill whose work leaves the machine (a push, pull request, merge or issue) runs only on the authorization its body names: the user's pick of a finish route or a plain request. The one exception is `ship` under `ship=ask`, which pushes a non-default branch to origin without asking; merge, default-branch push, pull request and issue still ask. It leaves every branch in place and cuts no release.
+The `skill size` check (`verify/checks/skill-size.mjs`) enforces two rules:
 
-A skill's description names the words the user says, because a trigger on a fact nobody knows when the request arrives leaves the model to guess.
+- Rule 4: the `.md` files of a skill folder hold at most 500 words together, counted as `wc -w` counts them.
+- Rule 5: a skill folder holds only `.md` files, and its text names no file ending in `.mjs`, `.cjs`, `.js`, `.ts`, `.py`, `.sh`, `.bash`, `.rb`, `.go` or `.ps1`, unless the skill and file pair is on the exception list in `skill-size.mjs` with a reason. The list starts empty. Plain commands such as `git`, `gh`, `rg` and `curl` stay allowed.
 
-`ABOUT.md` says what exo is and lists exo's domain words with the synonym each replaces. Skill bodies, replies and commits use the left column.
+A skill's description names the words the user says and keeps `Use when ` and `Not for` clauses, because a trigger on a fact nobody knows when the request arrives leaves the model to guess.
 
-A new skill needs the folder `skills/<name>/` and a page under `guide/`. Write a skill from a discipline you have read, not from a one-line description.
+A skill whose work leaves the machine (a push, pull request or merge) runs only on the authorization its body names. `ship` asks before each push, pull request or merge.
 
-A skill body stays under 500 lines, because a body is paid for on every run; bulk lives in `references/` and the body names the step that opens it. No reference links to another. Split a skill in two only when the halves fire at different moments, because each skill adds its trigger to every session's listing.
-
-A skill script parses its flags through `parseFlags` in `lib/script-flags.mjs`.
-
-## Adding a setting
-
-A new setting is one `userConfig` entry in `.claude-plugin/plugin.json`.
-
-`docs/` is gitignored and holds only plans and research.
-
-`principles/README.md` indexes first-party and community engineering principles; each page cites exo files after `exo:`. The index states the value rule.
-
-## Evals
-
-`claude plugin eval` runs the suite under `evals/` (a case is `evals/<case>/prompt.md` with `graders/`; a scaffolded case adds a `case.yaml` with `context.scaffold_script` naming a `scaffold.sh`, which for some cases calls `evals/scaffold.sh`); `evals/results/` is gitignored. Before a release, list the `evals/failures.md` lines whose `model:` is older than the model under test, rerun each such line's `covered:` case once with its rule removed, and when it still passes, remove the rule and append `dropped: <model>` to the line; rerun the task of each line marked `open:` once on the new model, and when it passes replace `open: <model>` with `passed: <model>`; then print the case count with `ls -d evals/*/ | grep -vc results`, run one case first with `claude plugin eval . --trust-plugin --case <case> --scaffold --allow-tools Bash Edit Write --json --judge-model sonnet --no-publish --max-cost-usd 2`, then the suite with the same flags without `--case` and `--max-cost-usd` set to `BUDGET_USD` in `evals/value.mjs`, then once more with `--model <other model>` and record both settings in the scorecard's model and effort columns. Each case is tagged `tune` or `holdout`: tune on `--tag tune` runs before a release, the release suite runs are the only holdout runs, and never tune on a holdout result. `--tag smoke` runs only the cases without a judge grader for a quick check; `claude plugin eval init --bare <name>` writes the blank case for a new one. A measured case runs twice, and a third time only when the two runs split; `evals/value.md` shows a verdict per part (better, same, worse or not sure yet). `node evals/trigger.mjs <skill>` runs the near-miss prompts of `evals/trigger.json` and counts wrong triggers: tune a description on one half of a skill's prompts and accept it on the other half. Both call a model, so run them only before a release. `node evals/skill-corrections.mjs` calls no model and prints, per exo skill, in how many sessions a repeated correction followed it.
-
-A case gets one grader on the result and one on the steps, and more only where a clause fails alone, as `evals/build-red-suite/graders/` does; a new case starts from `claude plugin eval init --bare <name>`.
-
-`evals/scorecard.md` lists the commands for each column and holds one table. Each release appends one row and no row is rewritten. `evals/failures.md` lists the failures seen in real sessions.
+Change a skill only after a real session that went wrong, and then remove something rather than add something.
 
 ## How a skill dispatches work
 
-- Two roles are plugin agents under `agents/`, `builder` and `researcher`, because an agent file fixes a tool list, a model, an effort and a turn limit, and its body is the system prompt rather than text pasted into every dispatch. The lead sends one fresh agent per separate job with file paths in the prompt, and runs jobs in parallel only when they share no file.
-- An agent that takes everything from its dispatch sets `omitClaudeMd: true` (Claude Code 2.1.271 or later) and carries the rule against deleting past a blocked state in its own body, because it loads no `CLAUDE.md`.
-- `CLAUDE_CODE_SUBAGENT_MODEL` outranks the named model on Claude Code before 2.1.251. `CLAUDE_CODE_EFFORT_LEVEL` overrides an agent's effort.
-- A subagent takes its model and effort from its agent file's frontmatter; see each agent's and skill's frontmatter for the values, and a dispatch passes the Agent tool's `model` or `effort` only for a job in the Models table of `skills/build/SKILL.md` or a dispatch a skill's steps name.
-- A skill pins a model or effort only where its work always needs that tier, because a pinned model overrides the session's model and rebuilds the prompt cache mid-session; see each skill's frontmatter.
+- Two roles are plugin agents under `agents/`, `builder` and `researcher`, because an agent file fixes a tool list, a model, an effort and a turn limit. The lead sends one fresh agent per separate job with file paths in the prompt, and runs jobs in parallel only when they share no file.
+- Every scratch file lives in `$TMPDIR/exo/<repo folder name>/`, and the lead names the file in each agent prompt.
+- A subagent takes its model and effort from its agent file's frontmatter, and a dispatch passes the Agent tool's `model` or `effort` only for a job in the Models table of the build skill.
+- Each agent sets `maxTurns` in its frontmatter, and the harness ends a delegate at that turn.
 
-## Hook
-
-- exo ships a `SessionStart` and a `UserPromptSubmit` hook in `hooks/hooks.json`. `corrections.mjs session-start` prints the `Exo found <n> new memories` line under the banner once per count and starts a recount; `corrections.mjs hook` runs on each prompt: it records each typed prompt, not one Claude Code starts itself, in a ledger keyed by `CLAUDE_PROJECT_DIR` (else the hook's `cwd`) by word overlap, with no phrase list of any language, and prints one `exo:` line, once per cluster, when a prompt repeats ones from at least 2 other sessions; the model judges whether it is a correction or wish. `corrections.mjs candidates` ranks clusters by sessions and a cluster needs 3 sessions and the model lists every one it judges a lesson; `keep` and `reject` record the user's answer by candidate id or by the id of an earlier verdict, and one reply settles the whole list; the hook flags a kept lesson that repeats once per keep. Lesson notes take Claude Code's auto-memory shape (frontmatter name, description, type; rule; Why; How to apply). It calls no model and no network. The hooks only detect and inject no rule per prompt: the xyrlan/mnemo README reports that per-prompt rule injection lifted rule-following from 41.0% to 72.1% yet prevented 0.005 repeats per session, because 62.5% of the corrected rules were already in CLAUDE.md or auto-memory, and a fixed block at session start did as well as per-prompt retrieval.
-
-## Verifying in one round
-
-A plan whose tasks all landed passes the end-of-run review in one round, because land catches what the review would catch late.
-
-- **Tests at land**: after the Land gate passes, `land-task.mjs` runs the tests that read the task's changed files and refuses the land, naming the test, when one fails. `coveringTests` in `skills/build/scripts/land-proof.mjs` finds them by scanning `tests/*.test.mjs` for a quoted path equal to a changed file or one of its ancestor folders, also with a leading `${...}` removed or a leading `./` or `../` resolved against `tests/`.
-
-## Timeout constants
-
-Each timeout is a `*_MS` constant in its file.
-
-## Plan loop in this repository
-
-- A plan names no finish route and no commit subject: `ship` asks the route once, at the end.
-- Check a plan with `node skills/spec/scripts/plan-check.mjs --plan <plan>`: it names missing sections, a task without `Files:`, `Proof:` or `Data:` (`Data: none (<reason>)` counts), two tasks on one file with no `Depends on:` path between them, a `Data:` that says `read by Task <n>` when that task does not depend on this one, a `Consumes: Task <n>: <name>` whose task is not on a `Depends on:` path, an Acceptance item that cites no task, `Data:` segment or the Success criterion and is not a Manual check, and open points.
-- A plan task lands only through that loop, so the lead and subagents commit no plan task on the run branch.
-- A blocked task leaves no commit. The lead fixes the plan, or the cause in a worktree subagent, and reruns `exo:build`.
-- A Land gate or Success criterion repair on the run branch is a `fix(<scope>):` commit with no `Plan-task:` trailer.
-- Every plan ends with a task that writes its `## Unreleased` line, so the line lands in the run's squash commit.
-- Phases hand over through the brief and files in the temp folder.
-
-## Run contract
-
-- `runCheck` in `lib/run-check.mjs` runs a check command through the tree-keyed record in `lib/check-cache.mjs`.
-
-## Defaults
-
-Each variable is read through `environmentMs`: `EXO_PROOF_TIMEOUT_MS` and `EXO_LAND_GATE_TIMEOUT_MS` bound a proof and the Land gate; `EXO_RED_BASE_MARGIN_MS` (`lib/red-green.mjs`, 60000) is the margin added to the base run time of a red proof.
-
-- **Delegate limits**: each agent sets `maxTurns` in its frontmatter, and the harness ends a delegate at that turn.
-
-The plugin ships no permission guard: a cap on what a machine may do belongs in that machine's own configuration.
+`docs/` is gitignored and holds only plans and research.
 
 ## Releasing
 

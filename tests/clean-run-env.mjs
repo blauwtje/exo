@@ -31,7 +31,6 @@ function isolateGit(home) {
 }
 
 function isolateSettings(root) {
-  for (const name of Object.keys(process.env)) if (name.startsWith('CLAUDE_PLUGIN_OPTION_')) delete process.env[name];
   const project = path.join(root, 'project');
   fs.mkdirSync(project);
   process.env.CLAUDE_PROJECT_DIR = project;

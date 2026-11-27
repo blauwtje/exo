@@ -1,7 +1,0 @@
----
-max_turns: 10
-tags: [holdout]
-allowed_tools: [Read, Glob, Grep, Skill, Bash]
----
-
-Read build.log and tell me which test failed.
