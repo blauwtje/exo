@@ -243,3 +243,12 @@ test('the ytdlp-calls case starts from its own empty store, calls yt-dlp twice i
   assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.stdout, 'run 1: 2\nrun 2: 0\n');
 });
+
+test('compare reads the new rows from --label, and from after when no label is given', () => {
+  const bench = fs.realpathSync(tempDir('bench-compare-'));
+  const line = (label, value) => `| ${label} | 2026-01-01 | abc1234 | minutes | ${value} | 3 | 0.1 to 0.2 | 0 |\n`;
+  fs.writeFileSync(path.join(bench, 'watch-bench.md'), `| label | date | commit | row | value | runs | spread | errors |\n| --- | --- | --- | --- | --- | --- | --- | --- |\n${line('baseline', 1)}${line('after', 0.7)}${line('other', 0.3)}`);
+  const compare = (...extra) => spawnSync(process.execPath, [READER, '--compare', 'baseline', ...extra], { encoding: 'utf8', env: { ...process.env, EXO_WATCH_BENCH_ROOT: bench } });
+  assert.match(compare('--label', 'other').stdout, /minutes: baseline 1, after 0\.3,/);
+  assert.match(compare().stdout, /minutes: baseline 1, after 0\.7,/);
+});

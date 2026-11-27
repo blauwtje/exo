@@ -7,7 +7,7 @@ import { storeFolder } from './store.mjs';
 
 const USAGE = [
   'usage: node check-stamps.mjs --answer <file> | --notes <file> [--notes <file> ...]',
-  'With --notes, each line that opens with a stamp link is a note and the first text in double quotes after the stamp is its quote; prints notes, quoted and dropped counts and one drop: <file>:<line> per dropped note; exit 1 when one is dropped.',
+  'With --notes, each line that opens with a stamp link is a note and the first text in double quotes after the stamp is its quote; prints notes, quoted and dropped counts, one keep: <note line as written> per kept note in file order and one drop: <file>:<line> per dropped note; exit 1 when one is dropped.',
   'With --answer, checks every stamp link of the file against <id>/transcript.txt in the kept watch folder (<config directory>/exo/watch, or EXO_WATCH_STORE); prints checked, exact, off and unchecked counts and one line per off stamp.',
   'Exit codes: 0 no off stamp; 1 an off stamp; 2 bad usage.'
 ].join('\n');
@@ -81,14 +81,20 @@ export function checkNotes(text, transcriptOf) {
 function mainNotes(files, transcriptOf) {
   const total = { notes: 0, quoted: 0 };
   const drops = [];
+  const keeps = [];
   for (const file of files) {
-    const result = checkNotes(fs.readFileSync(file, 'utf8'), transcriptOf);
+    const text = fs.readFileSync(file, 'utf8');
+    const result = checkNotes(text, transcriptOf);
+    const lines = text.split('\n');
+    lines.forEach((line, index) => {
+      if (NOTE.test(line) && !result.drops.includes(index + 1)) keeps.push(`keep: ${line}`);
+    });
     total.notes += result.notes;
     total.quoted += result.quoted;
     drops.push(...result.drops.map((line) => `drop: ${file}:${line}`));
   }
   console.log(`notes=${total.notes} quoted=${total.quoted} dropped=${drops.length}`);
-  for (const line of drops) console.log(line);
+  for (const line of [...keeps, ...drops]) console.log(line);
   return drops.length > 0 ? 1 : 0;
 }
 

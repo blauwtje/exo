@@ -112,6 +112,9 @@ release, and a body rewrite that keeps the trigger is a patch.
 
 ### Fixed
 
+- `node evals/watch-bench.mjs --compare baseline --label <new>` reads the new rows from the given label instead of only `after`.
+- `check-stamps.mjs --notes` prints each kept note as a `keep:` line, and the batch brief merges from those lines and joins no two notes under one stamp, so a batch answer keeps its stamps.
+- `exo:watch` asks for one fact per claim under the stamp of the line where it is said, because claims of three sentences passed the judge 1 of 31 times.
 - `exo:spec` finds an earlier brief by file name and by each topic word, and no longer lists the docs folders with `ls | head`.
 - `build-dispatch.mjs` ends with a usage error on an `--attempt` that is not a whole number of 1 or more, where `--attempt two` picked the second-attempt model.
 - The `lib/` files import `shared-values.mjs` by relative path.

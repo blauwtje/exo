@@ -245,9 +245,9 @@ function printMetric(flags) {
   return short.length > 0 ? 1 : 0;
 }
 
-function printCompare(baselineLabel) {
+function printCompare(baselineLabel, newLabel = 'after') {
   const baseline = tableRows(baselineLabel);
-  const after = tableRows('after');
+  const after = tableRows(newLabel);
   const results = compareRows(baseline, after);
   for (const { key, goal, was, is, verdict } of results) {
     console.log(`${key}: baseline ${was?.value ?? 'missing'}, after ${is?.value ?? 'missing'}, goal ${goal}, ${verdict}`);
@@ -261,7 +261,7 @@ function main(argv) {
   const flags = parseFlags(argv, { metric: 'string', label: 'string', repeat: 'string', batch: 'string', compare: 'string' }, { usage: USAGE });
   if (flags.repeat !== undefined && !POSITIVE_INTEGER.test(flags.repeat)) throw new UsageError('--repeat needs a positive whole number');
   if (flags.batch !== undefined && flags.batch !== '30') throw new UsageError('--batch takes 30');
-  if (flags.compare !== undefined) return printCompare(flags.compare);
+  if (flags.compare !== undefined) return printCompare(flags.compare, flags.label);
   if (flags.metric === undefined) throw new UsageError('give --metric <name|all> or --compare baseline');
   const known = ['all', ...new Set(ROWS.map((row) => row.metric))];
   if (!known.includes(flags.metric)) throw new UsageError(`unknown metric '${flags.metric}'; known: ${known.join(', ')}`);

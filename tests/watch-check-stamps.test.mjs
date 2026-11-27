@@ -92,8 +92,8 @@ test('the script prints the counts and one drop line per file and line, and exit
   fs.writeFileSync(two, `${note(30, 'dies ist')}\n${note(30, 'not there')}\n`);
   const ok = await run(SCRIPT, ['--notes', one], { cwd, env });
   assert.equal(ok.code ?? 0, 0, ok.stderr);
-  assert.equal(ok.stdout.trim(), 'notes=1 quoted=1 dropped=0');
+  assert.equal(ok.stdout.trim(), `notes=1 quoted=1 dropped=0\nkeep: ${note(30, 'dies ist')}`);
   const dropped = await run(SCRIPT, ['--notes', one, '--notes', two], { cwd, env });
   assert.equal(dropped.code, 1);
-  assert.equal(dropped.stdout.trim(), `notes=3 quoted=2 dropped=1\ndrop: ${two}:2`);
+  assert.equal(dropped.stdout.trim(), `notes=3 quoted=2 dropped=1\nkeep: ${note(30, 'dies ist')}\nkeep: ${note(30, 'dies ist')}\ndrop: ${two}:2`);
 });
